@@ -1,0 +1,55 @@
+
+{
+	"sources" : 
+	[
+		
+		{
+			"file" : "D:/Users/scarensac/Documents/GitHub/SPlisHSPlasH/build/CMakeFiles/ExternalProject_PositionBasedDynamics"
+		},
+		
+		{
+			"file" : "D:/Users/scarensac/Documents/GitHub/SPlisHSPlasH/CMakeLists.txt"
+		},
+		
+		{
+			"file" : "D:/Users/scarensac/Documents/GitHub/SPlisHSPlasH/build/CMakeFiles/c9b4a02ca59d2248b67abd9304175896/ExternalProject_PositionBasedDynamics.rule"
+		},
+		
+		{
+			"file" : "D:/Users/scarensac/Documents/GitHub/SPlisHSPlasH/build/CMakeFiles/81d755d11e071cbc2036188617103399/ExternalProject_PositionBasedDynamics-complete.rule"
+		},
+		
+		{
+			"file" : "D:/Users/scarensac/Documents/GitHub/SPlisHSPlasH/build/CMakeFiles/6f557b5eb8b77ca00dc85f371f793e23/ExternalProject_PositionBasedDynamics-install.rule"
+		},
+		
+		{
+			"file" : "D:/Users/scarensac/Documents/GitHub/SPlisHSPlasH/build/CMakeFiles/6f557b5eb8b77ca00dc85f371f793e23/ExternalProject_PositionBasedDynamics-mkdir.rule"
+		},
+		
+		{
+			"file" : "D:/Users/scarensac/Documents/GitHub/SPlisHSPlasH/build/CMakeFiles/6f557b5eb8b77ca00dc85f371f793e23/ExternalProject_PositionBasedDynamics-download.rule"
+		},
+		
+		{
+			"file" : "D:/Users/scarensac/Documents/GitHub/SPlisHSPlasH/build/CMakeFiles/6f557b5eb8b77ca00dc85f371f793e23/ExternalProject_PositionBasedDynamics-update.rule"
+		},
+		
+		{
+			"file" : "D:/Users/scarensac/Documents/GitHub/SPlisHSPlasH/build/CMakeFiles/6f557b5eb8b77ca00dc85f371f793e23/ExternalProject_PositionBasedDynamics-patch.rule"
+		},
+		
+		{
+			"file" : "D:/Users/scarensac/Documents/GitHub/SPlisHSPlasH/build/CMakeFiles/6f557b5eb8b77ca00dc85f371f793e23/ExternalProject_PositionBasedDynamics-configure.rule"
+		},
+		
+		{
+			"file" : "D:/Users/scarensac/Documents/GitHub/SPlisHSPlasH/build/CMakeFiles/6f557b5eb8b77ca00dc85f371f793e23/ExternalProject_PositionBasedDynamics-build.rule"
+		}
+	],
+	"target" : 
+	{
+		"labels" : [ "ExternalProject_PositionBasedDynamics" ],
+		"name" : "ExternalProject_PositionBasedDynamics"
+	}
+}

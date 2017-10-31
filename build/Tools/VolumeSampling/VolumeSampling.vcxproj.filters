@@ -1,0 +1,27 @@
+﻿<?xml version="1.0" encoding="UTF-8"?>
+<Project ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <ClCompile Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\Tools\VolumeSampling\main.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\Tools\VolumeSampling\WindingNumbers.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\Tools\VolumeSampling\WindingNumbers.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <CustomBuild Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\Tools\VolumeSampling\CMakeLists.txt" />
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="Source Files">
+      <UniqueIdentifier>{856C601E-746E-3F9A-A835-24553F07107F}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files">
+      <UniqueIdentifier>{8A583372-D5DE-3B9B-8DF6-2DF0AD88272C}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+</Project>

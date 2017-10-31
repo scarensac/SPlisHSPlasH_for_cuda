@@ -1,0 +1,13 @@
+﻿<?xml version="1.0" encoding="UTF-8"?>
+<Project ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <CustomBuild Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\CompactNSearch\src\ExternalProject_CompactNSearch-build\CMakeFiles\660ee9dc43d8bf610b8eafc927a3ef16\INSTALL_force.rule">
+      <Filter>CMake Rules</Filter>
+    </CustomBuild>
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="CMake Rules">
+      <UniqueIdentifier>{47AC0E53-1C64-369D-8426-E0CF691EFC34}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+</Project>

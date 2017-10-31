@@ -1,0 +1,381 @@
+﻿<?xml version="1.0" encoding="UTF-8"?>
+<Project DefaultTargets="Build" ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Debug|x64">
+      <Configuration>Debug</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|x64">
+      <Configuration>Release</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="MinSizeRel|x64">
+      <Configuration>MinSizeRel</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="RelWithDebInfo|x64">
+      <Configuration>RelWithDebInfo</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+  </ItemGroup>
+  <PropertyGroup Label="Globals">
+    <ProjectGuid>{5A62D262-384A-31E3-8FF4-094437A7AF16}</ProjectGuid>
+    <WindowsTargetPlatformVersion>10.0.16299.0</WindowsTargetPlatformVersion>
+    <Keyword>Win32Proj</Keyword>
+    <Platform>x64</Platform>
+    <ProjectName>DynamicBoundaryDemo</ProjectName>
+    <VCProjectUpgraderObjectName>NoUpgrade</VCProjectUpgraderObjectName>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <CharacterSet>MultiByte</CharacterSet>
+    <PlatformToolset>v141</PlatformToolset>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <CharacterSet>MultiByte</CharacterSet>
+    <PlatformToolset>v141</PlatformToolset>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <CharacterSet>MultiByte</CharacterSet>
+    <PlatformToolset>v141</PlatformToolset>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <CharacterSet>MultiByte</CharacterSet>
+    <PlatformToolset>v141</PlatformToolset>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <ImportGroup Label="ExtensionSettings">
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <PropertyGroup Label="UserMacros" />
+  <PropertyGroup>
+    <_ProjectFileVersion>10.0.20506.1</_ProjectFileVersion>
+    <OutDir Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\bin\</OutDir>
+    <IntDir Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">DynamicBoundaryDemo.dir\Debug\</IntDir>
+    <TargetName Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">DynamicBoundaryDemo_d</TargetName>
+    <TargetExt Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">.exe</TargetExt>
+    <LinkIncremental Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</LinkIncremental>
+    <GenerateManifest Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</GenerateManifest>
+    <OutDir Condition="'$(Configuration)|$(Platform)'=='Release|x64'">D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\bin\</OutDir>
+    <IntDir Condition="'$(Configuration)|$(Platform)'=='Release|x64'">DynamicBoundaryDemo.dir\Release\</IntDir>
+    <TargetName Condition="'$(Configuration)|$(Platform)'=='Release|x64'">DynamicBoundaryDemo</TargetName>
+    <TargetExt Condition="'$(Configuration)|$(Platform)'=='Release|x64'">.exe</TargetExt>
+    <LinkIncremental Condition="'$(Configuration)|$(Platform)'=='Release|x64'">false</LinkIncremental>
+    <GenerateManifest Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</GenerateManifest>
+    <OutDir Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\bin\</OutDir>
+    <IntDir Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">DynamicBoundaryDemo.dir\MinSizeRel\</IntDir>
+    <TargetName Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">DynamicBoundaryDemo_ms</TargetName>
+    <TargetExt Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">.exe</TargetExt>
+    <LinkIncremental Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">false</LinkIncremental>
+    <GenerateManifest Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">true</GenerateManifest>
+    <OutDir Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\bin\</OutDir>
+    <IntDir Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">DynamicBoundaryDemo.dir\RelWithDebInfo\</IntDir>
+    <TargetName Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">DynamicBoundaryDemo_rd</TargetName>
+    <TargetExt Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">.exe</TargetExt>
+    <LinkIncremental Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">true</LinkIncremental>
+    <GenerateManifest Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">true</GenerateManifest>
+  </PropertyGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <ClCompile>
+      <AdditionalIncludeDirectories>D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\freeglut\include;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\eigen;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\install\CompactNSearch\include;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\install\PositionBasedDynamics\include;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\glew\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AssemblerListingLocation>Debug/</AssemblerListingLocation>
+      <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
+      <CompileAs>CompileAsCpp</CompileAs>
+      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
+      <ExceptionHandling>Sync</ExceptionHandling>
+      <InlineFunctionExpansion>Disabled</InlineFunctionExpansion>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
+      <Optimization>Disabled</Optimization>
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
+      <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
+      <RuntimeTypeInfo>true</RuntimeTypeInfo>
+      <WarningLevel>Level3</WarningLevel>
+      <PreprocessorDefinitions>WIN32;_WINDOWS;_CRT_SECURE_NO_DEPRECATE;SPH_DATA_PATH="../data";PBD_DATA_PATH="../data";USE_PBD;PBD_DATA_PATH="D:/Users/scarensac/Documents/GitHub/SPlisHSPlasH/extern/install/PositionBasedDynamics/include/data";TW_NO_LIB_PRAGMA;TW_STATIC;CMAKE_INTDIR="Debug";%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <ObjectFileName>$(IntDir)</ObjectFileName>
+    </ClCompile>
+    <ResourceCompile>
+      <PreprocessorDefinitions>WIN32;_DEBUG;_WINDOWS;_CRT_SECURE_NO_DEPRECATE;SPH_DATA_PATH=\"../data\";PBD_DATA_PATH=\"../data\";USE_PBD;PBD_DATA_PATH=\"D:/Users/scarensac/Documents/GitHub/SPlisHSPlasH/extern/install/PositionBasedDynamics/include/data\";TW_NO_LIB_PRAGMA;TW_STATIC;CMAKE_INTDIR=\"Debug\";%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\freeglut\include;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\eigen;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\install\CompactNSearch\include;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\install\PositionBasedDynamics\include;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\glew\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+    </ResourceCompile>
+    <Midl>
+      <AdditionalIncludeDirectories>D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\freeglut\include;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\eigen;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\install\CompactNSearch\include;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\install\PositionBasedDynamics\include;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\glew\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <OutputDirectory>$(ProjectDir)/$(IntDir)</OutputDirectory>
+      <HeaderFileName>%(Filename).h</HeaderFileName>
+      <TypeLibraryName>%(Filename).tlb</TypeLibraryName>
+      <InterfaceIdentifierFileName>%(Filename)_i.c</InterfaceIdentifierFileName>
+      <ProxyFileName>%(Filename)_p.c</ProxyFileName>
+    </Midl>
+    <Link>
+      <AdditionalDependencies>..\..\..\lib\Debug\freeglut_d.lib;opengl32.lib;glu32.lib;..\..\..\lib\Debug\Utilities_d.lib;..\..\..\lib\Debug\AntTweakBar_d.lib;..\..\..\lib\Debug\glew_d.lib;..\..\..\lib\Debug\partio_d.lib;..\..\..\lib\Debug\zlib_d.lib;..\..\..\lib\Debug\SPlisHSPlasH_d.lib;..\..\..\lib\Debug\MD5_d.lib;CompactNSearch_d.lib;Simulation_d.lib;PositionBasedDynamics_d.lib;Utils_d.lib;opengl32.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;comdlg32.lib;advapi32.lib</AdditionalDependencies>
+      <AdditionalLibraryDirectories>D:/Users/scarensac/Documents/GitHub/SPlisHSPlasH/extern/install/CompactNSearch/lib;D:/Users/scarensac/Documents/GitHub/SPlisHSPlasH/extern/install/CompactNSearch/lib/$(Configuration);D:/Users/scarensac/Documents/GitHub/SPlisHSPlasH/extern/install/PositionBasedDynamics/lib;D:/Users/scarensac/Documents/GitHub/SPlisHSPlasH/extern/install/PositionBasedDynamics/lib/$(Configuration);%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalOptions>%(AdditionalOptions) /machine:x64</AdditionalOptions>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <IgnoreSpecificDefaultLibraries>%(IgnoreSpecificDefaultLibraries)</IgnoreSpecificDefaultLibraries>
+      <ImportLibrary>D:/Users/scarensac/Documents/GitHub/SPlisHSPlasH/build/Demos/DynamicBoundaryDemo/Debug/DynamicBoundaryDemo_d.lib</ImportLibrary>
+      <ProgramDataBaseFile>D:/Users/scarensac/Documents/GitHub/SPlisHSPlasH/bin/DynamicBoundaryDemo_d.pdb</ProgramDataBaseFile>
+      <SubSystem>Console</SubSystem>
+      <Version></Version>
+    </Link>
+    <ProjectReference>
+      <LinkLibraryDependencies>false</LinkLibraryDependencies>
+    </ProjectReference>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <ClCompile>
+      <AdditionalIncludeDirectories>D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\freeglut\include;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\eigen;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\install\CompactNSearch\include;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\install\PositionBasedDynamics\include;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\glew\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AssemblerListingLocation>Release/</AssemblerListingLocation>
+      <CompileAs>CompileAsCpp</CompileAs>
+      <ExceptionHandling>Sync</ExceptionHandling>
+      <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
+      <FloatingPointModel>Fast</FloatingPointModel>
+      <InlineFunctionExpansion>AnySuitable</InlineFunctionExpansion>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
+      <OpenMPSupport>true</OpenMPSupport>
+      <Optimization>Full</Optimization>
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
+      <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
+      <RuntimeTypeInfo>true</RuntimeTypeInfo>
+      <WarningLevel>Level3</WarningLevel>
+      <PreprocessorDefinitions>WIN32;_WINDOWS;NDEBUG;_CRT_SECURE_NO_DEPRECATE;SPH_DATA_PATH="../data";PBD_DATA_PATH="../data";USE_PBD;PBD_DATA_PATH="D:/Users/scarensac/Documents/GitHub/SPlisHSPlasH/extern/install/PositionBasedDynamics/include/data";TW_NO_LIB_PRAGMA;TW_STATIC;CMAKE_INTDIR="Release";%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <ObjectFileName>$(IntDir)</ObjectFileName>
+      <DebugInformationFormat></DebugInformationFormat>
+    </ClCompile>
+    <ResourceCompile>
+      <PreprocessorDefinitions>WIN32;_WINDOWS;NDEBUG;_CRT_SECURE_NO_DEPRECATE;SPH_DATA_PATH=\"../data\";PBD_DATA_PATH=\"../data\";USE_PBD;PBD_DATA_PATH=\"D:/Users/scarensac/Documents/GitHub/SPlisHSPlasH/extern/install/PositionBasedDynamics/include/data\";TW_NO_LIB_PRAGMA;TW_STATIC;CMAKE_INTDIR=\"Release\";%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\freeglut\include;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\eigen;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\install\CompactNSearch\include;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\install\PositionBasedDynamics\include;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\glew\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+    </ResourceCompile>
+    <Midl>
+      <AdditionalIncludeDirectories>D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\freeglut\include;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\eigen;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\install\CompactNSearch\include;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\install\PositionBasedDynamics\include;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\glew\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <OutputDirectory>$(ProjectDir)/$(IntDir)</OutputDirectory>
+      <HeaderFileName>%(Filename).h</HeaderFileName>
+      <TypeLibraryName>%(Filename).tlb</TypeLibraryName>
+      <InterfaceIdentifierFileName>%(Filename)_i.c</InterfaceIdentifierFileName>
+      <ProxyFileName>%(Filename)_p.c</ProxyFileName>
+    </Midl>
+    <Link>
+      <AdditionalDependencies>..\..\..\lib\Release\freeglut.lib;opengl32.lib;glu32.lib;..\..\..\lib\Release\Utilities.lib;..\..\..\lib\Release\AntTweakBar.lib;..\..\..\lib\Release\glew.lib;..\..\..\lib\Release\partio.lib;..\..\..\lib\Release\zlib.lib;..\..\..\lib\Release\SPlisHSPlasH.lib;..\..\..\lib\Release\MD5.lib;CompactNSearch.lib;Simulation.lib;PositionBasedDynamics.lib;Utils.lib;opengl32.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;comdlg32.lib;advapi32.lib</AdditionalDependencies>
+      <AdditionalLibraryDirectories>D:/Users/scarensac/Documents/GitHub/SPlisHSPlasH/extern/install/CompactNSearch/lib;D:/Users/scarensac/Documents/GitHub/SPlisHSPlasH/extern/install/CompactNSearch/lib/$(Configuration);D:/Users/scarensac/Documents/GitHub/SPlisHSPlasH/extern/install/PositionBasedDynamics/lib;D:/Users/scarensac/Documents/GitHub/SPlisHSPlasH/extern/install/PositionBasedDynamics/lib/$(Configuration);%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalOptions>%(AdditionalOptions) /machine:x64</AdditionalOptions>
+      <GenerateDebugInformation>false</GenerateDebugInformation>
+      <IgnoreSpecificDefaultLibraries>%(IgnoreSpecificDefaultLibraries)</IgnoreSpecificDefaultLibraries>
+      <ImportLibrary>D:/Users/scarensac/Documents/GitHub/SPlisHSPlasH/build/Demos/DynamicBoundaryDemo/Release/DynamicBoundaryDemo.lib</ImportLibrary>
+      <ProgramDataBaseFile>D:/Users/scarensac/Documents/GitHub/SPlisHSPlasH/bin/DynamicBoundaryDemo.pdb</ProgramDataBaseFile>
+      <SubSystem>Console</SubSystem>
+      <Version></Version>
+    </Link>
+    <ProjectReference>
+      <LinkLibraryDependencies>false</LinkLibraryDependencies>
+    </ProjectReference>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">
+    <ClCompile>
+      <AdditionalIncludeDirectories>D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\freeglut\include;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\eigen;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\install\CompactNSearch\include;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\install\PositionBasedDynamics\include;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\glew\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AssemblerListingLocation>MinSizeRel/</AssemblerListingLocation>
+      <CompileAs>CompileAsCpp</CompileAs>
+      <ExceptionHandling>Sync</ExceptionHandling>
+      <InlineFunctionExpansion>OnlyExplicitInline</InlineFunctionExpansion>
+      <Optimization>MinSpace</Optimization>
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
+      <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
+      <RuntimeTypeInfo>true</RuntimeTypeInfo>
+      <WarningLevel>Level3</WarningLevel>
+      <PreprocessorDefinitions>WIN32;_WINDOWS;NDEBUG;_CRT_SECURE_NO_DEPRECATE;SPH_DATA_PATH="../data";PBD_DATA_PATH="../data";USE_PBD;PBD_DATA_PATH="D:/Users/scarensac/Documents/GitHub/SPlisHSPlasH/extern/install/PositionBasedDynamics/include/data";TW_NO_LIB_PRAGMA;TW_STATIC;CMAKE_INTDIR="MinSizeRel";%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <ObjectFileName>$(IntDir)</ObjectFileName>
+      <DebugInformationFormat></DebugInformationFormat>
+    </ClCompile>
+    <ResourceCompile>
+      <PreprocessorDefinitions>WIN32;_WINDOWS;NDEBUG;_CRT_SECURE_NO_DEPRECATE;SPH_DATA_PATH=\"../data\";PBD_DATA_PATH=\"../data\";USE_PBD;PBD_DATA_PATH=\"D:/Users/scarensac/Documents/GitHub/SPlisHSPlasH/extern/install/PositionBasedDynamics/include/data\";TW_NO_LIB_PRAGMA;TW_STATIC;CMAKE_INTDIR=\"MinSizeRel\";%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\freeglut\include;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\eigen;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\install\CompactNSearch\include;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\install\PositionBasedDynamics\include;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\glew\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+    </ResourceCompile>
+    <Midl>
+      <AdditionalIncludeDirectories>D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\freeglut\include;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\eigen;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\install\CompactNSearch\include;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\install\PositionBasedDynamics\include;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\glew\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <OutputDirectory>$(ProjectDir)/$(IntDir)</OutputDirectory>
+      <HeaderFileName>%(Filename).h</HeaderFileName>
+      <TypeLibraryName>%(Filename).tlb</TypeLibraryName>
+      <InterfaceIdentifierFileName>%(Filename)_i.c</InterfaceIdentifierFileName>
+      <ProxyFileName>%(Filename)_p.c</ProxyFileName>
+    </Midl>
+    <Link>
+      <AdditionalDependencies>..\..\..\lib\MinSizeRel\freeglut_ms.lib;opengl32.lib;glu32.lib;..\..\..\lib\MinSizeRel\Utilities_ms.lib;..\..\..\lib\MinSizeRel\AntTweakBar_ms.lib;..\..\..\lib\MinSizeRel\glew_ms.lib;..\..\..\lib\MinSizeRel\partio_ms.lib;..\..\..\lib\MinSizeRel\zlib_ms.lib;..\..\..\lib\MinSizeRel\SPlisHSPlasH_ms.lib;..\..\..\lib\MinSizeRel\MD5_ms.lib;CompactNSearch.lib;Simulation.lib;PositionBasedDynamics.lib;Utils.lib;opengl32.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;comdlg32.lib;advapi32.lib</AdditionalDependencies>
+      <AdditionalLibraryDirectories>D:/Users/scarensac/Documents/GitHub/SPlisHSPlasH/extern/install/CompactNSearch/lib;D:/Users/scarensac/Documents/GitHub/SPlisHSPlasH/extern/install/CompactNSearch/lib/$(Configuration);D:/Users/scarensac/Documents/GitHub/SPlisHSPlasH/extern/install/PositionBasedDynamics/lib;D:/Users/scarensac/Documents/GitHub/SPlisHSPlasH/extern/install/PositionBasedDynamics/lib/$(Configuration);%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalOptions>%(AdditionalOptions) /machine:x64</AdditionalOptions>
+      <GenerateDebugInformation>false</GenerateDebugInformation>
+      <IgnoreSpecificDefaultLibraries>%(IgnoreSpecificDefaultLibraries)</IgnoreSpecificDefaultLibraries>
+      <ImportLibrary>D:/Users/scarensac/Documents/GitHub/SPlisHSPlasH/build/Demos/DynamicBoundaryDemo/MinSizeRel/DynamicBoundaryDemo_ms.lib</ImportLibrary>
+      <ProgramDataBaseFile>D:/Users/scarensac/Documents/GitHub/SPlisHSPlasH/bin/DynamicBoundaryDemo_ms.pdb</ProgramDataBaseFile>
+      <SubSystem>Console</SubSystem>
+      <Version></Version>
+    </Link>
+    <ProjectReference>
+      <LinkLibraryDependencies>false</LinkLibraryDependencies>
+    </ProjectReference>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">
+    <ClCompile>
+      <AdditionalIncludeDirectories>D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\freeglut\include;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\eigen;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\install\CompactNSearch\include;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\install\PositionBasedDynamics\include;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\glew\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AssemblerListingLocation>RelWithDebInfo/</AssemblerListingLocation>
+      <CompileAs>CompileAsCpp</CompileAs>
+      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
+      <ExceptionHandling>Sync</ExceptionHandling>
+      <InlineFunctionExpansion>OnlyExplicitInline</InlineFunctionExpansion>
+      <Optimization>MaxSpeed</Optimization>
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
+      <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
+      <RuntimeTypeInfo>true</RuntimeTypeInfo>
+      <WarningLevel>Level3</WarningLevel>
+      <PreprocessorDefinitions>WIN32;_WINDOWS;NDEBUG;_CRT_SECURE_NO_DEPRECATE;SPH_DATA_PATH="../data";PBD_DATA_PATH="../data";USE_PBD;PBD_DATA_PATH="D:/Users/scarensac/Documents/GitHub/SPlisHSPlasH/extern/install/PositionBasedDynamics/include/data";TW_NO_LIB_PRAGMA;TW_STATIC;CMAKE_INTDIR="RelWithDebInfo";%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <ObjectFileName>$(IntDir)</ObjectFileName>
+    </ClCompile>
+    <ResourceCompile>
+      <PreprocessorDefinitions>WIN32;_WINDOWS;NDEBUG;_CRT_SECURE_NO_DEPRECATE;SPH_DATA_PATH=\"../data\";PBD_DATA_PATH=\"../data\";USE_PBD;PBD_DATA_PATH=\"D:/Users/scarensac/Documents/GitHub/SPlisHSPlasH/extern/install/PositionBasedDynamics/include/data\";TW_NO_LIB_PRAGMA;TW_STATIC;CMAKE_INTDIR=\"RelWithDebInfo\";%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\freeglut\include;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\eigen;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\install\CompactNSearch\include;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\install\PositionBasedDynamics\include;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\glew\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+    </ResourceCompile>
+    <Midl>
+      <AdditionalIncludeDirectories>D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\freeglut\include;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\eigen;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\install\CompactNSearch\include;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\install\PositionBasedDynamics\include;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\glew\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <OutputDirectory>$(ProjectDir)/$(IntDir)</OutputDirectory>
+      <HeaderFileName>%(Filename).h</HeaderFileName>
+      <TypeLibraryName>%(Filename).tlb</TypeLibraryName>
+      <InterfaceIdentifierFileName>%(Filename)_i.c</InterfaceIdentifierFileName>
+      <ProxyFileName>%(Filename)_p.c</ProxyFileName>
+    </Midl>
+    <Link>
+      <AdditionalDependencies>..\..\..\lib\RelWithDebInfo\freeglut_rd.lib;opengl32.lib;glu32.lib;..\..\..\lib\RelWithDebInfo\Utilities_rd.lib;..\..\..\lib\RelWithDebInfo\AntTweakBar_rd.lib;..\..\..\lib\RelWithDebInfo\glew_rd.lib;..\..\..\lib\RelWithDebInfo\partio_rd.lib;..\..\..\lib\RelWithDebInfo\zlib_rd.lib;..\..\..\lib\RelWithDebInfo\SPlisHSPlasH_rd.lib;..\..\..\lib\RelWithDebInfo\MD5_rd.lib;CompactNSearch.lib;Simulation.lib;PositionBasedDynamics.lib;Utils.lib;opengl32.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;comdlg32.lib;advapi32.lib</AdditionalDependencies>
+      <AdditionalLibraryDirectories>D:/Users/scarensac/Documents/GitHub/SPlisHSPlasH/extern/install/CompactNSearch/lib;D:/Users/scarensac/Documents/GitHub/SPlisHSPlasH/extern/install/CompactNSearch/lib/$(Configuration);D:/Users/scarensac/Documents/GitHub/SPlisHSPlasH/extern/install/PositionBasedDynamics/lib;D:/Users/scarensac/Documents/GitHub/SPlisHSPlasH/extern/install/PositionBasedDynamics/lib/$(Configuration);%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalOptions>%(AdditionalOptions) /machine:x64</AdditionalOptions>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <IgnoreSpecificDefaultLibraries>%(IgnoreSpecificDefaultLibraries)</IgnoreSpecificDefaultLibraries>
+      <ImportLibrary>D:/Users/scarensac/Documents/GitHub/SPlisHSPlasH/build/Demos/DynamicBoundaryDemo/RelWithDebInfo/DynamicBoundaryDemo_rd.lib</ImportLibrary>
+      <ProgramDataBaseFile>D:/Users/scarensac/Documents/GitHub/SPlisHSPlasH/bin/DynamicBoundaryDemo_rd.pdb</ProgramDataBaseFile>
+      <SubSystem>Console</SubSystem>
+      <Version></Version>
+    </Link>
+    <ProjectReference>
+      <LinkLibraryDependencies>false</LinkLibraryDependencies>
+    </ProjectReference>
+  </ItemDefinitionGroup>
+  <ItemGroup>
+    <CustomBuild Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\Demos\DynamicBoundaryDemo\CMakeLists.txt">
+      <Message Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Building Custom Rule D:/Users/scarensac/Documents/GitHub/SPlisHSPlasH/Demos/DynamicBoundaryDemo/CMakeLists.txt</Message>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">setlocal
+"C:\Program Files\CMake\bin\cmake.exe" -HD:/Users/scarensac/Documents/GitHub/SPlisHSPlasH -BD:/Users/scarensac/Documents/GitHub/SPlisHSPlasH/build --check-stamp-file D:/Users/scarensac/Documents/GitHub/SPlisHSPlasH/build/Demos/DynamicBoundaryDemo/CMakeFiles/generate.stamp
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal &amp; call :cmErrorLevel %errorlevel% &amp; goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd</Command>
+      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">D:/Users/scarensac/Documents/GitHub/SPlisHSPlasH/Demos/DynamicBoundaryDemo/CMakeLists.txt;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\Demos\DynamicBoundaryDemo\CMakeLists.txt;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\CMake\FindEigen3.cmake;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\Demos\DynamicBoundaryDemo\CMakeLists.txt;%(AdditionalInputs)</AdditionalInputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\build\Demos\DynamicBoundaryDemo\CMakeFiles\generate.stamp</Outputs>
+      <LinkObjects Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</LinkObjects>
+      <Message Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Building Custom Rule D:/Users/scarensac/Documents/GitHub/SPlisHSPlasH/Demos/DynamicBoundaryDemo/CMakeLists.txt</Message>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release|x64'">setlocal
+"C:\Program Files\CMake\bin\cmake.exe" -HD:/Users/scarensac/Documents/GitHub/SPlisHSPlasH -BD:/Users/scarensac/Documents/GitHub/SPlisHSPlasH/build --check-stamp-file D:/Users/scarensac/Documents/GitHub/SPlisHSPlasH/build/Demos/DynamicBoundaryDemo/CMakeFiles/generate.stamp
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal &amp; call :cmErrorLevel %errorlevel% &amp; goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd</Command>
+      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">D:/Users/scarensac/Documents/GitHub/SPlisHSPlasH/Demos/DynamicBoundaryDemo/CMakeLists.txt;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\Demos\DynamicBoundaryDemo\CMakeLists.txt;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\CMake\FindEigen3.cmake;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\Demos\DynamicBoundaryDemo\CMakeLists.txt;%(AdditionalInputs)</AdditionalInputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\build\Demos\DynamicBoundaryDemo\CMakeFiles\generate.stamp</Outputs>
+      <LinkObjects Condition="'$(Configuration)|$(Platform)'=='Release|x64'">false</LinkObjects>
+      <Message Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">Building Custom Rule D:/Users/scarensac/Documents/GitHub/SPlisHSPlasH/Demos/DynamicBoundaryDemo/CMakeLists.txt</Message>
+      <Command Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">setlocal
+"C:\Program Files\CMake\bin\cmake.exe" -HD:/Users/scarensac/Documents/GitHub/SPlisHSPlasH -BD:/Users/scarensac/Documents/GitHub/SPlisHSPlasH/build --check-stamp-file D:/Users/scarensac/Documents/GitHub/SPlisHSPlasH/build/Demos/DynamicBoundaryDemo/CMakeFiles/generate.stamp
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal &amp; call :cmErrorLevel %errorlevel% &amp; goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd</Command>
+      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">D:/Users/scarensac/Documents/GitHub/SPlisHSPlasH/Demos/DynamicBoundaryDemo/CMakeLists.txt;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\Demos\DynamicBoundaryDemo\CMakeLists.txt;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\CMake\FindEigen3.cmake;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\Demos\DynamicBoundaryDemo\CMakeLists.txt;%(AdditionalInputs)</AdditionalInputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\build\Demos\DynamicBoundaryDemo\CMakeFiles\generate.stamp</Outputs>
+      <LinkObjects Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">false</LinkObjects>
+      <Message Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">Building Custom Rule D:/Users/scarensac/Documents/GitHub/SPlisHSPlasH/Demos/DynamicBoundaryDemo/CMakeLists.txt</Message>
+      <Command Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">setlocal
+"C:\Program Files\CMake\bin\cmake.exe" -HD:/Users/scarensac/Documents/GitHub/SPlisHSPlasH -BD:/Users/scarensac/Documents/GitHub/SPlisHSPlasH/build --check-stamp-file D:/Users/scarensac/Documents/GitHub/SPlisHSPlasH/build/Demos/DynamicBoundaryDemo/CMakeFiles/generate.stamp
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal &amp; call :cmErrorLevel %errorlevel% &amp; goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd</Command>
+      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">D:/Users/scarensac/Documents/GitHub/SPlisHSPlasH/Demos/DynamicBoundaryDemo/CMakeLists.txt;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\Demos\DynamicBoundaryDemo\CMakeLists.txt;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\CMake\FindEigen3.cmake;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\Demos\DynamicBoundaryDemo\CMakeLists.txt;%(AdditionalInputs)</AdditionalInputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\build\Demos\DynamicBoundaryDemo\CMakeFiles\generate.stamp</Outputs>
+      <LinkObjects Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">false</LinkObjects>
+    </CustomBuild>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\Demos\DynamicBoundaryDemo\main.cpp"  />
+    <ClCompile Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\Demos\Common\DemoBase.cpp"  />
+    <ClInclude Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\Demos\Common\DemoBase.h" />
+    <ClInclude Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\Visualization\MiniGL.h" />
+    <ClInclude Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\Visualization\Selection.h" />
+    <ClInclude Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\Visualization\Shader.h" />
+    <ClCompile Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\Visualization\MiniGL.cpp"  />
+    <ClCompile Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\Visualization\Shader.cpp"  />
+    <ClCompile Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\Demos\DynamicBoundaryDemo\PositionBasedDynamicsWrapper\PBDWrapper.cpp"  />
+    <ClInclude Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\Demos\DynamicBoundaryDemo\PositionBasedDynamicsWrapper\PBDWrapper.h" />
+    <ClInclude Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\Demos\DynamicBoundaryDemo\PositionBasedDynamicsWrapper\PBDRigidBody.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\build\ZERO_CHECK.vcxproj">
+      <Project>{00EF50C2-A21A-3D74-A41A-7019E9B19CDD}</Project>
+      <Name>ZERO_CHECK</Name>
+    </ProjectReference>
+    <ProjectReference Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\build\extern\AntTweakBar\AntTweakBar.vcxproj">
+      <Project>{309561A8-36F2-392C-957A-9D0201A5B0CB}</Project>
+      <Name>AntTweakBar</Name>
+    </ProjectReference>
+    <ProjectReference Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\build\ExternalProject_CompactNSearch.vcxproj">
+      <Project>{1AEC2FFE-493F-3C59-92A7-EF46EE0A70FB}</Project>
+      <Name>ExternalProject_CompactNSearch</Name>
+    </ProjectReference>
+    <ProjectReference Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\build\ExternalProject_PositionBasedDynamics.vcxproj">
+      <Project>{0D31F610-064A-3FFB-B4DE-8F5226047AB1}</Project>
+      <Name>ExternalProject_PositionBasedDynamics</Name>
+    </ProjectReference>
+    <ProjectReference Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\build\extern\MD5\MD5.vcxproj">
+      <Project>{EDA448E5-FD15-3FD6-B258-01153DD72AF1}</Project>
+      <Name>MD5</Name>
+    </ProjectReference>
+    <ProjectReference Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\build\SPlisHSPlasH\SPlisHSPlasH.vcxproj">
+      <Project>{3621E9E5-FC26-3351-B999-D8F43AF3B8D5}</Project>
+      <Name>SPlisHSPlasH</Name>
+    </ProjectReference>
+    <ProjectReference Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\build\Utilities\Utilities.vcxproj">
+      <Project>{7D612C73-F088-3A89-935D-1077A5661C69}</Project>
+      <Name>Utilities</Name>
+    </ProjectReference>
+    <ProjectReference Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\build\extern\freeglut\src\freeglut.vcxproj">
+      <Project>{BF5EC892-5704-3A2A-B061-D6552FEE3F0F}</Project>
+      <Name>freeglut</Name>
+    </ProjectReference>
+    <ProjectReference Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\build\extern\glew\glew.vcxproj">
+      <Project>{9A81FD1B-F09B-350F-823F-1AC581D30D29}</Project>
+      <Name>glew</Name>
+    </ProjectReference>
+    <ProjectReference Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\build\extern\partio\src\lib\partio.vcxproj">
+      <Project>{195B8649-DC93-3562-8328-571A855D488C}</Project>
+      <Name>partio</Name>
+    </ProjectReference>
+    <ProjectReference Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\build\extern\zlib\zlib.vcxproj">
+      <Project>{D9D7E21C-6A97-34B6-BF5E-186754E59751}</Project>
+      <Name>zlib</Name>
+    </ProjectReference>
+  </ItemGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+  <ImportGroup Label="ExtensionTargets">
+  </ImportGroup>
+</Project>

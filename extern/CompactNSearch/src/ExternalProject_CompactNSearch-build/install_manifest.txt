@@ -1,0 +1,6 @@
+D:/Users/scarensac/Documents/GitHub/SPlisHSPlasH/extern/install/CompactNSearch/include/CompactNSearch
+D:/Users/scarensac/Documents/GitHub/SPlisHSPlasH/extern/install/CompactNSearch/include/Config.h
+D:/Users/scarensac/Documents/GitHub/SPlisHSPlasH/extern/install/CompactNSearch/include/CompactNSearch.h
+D:/Users/scarensac/Documents/GitHub/SPlisHSPlasH/extern/install/CompactNSearch/include/PointSet.h
+D:/Users/scarensac/Documents/GitHub/SPlisHSPlasH/extern/install/CompactNSearch/include/DataStructures.h
+D:/Users/scarensac/Documents/GitHub/SPlisHSPlasH/extern/install/CompactNSearch/lib/CompactNSearch.lib

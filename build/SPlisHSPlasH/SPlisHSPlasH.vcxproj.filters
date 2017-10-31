@@ -1,0 +1,330 @@
+﻿<?xml version="1.0" encoding="UTF-8"?>
+<Project ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <ClCompile Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\SPlisHSPlasH\Emitter.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\SPlisHSPlasH\EmitterSystem.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\SPlisHSPlasH\FluidModel.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\SPlisHSPlasH\SPHKernels.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\SPlisHSPlasH\TimeManager.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\SPlisHSPlasH\TimeStep.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\SPlisHSPlasH\TriangleMesh.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\SPlisHSPlasH\NonPressureForceBase.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\SPlisHSPlasH\WCSPH\SimulationDataWCSPH.cpp">
+      <Filter>Source Files\WCSPH</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\SPlisHSPlasH\WCSPH\TimeStepWCSPH.cpp">
+      <Filter>Source Files\WCSPH</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\SPlisHSPlasH\PCISPH\SimulationDataPCISPH.cpp">
+      <Filter>Source Files\PCISPH</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\SPlisHSPlasH\PCISPH\TimeStepPCISPH.cpp">
+      <Filter>Source Files\PCISPH</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\SPlisHSPlasH\PBF\SimulationDataPBF.cpp">
+      <Filter>Source Files\PBF</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\SPlisHSPlasH\PBF\TimeStepPBF.cpp">
+      <Filter>Source Files\PBF</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\SPlisHSPlasH\PBF\TimeIntegration.cpp">
+      <Filter>Source Files\PBF</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\SPlisHSPlasH\IISPH\SimulationDataIISPH.cpp">
+      <Filter>Source Files\IISPH</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\SPlisHSPlasH\IISPH\TimeStepIISPH.cpp">
+      <Filter>Source Files\IISPH</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\SPlisHSPlasH\DFSPH\SimulationDataDFSPH.cpp">
+      <Filter>Source Files\DFSPH</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\SPlisHSPlasH\DFSPH\TimeStepDFSPH.cpp">
+      <Filter>Source Files\DFSPH</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\SPlisHSPlasH\PF\SimulationDataPF.cpp">
+      <Filter>Source Files\PF</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\SPlisHSPlasH\PF\TimeStepPF.cpp">
+      <Filter>Source Files\PF</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\SPlisHSPlasH\Viscosity\ViscosityBase.cpp">
+      <Filter>Source Files\Viscosity</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\SPlisHSPlasH\Viscosity\Viscosity_XSPH.cpp">
+      <Filter>Source Files\Viscosity</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\SPlisHSPlasH\Viscosity\Viscosity_Standard.cpp">
+      <Filter>Source Files\Viscosity</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\SPlisHSPlasH\Viscosity\Viscosity_Bender2017.cpp">
+      <Filter>Source Files\Viscosity</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\SPlisHSPlasH\Viscosity\Viscosity_Peer2015.cpp">
+      <Filter>Source Files\Viscosity</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\SPlisHSPlasH\Viscosity\Viscosity_Peer2016.cpp">
+      <Filter>Source Files\Viscosity</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\SPlisHSPlasH\SurfaceTension\SurfaceTensionBase.cpp">
+      <Filter>Source Files\SurfaceTension</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\SPlisHSPlasH\SurfaceTension\SurfaceTension_Becker2007.cpp">
+      <Filter>Source Files\SurfaceTension</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\SPlisHSPlasH\SurfaceTension\SurfaceTension_Akinci2013.cpp">
+      <Filter>Source Files\SurfaceTension</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\SPlisHSPlasH\SurfaceTension\SurfaceTension_He2014.cpp">
+      <Filter>Source Files\SurfaceTension</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\SPlisHSPlasH\Vorticity\VorticityBase.cpp">
+      <Filter>Source Files\Vorticity</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\SPlisHSPlasH\Vorticity\MicropolarModel_Bender2017.cpp">
+      <Filter>Source Files\Vorticity</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\SPlisHSPlasH\Vorticity\VorticityConfinement.cpp">
+      <Filter>Source Files\Vorticity</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\SPlisHSPlasH\Drag\DragBase.cpp">
+      <Filter>Source Files\Drag</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\SPlisHSPlasH\Drag\DragForce_Gissler2017.cpp">
+      <Filter>Source Files\Drag</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\SPlisHSPlasH\Drag\DragForce_Macklin2014.cpp">
+      <Filter>Source Files\Drag</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\SPlisHSPlasH\Utilities\PoissonDiskSampling.cpp">
+      <Filter>Source Files\Utils</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\SPlisHSPlasH\Utilities\Timing.cpp">
+      <Filter>Source Files\Utils</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\SPlisHSPlasH\Common.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\SPlisHSPlasH\Emitter.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\SPlisHSPlasH\EmitterSystem.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\SPlisHSPlasH\FluidModel.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\SPlisHSPlasH\RigidBodyObject.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\SPlisHSPlasH\SPHKernels.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\SPlisHSPlasH\StaticRigidBody.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\SPlisHSPlasH\TimeManager.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\SPlisHSPlasH\TimeStep.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\SPlisHSPlasH\TriangleMesh.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\SPlisHSPlasH\NonPressureForceBase.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\SPlisHSPlasH\WCSPH\SimulationDataWCSPH.h">
+      <Filter>Header Files\WCSPH</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\SPlisHSPlasH\WCSPH\TimeStepWCSPH.h">
+      <Filter>Header Files\WCSPH</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\SPlisHSPlasH\PCISPH\SimulationDataPCISPH.h">
+      <Filter>Header Files\PCISPH</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\SPlisHSPlasH\PCISPH\TimeStepPCISPH.h">
+      <Filter>Header Files\PCISPH</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\SPlisHSPlasH\PBF\SimulationDataPBF.h">
+      <Filter>Header Files\PBF</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\SPlisHSPlasH\PBF\TimeStepPBF.h">
+      <Filter>Header Files\PBF</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\SPlisHSPlasH\PBF\TimeIntegration.h">
+      <Filter>Header Files\PBF</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\SPlisHSPlasH\IISPH\SimulationDataIISPH.h">
+      <Filter>Header Files\IISPH</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\SPlisHSPlasH\IISPH\TimeStepIISPH.h">
+      <Filter>Header Files\IISPH</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\SPlisHSPlasH\DFSPH\SimulationDataDFSPH.h">
+      <Filter>Header Files\DFSPH</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\SPlisHSPlasH\DFSPH\TimeStepDFSPH.h">
+      <Filter>Header Files\DFSPH</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\SPlisHSPlasH\PF\SimulationDataPF.h">
+      <Filter>Header Files\PF</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\SPlisHSPlasH\PF\TimeStepPF.h">
+      <Filter>Header Files\PF</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\SPlisHSPlasH\Viscosity\ViscosityBase.h">
+      <Filter>Header Files\Viscosity</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\SPlisHSPlasH\Viscosity\Viscosity_XSPH.h">
+      <Filter>Header Files\Viscosity</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\SPlisHSPlasH\Viscosity\Viscosity_Standard.h">
+      <Filter>Header Files\Viscosity</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\SPlisHSPlasH\Viscosity\Viscosity_Bender2017.h">
+      <Filter>Header Files\Viscosity</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\SPlisHSPlasH\Viscosity\Viscosity_Peer2015.h">
+      <Filter>Header Files\Viscosity</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\SPlisHSPlasH\Viscosity\Viscosity_Peer2016.h">
+      <Filter>Header Files\Viscosity</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\SPlisHSPlasH\SurfaceTension\SurfaceTensionBase.h">
+      <Filter>Header Files\SurfaceTension</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\SPlisHSPlasH\SurfaceTension\SurfaceTension_Becker2007.h">
+      <Filter>Header Files\SurfaceTension</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\SPlisHSPlasH\SurfaceTension\SurfaceTension_Akinci2013.h">
+      <Filter>Header Files\SurfaceTension</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\SPlisHSPlasH\SurfaceTension\SurfaceTension_He2014.h">
+      <Filter>Header Files\SurfaceTension</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\SPlisHSPlasH\Vorticity\VorticityBase.h">
+      <Filter>Header Files\Vorticity</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\SPlisHSPlasH\Vorticity\MicropolarModel_Bender2017.h">
+      <Filter>Header Files\Vorticity</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\SPlisHSPlasH\Vorticity\VorticityConfinement.h">
+      <Filter>Header Files\Vorticity</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\SPlisHSPlasH\Drag\DragBase.h">
+      <Filter>Header Files\Drag</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\SPlisHSPlasH\Drag\DragForce_Gissler2017.h">
+      <Filter>Header Files\Drag</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\SPlisHSPlasH\Drag\DragForce_Macklin2014.h">
+      <Filter>Header Files\Drag</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\SPlisHSPlasH\Utilities\PoissonDiskSampling.h">
+      <Filter>Header Files\Utils</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\SPlisHSPlasH\Utilities\Timing.h">
+      <Filter>Header Files\Utils</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\SPlisHSPlasH\Utilities\MatrixFreeSolver.h">
+      <Filter>Header Files\Utils</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <CustomBuild Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\SPlisHSPlasH\CMakeLists.txt" />
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="Header Files\WCSPH">
+      <UniqueIdentifier>{496A78FE-7A53-3768-B2C3-FD2BF0038634}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\PCISPH">
+      <UniqueIdentifier>{B401BEE7-2FA4-32AC-A6B6-AACD35AB8EEB}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\PBF">
+      <UniqueIdentifier>{2906B40F-E489-35FD-9512-600D8CC9E51F}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\IISPH">
+      <UniqueIdentifier>{39614DB4-B73A-34E5-BC1F-CA7423586AC7}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\DFSPH">
+      <UniqueIdentifier>{4F44802A-650D-36AC-9975-7A249FB335FE}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\PF">
+      <UniqueIdentifier>{8E4AB458-AF0E-30B2-96AF-A4C00D9E53AC}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\Viscosity">
+      <UniqueIdentifier>{5F085D3C-3313-356B-AF8A-128EBB1848CC}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\SurfaceTension">
+      <UniqueIdentifier>{56C84ECB-C9B6-3261-847E-E56953A1D698}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\Vorticity">
+      <UniqueIdentifier>{A92AD151-43CA-33A6-90C8-4ED8D1FC9D8A}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\Drag">
+      <UniqueIdentifier>{445CC82D-A78F-30C7-A878-182878972C11}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\Utils">
+      <UniqueIdentifier>{CE3694FE-644E-3C0E-839D-70E032BB2A96}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files">
+      <UniqueIdentifier>{856C601E-746E-3F9A-A835-24553F07107F}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files">
+      <UniqueIdentifier>{8A583372-D5DE-3B9B-8DF6-2DF0AD88272C}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\WCSPH">
+      <UniqueIdentifier>{09235564-D287-3BC1-B782-A6CAAA28B7F4}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\PCISPH">
+      <UniqueIdentifier>{2266DA0E-ED81-3CFE-9891-AC88D21BEDCB}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\PBF">
+      <UniqueIdentifier>{61A757FC-99F3-32C9-8435-236F9C03D86C}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\IISPH">
+      <UniqueIdentifier>{DF8F6957-7ABF-3C4F-82F4-6F62AEB8AB88}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\DFSPH">
+      <UniqueIdentifier>{82D55AB7-6481-30C8-9DA4-F394AF71A97D}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\PF">
+      <UniqueIdentifier>{1351B407-99F8-3852-9C73-ED4F78BFBC63}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Viscosity">
+      <UniqueIdentifier>{FECB188B-B28D-3016-8B52-898B35E951F3}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\SurfaceTension">
+      <UniqueIdentifier>{2049D26C-5B90-32A8-BA97-A2F8A4A4892E}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Vorticity">
+      <UniqueIdentifier>{DD016A27-353A-389D-945F-3F162D69DA3E}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Drag">
+      <UniqueIdentifier>{75D1A0C7-26EC-33B7-BD59-D33919D0B7CA}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Utils">
+      <UniqueIdentifier>{280F3B42-64FC-3B56-AB9D-6B512BA8D9ED}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+</Project>

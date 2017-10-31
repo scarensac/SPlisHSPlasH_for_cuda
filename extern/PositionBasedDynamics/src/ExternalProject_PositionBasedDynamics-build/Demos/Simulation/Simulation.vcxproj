@@ -1,0 +1,313 @@
+﻿<?xml version="1.0" encoding="UTF-8"?>
+<Project DefaultTargets="Build" ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Debug|x64">
+      <Configuration>Debug</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|x64">
+      <Configuration>Release</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="MinSizeRel|x64">
+      <Configuration>MinSizeRel</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="RelWithDebInfo|x64">
+      <Configuration>RelWithDebInfo</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+  </ItemGroup>
+  <PropertyGroup Label="Globals">
+    <ProjectGuid>{65BBDDC3-FD8C-38F6-B1E4-4D10973AEB4F}</ProjectGuid>
+    <WindowsTargetPlatformVersion>10.0.16299.0</WindowsTargetPlatformVersion>
+    <Keyword>Win32Proj</Keyword>
+    <Platform>x64</Platform>
+    <ProjectName>Simulation</ProjectName>
+    <VCProjectUpgraderObjectName>NoUpgrade</VCProjectUpgraderObjectName>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
+    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <CharacterSet>MultiByte</CharacterSet>
+    <PlatformToolset>v141</PlatformToolset>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
+    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <CharacterSet>MultiByte</CharacterSet>
+    <PlatformToolset>v141</PlatformToolset>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'" Label="Configuration">
+    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <CharacterSet>MultiByte</CharacterSet>
+    <PlatformToolset>v141</PlatformToolset>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'" Label="Configuration">
+    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <CharacterSet>MultiByte</CharacterSet>
+    <PlatformToolset>v141</PlatformToolset>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <ImportGroup Label="ExtensionSettings">
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <PropertyGroup Label="UserMacros" />
+  <PropertyGroup>
+    <_ProjectFileVersion>10.0.20506.1</_ProjectFileVersion>
+    <OutDir Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\PositionBasedDynamics\src\ExternalProject_PositionBasedDynamics\lib\Debug\</OutDir>
+    <IntDir Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Simulation.dir\Debug\</IntDir>
+    <TargetName Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Simulation_d</TargetName>
+    <TargetExt Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">.lib</TargetExt>
+    <OutDir Condition="'$(Configuration)|$(Platform)'=='Release|x64'">D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\PositionBasedDynamics\src\ExternalProject_PositionBasedDynamics\lib\Release\</OutDir>
+    <IntDir Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Simulation.dir\Release\</IntDir>
+    <TargetName Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Simulation</TargetName>
+    <TargetExt Condition="'$(Configuration)|$(Platform)'=='Release|x64'">.lib</TargetExt>
+    <OutDir Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\PositionBasedDynamics\src\ExternalProject_PositionBasedDynamics\lib\MinSizeRel\</OutDir>
+    <IntDir Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">Simulation.dir\MinSizeRel\</IntDir>
+    <TargetName Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">Simulation_ms</TargetName>
+    <TargetExt Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">.lib</TargetExt>
+    <OutDir Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\PositionBasedDynamics\src\ExternalProject_PositionBasedDynamics\lib\RelWithDebInfo\</OutDir>
+    <IntDir Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">Simulation.dir\RelWithDebInfo\</IntDir>
+    <TargetName Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">Simulation_rd</TargetName>
+    <TargetExt Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">.lib</TargetExt>
+  </PropertyGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <ClCompile>
+      <AdditionalIncludeDirectories>D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\PositionBasedDynamics\src\ExternalProject_PositionBasedDynamics;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\PositionBasedDynamics\src\ExternalProject_PositionBasedDynamics\extern\freeglut\include;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\PositionBasedDynamics\src\ExternalProject_PositionBasedDynamics\extern\eigen;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\PositionBasedDynamics\src\ExternalProject_PositionBasedDynamics\extern\Miniball;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AssemblerListingLocation>Debug/</AssemblerListingLocation>
+      <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
+      <CompileAs>CompileAsCpp</CompileAs>
+      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
+      <ExceptionHandling>Sync</ExceptionHandling>
+      <InlineFunctionExpansion>Disabled</InlineFunctionExpansion>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
+      <Optimization>Disabled</Optimization>
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
+      <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
+      <RuntimeTypeInfo>true</RuntimeTypeInfo>
+      <WarningLevel>Level3</WarningLevel>
+      <PreprocessorDefinitions>WIN32;_WINDOWS;_CRT_SECURE_NO_DEPRECATE;PBD_DATA_PATH="../data";CMAKE_INTDIR="Debug";%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <ObjectFileName>$(IntDir)</ObjectFileName>
+    </ClCompile>
+    <ResourceCompile>
+      <PreprocessorDefinitions>WIN32;_DEBUG;_WINDOWS;_CRT_SECURE_NO_DEPRECATE;PBD_DATA_PATH=\"../data\";CMAKE_INTDIR=\"Debug\";%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\PositionBasedDynamics\src\ExternalProject_PositionBasedDynamics;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\PositionBasedDynamics\src\ExternalProject_PositionBasedDynamics\extern\freeglut\include;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\PositionBasedDynamics\src\ExternalProject_PositionBasedDynamics\extern\eigen;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\PositionBasedDynamics\src\ExternalProject_PositionBasedDynamics\extern\Miniball;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+    </ResourceCompile>
+    <Midl>
+      <AdditionalIncludeDirectories>D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\PositionBasedDynamics\src\ExternalProject_PositionBasedDynamics;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\PositionBasedDynamics\src\ExternalProject_PositionBasedDynamics\extern\freeglut\include;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\PositionBasedDynamics\src\ExternalProject_PositionBasedDynamics\extern\eigen;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\PositionBasedDynamics\src\ExternalProject_PositionBasedDynamics\extern\Miniball;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <OutputDirectory>$(ProjectDir)/$(IntDir)</OutputDirectory>
+      <HeaderFileName>%(Filename).h</HeaderFileName>
+      <TypeLibraryName>%(Filename).tlb</TypeLibraryName>
+      <InterfaceIdentifierFileName>%(Filename)_i.c</InterfaceIdentifierFileName>
+      <ProxyFileName>%(Filename)_p.c</ProxyFileName>
+    </Midl>
+    <Lib>
+      <AdditionalOptions>%(AdditionalOptions) /machine:x64</AdditionalOptions>
+    </Lib>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <ClCompile>
+      <AdditionalIncludeDirectories>D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\PositionBasedDynamics\src\ExternalProject_PositionBasedDynamics;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\PositionBasedDynamics\src\ExternalProject_PositionBasedDynamics\extern\freeglut\include;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\PositionBasedDynamics\src\ExternalProject_PositionBasedDynamics\extern\eigen;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\PositionBasedDynamics\src\ExternalProject_PositionBasedDynamics\extern\Miniball;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AssemblerListingLocation>Release/</AssemblerListingLocation>
+      <CompileAs>CompileAsCpp</CompileAs>
+      <ExceptionHandling>Sync</ExceptionHandling>
+      <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
+      <InlineFunctionExpansion>AnySuitable</InlineFunctionExpansion>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
+      <OpenMPSupport>true</OpenMPSupport>
+      <Optimization>Full</Optimization>
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
+      <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
+      <RuntimeTypeInfo>true</RuntimeTypeInfo>
+      <WarningLevel>Level3</WarningLevel>
+      <PreprocessorDefinitions>WIN32;_WINDOWS;NDEBUG;_CRT_SECURE_NO_DEPRECATE;PBD_DATA_PATH="../data";CMAKE_INTDIR="Release";%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <ObjectFileName>$(IntDir)</ObjectFileName>
+      <DebugInformationFormat></DebugInformationFormat>
+    </ClCompile>
+    <ResourceCompile>
+      <PreprocessorDefinitions>WIN32;_WINDOWS;NDEBUG;_CRT_SECURE_NO_DEPRECATE;PBD_DATA_PATH=\"../data\";CMAKE_INTDIR=\"Release\";%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\PositionBasedDynamics\src\ExternalProject_PositionBasedDynamics;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\PositionBasedDynamics\src\ExternalProject_PositionBasedDynamics\extern\freeglut\include;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\PositionBasedDynamics\src\ExternalProject_PositionBasedDynamics\extern\eigen;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\PositionBasedDynamics\src\ExternalProject_PositionBasedDynamics\extern\Miniball;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+    </ResourceCompile>
+    <Midl>
+      <AdditionalIncludeDirectories>D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\PositionBasedDynamics\src\ExternalProject_PositionBasedDynamics;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\PositionBasedDynamics\src\ExternalProject_PositionBasedDynamics\extern\freeglut\include;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\PositionBasedDynamics\src\ExternalProject_PositionBasedDynamics\extern\eigen;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\PositionBasedDynamics\src\ExternalProject_PositionBasedDynamics\extern\Miniball;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <OutputDirectory>$(ProjectDir)/$(IntDir)</OutputDirectory>
+      <HeaderFileName>%(Filename).h</HeaderFileName>
+      <TypeLibraryName>%(Filename).tlb</TypeLibraryName>
+      <InterfaceIdentifierFileName>%(Filename)_i.c</InterfaceIdentifierFileName>
+      <ProxyFileName>%(Filename)_p.c</ProxyFileName>
+    </Midl>
+    <Lib>
+      <AdditionalOptions>%(AdditionalOptions) /machine:x64 /INCREMENTAL:NO</AdditionalOptions>
+    </Lib>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">
+    <ClCompile>
+      <AdditionalIncludeDirectories>D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\PositionBasedDynamics\src\ExternalProject_PositionBasedDynamics;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\PositionBasedDynamics\src\ExternalProject_PositionBasedDynamics\extern\freeglut\include;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\PositionBasedDynamics\src\ExternalProject_PositionBasedDynamics\extern\eigen;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\PositionBasedDynamics\src\ExternalProject_PositionBasedDynamics\extern\Miniball;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AssemblerListingLocation>MinSizeRel/</AssemblerListingLocation>
+      <CompileAs>CompileAsCpp</CompileAs>
+      <ExceptionHandling>Sync</ExceptionHandling>
+      <InlineFunctionExpansion>OnlyExplicitInline</InlineFunctionExpansion>
+      <Optimization>MinSpace</Optimization>
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
+      <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
+      <RuntimeTypeInfo>true</RuntimeTypeInfo>
+      <WarningLevel>Level3</WarningLevel>
+      <PreprocessorDefinitions>WIN32;_WINDOWS;NDEBUG;_CRT_SECURE_NO_DEPRECATE;PBD_DATA_PATH="../data";CMAKE_INTDIR="MinSizeRel";%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <ObjectFileName>$(IntDir)</ObjectFileName>
+      <DebugInformationFormat></DebugInformationFormat>
+    </ClCompile>
+    <ResourceCompile>
+      <PreprocessorDefinitions>WIN32;_WINDOWS;NDEBUG;_CRT_SECURE_NO_DEPRECATE;PBD_DATA_PATH=\"../data\";CMAKE_INTDIR=\"MinSizeRel\";%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\PositionBasedDynamics\src\ExternalProject_PositionBasedDynamics;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\PositionBasedDynamics\src\ExternalProject_PositionBasedDynamics\extern\freeglut\include;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\PositionBasedDynamics\src\ExternalProject_PositionBasedDynamics\extern\eigen;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\PositionBasedDynamics\src\ExternalProject_PositionBasedDynamics\extern\Miniball;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+    </ResourceCompile>
+    <Midl>
+      <AdditionalIncludeDirectories>D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\PositionBasedDynamics\src\ExternalProject_PositionBasedDynamics;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\PositionBasedDynamics\src\ExternalProject_PositionBasedDynamics\extern\freeglut\include;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\PositionBasedDynamics\src\ExternalProject_PositionBasedDynamics\extern\eigen;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\PositionBasedDynamics\src\ExternalProject_PositionBasedDynamics\extern\Miniball;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <OutputDirectory>$(ProjectDir)/$(IntDir)</OutputDirectory>
+      <HeaderFileName>%(Filename).h</HeaderFileName>
+      <TypeLibraryName>%(Filename).tlb</TypeLibraryName>
+      <InterfaceIdentifierFileName>%(Filename)_i.c</InterfaceIdentifierFileName>
+      <ProxyFileName>%(Filename)_p.c</ProxyFileName>
+    </Midl>
+    <Lib>
+      <AdditionalOptions>%(AdditionalOptions) /machine:x64</AdditionalOptions>
+    </Lib>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">
+    <ClCompile>
+      <AdditionalIncludeDirectories>D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\PositionBasedDynamics\src\ExternalProject_PositionBasedDynamics;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\PositionBasedDynamics\src\ExternalProject_PositionBasedDynamics\extern\freeglut\include;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\PositionBasedDynamics\src\ExternalProject_PositionBasedDynamics\extern\eigen;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\PositionBasedDynamics\src\ExternalProject_PositionBasedDynamics\extern\Miniball;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AssemblerListingLocation>RelWithDebInfo/</AssemblerListingLocation>
+      <CompileAs>CompileAsCpp</CompileAs>
+      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
+      <ExceptionHandling>Sync</ExceptionHandling>
+      <InlineFunctionExpansion>OnlyExplicitInline</InlineFunctionExpansion>
+      <Optimization>MaxSpeed</Optimization>
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
+      <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
+      <RuntimeTypeInfo>true</RuntimeTypeInfo>
+      <WarningLevel>Level3</WarningLevel>
+      <PreprocessorDefinitions>WIN32;_WINDOWS;NDEBUG;_CRT_SECURE_NO_DEPRECATE;PBD_DATA_PATH="../data";CMAKE_INTDIR="RelWithDebInfo";%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <ObjectFileName>$(IntDir)</ObjectFileName>
+    </ClCompile>
+    <ResourceCompile>
+      <PreprocessorDefinitions>WIN32;_WINDOWS;NDEBUG;_CRT_SECURE_NO_DEPRECATE;PBD_DATA_PATH=\"../data\";CMAKE_INTDIR=\"RelWithDebInfo\";%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\PositionBasedDynamics\src\ExternalProject_PositionBasedDynamics;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\PositionBasedDynamics\src\ExternalProject_PositionBasedDynamics\extern\freeglut\include;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\PositionBasedDynamics\src\ExternalProject_PositionBasedDynamics\extern\eigen;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\PositionBasedDynamics\src\ExternalProject_PositionBasedDynamics\extern\Miniball;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+    </ResourceCompile>
+    <Midl>
+      <AdditionalIncludeDirectories>D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\PositionBasedDynamics\src\ExternalProject_PositionBasedDynamics;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\PositionBasedDynamics\src\ExternalProject_PositionBasedDynamics\extern\freeglut\include;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\PositionBasedDynamics\src\ExternalProject_PositionBasedDynamics\extern\eigen;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\PositionBasedDynamics\src\ExternalProject_PositionBasedDynamics\extern\Miniball;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <OutputDirectory>$(ProjectDir)/$(IntDir)</OutputDirectory>
+      <HeaderFileName>%(Filename).h</HeaderFileName>
+      <TypeLibraryName>%(Filename).tlb</TypeLibraryName>
+      <InterfaceIdentifierFileName>%(Filename)_i.c</InterfaceIdentifierFileName>
+      <ProxyFileName>%(Filename)_p.c</ProxyFileName>
+    </Midl>
+    <Lib>
+      <AdditionalOptions>%(AdditionalOptions) /machine:x64</AdditionalOptions>
+    </Lib>
+  </ItemDefinitionGroup>
+  <ItemGroup>
+    <CustomBuild Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\PositionBasedDynamics\src\ExternalProject_PositionBasedDynamics\Demos\Simulation\CMakeLists.txt">
+      <Message Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Building Custom Rule D:/Users/scarensac/Documents/GitHub/SPlisHSPlasH/extern/PositionBasedDynamics/src/ExternalProject_PositionBasedDynamics/Demos/Simulation/CMakeLists.txt</Message>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">setlocal
+"C:\Program Files\CMake\bin\cmake.exe" -HD:/Users/scarensac/Documents/GitHub/SPlisHSPlasH/extern/PositionBasedDynamics/src/ExternalProject_PositionBasedDynamics -BD:/Users/scarensac/Documents/GitHub/SPlisHSPlasH/extern/PositionBasedDynamics/src/ExternalProject_PositionBasedDynamics-build --check-stamp-file D:/Users/scarensac/Documents/GitHub/SPlisHSPlasH/extern/PositionBasedDynamics/src/ExternalProject_PositionBasedDynamics-build/Demos/Simulation/CMakeFiles/generate.stamp
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal &amp; call :cmErrorLevel %errorlevel% &amp; goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd</Command>
+      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">D:/Users/scarensac/Documents/GitHub/SPlisHSPlasH/extern/PositionBasedDynamics/src/ExternalProject_PositionBasedDynamics/Demos/Simulation/CMakeLists.txt;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\PositionBasedDynamics\src\ExternalProject_PositionBasedDynamics\Demos\Simulation\CMakeLists.txt;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\PositionBasedDynamics\src\ExternalProject_PositionBasedDynamics\CMake\FindEigen3.cmake;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\PositionBasedDynamics\src\ExternalProject_PositionBasedDynamics\Demos\Simulation\CMakeLists.txt;%(AdditionalInputs)</AdditionalInputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\PositionBasedDynamics\src\ExternalProject_PositionBasedDynamics-build\Demos\Simulation\CMakeFiles\generate.stamp</Outputs>
+      <LinkObjects Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</LinkObjects>
+      <Message Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Building Custom Rule D:/Users/scarensac/Documents/GitHub/SPlisHSPlasH/extern/PositionBasedDynamics/src/ExternalProject_PositionBasedDynamics/Demos/Simulation/CMakeLists.txt</Message>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release|x64'">setlocal
+"C:\Program Files\CMake\bin\cmake.exe" -HD:/Users/scarensac/Documents/GitHub/SPlisHSPlasH/extern/PositionBasedDynamics/src/ExternalProject_PositionBasedDynamics -BD:/Users/scarensac/Documents/GitHub/SPlisHSPlasH/extern/PositionBasedDynamics/src/ExternalProject_PositionBasedDynamics-build --check-stamp-file D:/Users/scarensac/Documents/GitHub/SPlisHSPlasH/extern/PositionBasedDynamics/src/ExternalProject_PositionBasedDynamics-build/Demos/Simulation/CMakeFiles/generate.stamp
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal &amp; call :cmErrorLevel %errorlevel% &amp; goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd</Command>
+      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">D:/Users/scarensac/Documents/GitHub/SPlisHSPlasH/extern/PositionBasedDynamics/src/ExternalProject_PositionBasedDynamics/Demos/Simulation/CMakeLists.txt;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\PositionBasedDynamics\src\ExternalProject_PositionBasedDynamics\Demos\Simulation\CMakeLists.txt;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\PositionBasedDynamics\src\ExternalProject_PositionBasedDynamics\CMake\FindEigen3.cmake;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\PositionBasedDynamics\src\ExternalProject_PositionBasedDynamics\Demos\Simulation\CMakeLists.txt;%(AdditionalInputs)</AdditionalInputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\PositionBasedDynamics\src\ExternalProject_PositionBasedDynamics-build\Demos\Simulation\CMakeFiles\generate.stamp</Outputs>
+      <LinkObjects Condition="'$(Configuration)|$(Platform)'=='Release|x64'">false</LinkObjects>
+      <Message Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">Building Custom Rule D:/Users/scarensac/Documents/GitHub/SPlisHSPlasH/extern/PositionBasedDynamics/src/ExternalProject_PositionBasedDynamics/Demos/Simulation/CMakeLists.txt</Message>
+      <Command Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">setlocal
+"C:\Program Files\CMake\bin\cmake.exe" -HD:/Users/scarensac/Documents/GitHub/SPlisHSPlasH/extern/PositionBasedDynamics/src/ExternalProject_PositionBasedDynamics -BD:/Users/scarensac/Documents/GitHub/SPlisHSPlasH/extern/PositionBasedDynamics/src/ExternalProject_PositionBasedDynamics-build --check-stamp-file D:/Users/scarensac/Documents/GitHub/SPlisHSPlasH/extern/PositionBasedDynamics/src/ExternalProject_PositionBasedDynamics-build/Demos/Simulation/CMakeFiles/generate.stamp
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal &amp; call :cmErrorLevel %errorlevel% &amp; goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd</Command>
+      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">D:/Users/scarensac/Documents/GitHub/SPlisHSPlasH/extern/PositionBasedDynamics/src/ExternalProject_PositionBasedDynamics/Demos/Simulation/CMakeLists.txt;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\PositionBasedDynamics\src\ExternalProject_PositionBasedDynamics\Demos\Simulation\CMakeLists.txt;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\PositionBasedDynamics\src\ExternalProject_PositionBasedDynamics\CMake\FindEigen3.cmake;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\PositionBasedDynamics\src\ExternalProject_PositionBasedDynamics\Demos\Simulation\CMakeLists.txt;%(AdditionalInputs)</AdditionalInputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\PositionBasedDynamics\src\ExternalProject_PositionBasedDynamics-build\Demos\Simulation\CMakeFiles\generate.stamp</Outputs>
+      <LinkObjects Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">false</LinkObjects>
+      <Message Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">Building Custom Rule D:/Users/scarensac/Documents/GitHub/SPlisHSPlasH/extern/PositionBasedDynamics/src/ExternalProject_PositionBasedDynamics/Demos/Simulation/CMakeLists.txt</Message>
+      <Command Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">setlocal
+"C:\Program Files\CMake\bin\cmake.exe" -HD:/Users/scarensac/Documents/GitHub/SPlisHSPlasH/extern/PositionBasedDynamics/src/ExternalProject_PositionBasedDynamics -BD:/Users/scarensac/Documents/GitHub/SPlisHSPlasH/extern/PositionBasedDynamics/src/ExternalProject_PositionBasedDynamics-build --check-stamp-file D:/Users/scarensac/Documents/GitHub/SPlisHSPlasH/extern/PositionBasedDynamics/src/ExternalProject_PositionBasedDynamics-build/Demos/Simulation/CMakeFiles/generate.stamp
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal &amp; call :cmErrorLevel %errorlevel% &amp; goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd</Command>
+      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">D:/Users/scarensac/Documents/GitHub/SPlisHSPlasH/extern/PositionBasedDynamics/src/ExternalProject_PositionBasedDynamics/Demos/Simulation/CMakeLists.txt;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\PositionBasedDynamics\src\ExternalProject_PositionBasedDynamics\Demos\Simulation\CMakeLists.txt;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\PositionBasedDynamics\src\ExternalProject_PositionBasedDynamics\CMake\FindEigen3.cmake;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\PositionBasedDynamics\src\ExternalProject_PositionBasedDynamics\Demos\Simulation\CMakeLists.txt;%(AdditionalInputs)</AdditionalInputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\PositionBasedDynamics\src\ExternalProject_PositionBasedDynamics-build\Demos\Simulation\CMakeFiles\generate.stamp</Outputs>
+      <LinkObjects Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">false</LinkObjects>
+    </CustomBuild>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\PositionBasedDynamics\src\ExternalProject_PositionBasedDynamics\Demos\Simulation\AABB.h" />
+    <ClCompile Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\PositionBasedDynamics\src\ExternalProject_PositionBasedDynamics\Demos\Simulation\CollisionDetection.cpp"  />
+    <ClInclude Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\PositionBasedDynamics\src\ExternalProject_PositionBasedDynamics\Demos\Simulation\CollisionDetection.h" />
+    <ClCompile Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\PositionBasedDynamics\src\ExternalProject_PositionBasedDynamics\Demos\Simulation\Constraints.cpp"  />
+    <ClInclude Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\PositionBasedDynamics\src\ExternalProject_PositionBasedDynamics\Demos\Simulation\Constraints.h" />
+    <ClCompile Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\PositionBasedDynamics\src\ExternalProject_PositionBasedDynamics\Demos\Simulation\DistanceFieldCollisionDetection.cpp"  />
+    <ClInclude Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\PositionBasedDynamics\src\ExternalProject_PositionBasedDynamics\Demos\Simulation\DistanceFieldCollisionDetection.h" />
+    <ClCompile Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\PositionBasedDynamics\src\ExternalProject_PositionBasedDynamics\Demos\Simulation\IDFactory.cpp"  />
+    <ClInclude Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\PositionBasedDynamics\src\ExternalProject_PositionBasedDynamics\Demos\Simulation\IDFactory.h" />
+    <ClCompile Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\PositionBasedDynamics\src\ExternalProject_PositionBasedDynamics\Demos\Simulation\LineModel.cpp"  />
+    <ClInclude Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\PositionBasedDynamics\src\ExternalProject_PositionBasedDynamics\Demos\Simulation\LineModel.h" />
+    <ClCompile Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\PositionBasedDynamics\src\ExternalProject_PositionBasedDynamics\Demos\Simulation\NeighborhoodSearchSpatialHashing.cpp"  />
+    <ClInclude Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\PositionBasedDynamics\src\ExternalProject_PositionBasedDynamics\Demos\Simulation\NeighborhoodSearchSpatialHashing.h" />
+    <ClInclude Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\PositionBasedDynamics\src\ExternalProject_PositionBasedDynamics\Demos\Simulation\ParticleData.h" />
+    <ClInclude Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\PositionBasedDynamics\src\ExternalProject_PositionBasedDynamics\Demos\Simulation\RigidBody.h" />
+    <ClCompile Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\PositionBasedDynamics\src\ExternalProject_PositionBasedDynamics\Demos\Simulation\RigidBodyGeometry.cpp"  />
+    <ClInclude Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\PositionBasedDynamics\src\ExternalProject_PositionBasedDynamics\Demos\Simulation\RigidBodyGeometry.h" />
+    <ClCompile Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\PositionBasedDynamics\src\ExternalProject_PositionBasedDynamics\Demos\Simulation\SimulationModel.cpp"  />
+    <ClInclude Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\PositionBasedDynamics\src\ExternalProject_PositionBasedDynamics\Demos\Simulation\SimulationModel.h" />
+    <ClCompile Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\PositionBasedDynamics\src\ExternalProject_PositionBasedDynamics\Demos\Simulation\TetModel.cpp"  />
+    <ClInclude Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\PositionBasedDynamics\src\ExternalProject_PositionBasedDynamics\Demos\Simulation\TetModel.h" />
+    <ClCompile Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\PositionBasedDynamics\src\ExternalProject_PositionBasedDynamics\Demos\Simulation\TimeManager.cpp"  />
+    <ClInclude Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\PositionBasedDynamics\src\ExternalProject_PositionBasedDynamics\Demos\Simulation\TimeManager.h" />
+    <ClCompile Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\PositionBasedDynamics\src\ExternalProject_PositionBasedDynamics\Demos\Simulation\TimeStepController.cpp"  />
+    <ClInclude Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\PositionBasedDynamics\src\ExternalProject_PositionBasedDynamics\Demos\Simulation\TimeStepController.h" />
+    <ClCompile Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\PositionBasedDynamics\src\ExternalProject_PositionBasedDynamics\Demos\Simulation\TriangleModel.cpp"  />
+    <ClInclude Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\PositionBasedDynamics\src\ExternalProject_PositionBasedDynamics\Demos\Simulation\TriangleModel.h" />
+    <ClInclude Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\PositionBasedDynamics\src\ExternalProject_PositionBasedDynamics\Demos\Simulation\BoundingSphere.h" />
+    <ClCompile Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\PositionBasedDynamics\src\ExternalProject_PositionBasedDynamics\Demos\Simulation\BoundingSphereHierarchy.cpp"  />
+    <ClInclude Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\PositionBasedDynamics\src\ExternalProject_PositionBasedDynamics\Demos\Simulation\BoundingSphereHierarchy.h" />
+    <ClInclude Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\PositionBasedDynamics\src\ExternalProject_PositionBasedDynamics\Demos\Simulation\kdTree.h" />
+    <ClInclude Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\PositionBasedDynamics\src\ExternalProject_PositionBasedDynamics\Demos\Simulation\kdTree.inl" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\PositionBasedDynamics\src\ExternalProject_PositionBasedDynamics-build\ZERO_CHECK.vcxproj">
+      <Project>{5BA473BD-71A3-3836-A2F4-298D9BA21D45}</Project>
+      <Name>ZERO_CHECK</Name>
+    </ProjectReference>
+    <ProjectReference Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\PositionBasedDynamics\src\ExternalProject_PositionBasedDynamics-build\PositionBasedDynamics\PositionBasedDynamics.vcxproj">
+      <Project>{CB3EB81A-9F75-3D1A-B0D1-B658DC025013}</Project>
+      <Name>PositionBasedDynamics</Name>
+    </ProjectReference>
+  </ItemGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+  <ImportGroup Label="ExtensionTargets">
+  </ImportGroup>
+</Project>

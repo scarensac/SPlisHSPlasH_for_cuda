@@ -1,0 +1,852 @@
+﻿<?xml version="1.0" encoding="UTF-8"?>
+<Project DefaultTargets="Build" ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Debug|x64">
+      <Configuration>Debug</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|x64">
+      <Configuration>Release</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="MinSizeRel|x64">
+      <Configuration>MinSizeRel</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="RelWithDebInfo|x64">
+      <Configuration>RelWithDebInfo</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+  </ItemGroup>
+  <PropertyGroup Label="Globals">
+    <ProjectGuid>{1AEC2FFE-493F-3C59-92A7-EF46EE0A70FB}</ProjectGuid>
+    <WindowsTargetPlatformVersion>10.0.16299.0</WindowsTargetPlatformVersion>
+    <Keyword>Win32Proj</Keyword>
+    <Platform>x64</Platform>
+    <ProjectName>ExternalProject_CompactNSearch</ProjectName>
+    <VCProjectUpgraderObjectName>NoUpgrade</VCProjectUpgraderObjectName>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
+    <ConfigurationType>Utility</ConfigurationType>
+    <CharacterSet>MultiByte</CharacterSet>
+    <PlatformToolset>v141</PlatformToolset>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
+    <ConfigurationType>Utility</ConfigurationType>
+    <CharacterSet>MultiByte</CharacterSet>
+    <PlatformToolset>v141</PlatformToolset>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'" Label="Configuration">
+    <ConfigurationType>Utility</ConfigurationType>
+    <CharacterSet>MultiByte</CharacterSet>
+    <PlatformToolset>v141</PlatformToolset>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'" Label="Configuration">
+    <ConfigurationType>Utility</ConfigurationType>
+    <CharacterSet>MultiByte</CharacterSet>
+    <PlatformToolset>v141</PlatformToolset>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <ImportGroup Label="ExtensionSettings">
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <PropertyGroup Label="UserMacros" />
+  <PropertyGroup>
+    <_ProjectFileVersion>10.0.20506.1</_ProjectFileVersion>
+    <IntDir Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(Platform)\$(Configuration)\$(ProjectName)\</IntDir>
+    <IntDir Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(Platform)\$(Configuration)\$(ProjectName)\</IntDir>
+    <IntDir Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">$(Platform)\$(Configuration)\$(ProjectName)\</IntDir>
+    <IntDir Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">$(Platform)\$(Configuration)\$(ProjectName)\</IntDir>
+  </PropertyGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <Midl>
+      <AdditionalIncludeDirectories>D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <OutputDirectory>$(ProjectDir)/$(IntDir)</OutputDirectory>
+      <HeaderFileName>%(Filename).h</HeaderFileName>
+      <TypeLibraryName>%(Filename).tlb</TypeLibraryName>
+      <InterfaceIdentifierFileName>%(Filename)_i.c</InterfaceIdentifierFileName>
+      <ProxyFileName>%(Filename)_p.c</ProxyFileName>
+    </Midl>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <Midl>
+      <AdditionalIncludeDirectories>D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <OutputDirectory>$(ProjectDir)/$(IntDir)</OutputDirectory>
+      <HeaderFileName>%(Filename).h</HeaderFileName>
+      <TypeLibraryName>%(Filename).tlb</TypeLibraryName>
+      <InterfaceIdentifierFileName>%(Filename)_i.c</InterfaceIdentifierFileName>
+      <ProxyFileName>%(Filename)_p.c</ProxyFileName>
+    </Midl>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">
+    <Midl>
+      <AdditionalIncludeDirectories>D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <OutputDirectory>$(ProjectDir)/$(IntDir)</OutputDirectory>
+      <HeaderFileName>%(Filename).h</HeaderFileName>
+      <TypeLibraryName>%(Filename).tlb</TypeLibraryName>
+      <InterfaceIdentifierFileName>%(Filename)_i.c</InterfaceIdentifierFileName>
+      <ProxyFileName>%(Filename)_p.c</ProxyFileName>
+    </Midl>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">
+    <Midl>
+      <AdditionalIncludeDirectories>D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <OutputDirectory>$(ProjectDir)/$(IntDir)</OutputDirectory>
+      <HeaderFileName>%(Filename).h</HeaderFileName>
+      <TypeLibraryName>%(Filename).tlb</TypeLibraryName>
+      <InterfaceIdentifierFileName>%(Filename)_i.c</InterfaceIdentifierFileName>
+      <ProxyFileName>%(Filename)_p.c</ProxyFileName>
+    </Midl>
+  </ItemDefinitionGroup>
+  <ItemGroup>
+    <CustomBuild Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\CMakeLists.txt">
+      <Message Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Building Custom Rule D:/Users/scarensac/Documents/GitHub/SPlisHSPlasH/CMakeLists.txt</Message>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">setlocal
+"C:\Program Files\CMake\bin\cmake.exe" -HD:/Users/scarensac/Documents/GitHub/SPlisHSPlasH -BD:/Users/scarensac/Documents/GitHub/SPlisHSPlasH/build --check-stamp-file D:/Users/scarensac/Documents/GitHub/SPlisHSPlasH/build/CMakeFiles/generate.stamp
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal &amp; call :cmErrorLevel %errorlevel% &amp; goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd</Command>
+      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">D:/Users/scarensac/Documents/GitHub/SPlisHSPlasH/CMakeLists.txt;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\CMakeLists.txt;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\build\CMakeFiles\3.9.4\CMakeSystem.cmake;C:\Program Files\CMake\share\cmake-3.9\Modules\CMakeSystemSpecificInitialize.cmake;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\build\CMakeFiles\3.9.4\CMakeCCompiler.cmake;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\build\CMakeFiles\3.9.4\CMakeCXXCompiler.cmake;C:\Program Files\CMake\share\cmake-3.9\Modules\CMakeSystemSpecificInformation.cmake;C:\Program Files\CMake\share\cmake-3.9\Modules\CMakeGenericSystem.cmake;C:\Program Files\CMake\share\cmake-3.9\Modules\Platform\Windows.cmake;C:\Program Files\CMake\share\cmake-3.9\Modules\Platform\WindowsPaths.cmake;C:\Program Files\CMake\share\cmake-3.9\Modules\CMakeCInformation.cmake;C:\Program Files\CMake\share\cmake-3.9\Modules\CMakeLanguageInformation.cmake;C:\Program Files\CMake\share\cmake-3.9\Modules\Platform\Windows-MSVC-C.cmake;C:\Program Files\CMake\share\cmake-3.9\Modules\Platform\Windows-MSVC.cmake;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\build\CMakeFiles\3.9.4\CMakeRCCompiler.cmake;C:\Program Files\CMake\share\cmake-3.9\Modules\CMakeRCInformation.cmake;C:\Program Files\CMake\share\cmake-3.9\Modules\CMakeCommonLanguageInclude.cmake;C:\Program Files\CMake\share\cmake-3.9\Modules\CMakeCXXInformation.cmake;C:\Program Files\CMake\share\cmake-3.9\Modules\CMakeLanguageInformation.cmake;C:\Program Files\CMake\share\cmake-3.9\Modules\Compiler\MSVC-CXX.cmake;C:\Program Files\CMake\share\cmake-3.9\Modules\Compiler\CMakeCommonCompilerMacros.cmake;C:\Program Files\CMake\share\cmake-3.9\Modules\Platform\Windows-MSVC-CXX.cmake;C:\Program Files\CMake\share\cmake-3.9\Modules\Platform\Windows-MSVC.cmake;C:\Program Files\CMake\share\cmake-3.9\Modules\CMakeCommonLanguageInclude.cmake;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\CMake\Common.cmake;C:\Program Files\CMake\share\cmake-3.9\Modules\ExternalProject.cmake;C:\Program Files\CMake\share\cmake-3.9\Modules\FindGit.cmake;C:\Program Files\CMake\share\cmake-3.9\Modules\FindPackageHandleStandardArgs.cmake;C:\Program Files\CMake\share\cmake-3.9\Modules\FindPackageMessage.cmake;C:\Program Files\CMake\share\cmake-3.9\Modules\RepositoryInfo.txt.in;C:\Program Files\CMake\share\cmake-3.9\Modules\FindGit.cmake;C:\Program Files\CMake\share\cmake-3.9\Modules\FindPackageHandleStandardArgs.cmake;C:\Program Files\CMake\share\cmake-3.9\Modules\FindPackageMessage.cmake;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\PositionBasedDynamics\tmp\ExternalProject_PositionBasedDynamics-cfgcmd.txt.in;C:\Program Files\CMake\share\cmake-3.9\Modules\FindGit.cmake;C:\Program Files\CMake\share\cmake-3.9\Modules\FindPackageHandleStandardArgs.cmake;C:\Program Files\CMake\share\cmake-3.9\Modules\FindPackageMessage.cmake;C:\Program Files\CMake\share\cmake-3.9\Modules\RepositoryInfo.txt.in;C:\Program Files\CMake\share\cmake-3.9\Modules\FindGit.cmake;C:\Program Files\CMake\share\cmake-3.9\Modules\FindPackageHandleStandardArgs.cmake;C:\Program Files\CMake\share\cmake-3.9\Modules\FindPackageMessage.cmake;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\CompactNSearch\tmp\ExternalProject_CompactNSearch-cfgcmd.txt.in;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\CMakeLists.txt;%(AdditionalInputs)</AdditionalInputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\build\CMakeFiles\generate.stamp</Outputs>
+      <LinkObjects Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</LinkObjects>
+      <Message Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Building Custom Rule D:/Users/scarensac/Documents/GitHub/SPlisHSPlasH/CMakeLists.txt</Message>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release|x64'">setlocal
+"C:\Program Files\CMake\bin\cmake.exe" -HD:/Users/scarensac/Documents/GitHub/SPlisHSPlasH -BD:/Users/scarensac/Documents/GitHub/SPlisHSPlasH/build --check-stamp-file D:/Users/scarensac/Documents/GitHub/SPlisHSPlasH/build/CMakeFiles/generate.stamp
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal &amp; call :cmErrorLevel %errorlevel% &amp; goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd</Command>
+      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">D:/Users/scarensac/Documents/GitHub/SPlisHSPlasH/CMakeLists.txt;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\CMakeLists.txt;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\build\CMakeFiles\3.9.4\CMakeSystem.cmake;C:\Program Files\CMake\share\cmake-3.9\Modules\CMakeSystemSpecificInitialize.cmake;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\build\CMakeFiles\3.9.4\CMakeCCompiler.cmake;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\build\CMakeFiles\3.9.4\CMakeCXXCompiler.cmake;C:\Program Files\CMake\share\cmake-3.9\Modules\CMakeSystemSpecificInformation.cmake;C:\Program Files\CMake\share\cmake-3.9\Modules\CMakeGenericSystem.cmake;C:\Program Files\CMake\share\cmake-3.9\Modules\Platform\Windows.cmake;C:\Program Files\CMake\share\cmake-3.9\Modules\Platform\WindowsPaths.cmake;C:\Program Files\CMake\share\cmake-3.9\Modules\CMakeCInformation.cmake;C:\Program Files\CMake\share\cmake-3.9\Modules\CMakeLanguageInformation.cmake;C:\Program Files\CMake\share\cmake-3.9\Modules\Platform\Windows-MSVC-C.cmake;C:\Program Files\CMake\share\cmake-3.9\Modules\Platform\Windows-MSVC.cmake;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\build\CMakeFiles\3.9.4\CMakeRCCompiler.cmake;C:\Program Files\CMake\share\cmake-3.9\Modules\CMakeRCInformation.cmake;C:\Program Files\CMake\share\cmake-3.9\Modules\CMakeCommonLanguageInclude.cmake;C:\Program Files\CMake\share\cmake-3.9\Modules\CMakeCXXInformation.cmake;C:\Program Files\CMake\share\cmake-3.9\Modules\CMakeLanguageInformation.cmake;C:\Program Files\CMake\share\cmake-3.9\Modules\Compiler\MSVC-CXX.cmake;C:\Program Files\CMake\share\cmake-3.9\Modules\Compiler\CMakeCommonCompilerMacros.cmake;C:\Program Files\CMake\share\cmake-3.9\Modules\Platform\Windows-MSVC-CXX.cmake;C:\Program Files\CMake\share\cmake-3.9\Modules\Platform\Windows-MSVC.cmake;C:\Program Files\CMake\share\cmake-3.9\Modules\CMakeCommonLanguageInclude.cmake;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\CMake\Common.cmake;C:\Program Files\CMake\share\cmake-3.9\Modules\ExternalProject.cmake;C:\Program Files\CMake\share\cmake-3.9\Modules\FindGit.cmake;C:\Program Files\CMake\share\cmake-3.9\Modules\FindPackageHandleStandardArgs.cmake;C:\Program Files\CMake\share\cmake-3.9\Modules\FindPackageMessage.cmake;C:\Program Files\CMake\share\cmake-3.9\Modules\RepositoryInfo.txt.in;C:\Program Files\CMake\share\cmake-3.9\Modules\FindGit.cmake;C:\Program Files\CMake\share\cmake-3.9\Modules\FindPackageHandleStandardArgs.cmake;C:\Program Files\CMake\share\cmake-3.9\Modules\FindPackageMessage.cmake;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\PositionBasedDynamics\tmp\ExternalProject_PositionBasedDynamics-cfgcmd.txt.in;C:\Program Files\CMake\share\cmake-3.9\Modules\FindGit.cmake;C:\Program Files\CMake\share\cmake-3.9\Modules\FindPackageHandleStandardArgs.cmake;C:\Program Files\CMake\share\cmake-3.9\Modules\FindPackageMessage.cmake;C:\Program Files\CMake\share\cmake-3.9\Modules\RepositoryInfo.txt.in;C:\Program Files\CMake\share\cmake-3.9\Modules\FindGit.cmake;C:\Program Files\CMake\share\cmake-3.9\Modules\FindPackageHandleStandardArgs.cmake;C:\Program Files\CMake\share\cmake-3.9\Modules\FindPackageMessage.cmake;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\CompactNSearch\tmp\ExternalProject_CompactNSearch-cfgcmd.txt.in;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\CMakeLists.txt;%(AdditionalInputs)</AdditionalInputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\build\CMakeFiles\generate.stamp</Outputs>
+      <LinkObjects Condition="'$(Configuration)|$(Platform)'=='Release|x64'">false</LinkObjects>
+      <Message Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">Building Custom Rule D:/Users/scarensac/Documents/GitHub/SPlisHSPlasH/CMakeLists.txt</Message>
+      <Command Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">setlocal
+"C:\Program Files\CMake\bin\cmake.exe" -HD:/Users/scarensac/Documents/GitHub/SPlisHSPlasH -BD:/Users/scarensac/Documents/GitHub/SPlisHSPlasH/build --check-stamp-file D:/Users/scarensac/Documents/GitHub/SPlisHSPlasH/build/CMakeFiles/generate.stamp
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal &amp; call :cmErrorLevel %errorlevel% &amp; goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd</Command>
+      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">D:/Users/scarensac/Documents/GitHub/SPlisHSPlasH/CMakeLists.txt;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\CMakeLists.txt;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\build\CMakeFiles\3.9.4\CMakeSystem.cmake;C:\Program Files\CMake\share\cmake-3.9\Modules\CMakeSystemSpecificInitialize.cmake;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\build\CMakeFiles\3.9.4\CMakeCCompiler.cmake;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\build\CMakeFiles\3.9.4\CMakeCXXCompiler.cmake;C:\Program Files\CMake\share\cmake-3.9\Modules\CMakeSystemSpecificInformation.cmake;C:\Program Files\CMake\share\cmake-3.9\Modules\CMakeGenericSystem.cmake;C:\Program Files\CMake\share\cmake-3.9\Modules\Platform\Windows.cmake;C:\Program Files\CMake\share\cmake-3.9\Modules\Platform\WindowsPaths.cmake;C:\Program Files\CMake\share\cmake-3.9\Modules\CMakeCInformation.cmake;C:\Program Files\CMake\share\cmake-3.9\Modules\CMakeLanguageInformation.cmake;C:\Program Files\CMake\share\cmake-3.9\Modules\Platform\Windows-MSVC-C.cmake;C:\Program Files\CMake\share\cmake-3.9\Modules\Platform\Windows-MSVC.cmake;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\build\CMakeFiles\3.9.4\CMakeRCCompiler.cmake;C:\Program Files\CMake\share\cmake-3.9\Modules\CMakeRCInformation.cmake;C:\Program Files\CMake\share\cmake-3.9\Modules\CMakeCommonLanguageInclude.cmake;C:\Program Files\CMake\share\cmake-3.9\Modules\CMakeCXXInformation.cmake;C:\Program Files\CMake\share\cmake-3.9\Modules\CMakeLanguageInformation.cmake;C:\Program Files\CMake\share\cmake-3.9\Modules\Compiler\MSVC-CXX.cmake;C:\Program Files\CMake\share\cmake-3.9\Modules\Compiler\CMakeCommonCompilerMacros.cmake;C:\Program Files\CMake\share\cmake-3.9\Modules\Platform\Windows-MSVC-CXX.cmake;C:\Program Files\CMake\share\cmake-3.9\Modules\Platform\Windows-MSVC.cmake;C:\Program Files\CMake\share\cmake-3.9\Modules\CMakeCommonLanguageInclude.cmake;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\CMake\Common.cmake;C:\Program Files\CMake\share\cmake-3.9\Modules\ExternalProject.cmake;C:\Program Files\CMake\share\cmake-3.9\Modules\FindGit.cmake;C:\Program Files\CMake\share\cmake-3.9\Modules\FindPackageHandleStandardArgs.cmake;C:\Program Files\CMake\share\cmake-3.9\Modules\FindPackageMessage.cmake;C:\Program Files\CMake\share\cmake-3.9\Modules\RepositoryInfo.txt.in;C:\Program Files\CMake\share\cmake-3.9\Modules\FindGit.cmake;C:\Program Files\CMake\share\cmake-3.9\Modules\FindPackageHandleStandardArgs.cmake;C:\Program Files\CMake\share\cmake-3.9\Modules\FindPackageMessage.cmake;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\PositionBasedDynamics\tmp\ExternalProject_PositionBasedDynamics-cfgcmd.txt.in;C:\Program Files\CMake\share\cmake-3.9\Modules\FindGit.cmake;C:\Program Files\CMake\share\cmake-3.9\Modules\FindPackageHandleStandardArgs.cmake;C:\Program Files\CMake\share\cmake-3.9\Modules\FindPackageMessage.cmake;C:\Program Files\CMake\share\cmake-3.9\Modules\RepositoryInfo.txt.in;C:\Program Files\CMake\share\cmake-3.9\Modules\FindGit.cmake;C:\Program Files\CMake\share\cmake-3.9\Modules\FindPackageHandleStandardArgs.cmake;C:\Program Files\CMake\share\cmake-3.9\Modules\FindPackageMessage.cmake;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\CompactNSearch\tmp\ExternalProject_CompactNSearch-cfgcmd.txt.in;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\CMakeLists.txt;%(AdditionalInputs)</AdditionalInputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\build\CMakeFiles\generate.stamp</Outputs>
+      <LinkObjects Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">false</LinkObjects>
+      <Message Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">Building Custom Rule D:/Users/scarensac/Documents/GitHub/SPlisHSPlasH/CMakeLists.txt</Message>
+      <Command Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">setlocal
+"C:\Program Files\CMake\bin\cmake.exe" -HD:/Users/scarensac/Documents/GitHub/SPlisHSPlasH -BD:/Users/scarensac/Documents/GitHub/SPlisHSPlasH/build --check-stamp-file D:/Users/scarensac/Documents/GitHub/SPlisHSPlasH/build/CMakeFiles/generate.stamp
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal &amp; call :cmErrorLevel %errorlevel% &amp; goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd</Command>
+      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">D:/Users/scarensac/Documents/GitHub/SPlisHSPlasH/CMakeLists.txt;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\CMakeLists.txt;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\build\CMakeFiles\3.9.4\CMakeSystem.cmake;C:\Program Files\CMake\share\cmake-3.9\Modules\CMakeSystemSpecificInitialize.cmake;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\build\CMakeFiles\3.9.4\CMakeCCompiler.cmake;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\build\CMakeFiles\3.9.4\CMakeCXXCompiler.cmake;C:\Program Files\CMake\share\cmake-3.9\Modules\CMakeSystemSpecificInformation.cmake;C:\Program Files\CMake\share\cmake-3.9\Modules\CMakeGenericSystem.cmake;C:\Program Files\CMake\share\cmake-3.9\Modules\Platform\Windows.cmake;C:\Program Files\CMake\share\cmake-3.9\Modules\Platform\WindowsPaths.cmake;C:\Program Files\CMake\share\cmake-3.9\Modules\CMakeCInformation.cmake;C:\Program Files\CMake\share\cmake-3.9\Modules\CMakeLanguageInformation.cmake;C:\Program Files\CMake\share\cmake-3.9\Modules\Platform\Windows-MSVC-C.cmake;C:\Program Files\CMake\share\cmake-3.9\Modules\Platform\Windows-MSVC.cmake;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\build\CMakeFiles\3.9.4\CMakeRCCompiler.cmake;C:\Program Files\CMake\share\cmake-3.9\Modules\CMakeRCInformation.cmake;C:\Program Files\CMake\share\cmake-3.9\Modules\CMakeCommonLanguageInclude.cmake;C:\Program Files\CMake\share\cmake-3.9\Modules\CMakeCXXInformation.cmake;C:\Program Files\CMake\share\cmake-3.9\Modules\CMakeLanguageInformation.cmake;C:\Program Files\CMake\share\cmake-3.9\Modules\Compiler\MSVC-CXX.cmake;C:\Program Files\CMake\share\cmake-3.9\Modules\Compiler\CMakeCommonCompilerMacros.cmake;C:\Program Files\CMake\share\cmake-3.9\Modules\Platform\Windows-MSVC-CXX.cmake;C:\Program Files\CMake\share\cmake-3.9\Modules\Platform\Windows-MSVC.cmake;C:\Program Files\CMake\share\cmake-3.9\Modules\CMakeCommonLanguageInclude.cmake;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\CMake\Common.cmake;C:\Program Files\CMake\share\cmake-3.9\Modules\ExternalProject.cmake;C:\Program Files\CMake\share\cmake-3.9\Modules\FindGit.cmake;C:\Program Files\CMake\share\cmake-3.9\Modules\FindPackageHandleStandardArgs.cmake;C:\Program Files\CMake\share\cmake-3.9\Modules\FindPackageMessage.cmake;C:\Program Files\CMake\share\cmake-3.9\Modules\RepositoryInfo.txt.in;C:\Program Files\CMake\share\cmake-3.9\Modules\FindGit.cmake;C:\Program Files\CMake\share\cmake-3.9\Modules\FindPackageHandleStandardArgs.cmake;C:\Program Files\CMake\share\cmake-3.9\Modules\FindPackageMessage.cmake;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\PositionBasedDynamics\tmp\ExternalProject_PositionBasedDynamics-cfgcmd.txt.in;C:\Program Files\CMake\share\cmake-3.9\Modules\FindGit.cmake;C:\Program Files\CMake\share\cmake-3.9\Modules\FindPackageHandleStandardArgs.cmake;C:\Program Files\CMake\share\cmake-3.9\Modules\FindPackageMessage.cmake;C:\Program Files\CMake\share\cmake-3.9\Modules\RepositoryInfo.txt.in;C:\Program Files\CMake\share\cmake-3.9\Modules\FindGit.cmake;C:\Program Files\CMake\share\cmake-3.9\Modules\FindPackageHandleStandardArgs.cmake;C:\Program Files\CMake\share\cmake-3.9\Modules\FindPackageMessage.cmake;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\CompactNSearch\tmp\ExternalProject_CompactNSearch-cfgcmd.txt.in;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\CMakeLists.txt;%(AdditionalInputs)</AdditionalInputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\build\CMakeFiles\generate.stamp</Outputs>
+      <LinkObjects Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">false</LinkObjects>
+    </CustomBuild>
+  </ItemGroup>
+  <ItemGroup>
+    <CustomBuild Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\build\CMakeFiles\f5d2c21d410672f406bc2aaa9946944c\ExternalProject_CompactNSearch-mkdir.rule">
+      <Message Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Creating directories for 'ExternalProject_CompactNSearch'</Message>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">setlocal
+"C:\Program Files\CMake\bin\cmake.exe" -E make_directory D:/Users/scarensac/Documents/GitHub/SPlisHSPlasH/extern/CompactNSearch/src/ExternalProject_CompactNSearch
+if %errorlevel% neq 0 goto :cmEnd
+"C:\Program Files\CMake\bin\cmake.exe" -E make_directory D:/Users/scarensac/Documents/GitHub/SPlisHSPlasH/extern/CompactNSearch/src/ExternalProject_CompactNSearch-build
+if %errorlevel% neq 0 goto :cmEnd
+"C:\Program Files\CMake\bin\cmake.exe" -E make_directory D:/Users/scarensac/Documents/GitHub/SPlisHSPlasH/extern/install/CompactNSearch
+if %errorlevel% neq 0 goto :cmEnd
+"C:\Program Files\CMake\bin\cmake.exe" -E make_directory D:/Users/scarensac/Documents/GitHub/SPlisHSPlasH/extern/CompactNSearch/tmp
+if %errorlevel% neq 0 goto :cmEnd
+"C:\Program Files\CMake\bin\cmake.exe" -E make_directory D:/Users/scarensac/Documents/GitHub/SPlisHSPlasH/extern/CompactNSearch/src/ExternalProject_CompactNSearch-stamp/$(Configuration)
+if %errorlevel% neq 0 goto :cmEnd
+"C:\Program Files\CMake\bin\cmake.exe" -E make_directory D:/Users/scarensac/Documents/GitHub/SPlisHSPlasH/extern/CompactNSearch/src
+if %errorlevel% neq 0 goto :cmEnd
+"C:\Program Files\CMake\bin\cmake.exe" -E touch D:/Users/scarensac/Documents/GitHub/SPlisHSPlasH/extern/CompactNSearch/src/ExternalProject_CompactNSearch-stamp/$(Configuration)/ExternalProject_CompactNSearch-mkdir
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal &amp; call :cmErrorLevel %errorlevel% &amp; goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd</Command>
+      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">D:/Users/scarensac/Documents/GitHub/SPlisHSPlasH/build/CMakeFiles/f5d2c21d410672f406bc2aaa9946944c/ExternalProject_CompactNSearch-mkdir.rule;%(AdditionalInputs)</AdditionalInputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\CompactNSearch\src\ExternalProject_CompactNSearch-stamp\$(Configuration)\ExternalProject_CompactNSearch-mkdir</Outputs>
+      <LinkObjects Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</LinkObjects>
+      <Message Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Creating directories for 'ExternalProject_CompactNSearch'</Message>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release|x64'">setlocal
+"C:\Program Files\CMake\bin\cmake.exe" -E make_directory D:/Users/scarensac/Documents/GitHub/SPlisHSPlasH/extern/CompactNSearch/src/ExternalProject_CompactNSearch
+if %errorlevel% neq 0 goto :cmEnd
+"C:\Program Files\CMake\bin\cmake.exe" -E make_directory D:/Users/scarensac/Documents/GitHub/SPlisHSPlasH/extern/CompactNSearch/src/ExternalProject_CompactNSearch-build
+if %errorlevel% neq 0 goto :cmEnd
+"C:\Program Files\CMake\bin\cmake.exe" -E make_directory D:/Users/scarensac/Documents/GitHub/SPlisHSPlasH/extern/install/CompactNSearch
+if %errorlevel% neq 0 goto :cmEnd
+"C:\Program Files\CMake\bin\cmake.exe" -E make_directory D:/Users/scarensac/Documents/GitHub/SPlisHSPlasH/extern/CompactNSearch/tmp
+if %errorlevel% neq 0 goto :cmEnd
+"C:\Program Files\CMake\bin\cmake.exe" -E make_directory D:/Users/scarensac/Documents/GitHub/SPlisHSPlasH/extern/CompactNSearch/src/ExternalProject_CompactNSearch-stamp/$(Configuration)
+if %errorlevel% neq 0 goto :cmEnd
+"C:\Program Files\CMake\bin\cmake.exe" -E make_directory D:/Users/scarensac/Documents/GitHub/SPlisHSPlasH/extern/CompactNSearch/src
+if %errorlevel% neq 0 goto :cmEnd
+"C:\Program Files\CMake\bin\cmake.exe" -E touch D:/Users/scarensac/Documents/GitHub/SPlisHSPlasH/extern/CompactNSearch/src/ExternalProject_CompactNSearch-stamp/$(Configuration)/ExternalProject_CompactNSearch-mkdir
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal &amp; call :cmErrorLevel %errorlevel% &amp; goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd</Command>
+      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">D:/Users/scarensac/Documents/GitHub/SPlisHSPlasH/build/CMakeFiles/f5d2c21d410672f406bc2aaa9946944c/ExternalProject_CompactNSearch-mkdir.rule;%(AdditionalInputs)</AdditionalInputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\CompactNSearch\src\ExternalProject_CompactNSearch-stamp\$(Configuration)\ExternalProject_CompactNSearch-mkdir</Outputs>
+      <LinkObjects Condition="'$(Configuration)|$(Platform)'=='Release|x64'">false</LinkObjects>
+      <Message Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">Creating directories for 'ExternalProject_CompactNSearch'</Message>
+      <Command Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">setlocal
+"C:\Program Files\CMake\bin\cmake.exe" -E make_directory D:/Users/scarensac/Documents/GitHub/SPlisHSPlasH/extern/CompactNSearch/src/ExternalProject_CompactNSearch
+if %errorlevel% neq 0 goto :cmEnd
+"C:\Program Files\CMake\bin\cmake.exe" -E make_directory D:/Users/scarensac/Documents/GitHub/SPlisHSPlasH/extern/CompactNSearch/src/ExternalProject_CompactNSearch-build
+if %errorlevel% neq 0 goto :cmEnd
+"C:\Program Files\CMake\bin\cmake.exe" -E make_directory D:/Users/scarensac/Documents/GitHub/SPlisHSPlasH/extern/install/CompactNSearch
+if %errorlevel% neq 0 goto :cmEnd
+"C:\Program Files\CMake\bin\cmake.exe" -E make_directory D:/Users/scarensac/Documents/GitHub/SPlisHSPlasH/extern/CompactNSearch/tmp
+if %errorlevel% neq 0 goto :cmEnd
+"C:\Program Files\CMake\bin\cmake.exe" -E make_directory D:/Users/scarensac/Documents/GitHub/SPlisHSPlasH/extern/CompactNSearch/src/ExternalProject_CompactNSearch-stamp/$(Configuration)
+if %errorlevel% neq 0 goto :cmEnd
+"C:\Program Files\CMake\bin\cmake.exe" -E make_directory D:/Users/scarensac/Documents/GitHub/SPlisHSPlasH/extern/CompactNSearch/src
+if %errorlevel% neq 0 goto :cmEnd
+"C:\Program Files\CMake\bin\cmake.exe" -E touch D:/Users/scarensac/Documents/GitHub/SPlisHSPlasH/extern/CompactNSearch/src/ExternalProject_CompactNSearch-stamp/$(Configuration)/ExternalProject_CompactNSearch-mkdir
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal &amp; call :cmErrorLevel %errorlevel% &amp; goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd</Command>
+      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">D:/Users/scarensac/Documents/GitHub/SPlisHSPlasH/build/CMakeFiles/f5d2c21d410672f406bc2aaa9946944c/ExternalProject_CompactNSearch-mkdir.rule;%(AdditionalInputs)</AdditionalInputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\CompactNSearch\src\ExternalProject_CompactNSearch-stamp\$(Configuration)\ExternalProject_CompactNSearch-mkdir</Outputs>
+      <LinkObjects Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">false</LinkObjects>
+      <Message Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">Creating directories for 'ExternalProject_CompactNSearch'</Message>
+      <Command Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">setlocal
+"C:\Program Files\CMake\bin\cmake.exe" -E make_directory D:/Users/scarensac/Documents/GitHub/SPlisHSPlasH/extern/CompactNSearch/src/ExternalProject_CompactNSearch
+if %errorlevel% neq 0 goto :cmEnd
+"C:\Program Files\CMake\bin\cmake.exe" -E make_directory D:/Users/scarensac/Documents/GitHub/SPlisHSPlasH/extern/CompactNSearch/src/ExternalProject_CompactNSearch-build
+if %errorlevel% neq 0 goto :cmEnd
+"C:\Program Files\CMake\bin\cmake.exe" -E make_directory D:/Users/scarensac/Documents/GitHub/SPlisHSPlasH/extern/install/CompactNSearch
+if %errorlevel% neq 0 goto :cmEnd
+"C:\Program Files\CMake\bin\cmake.exe" -E make_directory D:/Users/scarensac/Documents/GitHub/SPlisHSPlasH/extern/CompactNSearch/tmp
+if %errorlevel% neq 0 goto :cmEnd
+"C:\Program Files\CMake\bin\cmake.exe" -E make_directory D:/Users/scarensac/Documents/GitHub/SPlisHSPlasH/extern/CompactNSearch/src/ExternalProject_CompactNSearch-stamp/$(Configuration)
+if %errorlevel% neq 0 goto :cmEnd
+"C:\Program Files\CMake\bin\cmake.exe" -E make_directory D:/Users/scarensac/Documents/GitHub/SPlisHSPlasH/extern/CompactNSearch/src
+if %errorlevel% neq 0 goto :cmEnd
+"C:\Program Files\CMake\bin\cmake.exe" -E touch D:/Users/scarensac/Documents/GitHub/SPlisHSPlasH/extern/CompactNSearch/src/ExternalProject_CompactNSearch-stamp/$(Configuration)/ExternalProject_CompactNSearch-mkdir
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal &amp; call :cmErrorLevel %errorlevel% &amp; goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd</Command>
+      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">D:/Users/scarensac/Documents/GitHub/SPlisHSPlasH/build/CMakeFiles/f5d2c21d410672f406bc2aaa9946944c/ExternalProject_CompactNSearch-mkdir.rule;%(AdditionalInputs)</AdditionalInputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\CompactNSearch\src\ExternalProject_CompactNSearch-stamp\$(Configuration)\ExternalProject_CompactNSearch-mkdir</Outputs>
+      <LinkObjects Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">false</LinkObjects>
+    </CustomBuild>
+  </ItemGroup>
+  <ItemGroup>
+    <CustomBuild Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\build\CMakeFiles\f5d2c21d410672f406bc2aaa9946944c\ExternalProject_CompactNSearch-download.rule">
+      <Message Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Performing download step (git clone) for 'ExternalProject_CompactNSearch'</Message>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">setlocal
+cd D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\CompactNSearch\src
+if %errorlevel% neq 0 goto :cmEnd
+D:
+if %errorlevel% neq 0 goto :cmEnd
+"C:\Program Files\CMake\bin\cmake.exe" -P D:/Users/scarensac/Documents/GitHub/SPlisHSPlasH/extern/CompactNSearch/tmp/ExternalProject_CompactNSearch-gitclone.cmake
+if %errorlevel% neq 0 goto :cmEnd
+"C:\Program Files\CMake\bin\cmake.exe" -E touch D:/Users/scarensac/Documents/GitHub/SPlisHSPlasH/extern/CompactNSearch/src/ExternalProject_CompactNSearch-stamp/$(Configuration)/ExternalProject_CompactNSearch-download
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal &amp; call :cmErrorLevel %errorlevel% &amp; goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd</Command>
+      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">D:/Users/scarensac/Documents/GitHub/SPlisHSPlasH/build/CMakeFiles/f5d2c21d410672f406bc2aaa9946944c/ExternalProject_CompactNSearch-download.rule;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\CompactNSearch\src\ExternalProject_CompactNSearch-stamp\ExternalProject_CompactNSearch-gitinfo.txt;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\CompactNSearch\src\ExternalProject_CompactNSearch-stamp\$(Configuration)\ExternalProject_CompactNSearch-mkdir;%(AdditionalInputs)</AdditionalInputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\CompactNSearch\src\ExternalProject_CompactNSearch-stamp\$(Configuration)\ExternalProject_CompactNSearch-download</Outputs>
+      <LinkObjects Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</LinkObjects>
+      <Message Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Performing download step (git clone) for 'ExternalProject_CompactNSearch'</Message>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release|x64'">setlocal
+cd D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\CompactNSearch\src
+if %errorlevel% neq 0 goto :cmEnd
+D:
+if %errorlevel% neq 0 goto :cmEnd
+"C:\Program Files\CMake\bin\cmake.exe" -P D:/Users/scarensac/Documents/GitHub/SPlisHSPlasH/extern/CompactNSearch/tmp/ExternalProject_CompactNSearch-gitclone.cmake
+if %errorlevel% neq 0 goto :cmEnd
+"C:\Program Files\CMake\bin\cmake.exe" -E touch D:/Users/scarensac/Documents/GitHub/SPlisHSPlasH/extern/CompactNSearch/src/ExternalProject_CompactNSearch-stamp/$(Configuration)/ExternalProject_CompactNSearch-download
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal &amp; call :cmErrorLevel %errorlevel% &amp; goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd</Command>
+      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">D:/Users/scarensac/Documents/GitHub/SPlisHSPlasH/build/CMakeFiles/f5d2c21d410672f406bc2aaa9946944c/ExternalProject_CompactNSearch-download.rule;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\CompactNSearch\src\ExternalProject_CompactNSearch-stamp\ExternalProject_CompactNSearch-gitinfo.txt;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\CompactNSearch\src\ExternalProject_CompactNSearch-stamp\$(Configuration)\ExternalProject_CompactNSearch-mkdir;%(AdditionalInputs)</AdditionalInputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\CompactNSearch\src\ExternalProject_CompactNSearch-stamp\$(Configuration)\ExternalProject_CompactNSearch-download</Outputs>
+      <LinkObjects Condition="'$(Configuration)|$(Platform)'=='Release|x64'">false</LinkObjects>
+      <Message Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">Performing download step (git clone) for 'ExternalProject_CompactNSearch'</Message>
+      <Command Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">setlocal
+cd D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\CompactNSearch\src
+if %errorlevel% neq 0 goto :cmEnd
+D:
+if %errorlevel% neq 0 goto :cmEnd
+"C:\Program Files\CMake\bin\cmake.exe" -P D:/Users/scarensac/Documents/GitHub/SPlisHSPlasH/extern/CompactNSearch/tmp/ExternalProject_CompactNSearch-gitclone.cmake
+if %errorlevel% neq 0 goto :cmEnd
+"C:\Program Files\CMake\bin\cmake.exe" -E touch D:/Users/scarensac/Documents/GitHub/SPlisHSPlasH/extern/CompactNSearch/src/ExternalProject_CompactNSearch-stamp/$(Configuration)/ExternalProject_CompactNSearch-download
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal &amp; call :cmErrorLevel %errorlevel% &amp; goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd</Command>
+      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">D:/Users/scarensac/Documents/GitHub/SPlisHSPlasH/build/CMakeFiles/f5d2c21d410672f406bc2aaa9946944c/ExternalProject_CompactNSearch-download.rule;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\CompactNSearch\src\ExternalProject_CompactNSearch-stamp\ExternalProject_CompactNSearch-gitinfo.txt;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\CompactNSearch\src\ExternalProject_CompactNSearch-stamp\$(Configuration)\ExternalProject_CompactNSearch-mkdir;%(AdditionalInputs)</AdditionalInputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\CompactNSearch\src\ExternalProject_CompactNSearch-stamp\$(Configuration)\ExternalProject_CompactNSearch-download</Outputs>
+      <LinkObjects Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">false</LinkObjects>
+      <Message Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">Performing download step (git clone) for 'ExternalProject_CompactNSearch'</Message>
+      <Command Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">setlocal
+cd D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\CompactNSearch\src
+if %errorlevel% neq 0 goto :cmEnd
+D:
+if %errorlevel% neq 0 goto :cmEnd
+"C:\Program Files\CMake\bin\cmake.exe" -P D:/Users/scarensac/Documents/GitHub/SPlisHSPlasH/extern/CompactNSearch/tmp/ExternalProject_CompactNSearch-gitclone.cmake
+if %errorlevel% neq 0 goto :cmEnd
+"C:\Program Files\CMake\bin\cmake.exe" -E touch D:/Users/scarensac/Documents/GitHub/SPlisHSPlasH/extern/CompactNSearch/src/ExternalProject_CompactNSearch-stamp/$(Configuration)/ExternalProject_CompactNSearch-download
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal &amp; call :cmErrorLevel %errorlevel% &amp; goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd</Command>
+      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">D:/Users/scarensac/Documents/GitHub/SPlisHSPlasH/build/CMakeFiles/f5d2c21d410672f406bc2aaa9946944c/ExternalProject_CompactNSearch-download.rule;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\CompactNSearch\src\ExternalProject_CompactNSearch-stamp\ExternalProject_CompactNSearch-gitinfo.txt;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\CompactNSearch\src\ExternalProject_CompactNSearch-stamp\$(Configuration)\ExternalProject_CompactNSearch-mkdir;%(AdditionalInputs)</AdditionalInputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\CompactNSearch\src\ExternalProject_CompactNSearch-stamp\$(Configuration)\ExternalProject_CompactNSearch-download</Outputs>
+      <LinkObjects Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">false</LinkObjects>
+    </CustomBuild>
+  </ItemGroup>
+  <ItemGroup>
+    <CustomBuild Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\build\CMakeFiles\f5d2c21d410672f406bc2aaa9946944c\ExternalProject_CompactNSearch-update.rule">
+      <Message Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Performing update step for 'ExternalProject_CompactNSearch'</Message>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">setlocal
+cd D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\CompactNSearch\src\ExternalProject_CompactNSearch
+if %errorlevel% neq 0 goto :cmEnd
+D:
+if %errorlevel% neq 0 goto :cmEnd
+"C:\Program Files\CMake\bin\cmake.exe" -P D:/Users/scarensac/Documents/GitHub/SPlisHSPlasH/extern/CompactNSearch/tmp/ExternalProject_CompactNSearch-gitupdate.cmake
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal &amp; call :cmErrorLevel %errorlevel% &amp; goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd</Command>
+      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">D:/Users/scarensac/Documents/GitHub/SPlisHSPlasH/build/CMakeFiles/f5d2c21d410672f406bc2aaa9946944c/ExternalProject_CompactNSearch-update.rule;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\CompactNSearch\src\ExternalProject_CompactNSearch-stamp\$(Configuration)\ExternalProject_CompactNSearch-download;%(AdditionalInputs)</AdditionalInputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\CompactNSearch\src\ExternalProject_CompactNSearch-stamp\$(Configuration)\ExternalProject_CompactNSearch-update</Outputs>
+      <LinkObjects Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</LinkObjects>
+      <Message Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Performing update step for 'ExternalProject_CompactNSearch'</Message>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release|x64'">setlocal
+cd D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\CompactNSearch\src\ExternalProject_CompactNSearch
+if %errorlevel% neq 0 goto :cmEnd
+D:
+if %errorlevel% neq 0 goto :cmEnd
+"C:\Program Files\CMake\bin\cmake.exe" -P D:/Users/scarensac/Documents/GitHub/SPlisHSPlasH/extern/CompactNSearch/tmp/ExternalProject_CompactNSearch-gitupdate.cmake
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal &amp; call :cmErrorLevel %errorlevel% &amp; goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd</Command>
+      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">D:/Users/scarensac/Documents/GitHub/SPlisHSPlasH/build/CMakeFiles/f5d2c21d410672f406bc2aaa9946944c/ExternalProject_CompactNSearch-update.rule;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\CompactNSearch\src\ExternalProject_CompactNSearch-stamp\$(Configuration)\ExternalProject_CompactNSearch-download;%(AdditionalInputs)</AdditionalInputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\CompactNSearch\src\ExternalProject_CompactNSearch-stamp\$(Configuration)\ExternalProject_CompactNSearch-update</Outputs>
+      <LinkObjects Condition="'$(Configuration)|$(Platform)'=='Release|x64'">false</LinkObjects>
+      <Message Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">Performing update step for 'ExternalProject_CompactNSearch'</Message>
+      <Command Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">setlocal
+cd D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\CompactNSearch\src\ExternalProject_CompactNSearch
+if %errorlevel% neq 0 goto :cmEnd
+D:
+if %errorlevel% neq 0 goto :cmEnd
+"C:\Program Files\CMake\bin\cmake.exe" -P D:/Users/scarensac/Documents/GitHub/SPlisHSPlasH/extern/CompactNSearch/tmp/ExternalProject_CompactNSearch-gitupdate.cmake
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal &amp; call :cmErrorLevel %errorlevel% &amp; goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd</Command>
+      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">D:/Users/scarensac/Documents/GitHub/SPlisHSPlasH/build/CMakeFiles/f5d2c21d410672f406bc2aaa9946944c/ExternalProject_CompactNSearch-update.rule;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\CompactNSearch\src\ExternalProject_CompactNSearch-stamp\$(Configuration)\ExternalProject_CompactNSearch-download;%(AdditionalInputs)</AdditionalInputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\CompactNSearch\src\ExternalProject_CompactNSearch-stamp\$(Configuration)\ExternalProject_CompactNSearch-update</Outputs>
+      <LinkObjects Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">false</LinkObjects>
+      <Message Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">Performing update step for 'ExternalProject_CompactNSearch'</Message>
+      <Command Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">setlocal
+cd D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\CompactNSearch\src\ExternalProject_CompactNSearch
+if %errorlevel% neq 0 goto :cmEnd
+D:
+if %errorlevel% neq 0 goto :cmEnd
+"C:\Program Files\CMake\bin\cmake.exe" -P D:/Users/scarensac/Documents/GitHub/SPlisHSPlasH/extern/CompactNSearch/tmp/ExternalProject_CompactNSearch-gitupdate.cmake
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal &amp; call :cmErrorLevel %errorlevel% &amp; goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd</Command>
+      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">D:/Users/scarensac/Documents/GitHub/SPlisHSPlasH/build/CMakeFiles/f5d2c21d410672f406bc2aaa9946944c/ExternalProject_CompactNSearch-update.rule;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\CompactNSearch\src\ExternalProject_CompactNSearch-stamp\$(Configuration)\ExternalProject_CompactNSearch-download;%(AdditionalInputs)</AdditionalInputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\CompactNSearch\src\ExternalProject_CompactNSearch-stamp\$(Configuration)\ExternalProject_CompactNSearch-update</Outputs>
+      <LinkObjects Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">false</LinkObjects>
+    </CustomBuild>
+  </ItemGroup>
+  <ItemGroup>
+    <CustomBuild Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\build\CMakeFiles\f5d2c21d410672f406bc2aaa9946944c\ExternalProject_CompactNSearch-patch.rule">
+      <Message Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">No patch step for 'ExternalProject_CompactNSearch'</Message>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">setlocal
+"C:\Program Files\CMake\bin\cmake.exe" -E echo_append
+if %errorlevel% neq 0 goto :cmEnd
+"C:\Program Files\CMake\bin\cmake.exe" -E touch D:/Users/scarensac/Documents/GitHub/SPlisHSPlasH/extern/CompactNSearch/src/ExternalProject_CompactNSearch-stamp/$(Configuration)/ExternalProject_CompactNSearch-patch
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal &amp; call :cmErrorLevel %errorlevel% &amp; goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd</Command>
+      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">D:/Users/scarensac/Documents/GitHub/SPlisHSPlasH/build/CMakeFiles/f5d2c21d410672f406bc2aaa9946944c/ExternalProject_CompactNSearch-patch.rule;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\CompactNSearch\src\ExternalProject_CompactNSearch-stamp\$(Configuration)\ExternalProject_CompactNSearch-download;%(AdditionalInputs)</AdditionalInputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\CompactNSearch\src\ExternalProject_CompactNSearch-stamp\$(Configuration)\ExternalProject_CompactNSearch-patch</Outputs>
+      <LinkObjects Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</LinkObjects>
+      <Message Condition="'$(Configuration)|$(Platform)'=='Release|x64'">No patch step for 'ExternalProject_CompactNSearch'</Message>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release|x64'">setlocal
+"C:\Program Files\CMake\bin\cmake.exe" -E echo_append
+if %errorlevel% neq 0 goto :cmEnd
+"C:\Program Files\CMake\bin\cmake.exe" -E touch D:/Users/scarensac/Documents/GitHub/SPlisHSPlasH/extern/CompactNSearch/src/ExternalProject_CompactNSearch-stamp/$(Configuration)/ExternalProject_CompactNSearch-patch
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal &amp; call :cmErrorLevel %errorlevel% &amp; goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd</Command>
+      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">D:/Users/scarensac/Documents/GitHub/SPlisHSPlasH/build/CMakeFiles/f5d2c21d410672f406bc2aaa9946944c/ExternalProject_CompactNSearch-patch.rule;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\CompactNSearch\src\ExternalProject_CompactNSearch-stamp\$(Configuration)\ExternalProject_CompactNSearch-download;%(AdditionalInputs)</AdditionalInputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\CompactNSearch\src\ExternalProject_CompactNSearch-stamp\$(Configuration)\ExternalProject_CompactNSearch-patch</Outputs>
+      <LinkObjects Condition="'$(Configuration)|$(Platform)'=='Release|x64'">false</LinkObjects>
+      <Message Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">No patch step for 'ExternalProject_CompactNSearch'</Message>
+      <Command Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">setlocal
+"C:\Program Files\CMake\bin\cmake.exe" -E echo_append
+if %errorlevel% neq 0 goto :cmEnd
+"C:\Program Files\CMake\bin\cmake.exe" -E touch D:/Users/scarensac/Documents/GitHub/SPlisHSPlasH/extern/CompactNSearch/src/ExternalProject_CompactNSearch-stamp/$(Configuration)/ExternalProject_CompactNSearch-patch
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal &amp; call :cmErrorLevel %errorlevel% &amp; goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd</Command>
+      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">D:/Users/scarensac/Documents/GitHub/SPlisHSPlasH/build/CMakeFiles/f5d2c21d410672f406bc2aaa9946944c/ExternalProject_CompactNSearch-patch.rule;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\CompactNSearch\src\ExternalProject_CompactNSearch-stamp\$(Configuration)\ExternalProject_CompactNSearch-download;%(AdditionalInputs)</AdditionalInputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\CompactNSearch\src\ExternalProject_CompactNSearch-stamp\$(Configuration)\ExternalProject_CompactNSearch-patch</Outputs>
+      <LinkObjects Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">false</LinkObjects>
+      <Message Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">No patch step for 'ExternalProject_CompactNSearch'</Message>
+      <Command Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">setlocal
+"C:\Program Files\CMake\bin\cmake.exe" -E echo_append
+if %errorlevel% neq 0 goto :cmEnd
+"C:\Program Files\CMake\bin\cmake.exe" -E touch D:/Users/scarensac/Documents/GitHub/SPlisHSPlasH/extern/CompactNSearch/src/ExternalProject_CompactNSearch-stamp/$(Configuration)/ExternalProject_CompactNSearch-patch
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal &amp; call :cmErrorLevel %errorlevel% &amp; goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd</Command>
+      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">D:/Users/scarensac/Documents/GitHub/SPlisHSPlasH/build/CMakeFiles/f5d2c21d410672f406bc2aaa9946944c/ExternalProject_CompactNSearch-patch.rule;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\CompactNSearch\src\ExternalProject_CompactNSearch-stamp\$(Configuration)\ExternalProject_CompactNSearch-download;%(AdditionalInputs)</AdditionalInputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\CompactNSearch\src\ExternalProject_CompactNSearch-stamp\$(Configuration)\ExternalProject_CompactNSearch-patch</Outputs>
+      <LinkObjects Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">false</LinkObjects>
+    </CustomBuild>
+  </ItemGroup>
+  <ItemGroup>
+    <CustomBuild Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\build\CMakeFiles\f5d2c21d410672f406bc2aaa9946944c\ExternalProject_CompactNSearch-configure.rule">
+      <Message Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Performing configure step for 'ExternalProject_CompactNSearch'</Message>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">setlocal
+cd D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\CompactNSearch\src\ExternalProject_CompactNSearch-build
+if %errorlevel% neq 0 goto :cmEnd
+D:
+if %errorlevel% neq 0 goto :cmEnd
+"C:\Program Files\CMake\bin\cmake.exe" -DCMAKE_INSTALL_PREFIX:PATH=D:/Users/scarensac/Documents/GitHub/SPlisHSPlasH/extern/install/CompactNSearch "-GVisual Studio 15 2017 Win64" D:/Users/scarensac/Documents/GitHub/SPlisHSPlasH/extern/CompactNSearch/src/ExternalProject_CompactNSearch
+if %errorlevel% neq 0 goto :cmEnd
+"C:\Program Files\CMake\bin\cmake.exe" -E touch D:/Users/scarensac/Documents/GitHub/SPlisHSPlasH/extern/CompactNSearch/src/ExternalProject_CompactNSearch-stamp/$(Configuration)/ExternalProject_CompactNSearch-configure
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal &amp; call :cmErrorLevel %errorlevel% &amp; goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd</Command>
+      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">D:/Users/scarensac/Documents/GitHub/SPlisHSPlasH/build/CMakeFiles/f5d2c21d410672f406bc2aaa9946944c/ExternalProject_CompactNSearch-configure.rule;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\CompactNSearch\tmp\ExternalProject_CompactNSearch-cfgcmd.txt;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\CompactNSearch\src\ExternalProject_CompactNSearch-stamp\$(Configuration)\ExternalProject_CompactNSearch-update;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\CompactNSearch\src\ExternalProject_CompactNSearch-stamp\$(Configuration)\ExternalProject_CompactNSearch-patch;%(AdditionalInputs)</AdditionalInputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\CompactNSearch\src\ExternalProject_CompactNSearch-stamp\$(Configuration)\ExternalProject_CompactNSearch-configure</Outputs>
+      <LinkObjects Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</LinkObjects>
+      <Message Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Performing configure step for 'ExternalProject_CompactNSearch'</Message>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release|x64'">setlocal
+cd D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\CompactNSearch\src\ExternalProject_CompactNSearch-build
+if %errorlevel% neq 0 goto :cmEnd
+D:
+if %errorlevel% neq 0 goto :cmEnd
+"C:\Program Files\CMake\bin\cmake.exe" -DCMAKE_INSTALL_PREFIX:PATH=D:/Users/scarensac/Documents/GitHub/SPlisHSPlasH/extern/install/CompactNSearch "-GVisual Studio 15 2017 Win64" D:/Users/scarensac/Documents/GitHub/SPlisHSPlasH/extern/CompactNSearch/src/ExternalProject_CompactNSearch
+if %errorlevel% neq 0 goto :cmEnd
+"C:\Program Files\CMake\bin\cmake.exe" -E touch D:/Users/scarensac/Documents/GitHub/SPlisHSPlasH/extern/CompactNSearch/src/ExternalProject_CompactNSearch-stamp/$(Configuration)/ExternalProject_CompactNSearch-configure
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal &amp; call :cmErrorLevel %errorlevel% &amp; goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd</Command>
+      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">D:/Users/scarensac/Documents/GitHub/SPlisHSPlasH/build/CMakeFiles/f5d2c21d410672f406bc2aaa9946944c/ExternalProject_CompactNSearch-configure.rule;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\CompactNSearch\tmp\ExternalProject_CompactNSearch-cfgcmd.txt;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\CompactNSearch\src\ExternalProject_CompactNSearch-stamp\$(Configuration)\ExternalProject_CompactNSearch-update;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\CompactNSearch\src\ExternalProject_CompactNSearch-stamp\$(Configuration)\ExternalProject_CompactNSearch-patch;%(AdditionalInputs)</AdditionalInputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\CompactNSearch\src\ExternalProject_CompactNSearch-stamp\$(Configuration)\ExternalProject_CompactNSearch-configure</Outputs>
+      <LinkObjects Condition="'$(Configuration)|$(Platform)'=='Release|x64'">false</LinkObjects>
+      <Message Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">Performing configure step for 'ExternalProject_CompactNSearch'</Message>
+      <Command Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">setlocal
+cd D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\CompactNSearch\src\ExternalProject_CompactNSearch-build
+if %errorlevel% neq 0 goto :cmEnd
+D:
+if %errorlevel% neq 0 goto :cmEnd
+"C:\Program Files\CMake\bin\cmake.exe" -DCMAKE_INSTALL_PREFIX:PATH=D:/Users/scarensac/Documents/GitHub/SPlisHSPlasH/extern/install/CompactNSearch "-GVisual Studio 15 2017 Win64" D:/Users/scarensac/Documents/GitHub/SPlisHSPlasH/extern/CompactNSearch/src/ExternalProject_CompactNSearch
+if %errorlevel% neq 0 goto :cmEnd
+"C:\Program Files\CMake\bin\cmake.exe" -E touch D:/Users/scarensac/Documents/GitHub/SPlisHSPlasH/extern/CompactNSearch/src/ExternalProject_CompactNSearch-stamp/$(Configuration)/ExternalProject_CompactNSearch-configure
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal &amp; call :cmErrorLevel %errorlevel% &amp; goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd</Command>
+      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">D:/Users/scarensac/Documents/GitHub/SPlisHSPlasH/build/CMakeFiles/f5d2c21d410672f406bc2aaa9946944c/ExternalProject_CompactNSearch-configure.rule;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\CompactNSearch\tmp\ExternalProject_CompactNSearch-cfgcmd.txt;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\CompactNSearch\src\ExternalProject_CompactNSearch-stamp\$(Configuration)\ExternalProject_CompactNSearch-update;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\CompactNSearch\src\ExternalProject_CompactNSearch-stamp\$(Configuration)\ExternalProject_CompactNSearch-patch;%(AdditionalInputs)</AdditionalInputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\CompactNSearch\src\ExternalProject_CompactNSearch-stamp\$(Configuration)\ExternalProject_CompactNSearch-configure</Outputs>
+      <LinkObjects Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">false</LinkObjects>
+      <Message Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">Performing configure step for 'ExternalProject_CompactNSearch'</Message>
+      <Command Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">setlocal
+cd D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\CompactNSearch\src\ExternalProject_CompactNSearch-build
+if %errorlevel% neq 0 goto :cmEnd
+D:
+if %errorlevel% neq 0 goto :cmEnd
+"C:\Program Files\CMake\bin\cmake.exe" -DCMAKE_INSTALL_PREFIX:PATH=D:/Users/scarensac/Documents/GitHub/SPlisHSPlasH/extern/install/CompactNSearch "-GVisual Studio 15 2017 Win64" D:/Users/scarensac/Documents/GitHub/SPlisHSPlasH/extern/CompactNSearch/src/ExternalProject_CompactNSearch
+if %errorlevel% neq 0 goto :cmEnd
+"C:\Program Files\CMake\bin\cmake.exe" -E touch D:/Users/scarensac/Documents/GitHub/SPlisHSPlasH/extern/CompactNSearch/src/ExternalProject_CompactNSearch-stamp/$(Configuration)/ExternalProject_CompactNSearch-configure
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal &amp; call :cmErrorLevel %errorlevel% &amp; goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd</Command>
+      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">D:/Users/scarensac/Documents/GitHub/SPlisHSPlasH/build/CMakeFiles/f5d2c21d410672f406bc2aaa9946944c/ExternalProject_CompactNSearch-configure.rule;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\CompactNSearch\tmp\ExternalProject_CompactNSearch-cfgcmd.txt;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\CompactNSearch\src\ExternalProject_CompactNSearch-stamp\$(Configuration)\ExternalProject_CompactNSearch-update;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\CompactNSearch\src\ExternalProject_CompactNSearch-stamp\$(Configuration)\ExternalProject_CompactNSearch-patch;%(AdditionalInputs)</AdditionalInputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\CompactNSearch\src\ExternalProject_CompactNSearch-stamp\$(Configuration)\ExternalProject_CompactNSearch-configure</Outputs>
+      <LinkObjects Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">false</LinkObjects>
+    </CustomBuild>
+  </ItemGroup>
+  <ItemGroup>
+    <CustomBuild Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\build\CMakeFiles\f5d2c21d410672f406bc2aaa9946944c\ExternalProject_CompactNSearch-build.rule">
+      <Message Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Performing build step for 'ExternalProject_CompactNSearch'</Message>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">setlocal
+cd D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\CompactNSearch\src\ExternalProject_CompactNSearch-build
+if %errorlevel% neq 0 goto :cmEnd
+D:
+if %errorlevel% neq 0 goto :cmEnd
+"C:\Program Files\CMake\bin\cmake.exe" --build . --config Debug
+if %errorlevel% neq 0 goto :cmEnd
+"C:\Program Files\CMake\bin\cmake.exe" -E touch D:/Users/scarensac/Documents/GitHub/SPlisHSPlasH/extern/CompactNSearch/src/ExternalProject_CompactNSearch-stamp/$(Configuration)/ExternalProject_CompactNSearch-build
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal &amp; call :cmErrorLevel %errorlevel% &amp; goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd</Command>
+      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">D:/Users/scarensac/Documents/GitHub/SPlisHSPlasH/build/CMakeFiles/f5d2c21d410672f406bc2aaa9946944c/ExternalProject_CompactNSearch-build.rule;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\CompactNSearch\src\ExternalProject_CompactNSearch-stamp\$(Configuration)\ExternalProject_CompactNSearch-configure;%(AdditionalInputs)</AdditionalInputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\CompactNSearch\src\ExternalProject_CompactNSearch-stamp\$(Configuration)\ExternalProject_CompactNSearch-build</Outputs>
+      <LinkObjects Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</LinkObjects>
+      <Message Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Performing build step for 'ExternalProject_CompactNSearch'</Message>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release|x64'">setlocal
+cd D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\CompactNSearch\src\ExternalProject_CompactNSearch-build
+if %errorlevel% neq 0 goto :cmEnd
+D:
+if %errorlevel% neq 0 goto :cmEnd
+"C:\Program Files\CMake\bin\cmake.exe" --build . --config Release
+if %errorlevel% neq 0 goto :cmEnd
+"C:\Program Files\CMake\bin\cmake.exe" -E touch D:/Users/scarensac/Documents/GitHub/SPlisHSPlasH/extern/CompactNSearch/src/ExternalProject_CompactNSearch-stamp/$(Configuration)/ExternalProject_CompactNSearch-build
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal &amp; call :cmErrorLevel %errorlevel% &amp; goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd</Command>
+      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">D:/Users/scarensac/Documents/GitHub/SPlisHSPlasH/build/CMakeFiles/f5d2c21d410672f406bc2aaa9946944c/ExternalProject_CompactNSearch-build.rule;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\CompactNSearch\src\ExternalProject_CompactNSearch-stamp\$(Configuration)\ExternalProject_CompactNSearch-configure;%(AdditionalInputs)</AdditionalInputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\CompactNSearch\src\ExternalProject_CompactNSearch-stamp\$(Configuration)\ExternalProject_CompactNSearch-build</Outputs>
+      <LinkObjects Condition="'$(Configuration)|$(Platform)'=='Release|x64'">false</LinkObjects>
+      <Message Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">Performing build step for 'ExternalProject_CompactNSearch'</Message>
+      <Command Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">setlocal
+cd D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\CompactNSearch\src\ExternalProject_CompactNSearch-build
+if %errorlevel% neq 0 goto :cmEnd
+D:
+if %errorlevel% neq 0 goto :cmEnd
+"C:\Program Files\CMake\bin\cmake.exe" --build . --config MinSizeRel
+if %errorlevel% neq 0 goto :cmEnd
+"C:\Program Files\CMake\bin\cmake.exe" -E touch D:/Users/scarensac/Documents/GitHub/SPlisHSPlasH/extern/CompactNSearch/src/ExternalProject_CompactNSearch-stamp/$(Configuration)/ExternalProject_CompactNSearch-build
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal &amp; call :cmErrorLevel %errorlevel% &amp; goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd</Command>
+      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">D:/Users/scarensac/Documents/GitHub/SPlisHSPlasH/build/CMakeFiles/f5d2c21d410672f406bc2aaa9946944c/ExternalProject_CompactNSearch-build.rule;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\CompactNSearch\src\ExternalProject_CompactNSearch-stamp\$(Configuration)\ExternalProject_CompactNSearch-configure;%(AdditionalInputs)</AdditionalInputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\CompactNSearch\src\ExternalProject_CompactNSearch-stamp\$(Configuration)\ExternalProject_CompactNSearch-build</Outputs>
+      <LinkObjects Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">false</LinkObjects>
+      <Message Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">Performing build step for 'ExternalProject_CompactNSearch'</Message>
+      <Command Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">setlocal
+cd D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\CompactNSearch\src\ExternalProject_CompactNSearch-build
+if %errorlevel% neq 0 goto :cmEnd
+D:
+if %errorlevel% neq 0 goto :cmEnd
+"C:\Program Files\CMake\bin\cmake.exe" --build . --config RelWithDebInfo
+if %errorlevel% neq 0 goto :cmEnd
+"C:\Program Files\CMake\bin\cmake.exe" -E touch D:/Users/scarensac/Documents/GitHub/SPlisHSPlasH/extern/CompactNSearch/src/ExternalProject_CompactNSearch-stamp/$(Configuration)/ExternalProject_CompactNSearch-build
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal &amp; call :cmErrorLevel %errorlevel% &amp; goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd</Command>
+      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">D:/Users/scarensac/Documents/GitHub/SPlisHSPlasH/build/CMakeFiles/f5d2c21d410672f406bc2aaa9946944c/ExternalProject_CompactNSearch-build.rule;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\CompactNSearch\src\ExternalProject_CompactNSearch-stamp\$(Configuration)\ExternalProject_CompactNSearch-configure;%(AdditionalInputs)</AdditionalInputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\CompactNSearch\src\ExternalProject_CompactNSearch-stamp\$(Configuration)\ExternalProject_CompactNSearch-build</Outputs>
+      <LinkObjects Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">false</LinkObjects>
+    </CustomBuild>
+  </ItemGroup>
+  <ItemGroup>
+    <CustomBuild Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\build\CMakeFiles\f5d2c21d410672f406bc2aaa9946944c\ExternalProject_CompactNSearch-install.rule">
+      <Message Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Performing install step for 'ExternalProject_CompactNSearch'</Message>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">setlocal
+cd D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\CompactNSearch\src\ExternalProject_CompactNSearch-build
+if %errorlevel% neq 0 goto :cmEnd
+D:
+if %errorlevel% neq 0 goto :cmEnd
+"C:\Program Files\CMake\bin\cmake.exe" --build . --config Debug --target install
+if %errorlevel% neq 0 goto :cmEnd
+"C:\Program Files\CMake\bin\cmake.exe" -E touch D:/Users/scarensac/Documents/GitHub/SPlisHSPlasH/extern/CompactNSearch/src/ExternalProject_CompactNSearch-stamp/$(Configuration)/ExternalProject_CompactNSearch-install
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal &amp; call :cmErrorLevel %errorlevel% &amp; goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd</Command>
+      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">D:/Users/scarensac/Documents/GitHub/SPlisHSPlasH/build/CMakeFiles/f5d2c21d410672f406bc2aaa9946944c/ExternalProject_CompactNSearch-install.rule;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\CompactNSearch\src\ExternalProject_CompactNSearch-stamp\$(Configuration)\ExternalProject_CompactNSearch-build;%(AdditionalInputs)</AdditionalInputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\CompactNSearch\src\ExternalProject_CompactNSearch-stamp\$(Configuration)\ExternalProject_CompactNSearch-install</Outputs>
+      <LinkObjects Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</LinkObjects>
+      <Message Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Performing install step for 'ExternalProject_CompactNSearch'</Message>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release|x64'">setlocal
+cd D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\CompactNSearch\src\ExternalProject_CompactNSearch-build
+if %errorlevel% neq 0 goto :cmEnd
+D:
+if %errorlevel% neq 0 goto :cmEnd
+"C:\Program Files\CMake\bin\cmake.exe" --build . --config Release --target install
+if %errorlevel% neq 0 goto :cmEnd
+"C:\Program Files\CMake\bin\cmake.exe" -E touch D:/Users/scarensac/Documents/GitHub/SPlisHSPlasH/extern/CompactNSearch/src/ExternalProject_CompactNSearch-stamp/$(Configuration)/ExternalProject_CompactNSearch-install
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal &amp; call :cmErrorLevel %errorlevel% &amp; goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd</Command>
+      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">D:/Users/scarensac/Documents/GitHub/SPlisHSPlasH/build/CMakeFiles/f5d2c21d410672f406bc2aaa9946944c/ExternalProject_CompactNSearch-install.rule;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\CompactNSearch\src\ExternalProject_CompactNSearch-stamp\$(Configuration)\ExternalProject_CompactNSearch-build;%(AdditionalInputs)</AdditionalInputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\CompactNSearch\src\ExternalProject_CompactNSearch-stamp\$(Configuration)\ExternalProject_CompactNSearch-install</Outputs>
+      <LinkObjects Condition="'$(Configuration)|$(Platform)'=='Release|x64'">false</LinkObjects>
+      <Message Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">Performing install step for 'ExternalProject_CompactNSearch'</Message>
+      <Command Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">setlocal
+cd D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\CompactNSearch\src\ExternalProject_CompactNSearch-build
+if %errorlevel% neq 0 goto :cmEnd
+D:
+if %errorlevel% neq 0 goto :cmEnd
+"C:\Program Files\CMake\bin\cmake.exe" --build . --config MinSizeRel --target install
+if %errorlevel% neq 0 goto :cmEnd
+"C:\Program Files\CMake\bin\cmake.exe" -E touch D:/Users/scarensac/Documents/GitHub/SPlisHSPlasH/extern/CompactNSearch/src/ExternalProject_CompactNSearch-stamp/$(Configuration)/ExternalProject_CompactNSearch-install
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal &amp; call :cmErrorLevel %errorlevel% &amp; goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd</Command>
+      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">D:/Users/scarensac/Documents/GitHub/SPlisHSPlasH/build/CMakeFiles/f5d2c21d410672f406bc2aaa9946944c/ExternalProject_CompactNSearch-install.rule;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\CompactNSearch\src\ExternalProject_CompactNSearch-stamp\$(Configuration)\ExternalProject_CompactNSearch-build;%(AdditionalInputs)</AdditionalInputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\CompactNSearch\src\ExternalProject_CompactNSearch-stamp\$(Configuration)\ExternalProject_CompactNSearch-install</Outputs>
+      <LinkObjects Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">false</LinkObjects>
+      <Message Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">Performing install step for 'ExternalProject_CompactNSearch'</Message>
+      <Command Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">setlocal
+cd D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\CompactNSearch\src\ExternalProject_CompactNSearch-build
+if %errorlevel% neq 0 goto :cmEnd
+D:
+if %errorlevel% neq 0 goto :cmEnd
+"C:\Program Files\CMake\bin\cmake.exe" --build . --config RelWithDebInfo --target install
+if %errorlevel% neq 0 goto :cmEnd
+"C:\Program Files\CMake\bin\cmake.exe" -E touch D:/Users/scarensac/Documents/GitHub/SPlisHSPlasH/extern/CompactNSearch/src/ExternalProject_CompactNSearch-stamp/$(Configuration)/ExternalProject_CompactNSearch-install
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal &amp; call :cmErrorLevel %errorlevel% &amp; goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd</Command>
+      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">D:/Users/scarensac/Documents/GitHub/SPlisHSPlasH/build/CMakeFiles/f5d2c21d410672f406bc2aaa9946944c/ExternalProject_CompactNSearch-install.rule;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\CompactNSearch\src\ExternalProject_CompactNSearch-stamp\$(Configuration)\ExternalProject_CompactNSearch-build;%(AdditionalInputs)</AdditionalInputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\CompactNSearch\src\ExternalProject_CompactNSearch-stamp\$(Configuration)\ExternalProject_CompactNSearch-install</Outputs>
+      <LinkObjects Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">false</LinkObjects>
+    </CustomBuild>
+  </ItemGroup>
+  <ItemGroup>
+    <CustomBuild Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\build\CMakeFiles\81d755d11e071cbc2036188617103399\ExternalProject_CompactNSearch-complete.rule">
+      <Message Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Completed 'ExternalProject_CompactNSearch'</Message>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">setlocal
+"C:\Program Files\CMake\bin\cmake.exe" -E make_directory D:/Users/scarensac/Documents/GitHub/SPlisHSPlasH/build/CMakeFiles/$(Configuration)
+if %errorlevel% neq 0 goto :cmEnd
+"C:\Program Files\CMake\bin\cmake.exe" -E touch D:/Users/scarensac/Documents/GitHub/SPlisHSPlasH/build/CMakeFiles/$(Configuration)/ExternalProject_CompactNSearch-complete
+if %errorlevel% neq 0 goto :cmEnd
+"C:\Program Files\CMake\bin\cmake.exe" -E touch D:/Users/scarensac/Documents/GitHub/SPlisHSPlasH/extern/CompactNSearch/src/ExternalProject_CompactNSearch-stamp/$(Configuration)/ExternalProject_CompactNSearch-done
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal &amp; call :cmErrorLevel %errorlevel% &amp; goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd</Command>
+      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">D:/Users/scarensac/Documents/GitHub/SPlisHSPlasH/build/CMakeFiles/81d755d11e071cbc2036188617103399/ExternalProject_CompactNSearch-complete.rule;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\CompactNSearch\src\ExternalProject_CompactNSearch-stamp\$(Configuration)\ExternalProject_CompactNSearch-install;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\CompactNSearch\src\ExternalProject_CompactNSearch-stamp\$(Configuration)\ExternalProject_CompactNSearch-mkdir;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\CompactNSearch\src\ExternalProject_CompactNSearch-stamp\$(Configuration)\ExternalProject_CompactNSearch-download;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\CompactNSearch\src\ExternalProject_CompactNSearch-stamp\$(Configuration)\ExternalProject_CompactNSearch-update;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\CompactNSearch\src\ExternalProject_CompactNSearch-stamp\$(Configuration)\ExternalProject_CompactNSearch-patch;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\CompactNSearch\src\ExternalProject_CompactNSearch-stamp\$(Configuration)\ExternalProject_CompactNSearch-configure;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\CompactNSearch\src\ExternalProject_CompactNSearch-stamp\$(Configuration)\ExternalProject_CompactNSearch-build;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\CompactNSearch\src\ExternalProject_CompactNSearch-stamp\$(Configuration)\ExternalProject_CompactNSearch-install;%(AdditionalInputs)</AdditionalInputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\build\CMakeFiles\$(Configuration)\ExternalProject_CompactNSearch-complete</Outputs>
+      <LinkObjects Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</LinkObjects>
+      <Message Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Completed 'ExternalProject_CompactNSearch'</Message>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release|x64'">setlocal
+"C:\Program Files\CMake\bin\cmake.exe" -E make_directory D:/Users/scarensac/Documents/GitHub/SPlisHSPlasH/build/CMakeFiles/$(Configuration)
+if %errorlevel% neq 0 goto :cmEnd
+"C:\Program Files\CMake\bin\cmake.exe" -E touch D:/Users/scarensac/Documents/GitHub/SPlisHSPlasH/build/CMakeFiles/$(Configuration)/ExternalProject_CompactNSearch-complete
+if %errorlevel% neq 0 goto :cmEnd
+"C:\Program Files\CMake\bin\cmake.exe" -E touch D:/Users/scarensac/Documents/GitHub/SPlisHSPlasH/extern/CompactNSearch/src/ExternalProject_CompactNSearch-stamp/$(Configuration)/ExternalProject_CompactNSearch-done
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal &amp; call :cmErrorLevel %errorlevel% &amp; goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd</Command>
+      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">D:/Users/scarensac/Documents/GitHub/SPlisHSPlasH/build/CMakeFiles/81d755d11e071cbc2036188617103399/ExternalProject_CompactNSearch-complete.rule;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\CompactNSearch\src\ExternalProject_CompactNSearch-stamp\$(Configuration)\ExternalProject_CompactNSearch-install;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\CompactNSearch\src\ExternalProject_CompactNSearch-stamp\$(Configuration)\ExternalProject_CompactNSearch-mkdir;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\CompactNSearch\src\ExternalProject_CompactNSearch-stamp\$(Configuration)\ExternalProject_CompactNSearch-download;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\CompactNSearch\src\ExternalProject_CompactNSearch-stamp\$(Configuration)\ExternalProject_CompactNSearch-update;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\CompactNSearch\src\ExternalProject_CompactNSearch-stamp\$(Configuration)\ExternalProject_CompactNSearch-patch;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\CompactNSearch\src\ExternalProject_CompactNSearch-stamp\$(Configuration)\ExternalProject_CompactNSearch-configure;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\CompactNSearch\src\ExternalProject_CompactNSearch-stamp\$(Configuration)\ExternalProject_CompactNSearch-build;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\CompactNSearch\src\ExternalProject_CompactNSearch-stamp\$(Configuration)\ExternalProject_CompactNSearch-install;%(AdditionalInputs)</AdditionalInputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\build\CMakeFiles\$(Configuration)\ExternalProject_CompactNSearch-complete</Outputs>
+      <LinkObjects Condition="'$(Configuration)|$(Platform)'=='Release|x64'">false</LinkObjects>
+      <Message Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">Completed 'ExternalProject_CompactNSearch'</Message>
+      <Command Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">setlocal
+"C:\Program Files\CMake\bin\cmake.exe" -E make_directory D:/Users/scarensac/Documents/GitHub/SPlisHSPlasH/build/CMakeFiles/$(Configuration)
+if %errorlevel% neq 0 goto :cmEnd
+"C:\Program Files\CMake\bin\cmake.exe" -E touch D:/Users/scarensac/Documents/GitHub/SPlisHSPlasH/build/CMakeFiles/$(Configuration)/ExternalProject_CompactNSearch-complete
+if %errorlevel% neq 0 goto :cmEnd
+"C:\Program Files\CMake\bin\cmake.exe" -E touch D:/Users/scarensac/Documents/GitHub/SPlisHSPlasH/extern/CompactNSearch/src/ExternalProject_CompactNSearch-stamp/$(Configuration)/ExternalProject_CompactNSearch-done
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal &amp; call :cmErrorLevel %errorlevel% &amp; goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd</Command>
+      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">D:/Users/scarensac/Documents/GitHub/SPlisHSPlasH/build/CMakeFiles/81d755d11e071cbc2036188617103399/ExternalProject_CompactNSearch-complete.rule;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\CompactNSearch\src\ExternalProject_CompactNSearch-stamp\$(Configuration)\ExternalProject_CompactNSearch-install;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\CompactNSearch\src\ExternalProject_CompactNSearch-stamp\$(Configuration)\ExternalProject_CompactNSearch-mkdir;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\CompactNSearch\src\ExternalProject_CompactNSearch-stamp\$(Configuration)\ExternalProject_CompactNSearch-download;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\CompactNSearch\src\ExternalProject_CompactNSearch-stamp\$(Configuration)\ExternalProject_CompactNSearch-update;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\CompactNSearch\src\ExternalProject_CompactNSearch-stamp\$(Configuration)\ExternalProject_CompactNSearch-patch;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\CompactNSearch\src\ExternalProject_CompactNSearch-stamp\$(Configuration)\ExternalProject_CompactNSearch-configure;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\CompactNSearch\src\ExternalProject_CompactNSearch-stamp\$(Configuration)\ExternalProject_CompactNSearch-build;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\CompactNSearch\src\ExternalProject_CompactNSearch-stamp\$(Configuration)\ExternalProject_CompactNSearch-install;%(AdditionalInputs)</AdditionalInputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\build\CMakeFiles\$(Configuration)\ExternalProject_CompactNSearch-complete</Outputs>
+      <LinkObjects Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">false</LinkObjects>
+      <Message Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">Completed 'ExternalProject_CompactNSearch'</Message>
+      <Command Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">setlocal
+"C:\Program Files\CMake\bin\cmake.exe" -E make_directory D:/Users/scarensac/Documents/GitHub/SPlisHSPlasH/build/CMakeFiles/$(Configuration)
+if %errorlevel% neq 0 goto :cmEnd
+"C:\Program Files\CMake\bin\cmake.exe" -E touch D:/Users/scarensac/Documents/GitHub/SPlisHSPlasH/build/CMakeFiles/$(Configuration)/ExternalProject_CompactNSearch-complete
+if %errorlevel% neq 0 goto :cmEnd
+"C:\Program Files\CMake\bin\cmake.exe" -E touch D:/Users/scarensac/Documents/GitHub/SPlisHSPlasH/extern/CompactNSearch/src/ExternalProject_CompactNSearch-stamp/$(Configuration)/ExternalProject_CompactNSearch-done
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal &amp; call :cmErrorLevel %errorlevel% &amp; goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd</Command>
+      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">D:/Users/scarensac/Documents/GitHub/SPlisHSPlasH/build/CMakeFiles/81d755d11e071cbc2036188617103399/ExternalProject_CompactNSearch-complete.rule;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\CompactNSearch\src\ExternalProject_CompactNSearch-stamp\$(Configuration)\ExternalProject_CompactNSearch-install;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\CompactNSearch\src\ExternalProject_CompactNSearch-stamp\$(Configuration)\ExternalProject_CompactNSearch-mkdir;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\CompactNSearch\src\ExternalProject_CompactNSearch-stamp\$(Configuration)\ExternalProject_CompactNSearch-download;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\CompactNSearch\src\ExternalProject_CompactNSearch-stamp\$(Configuration)\ExternalProject_CompactNSearch-update;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\CompactNSearch\src\ExternalProject_CompactNSearch-stamp\$(Configuration)\ExternalProject_CompactNSearch-patch;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\CompactNSearch\src\ExternalProject_CompactNSearch-stamp\$(Configuration)\ExternalProject_CompactNSearch-configure;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\CompactNSearch\src\ExternalProject_CompactNSearch-stamp\$(Configuration)\ExternalProject_CompactNSearch-build;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\CompactNSearch\src\ExternalProject_CompactNSearch-stamp\$(Configuration)\ExternalProject_CompactNSearch-install;%(AdditionalInputs)</AdditionalInputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\build\CMakeFiles\$(Configuration)\ExternalProject_CompactNSearch-complete</Outputs>
+      <LinkObjects Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">false</LinkObjects>
+    </CustomBuild>
+  </ItemGroup>
+  <ItemGroup>
+    <CustomBuild Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\build\CMakeFiles\c9b4a02ca59d2248b67abd9304175896\ExternalProject_CompactNSearch.rule">
+      <Message Condition="'$(Configuration)|$(Platform)'=='Debug|x64'"></Message>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">setlocal
+:cmEnd
+endlocal &amp; call :cmErrorLevel %errorlevel% &amp; goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd</Command>
+      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">D:/Users/scarensac/Documents/GitHub/SPlisHSPlasH/build/CMakeFiles/c9b4a02ca59d2248b67abd9304175896/ExternalProject_CompactNSearch.rule;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\build\CMakeFiles\$(Configuration)\ExternalProject_CompactNSearch-complete;%(AdditionalInputs)</AdditionalInputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\build\CMakeFiles\ExternalProject_CompactNSearch</Outputs>
+      <LinkObjects Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</LinkObjects>
+      <Message Condition="'$(Configuration)|$(Platform)'=='Release|x64'"></Message>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release|x64'">setlocal
+:cmEnd
+endlocal &amp; call :cmErrorLevel %errorlevel% &amp; goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd</Command>
+      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">D:/Users/scarensac/Documents/GitHub/SPlisHSPlasH/build/CMakeFiles/c9b4a02ca59d2248b67abd9304175896/ExternalProject_CompactNSearch.rule;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\build\CMakeFiles\$(Configuration)\ExternalProject_CompactNSearch-complete;%(AdditionalInputs)</AdditionalInputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\build\CMakeFiles\ExternalProject_CompactNSearch</Outputs>
+      <LinkObjects Condition="'$(Configuration)|$(Platform)'=='Release|x64'">false</LinkObjects>
+      <Message Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'"></Message>
+      <Command Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">setlocal
+:cmEnd
+endlocal &amp; call :cmErrorLevel %errorlevel% &amp; goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd</Command>
+      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">D:/Users/scarensac/Documents/GitHub/SPlisHSPlasH/build/CMakeFiles/c9b4a02ca59d2248b67abd9304175896/ExternalProject_CompactNSearch.rule;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\build\CMakeFiles\$(Configuration)\ExternalProject_CompactNSearch-complete;%(AdditionalInputs)</AdditionalInputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\build\CMakeFiles\ExternalProject_CompactNSearch</Outputs>
+      <LinkObjects Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">false</LinkObjects>
+      <Message Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'"></Message>
+      <Command Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">setlocal
+:cmEnd
+endlocal &amp; call :cmErrorLevel %errorlevel% &amp; goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd</Command>
+      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">D:/Users/scarensac/Documents/GitHub/SPlisHSPlasH/build/CMakeFiles/c9b4a02ca59d2248b67abd9304175896/ExternalProject_CompactNSearch.rule;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\build\CMakeFiles\$(Configuration)\ExternalProject_CompactNSearch-complete;%(AdditionalInputs)</AdditionalInputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\build\CMakeFiles\ExternalProject_CompactNSearch</Outputs>
+      <LinkObjects Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">false</LinkObjects>
+    </CustomBuild>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\build\CMakeFiles\ExternalProject_CompactNSearch" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\build\ZERO_CHECK.vcxproj">
+      <Project>{00EF50C2-A21A-3D74-A41A-7019E9B19CDD}</Project>
+      <Name>ZERO_CHECK</Name>
+    </ProjectReference>
+  </ItemGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+  <ImportGroup Label="ExtensionTargets">
+  </ImportGroup>
+</Project>

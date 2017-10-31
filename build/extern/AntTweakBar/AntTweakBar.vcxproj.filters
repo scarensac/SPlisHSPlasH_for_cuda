@@ -1,0 +1,117 @@
+﻿<?xml version="1.0" encoding="UTF-8"?>
+<Project ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <ClCompile Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\AntTweakBar\src\LoadOGL.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\AntTweakBar\src\LoadOGLCore.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\AntTweakBar\src\TwBar.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\AntTweakBar\src\TwColors.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\AntTweakBar\src\TwEventGLFW.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\AntTweakBar\src\TwEventGLUT.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\AntTweakBar\src\TwEventSDL.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\AntTweakBar\src\TwEventSDL12.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\AntTweakBar\src\TwEventSDL13.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\AntTweakBar\src\TwEventSFML.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\AntTweakBar\src\TwFonts.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\AntTweakBar\src\TwMgr.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\AntTweakBar\src\TwOpenGL.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\AntTweakBar\src\TwOpenGLCore.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\AntTweakBar\src\TwPrecomp.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\AntTweakBar\src\TwEventWin.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\AntTweakBar\include\AntTweakBar.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\AntTweakBar\src\AntPerfTimer.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\AntTweakBar\src\LoadOGL.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\AntTweakBar\src\LoadOGLCore.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\AntTweakBar\src\MiniGLFW.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\AntTweakBar\src\MiniGLUT.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\AntTweakBar\src\MiniSDL12.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\AntTweakBar\src\MiniSDL13.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\AntTweakBar\src\MiniSFML16.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\AntTweakBar\src\TwBar.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\AntTweakBar\src\TwColors.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\AntTweakBar\src\TwFonts.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\AntTweakBar\src\TwGraph.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\AntTweakBar\src\TwMgr.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\AntTweakBar\src\TwOpenGL.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\AntTweakBar\src\TwOpenGLCore.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\AntTweakBar\src\TwPrecomp.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <CustomBuild Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\AntTweakBar\CMakeLists.txt" />
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="Source Files">
+      <UniqueIdentifier>{856C601E-746E-3F9A-A835-24553F07107F}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files">
+      <UniqueIdentifier>{8A583372-D5DE-3B9B-8DF6-2DF0AD88272C}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+</Project>

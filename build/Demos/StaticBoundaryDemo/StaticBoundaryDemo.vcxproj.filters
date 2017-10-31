@@ -1,0 +1,48 @@
+﻿<?xml version="1.0" encoding="UTF-8"?>
+<Project ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <ClCompile Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\Demos\StaticBoundaryDemo\main.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\Demos\Common\DemoBase.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\Visualization\MiniGL.cpp">
+      <Filter>Source Files\Visualization</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\Visualization\Shader.cpp">
+      <Filter>Source Files\Visualization</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\Demos\Common\DemoBase.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\Visualization\MiniGL.h">
+      <Filter>Header Files\Visualization</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\Visualization\Selection.h">
+      <Filter>Header Files\Visualization</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\Visualization\Shader.h">
+      <Filter>Header Files\Visualization</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <CustomBuild Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\Demos\StaticBoundaryDemo\CMakeLists.txt" />
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="Header Files\Visualization">
+      <UniqueIdentifier>{FC840617-2080-3F54-8A2C-62AF292469BC}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Visualization">
+      <UniqueIdentifier>{00B424D5-0D6B-33FE-8FEE-B91891B68FB4}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files">
+      <UniqueIdentifier>{856C601E-746E-3F9A-A835-24553F07107F}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files">
+      <UniqueIdentifier>{8A583372-D5DE-3B9B-8DF6-2DF0AD88272C}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+</Project>

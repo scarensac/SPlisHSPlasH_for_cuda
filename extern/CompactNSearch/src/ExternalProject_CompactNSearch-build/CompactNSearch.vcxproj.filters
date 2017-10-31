@@ -1,0 +1,33 @@
+﻿<?xml version="1.0" encoding="UTF-8"?>
+<Project ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <ClCompile Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\CompactNSearch\src\ExternalProject_CompactNSearch\src\CompactNSearch.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\CompactNSearch\src\ExternalProject_CompactNSearch\include\Config.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\CompactNSearch\src\ExternalProject_CompactNSearch\include\CompactNSearch.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\CompactNSearch\src\ExternalProject_CompactNSearch\include\PointSet.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\CompactNSearch\src\ExternalProject_CompactNSearch\include\DataStructures.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <CustomBuild Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\CompactNSearch\src\ExternalProject_CompactNSearch\CMakeLists.txt" />
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="Source Files">
+      <UniqueIdentifier>{2590296F-244D-3243-9969-CD78FEC3F2F0}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files">
+      <UniqueIdentifier>{7AA9774B-6ACB-3342-B4A6-C9BA48DD9063}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+</Project>
