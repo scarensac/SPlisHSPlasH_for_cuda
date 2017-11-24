@@ -49,6 +49,7 @@
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
   <ImportGroup Label="ExtensionSettings">
+    <Import Project="$(VCTargetsPath)\BuildCustomizations\CUDA 9.0.props" />
   </ImportGroup>
   <ImportGroup Label="PropertySheets">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
@@ -95,6 +96,16 @@
       <PreprocessorDefinitions>WIN32;_DEBUG;_WINDOWS;_CRT_SECURE_NO_DEPRECATE;SPH_DATA_PATH=\"../data\";TW_EXPORTS;TW_STATIC;CMAKE_INTDIR=\"Debug\";%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <AdditionalIncludeDirectories>D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\AntTweakBar\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ResourceCompile>
+    <CudaCompile>
+      <Defines>_WINDOWS;_CRT_SECURE_NO_DEPRECATE;SPH_DATA_PATH="../data";TW_EXPORTS;TW_STATIC;CMAKE_INTDIR="Debug";%(Defines)</Defines>
+      <AdditionalOptions>%(AdditionalOptions) -Xcompiler="/EHsc -Zi -Ob0"</AdditionalOptions>
+      <Include>D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\AntTweakBar\include;%(Include)</Include>
+      <Optimization>Od</Optimization>
+      <Runtime>MDd</Runtime>
+      <RuntimeChecks>RTC1</RuntimeChecks>
+      <TypeInfo>true</TypeInfo>
+      <Warning>W3</Warning>
+    </CudaCompile>
     <Midl>
       <AdditionalIncludeDirectories>D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\AntTweakBar\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <OutputDirectory>$(ProjectDir)/$(IntDir)</OutputDirectory>
@@ -103,6 +114,10 @@
       <InterfaceIdentifierFileName>%(Filename)_i.c</InterfaceIdentifierFileName>
       <ProxyFileName>%(Filename)_p.c</ProxyFileName>
     </Midl>
+    <CudaLink>
+      <AdditionalOptions>-Wno-deprecated-gpu-targets</AdditionalOptions>
+      <PerformDeviceLink>false</PerformDeviceLink>
+    </CudaLink>
     <Lib>
       <AdditionalOptions>%(AdditionalOptions) /machine:x64</AdditionalOptions>
     </Lib>
@@ -132,6 +147,15 @@
       <PreprocessorDefinitions>WIN32;_WINDOWS;NDEBUG;_CRT_SECURE_NO_DEPRECATE;SPH_DATA_PATH=\"../data\";TW_EXPORTS;TW_STATIC;CMAKE_INTDIR=\"Release\";%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <AdditionalIncludeDirectories>D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\AntTweakBar\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ResourceCompile>
+    <CudaCompile>
+      <Defines>_WINDOWS;NDEBUG;_CRT_SECURE_NO_DEPRECATE;SPH_DATA_PATH="../data";TW_EXPORTS;TW_STATIC;CMAKE_INTDIR="Release";%(Defines)</Defines>
+      <AdditionalOptions>%(AdditionalOptions) -Xcompiler="/EHsc -Ob2"</AdditionalOptions>
+      <Include>D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\AntTweakBar\include;%(Include)</Include>
+      <Optimization>O2</Optimization>
+      <Runtime>MD</Runtime>
+      <TypeInfo>true</TypeInfo>
+      <Warning>W3</Warning>
+    </CudaCompile>
     <Midl>
       <AdditionalIncludeDirectories>D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\AntTweakBar\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <OutputDirectory>$(ProjectDir)/$(IntDir)</OutputDirectory>
@@ -140,6 +164,10 @@
       <InterfaceIdentifierFileName>%(Filename)_i.c</InterfaceIdentifierFileName>
       <ProxyFileName>%(Filename)_p.c</ProxyFileName>
     </Midl>
+    <CudaLink>
+      <AdditionalOptions>-Wno-deprecated-gpu-targets</AdditionalOptions>
+      <PerformDeviceLink>false</PerformDeviceLink>
+    </CudaLink>
     <Lib>
       <AdditionalOptions>%(AdditionalOptions) /machine:x64</AdditionalOptions>
     </Lib>
@@ -164,6 +192,15 @@
       <PreprocessorDefinitions>WIN32;_WINDOWS;NDEBUG;_CRT_SECURE_NO_DEPRECATE;SPH_DATA_PATH=\"../data\";TW_EXPORTS;TW_STATIC;CMAKE_INTDIR=\"MinSizeRel\";%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <AdditionalIncludeDirectories>D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\AntTweakBar\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ResourceCompile>
+    <CudaCompile>
+      <Defines>_WINDOWS;NDEBUG;_CRT_SECURE_NO_DEPRECATE;SPH_DATA_PATH="../data";TW_EXPORTS;TW_STATIC;CMAKE_INTDIR="MinSizeRel";%(Defines)</Defines>
+      <AdditionalOptions>%(AdditionalOptions) -Xcompiler="/EHsc -Ob1"</AdditionalOptions>
+      <Include>D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\AntTweakBar\include;%(Include)</Include>
+      <Optimization>O1</Optimization>
+      <Runtime>MD</Runtime>
+      <TypeInfo>true</TypeInfo>
+      <Warning>W3</Warning>
+    </CudaCompile>
     <Midl>
       <AdditionalIncludeDirectories>D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\AntTweakBar\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <OutputDirectory>$(ProjectDir)/$(IntDir)</OutputDirectory>
@@ -172,6 +209,10 @@
       <InterfaceIdentifierFileName>%(Filename)_i.c</InterfaceIdentifierFileName>
       <ProxyFileName>%(Filename)_p.c</ProxyFileName>
     </Midl>
+    <CudaLink>
+      <AdditionalOptions>-Wno-deprecated-gpu-targets</AdditionalOptions>
+      <PerformDeviceLink>false</PerformDeviceLink>
+    </CudaLink>
     <Lib>
       <AdditionalOptions>%(AdditionalOptions) /machine:x64</AdditionalOptions>
     </Lib>
@@ -196,6 +237,15 @@
       <PreprocessorDefinitions>WIN32;_WINDOWS;NDEBUG;_CRT_SECURE_NO_DEPRECATE;SPH_DATA_PATH=\"../data\";TW_EXPORTS;TW_STATIC;CMAKE_INTDIR=\"RelWithDebInfo\";%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <AdditionalIncludeDirectories>D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\AntTweakBar\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ResourceCompile>
+    <CudaCompile>
+      <Defines>_WINDOWS;NDEBUG;_CRT_SECURE_NO_DEPRECATE;SPH_DATA_PATH="../data";TW_EXPORTS;TW_STATIC;CMAKE_INTDIR="RelWithDebInfo";%(Defines)</Defines>
+      <AdditionalOptions>%(AdditionalOptions) -Xcompiler="/EHsc -Zi -Ob1"</AdditionalOptions>
+      <Include>D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\AntTweakBar\include;%(Include)</Include>
+      <Optimization>O2</Optimization>
+      <Runtime>MD</Runtime>
+      <TypeInfo>true</TypeInfo>
+      <Warning>W3</Warning>
+    </CudaCompile>
     <Midl>
       <AdditionalIncludeDirectories>D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\AntTweakBar\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <OutputDirectory>$(ProjectDir)/$(IntDir)</OutputDirectory>
@@ -204,6 +254,10 @@
       <InterfaceIdentifierFileName>%(Filename)_i.c</InterfaceIdentifierFileName>
       <ProxyFileName>%(Filename)_p.c</ProxyFileName>
     </Midl>
+    <CudaLink>
+      <AdditionalOptions>-Wno-deprecated-gpu-targets</AdditionalOptions>
+      <PerformDeviceLink>false</PerformDeviceLink>
+    </CudaLink>
     <Lib>
       <AdditionalOptions>%(AdditionalOptions) /machine:x64</AdditionalOptions>
     </Lib>
@@ -337,5 +391,6 @@ if %errorlevel% neq 0 goto :VCEnd</Command>
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
+    <Import Project="$(VCTargetsPath)\BuildCustomizations\CUDA 9.0.targets" />
   </ImportGroup>
 </Project>

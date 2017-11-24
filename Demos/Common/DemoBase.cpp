@@ -8,6 +8,7 @@
 #include "SPlisHSPlasH/PBF/TimeStepPBF.h"
 #include "SPlisHSPlasH/IISPH/TimeStepIISPH.h"
 #include "SPlisHSPlasH/DFSPH/TimeStepDFSPH.h"
+#include "SPlisHSPlasH/DFSPH/DFSPH_cpu_c_arrays.h"
 #include "SPlisHSPlasH/PF/TimeStepPF.h"
 #include "Utilities/PartioReaderWriter.h"
 #include "Visualization/Selection.h"
@@ -206,7 +207,7 @@ void DemoBase::initParameters()
 	m_parameters.push_back(Parameter(ParameterIDs::Gravitation, "Gravitation", TW_TYPE_DIR3R, " label='Gravitation' group=Simulation", this));
 
 	TwType enumType = TwDefineEnum("SimulationMethodType", NULL, 0);
-	m_parameters.push_back(Parameter(ParameterIDs::SimMethod, "SimulationMethod", enumType, " label='Simulation method' enum='0 {WCSPH}, 1 {PCISPH}, 2 {PBF}, 3 {IISPH}, 4 {DFSPH}, 5 {Projective Fluids}' group=Simulation", this));
+	m_parameters.push_back(Parameter(ParameterIDs::SimMethod, "SimulationMethod", enumType, " label='Simulation method' enum='0 {WCSPH}, 1 {PCISPH}, 2 {PBF}, 3 {IISPH}, 4 {DFSPH}, 5 {Projective Fluids} , 6 {DFSPH c arrays}' group=Simulation", this));
 
 	m_parameters.push_back(Parameter(ParameterIDs::MaxIterations, "MaxIterations", TW_TYPE_UINT32, " label='Max. iterations' group=Simulation ", this));
 	m_parameters.push_back(Parameter(ParameterIDs::MaxError, "MaxError", TW_TYPE_REAL, " label='Max.density error(%)'  min=0.00001 precision=4 group=Simulation ", this));
@@ -1090,6 +1091,18 @@ void DemoBase::setSimulationMethod(SimulationMethods method)
 				m_simulationMethod.model.updateBoundaryPsi();
 			}
 		}
+		
+		else if (method == SimulationMethods::DFSPH_C_ARRAY)
+		{
+			m_simulationMethod.simulation = new DFSPHCArrays(&m_simulationMethod.model);
+			m_simulationMethod.model.setGradKernel(0);
+			if (m_simulationMethod.model.getKernel() != 0)
+			{
+				m_simulationMethod.model.setKernel(0);
+				m_simulationMethod.model.updateBoundaryPsi();
+			}
+		}
+
 		m_simulationMethod.simulationMethod = method;
 
 		initParameters();

@@ -49,7 +49,7 @@ namespace SPH
 			NumParticles, ReusedParticles
 		};
 
-		enum SimulationMethods { WCSPH = 0, PCISPH, PBF, IISPH, DFSPH, PF, NUM_METHODS };
+		enum SimulationMethods { WCSPH = 0, PCISPH, PBF, IISPH, DFSPH, PF, DFSPH_C_ARRAY, NUM_METHODS };
 
 		typedef void(*SimulationMethodChangedFct)();
 

@@ -41,11 +41,16 @@ set(IISPH_SOURCE_FILES
 	)		
 	
 set(DFSPH_HEADER_FILES
+	DFSPH/DFSPH_cuda_basic.h
+	DFSPH/DFSPH_c_arrays_structure.h
+	DFSPH/DFSPH_cpu_c_arrays.h
 	DFSPH/SimulationDataDFSPH.h
 	DFSPH/TimeStepDFSPH.h
 	)
 	
 set(DFSPH_SOURCE_FILES
+	DFSPH/DFSPH_cuda_basic.cu
+	DFSPH/DFSPH_cpu_c_arrays.cpp
 	DFSPH/SimulationDataDFSPH.cpp
 	DFSPH/TimeStepDFSPH.cpp
 	)	
@@ -137,6 +142,7 @@ include_directories(${PROJECT_PATH}/extern/install/CompactNSearch/include)
 
 add_library(SPlisHSPlasH
 	Common.h
+	Vector.h
 	Emitter.cpp
 	Emitter.h
 	EmitterSystem.cpp

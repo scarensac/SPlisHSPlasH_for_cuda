@@ -4,6 +4,7 @@ D:/Users/scarensac/Documents/GitHub/SPlisHSPlasH/build/CMakeFiles/3.9.4/CMakeSys
 C:/Program Files/CMake/share/cmake-3.9/Modules/CMakeSystemSpecificInitialize.cmake
 D:/Users/scarensac/Documents/GitHub/SPlisHSPlasH/build/CMakeFiles/3.9.4/CMakeCCompiler.cmake
 D:/Users/scarensac/Documents/GitHub/SPlisHSPlasH/build/CMakeFiles/3.9.4/CMakeCXXCompiler.cmake
+D:/Users/scarensac/Documents/GitHub/SPlisHSPlasH/build/CMakeFiles/3.9.4/CMakeCUDACompiler.cmake
 C:/Program Files/CMake/share/cmake-3.9/Modules/CMakeSystemSpecificInformation.cmake
 C:/Program Files/CMake/share/cmake-3.9/Modules/CMakeGenericSystem.cmake
 C:/Program Files/CMake/share/cmake-3.9/Modules/Platform/Windows.cmake
@@ -20,6 +21,11 @@ C:/Program Files/CMake/share/cmake-3.9/Modules/CMakeLanguageInformation.cmake
 C:/Program Files/CMake/share/cmake-3.9/Modules/Compiler/MSVC-CXX.cmake
 C:/Program Files/CMake/share/cmake-3.9/Modules/Compiler/CMakeCommonCompilerMacros.cmake
 C:/Program Files/CMake/share/cmake-3.9/Modules/Platform/Windows-MSVC-CXX.cmake
+C:/Program Files/CMake/share/cmake-3.9/Modules/Platform/Windows-MSVC.cmake
+C:/Program Files/CMake/share/cmake-3.9/Modules/CMakeCommonLanguageInclude.cmake
+C:/Program Files/CMake/share/cmake-3.9/Modules/CMakeCUDAInformation.cmake
+C:/Program Files/CMake/share/cmake-3.9/Modules/Compiler/NVIDIA-CUDA.cmake
+C:/Program Files/CMake/share/cmake-3.9/Modules/Platform/Windows-NVIDIA-CUDA.cmake
 C:/Program Files/CMake/share/cmake-3.9/Modules/Platform/Windows-MSVC.cmake
 C:/Program Files/CMake/share/cmake-3.9/Modules/CMakeCommonLanguageInclude.cmake
 D:/Users/scarensac/Documents/GitHub/SPlisHSPlasH/CMake/Common.cmake

@@ -49,6 +49,7 @@
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
   <ImportGroup Label="ExtensionSettings">
+    <Import Project="$(VCTargetsPath)\BuildCustomizations\CUDA 9.0.props" />
   </ImportGroup>
   <ImportGroup Label="PropertySheets">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
@@ -103,6 +104,16 @@
       <PreprocessorDefinitions>WIN32;_DEBUG;_WINDOWS;_CRT_SECURE_NO_DEPRECATE;SPH_DATA_PATH=\"../data\";PBD_DATA_PATH=\"../data\";CMAKE_INTDIR=\"Debug\";%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <AdditionalIncludeDirectories>D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\freeglut\include;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\eigen;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ResourceCompile>
+    <CudaCompile>
+      <Defines>_WINDOWS;_CRT_SECURE_NO_DEPRECATE;SPH_DATA_PATH="../data";PBD_DATA_PATH="../data";CMAKE_INTDIR="Debug";%(Defines)</Defines>
+      <AdditionalOptions>%(AdditionalOptions) -Xcompiler="/EHsc -Zi -Ob0"</AdditionalOptions>
+      <Include>D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\freeglut\include;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\eigen;%(Include)</Include>
+      <Optimization>Od</Optimization>
+      <Runtime>MDd</Runtime>
+      <RuntimeChecks>RTC1</RuntimeChecks>
+      <TypeInfo>true</TypeInfo>
+      <Warning>W3</Warning>
+    </CudaCompile>
     <Midl>
       <AdditionalIncludeDirectories>D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\freeglut\include;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\eigen;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <OutputDirectory>$(ProjectDir)/$(IntDir)</OutputDirectory>
@@ -112,7 +123,7 @@
       <ProxyFileName>%(Filename)_p.c</ProxyFileName>
     </Midl>
     <Link>
-      <AdditionalDependencies>..\..\..\lib\Debug\SPlisHSPlasH_d.lib;..\..\..\lib\Debug\Utilities_d.lib;..\..\..\lib\Debug\partio_d.lib;..\..\..\lib\Debug\zlib_d.lib;..\..\..\lib\Debug\MD5_d.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;comdlg32.lib;advapi32.lib</AdditionalDependencies>
+      <AdditionalDependencies>..\..\..\lib\Debug\SPlisHSPlasH_d.lib;..\..\..\lib\Debug\Utilities_d.lib;..\..\..\lib\Debug\partio_d.lib;..\..\..\lib\Debug\zlib_d.lib;..\..\..\lib\Debug\MD5_d.lib;cudart_static.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;comdlg32.lib;advapi32.lib</AdditionalDependencies>
       <AdditionalLibraryDirectories>%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <AdditionalOptions>%(AdditionalOptions) /machine:x64</AdditionalOptions>
       <GenerateDebugInformation>true</GenerateDebugInformation>
@@ -125,6 +136,10 @@
     <ProjectReference>
       <LinkLibraryDependencies>false</LinkLibraryDependencies>
     </ProjectReference>
+    <CudaLink>
+      <AdditionalOptions>-Wno-deprecated-gpu-targets</AdditionalOptions>
+      <PerformDeviceLink>true</PerformDeviceLink>
+    </CudaLink>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <ClCompile>
@@ -151,6 +166,15 @@
       <PreprocessorDefinitions>WIN32;_WINDOWS;NDEBUG;_CRT_SECURE_NO_DEPRECATE;SPH_DATA_PATH=\"../data\";PBD_DATA_PATH=\"../data\";CMAKE_INTDIR=\"Release\";%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <AdditionalIncludeDirectories>D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\freeglut\include;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\eigen;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ResourceCompile>
+    <CudaCompile>
+      <Defines>_WINDOWS;NDEBUG;_CRT_SECURE_NO_DEPRECATE;SPH_DATA_PATH="../data";PBD_DATA_PATH="../data";CMAKE_INTDIR="Release";%(Defines)</Defines>
+      <AdditionalOptions>%(AdditionalOptions) -Xcompiler="/EHsc -Ob2"</AdditionalOptions>
+      <Include>D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\freeglut\include;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\eigen;%(Include)</Include>
+      <Optimization>O2</Optimization>
+      <Runtime>MD</Runtime>
+      <TypeInfo>true</TypeInfo>
+      <Warning>W3</Warning>
+    </CudaCompile>
     <Midl>
       <AdditionalIncludeDirectories>D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\freeglut\include;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\eigen;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <OutputDirectory>$(ProjectDir)/$(IntDir)</OutputDirectory>
@@ -160,7 +184,7 @@
       <ProxyFileName>%(Filename)_p.c</ProxyFileName>
     </Midl>
     <Link>
-      <AdditionalDependencies>..\..\..\lib\Release\SPlisHSPlasH.lib;..\..\..\lib\Release\Utilities.lib;..\..\..\lib\Release\partio.lib;..\..\..\lib\Release\zlib.lib;..\..\..\lib\Release\MD5.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;comdlg32.lib;advapi32.lib</AdditionalDependencies>
+      <AdditionalDependencies>..\..\..\lib\Release\SPlisHSPlasH.lib;..\..\..\lib\Release\Utilities.lib;..\..\..\lib\Release\partio.lib;..\..\..\lib\Release\zlib.lib;..\..\..\lib\Release\MD5.lib;cudart_static.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;comdlg32.lib;advapi32.lib</AdditionalDependencies>
       <AdditionalLibraryDirectories>%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <AdditionalOptions>%(AdditionalOptions) /machine:x64</AdditionalOptions>
       <GenerateDebugInformation>false</GenerateDebugInformation>
@@ -173,6 +197,10 @@
     <ProjectReference>
       <LinkLibraryDependencies>false</LinkLibraryDependencies>
     </ProjectReference>
+    <CudaLink>
+      <AdditionalOptions>-Wno-deprecated-gpu-targets</AdditionalOptions>
+      <PerformDeviceLink>true</PerformDeviceLink>
+    </CudaLink>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">
     <ClCompile>
@@ -194,6 +222,15 @@
       <PreprocessorDefinitions>WIN32;_WINDOWS;NDEBUG;_CRT_SECURE_NO_DEPRECATE;SPH_DATA_PATH=\"../data\";PBD_DATA_PATH=\"../data\";CMAKE_INTDIR=\"MinSizeRel\";%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <AdditionalIncludeDirectories>D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\freeglut\include;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\eigen;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ResourceCompile>
+    <CudaCompile>
+      <Defines>_WINDOWS;NDEBUG;_CRT_SECURE_NO_DEPRECATE;SPH_DATA_PATH="../data";PBD_DATA_PATH="../data";CMAKE_INTDIR="MinSizeRel";%(Defines)</Defines>
+      <AdditionalOptions>%(AdditionalOptions) -Xcompiler="/EHsc -Ob1"</AdditionalOptions>
+      <Include>D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\freeglut\include;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\eigen;%(Include)</Include>
+      <Optimization>O1</Optimization>
+      <Runtime>MD</Runtime>
+      <TypeInfo>true</TypeInfo>
+      <Warning>W3</Warning>
+    </CudaCompile>
     <Midl>
       <AdditionalIncludeDirectories>D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\freeglut\include;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\eigen;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <OutputDirectory>$(ProjectDir)/$(IntDir)</OutputDirectory>
@@ -203,7 +240,7 @@
       <ProxyFileName>%(Filename)_p.c</ProxyFileName>
     </Midl>
     <Link>
-      <AdditionalDependencies>..\..\..\lib\MinSizeRel\SPlisHSPlasH_ms.lib;..\..\..\lib\MinSizeRel\Utilities_ms.lib;..\..\..\lib\MinSizeRel\partio_ms.lib;..\..\..\lib\MinSizeRel\zlib_ms.lib;..\..\..\lib\MinSizeRel\MD5_ms.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;comdlg32.lib;advapi32.lib</AdditionalDependencies>
+      <AdditionalDependencies>..\..\..\lib\MinSizeRel\SPlisHSPlasH_ms.lib;..\..\..\lib\MinSizeRel\Utilities_ms.lib;..\..\..\lib\MinSizeRel\partio_ms.lib;..\..\..\lib\MinSizeRel\zlib_ms.lib;..\..\..\lib\MinSizeRel\MD5_ms.lib;cudart_static.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;comdlg32.lib;advapi32.lib</AdditionalDependencies>
       <AdditionalLibraryDirectories>%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <AdditionalOptions>%(AdditionalOptions) /machine:x64</AdditionalOptions>
       <GenerateDebugInformation>false</GenerateDebugInformation>
@@ -216,6 +253,10 @@
     <ProjectReference>
       <LinkLibraryDependencies>false</LinkLibraryDependencies>
     </ProjectReference>
+    <CudaLink>
+      <AdditionalOptions>-Wno-deprecated-gpu-targets</AdditionalOptions>
+      <PerformDeviceLink>true</PerformDeviceLink>
+    </CudaLink>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">
     <ClCompile>
@@ -237,6 +278,15 @@
       <PreprocessorDefinitions>WIN32;_WINDOWS;NDEBUG;_CRT_SECURE_NO_DEPRECATE;SPH_DATA_PATH=\"../data\";PBD_DATA_PATH=\"../data\";CMAKE_INTDIR=\"RelWithDebInfo\";%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <AdditionalIncludeDirectories>D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\freeglut\include;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\eigen;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ResourceCompile>
+    <CudaCompile>
+      <Defines>_WINDOWS;NDEBUG;_CRT_SECURE_NO_DEPRECATE;SPH_DATA_PATH="../data";PBD_DATA_PATH="../data";CMAKE_INTDIR="RelWithDebInfo";%(Defines)</Defines>
+      <AdditionalOptions>%(AdditionalOptions) -Xcompiler="/EHsc -Zi -Ob1"</AdditionalOptions>
+      <Include>D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\freeglut\include;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\eigen;%(Include)</Include>
+      <Optimization>O2</Optimization>
+      <Runtime>MD</Runtime>
+      <TypeInfo>true</TypeInfo>
+      <Warning>W3</Warning>
+    </CudaCompile>
     <Midl>
       <AdditionalIncludeDirectories>D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\freeglut\include;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\eigen;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <OutputDirectory>$(ProjectDir)/$(IntDir)</OutputDirectory>
@@ -246,7 +296,7 @@
       <ProxyFileName>%(Filename)_p.c</ProxyFileName>
     </Midl>
     <Link>
-      <AdditionalDependencies>..\..\..\lib\RelWithDebInfo\SPlisHSPlasH_rd.lib;..\..\..\lib\RelWithDebInfo\Utilities_rd.lib;..\..\..\lib\RelWithDebInfo\partio_rd.lib;..\..\..\lib\RelWithDebInfo\zlib_rd.lib;..\..\..\lib\RelWithDebInfo\MD5_rd.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;comdlg32.lib;advapi32.lib</AdditionalDependencies>
+      <AdditionalDependencies>..\..\..\lib\RelWithDebInfo\SPlisHSPlasH_rd.lib;..\..\..\lib\RelWithDebInfo\Utilities_rd.lib;..\..\..\lib\RelWithDebInfo\partio_rd.lib;..\..\..\lib\RelWithDebInfo\zlib_rd.lib;..\..\..\lib\RelWithDebInfo\MD5_rd.lib;cudart_static.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;comdlg32.lib;advapi32.lib</AdditionalDependencies>
       <AdditionalLibraryDirectories>%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <AdditionalOptions>%(AdditionalOptions) /machine:x64</AdditionalOptions>
       <GenerateDebugInformation>true</GenerateDebugInformation>
@@ -259,6 +309,10 @@
     <ProjectReference>
       <LinkLibraryDependencies>false</LinkLibraryDependencies>
     </ProjectReference>
+    <CudaLink>
+      <AdditionalOptions>-Wno-deprecated-gpu-targets</AdditionalOptions>
+      <PerformDeviceLink>true</PerformDeviceLink>
+    </CudaLink>
   </ItemDefinitionGroup>
   <ItemGroup>
     <CustomBuild Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\Tools\SurfaceSampling\CMakeLists.txt">
@@ -347,5 +401,6 @@ if %errorlevel% neq 0 goto :VCEnd</Command>
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
+    <Import Project="$(VCTargetsPath)\BuildCustomizations\CUDA 9.0.targets" />
   </ImportGroup>
 </Project>

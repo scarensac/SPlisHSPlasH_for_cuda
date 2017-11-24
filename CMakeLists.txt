@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 2.8)
 
-project(SPlishSPlasH)
+project(SPlishSPlasH LANGUAGES C CXX CUDA)
 
 set(PROJECT_PATH ${PROJECT_SOURCE_DIR})
 include_directories(${PROJECT_SOURCE_DIR})

@@ -56,8 +56,7 @@ void TimeStep::clearAccelerations()
 		// Clear accelerations of dynamic particles
 		if (m_model->getMass(i) != 0.0)
 		{
-			Vector3r &a = m_model->getAcceleration(i);
-			a = grav;
+			m_model->getAcceleration(i)= grav;
 		}
 	}
 }
@@ -172,31 +171,35 @@ void TimeStep::computeNonPressureForces()
 	computeViscosity();
 	computeVorticity();
 	computeDragForce();
-	STOP_TIMING_AVG
+	STOP_TIMING_AVG;
 }
 
 void TimeStep::computeSurfaceTension()
 {
-	if (m_surfaceTension)
+	if (m_surfaceTension) {
 		m_surfaceTension->step();
+	}	
 }
 
 void TimeStep::computeViscosity()
 {
-	if (m_viscosity)
+	if (m_viscosity) {
 		m_viscosity->step();
+	}	
 }
 
 void TimeStep::computeVorticity()
 {
-	if (m_vorticity)
+	if (m_vorticity) {
 		m_vorticity->step();
+	}
 }
 
 void TimeStep::computeDragForce()
 {
-	if (m_drag)
+	if (m_drag) {
 		m_drag->step();
+	}
 }
 
 void TimeStep::performNeighborhoodSearch()

@@ -1,6 +1,7 @@
 #ifndef __Common_h__
 #define __Common_h__
 
+#include "Vector.h"
 #include <Eigen/Dense>
 
 #define USE_DOUBLE
@@ -17,8 +18,12 @@ typedef float Real;
 #define REAL_MIN FLT_MIN
 #endif
 
+
+
 namespace SPH
 {
+	
+
 	using Vector2r = Eigen::Matrix<Real, 2, 1>;
 	using Vector3r = Eigen::Matrix<Real, 3, 1>;
 	using Vector4r = Eigen::Matrix<Real, 4, 1>;
@@ -45,6 +50,9 @@ namespace SPH
 	using Alloc_AlignedBox3r = Eigen::aligned_allocator<AlignedBox3r>;
 	using Alloc_AngleAxisr = Eigen::aligned_allocator<AngleAxisr>;
 	using Alloc_Quaternionr = Eigen::aligned_allocator<Quaternionr>;
+
+	Vector3d vector3rTo3d(Vector3r v) { return Vector3d(v[0], v[1], v[2]); }
+	Vector3r vector3dTo3r(Vector3d v) { return Vector3r(v.x, v.y, v.z); }
 
 #if EIGEN_ALIGN
 	#define SPH_MAKE_ALIGNED_OPERATOR_NEW EIGEN_MAKE_ALIGNED_OPERATOR_NEW

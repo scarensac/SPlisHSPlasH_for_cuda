@@ -55,7 +55,7 @@ namespace SPH
 
 		/** Update time step size by CFL condition.
 		*/
-		void updateTimeStepSizeCFL(const Real minTimeStepSize);
+		virtual void updateTimeStepSizeCFL(const Real minTimeStepSize);
 
 		/** Perform the neighborhood search for all fluid particles.
 		*/

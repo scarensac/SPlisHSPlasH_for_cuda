@@ -25,8 +25,10 @@ TimeStepDFSPH::~TimeStepDFSPH(void)
 {
 }
 
+
 void TimeStepDFSPH::step()
 {
+
 	TimeManager *tm = TimeManager::getCurrent ();
 	const Real h = tm->getTimeStepSize();
 

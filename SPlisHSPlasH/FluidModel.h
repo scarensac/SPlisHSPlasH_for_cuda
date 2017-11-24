@@ -42,7 +42,7 @@ namespace SPH
 
 			typedef PrecomputedKernel<CubicKernel, 10000> PrecomputedCubicKernel;
 
-	protected:
+	public:
 			EmitterSystem m_emitterSystem;
 			Vector3r m_gravitation;
 			unsigned int m_kernelMethod;
