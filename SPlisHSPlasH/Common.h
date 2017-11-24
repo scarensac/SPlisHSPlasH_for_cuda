@@ -18,6 +18,11 @@ typedef float Real;
 #define REAL_MIN FLT_MIN
 #endif
 
+#if defined(WIN32) || defined(_WIN32) || defined(WIN64)	   
+#define FORCE_INLINE __forceinline
+#else
+#define FORCE_INLINE __attribute__((always_inline))
+#endif
 
 
 namespace SPH
@@ -51,8 +56,8 @@ namespace SPH
 	using Alloc_AngleAxisr = Eigen::aligned_allocator<AngleAxisr>;
 	using Alloc_Quaternionr = Eigen::aligned_allocator<Quaternionr>;
 
-	Vector3d vector3rTo3d(Vector3r v) { return Vector3d(v[0], v[1], v[2]); }
-	Vector3r vector3dTo3r(Vector3d v) { return Vector3r(v.x, v.y, v.z); }
+	FORCE_INLINE Vector3d vector3rTo3d(Vector3r v) { return Vector3d(v[0], v[1], v[2]); }
+	FORCE_INLINE Vector3r vector3dTo3r(Vector3d v) { return Vector3r(v.x, v.y, v.z); }
 
 #if EIGEN_ALIGN
 	#define SPH_MAKE_ALIGNED_OPERATOR_NEW EIGEN_MAKE_ALIGNED_OPERATOR_NEW
@@ -103,11 +108,6 @@ namespace SPH
 
 #endif
 
-#if defined(WIN32) || defined(_WIN32) || defined(WIN64)	   
-  #define FORCE_INLINE __forceinline
-#else
-  #define FORCE_INLINE __attribute__((always_inline))
-#endif
 
 
 
