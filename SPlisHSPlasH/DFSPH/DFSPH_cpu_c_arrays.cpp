@@ -13,33 +13,48 @@ using namespace std;
 #define USE_WARMSTART_V
 
 DFSPHCData::DFSPHCData(FluidModel *model) {
-	W_zero = CubicKernel::W_zero();
-	particleRadius= model->getParticleRadius();
-
-	//handle the boundaries
+	//just I dont hndle external objects for now
 	if (model->m_particleObjects.size() > 2) {
 		exit(2568);
 	}
+	
+	m_kernel.setRadius(model->m_supportRadius);
+	W_zero = m_kernel.W_zero();
+
+	particleRadius = model->getParticleRadius();
+	
 	numBoundaryParticles = model->m_particleObjects[1]->numberOfParticles();
-	posBoundary = new Vector3r[numBoundaryParticles];
-	velBoundary = new Vector3r[numBoundaryParticles];
-	boundaryPsi= new Real[numBoundaryParticles];
-
-
-	//handle the fluid
 	numFluidParticles = model->numActiveParticles();
-	mass = new Real[numFluidParticles];
-	posFluid = new Vector3r[numFluidParticles];
-	velFluid = new Vector3r[numFluidParticles];
-	accFluid = new Vector3r[numFluidParticles];
-	numberOfNeighbourgs = new int[numFluidParticles*2];
-	neighbourgs = new int[numFluidParticles*2* MAX_NEIGHBOURS];
+		
+	if (true) {
+		//initialisation on the GPU
+		allocate_c_array_struct_cuda_managed((*this));
+	}
+	else {
+		//initialisation on the CPU
+		posBoundary = new Vector3d[numBoundaryParticles];
+		velBoundary = new Vector3d[numBoundaryParticles];
+		boundaryPsi = new Real[numBoundaryParticles];
 
-	density = new Real[numFluidParticles];
-	factor = new Real[numFluidParticles];
-	kappa = new Real[numFluidParticles];
-	kappaV = new Real[numFluidParticles];
-	densityAdv = new Real[numFluidParticles];
+
+		//handle the fluid
+		mass = new Real[numFluidParticles];
+		posFluid = new Vector3d[numFluidParticles];
+		velFluid = new Vector3d[numFluidParticles];
+		accFluid = new Vector3d[numFluidParticles];
+		numberOfNeighbourgs = new int[numFluidParticles * 2];
+		neighbourgs = new int[numFluidParticles * 2 * MAX_NEIGHBOURS];
+
+		density = new Real[numFluidParticles];
+		factor = new Real[numFluidParticles];
+		kappa = new Real[numFluidParticles];
+		kappaV = new Real[numFluidParticles];
+		densityAdv = new Real[numFluidParticles];
+	}
+
+
+
+
 
 	reset(model);
 }
@@ -57,8 +72,8 @@ void DFSPHCData::reset(FluidModel *model) {
 
 	for (int i = 0; i < numBoundaryParticles; ++i) {
 		FluidModel::RigidBodyParticleObject* particleObj = static_cast<FluidModel::RigidBodyParticleObject*>(model->m_particleObjects[1]);
-		posBoundary[i] = particleObj->m_x[i];
-		velBoundary[i] = particleObj->m_v[i];
+		posBoundary[i] = vector3rTo3d(particleObj->m_x[i]);
+		velBoundary[i] = vector3rTo3d(particleObj->m_v[i]);
 		boundaryPsi[i] = particleObj->m_boundaryPsi[i];
 	}
 
@@ -83,8 +98,8 @@ void DFSPHCData::loadDynamicData(FluidModel *model, const SimulationDataDFSPH& d
 
 	//density and acc are not conserved between timesteps so no need to copy them
 	for (int i = 0; i < numFluidParticles; ++i) {
-		posFluid[i] = model->getPosition(0, i);
-		velFluid[i] = model->getVelocity(0, i);
+		posFluid[i] = vector3rTo3d(model->getPosition(0, i));
+		velFluid[i] = vector3rTo3d(model->getVelocity(0, i));
 		kappa[i] = data.getKappa(i);
 		kappaV[i] = data.getKappaV(i);
 	}
@@ -157,8 +172,8 @@ void DFSPHCData::readDynamicData(FluidModel *model, SimulationDataDFSPH& data) {
 
 	//density and acc are not conserved between timesteps so no need to copy them
 	for (int i = 0; i < numFluidParticles; ++i) {
-		model->getPosition(0, i)= posFluid[i];
-		model->getVelocity(0, i)= velFluid[i];
+		model->getPosition(0, i)= vector3dTo3r(posFluid[i]);
+		model->getVelocity(0, i)= vector3dTo3r(velFluid[i]);
 		data.getKappa(i)= kappa[i];
 		data.getKappaV(i)= kappaV[i];
 	}
@@ -187,7 +202,7 @@ DFSPHCArrays::~DFSPHCArrays(void)
 
 void DFSPHCArrays::step()
 {
-	test_cuda();
+	//test_cuda();
 
 	m_data.viscosity = m_viscosity->getViscosity();
 	
@@ -271,9 +286,9 @@ void DFSPHCArrays::computeDFSPHFactor()
 				//////////////////////////////////////////////////////////////////////////
 				// Compute gradient dp_i/dx_j * (1/k)  and dp_j/dx_j * (1/k)
 				//////////////////////////////////////////////////////////////////////////
-				const Vector3r &xi = m_data.posFluid[i];
+				const Vector3d &xi = m_data.posFluid[i];
 				Real sum_grad_p_k = 0.0;
-				Vector3r grad_p_i;
+				Vector3d grad_p_i;
 				grad_p_i.setZero();
 
 				//////////////////////////////////////////////////////////////////////////
@@ -282,8 +297,8 @@ void DFSPHCArrays::computeDFSPHFactor()
 				for (unsigned int j = 0; j < m_data.getNumberOfNeighbourgs(i); j++)
 				{
 					const unsigned int neighborIndex = m_data.getNeighbour(i, j);
-					const Vector3r &xj = m_data.posFluid[neighborIndex];
-					const Vector3r grad_p_j = -m_data.mass[neighborIndex] * m_data.gradW(xi - xj);
+					const Vector3d &xj = m_data.posFluid[neighborIndex];
+					const Vector3d grad_p_j = -m_data.mass[neighborIndex] * m_data.gradW(xi - xj);
 					sum_grad_p_k += grad_p_j.squaredNorm();
 					grad_p_i -= grad_p_j;
 				}
@@ -296,8 +311,8 @@ void DFSPHCArrays::computeDFSPHFactor()
 					for (unsigned int j = 0; j < m_data.getNumberOfNeighbourgs(i, pid); j++)
 					{
 						const unsigned int neighborIndex = m_data.getNeighbour(i, j, pid);
-						const Vector3r &xj = m_data.posBoundary[neighborIndex];
-						const Vector3r grad_p_j = -m_data.boundaryPsi[neighborIndex] * m_data.gradW(xi - xj);
+						const Vector3d &xj = m_data.posBoundary[neighborIndex];
+						const Vector3d grad_p_j = -m_data.boundaryPsi[neighborIndex] * m_data.gradW(xi - xj);
 						sum_grad_p_k += grad_p_j.squaredNorm();
 						grad_p_i -= grad_p_j;
 					}
@@ -312,7 +327,6 @@ void DFSPHCArrays::computeDFSPHFactor()
 
 				sum_grad_p_k = max(sum_grad_p_k, m_eps);
 				m_data.factor[i] = -1.0 / (sum_grad_p_k);
-				//m_simulationData.getFactor(i) = m_data.factor[i];
 			}
 			{
 				//////////////////////////////////////////////////////////////////////////
@@ -409,9 +423,9 @@ void DFSPHCArrays::pressureSolve()
 		for (int i = 0; i < numParticles; i++)
 		{
 			{
-				Vector3r &vel = m_data.velFluid[i];
+				Vector3d &vel = m_data.velFluid[i];
 				const Real ki = m_data.kappa[i];
-				const Vector3r &xi = m_data.posFluid[i];
+				const Vector3d &xi = m_data.posFluid[i];
 
 				//////////////////////////////////////////////////////////////////////////
 				// Fluid
@@ -424,8 +438,8 @@ void DFSPHCArrays::pressureSolve()
 					const Real kSum = (ki + kj);
 					if (fabs(kSum) > m_eps)
 					{
-						const Vector3r &xj = m_data.posFluid[neighborIndex];
-						const Vector3r grad_p_j = -m_data.mass[neighborIndex] * m_data.gradW(xi - xj);
+						const Vector3d &xj = m_data.posFluid[neighborIndex];
+						const Vector3d grad_p_j = -m_data.mass[neighborIndex] * m_data.gradW(xi - xj);
 						vel -= h * kSum * grad_p_j;					// ki, kj already contain inverse density
 					}
 				}
@@ -440,9 +454,9 @@ void DFSPHCArrays::pressureSolve()
 						for (unsigned int j = 0; j < m_data.getNumberOfNeighbourgs(i, pid); j++)
 						{
 							const unsigned int neighborIndex = m_data.getNeighbour(i, j, pid);
-							const Vector3r &xj = m_data.posBoundary[neighborIndex];
-							const Vector3r grad_p_j = -m_data.boundaryPsi[neighborIndex] * m_data.gradW(xi - xj);
-							const Vector3r velChange = -h * (Real) 1.0 * ki * grad_p_j;				// kj already contains inverse density
+							const Vector3d &xj = m_data.posBoundary[neighborIndex];
+							const Vector3d grad_p_j = -m_data.boundaryPsi[neighborIndex] * m_data.gradW(xi - xj);
+							const Vector3d velChange = -h * (Real) 1.0 * ki * grad_p_j;				// kj already contains inverse density
 							vel += velChange;
 
 							//TODO reactivate this
@@ -493,7 +507,7 @@ void DFSPHCArrays::pressureSolve()
 					}
 				}
 			}
-			checkVector3r("pressureSolve: warm start: vel first loop:", m_model->getVelocity(0, i), m_data.velFluid[i]);
+			checkVector3("pressureSolve: warm start: vel first loop:", m_model->getVelocity(0, i), m_data.velFluid[i]);
 		}
 	}
 #endif
@@ -549,7 +563,7 @@ void DFSPHCArrays::pressureSolve()
 			for (int i = 0; i < numParticles; i++)
 			{
 
-				checkVector3r("pressureSolve: vel start loop:", m_model->getVelocity(0, i), m_data.velFluid[i]);
+				checkVector3("pressureSolve: vel start loop:", m_model->getVelocity(0, i), m_data.velFluid[i]);
 				{
 					//////////////////////////////////////////////////////////////////////////
 					// Evaluate rhs
@@ -560,8 +574,8 @@ void DFSPHCArrays::pressureSolve()
 					m_data.kappa[i] += ki;
 #endif
 
-					Vector3r &v_i = m_data.velFluid[i];
-					const Vector3r &xi = m_data.posFluid[i];
+					Vector3d &v_i = m_data.velFluid[i];
+					const Vector3d &xi = m_data.posFluid[i];
 
 					//////////////////////////////////////////////////////////////////////////
 					// Fluid
@@ -574,8 +588,8 @@ void DFSPHCArrays::pressureSolve()
 						const Real kSum = (ki + kj);
 						if (fabs(kSum) > m_eps)
 						{
-							const Vector3r &xj = m_data.posFluid[neighborIndex];
-							const Vector3r grad_p_j = -m_data.mass[neighborIndex] * m_data.gradW(xi - xj);
+							const Vector3d &xj = m_data.posFluid[neighborIndex];
+							const Vector3d grad_p_j = -m_data.mass[neighborIndex] * m_data.gradW(xi - xj);
 
 							// Directly update velocities instead of storing pressure accelerations
 							v_i -= h * kSum * grad_p_j;			// ki, kj already contain inverse density						
@@ -592,11 +606,11 @@ void DFSPHCArrays::pressureSolve()
 							for (unsigned int j = 0; j < m_data.getNumberOfNeighbourgs(i, pid); j++)
 							{
 								const unsigned int neighborIndex = m_data.getNeighbour(i, j, pid);
-								const Vector3r &xj = m_data.posBoundary[neighborIndex];
-								const Vector3r grad_p_j = -m_data.boundaryPsi[neighborIndex] * m_data.gradW(xi - xj);
+								const Vector3d &xj = m_data.posBoundary[neighborIndex];
+								const Vector3d grad_p_j = -m_data.boundaryPsi[neighborIndex] * m_data.gradW(xi - xj);
 
 								// Directly update velocities instead of storing pressure accelerations
-								const Vector3r velChange = -h * (Real) 1.0 * ki * grad_p_j;				// kj already contains inverse density
+								const Vector3d velChange = -h * (Real) 1.0 * ki * grad_p_j;				// kj already contains inverse density
 								v_i += velChange;
 
 								//TODO reactivate the external forces
@@ -659,7 +673,7 @@ void DFSPHCArrays::pressureSolve()
 						}
 					}
 				}
-				checkVector3r("pressureSolve: vel:", m_model->getVelocity(0,i) , m_data.velFluid[i]);
+				checkVector3("pressureSolve: vel:", m_model->getVelocity(0,i) , m_data.velFluid[i]);
 			}
 
 
@@ -746,9 +760,9 @@ void DFSPHCArrays::divergenceSolve()
 			{
 				if (m_data.densityAdv[i] > 0.0)
 				{
-					Vector3r &vel = m_data.velFluid[i];
+					Vector3d &vel = m_data.velFluid[i];
 					const Real ki = m_data.kappaV[i];
-					const Vector3r &xi = m_data.posFluid[i];
+					const Vector3d &xi = m_data.posFluid[i];
 
 					//////////////////////////////////////////////////////////////////////////
 					// Fluid
@@ -761,8 +775,8 @@ void DFSPHCArrays::divergenceSolve()
 						const Real kSum = (ki + kj);
 						if (fabs(kSum) > m_eps)
 						{
-							const Vector3r &xj = m_data.posFluid[neighborIndex];
-							const Vector3r grad_p_j = -m_data.mass[neighborIndex] * m_data.gradW(xi - xj);
+							const Vector3d &xj = m_data.posFluid[neighborIndex];
+							const Vector3d grad_p_j = -m_data.mass[neighborIndex] * m_data.gradW(xi - xj);
 							vel -= h * kSum * grad_p_j;					// ki, kj already contain inverse density
 						}
 					}
@@ -777,13 +791,14 @@ void DFSPHCArrays::divergenceSolve()
 							for (unsigned int j = 0; j < m_data.getNumberOfNeighbourgs(i, pid); j++)
 							{
 								const unsigned int neighborIndex = m_data.getNeighbour(i, j, pid);
-								const Vector3r &xj = m_data.posBoundary[neighborIndex];
-								const Vector3r grad_p_j = -m_data.boundaryPsi[neighborIndex] * m_data.gradW(xi - xj);
+								const Vector3d &xj = m_data.posBoundary[neighborIndex];
+								const Vector3d grad_p_j = -m_data.boundaryPsi[neighborIndex] * m_data.gradW(xi - xj);
 
-								const Vector3r velChange = -h * (Real) 1.0 * ki * grad_p_j;				// kj already contains inverse density
+								const Vector3d velChange = -h * (Real) 1.0 * ki * grad_p_j;				// kj already contains inverse density
 								vel += velChange;
 
-								m_model->getForce(pid, neighborIndex) -= m_data.mass[i] * velChange * invH;
+								///TODO reactivate this to have the forces on rigid bodies
+								//m_model->getForce(pid, neighborIndex) -= m_data.mass[i] * velChange * invH;
 							}
 						}
 					}
@@ -835,7 +850,7 @@ void DFSPHCArrays::divergenceSolve()
 					}
 				}
 			}
-			checkVector3r("divergence: warm start: vel first loop:",m_model->getVelocity(0, i), m_data.velFluid[i]);
+			checkVector3("divergence: warm start: vel first loop:",m_model->getVelocity(0, i), m_data.velFluid[i]);
 		}
 		
 	}
@@ -894,7 +909,7 @@ void DFSPHCArrays::divergenceSolve()
 			for (int i = 0; i < (int)numParticles; i++)
 			{
 				{
-					Vector3r &v_i = m_data.velFluid[i];
+					Vector3d &v_i = m_data.velFluid[i];
 
 					//////////////////////////////////////////////////////////////////////////
 					// Evaluate rhs
@@ -905,7 +920,7 @@ void DFSPHCArrays::divergenceSolve()
 					m_data.kappaV[i] += ki;
 #endif
 
-					const Vector3r &xi = m_data.posFluid[i];
+					const Vector3d &xi = m_data.posFluid[i];
 
 					//////////////////////////////////////////////////////////////////////////
 					// Fluid
@@ -919,8 +934,8 @@ void DFSPHCArrays::divergenceSolve()
 						const Real kSum = (ki + kj);
 						if (fabs(kSum) > m_eps)
 						{
-							const Vector3r &xj = m_data.posFluid[neighborIndex];
-							const Vector3r grad_p_j = -m_data.mass[neighborIndex] * m_data.gradW(xi - xj);
+							const Vector3d &xj = m_data.posFluid[neighborIndex];
+							const Vector3d grad_p_j = -m_data.mass[neighborIndex] * m_data.gradW(xi - xj);
 							v_i -= h * kSum * grad_p_j;			// ki, kj already contain inverse density
 						}
 					}
@@ -935,10 +950,10 @@ void DFSPHCArrays::divergenceSolve()
 							for (unsigned int j = 0; j < m_data.getNumberOfNeighbourgs(i, pid); j++)
 							{
 								const unsigned int neighborIndex = m_data.getNeighbour(i, j, pid);
-								const Vector3r &xj = m_data.posBoundary[neighborIndex];
-								const Vector3r grad_p_j = -m_data.boundaryPsi[neighborIndex] * m_data.gradW(xi - xj);
+								const Vector3d &xj = m_data.posBoundary[neighborIndex];
+								const Vector3d grad_p_j = -m_data.boundaryPsi[neighborIndex] * m_data.gradW(xi - xj);
 
-								const Vector3r velChange = -h * (Real) 1.0 * ki * grad_p_j;				// kj already contains inverse density
+								const Vector3d velChange = -h * (Real) 1.0 * ki * grad_p_j;				// kj already contains inverse density
 								v_i += velChange;
 
 								///TODO reactivate this for objects
@@ -1002,7 +1017,7 @@ void DFSPHCArrays::divergenceSolve()
 					}
 				}
 
-				checkVector3r("Divergence computation: v:", m_model->getVelocity(0, i), m_data.velFluid[i]);
+				checkVector3("Divergence computation: v:", m_model->getVelocity(0, i), m_data.velFluid[i]);
 				
 			}
 
@@ -1062,8 +1077,8 @@ void DFSPHCArrays::computeDensityAdv(const unsigned int index, const int numPart
 		
 		Real &densityAdv = m_data.densityAdv[index];
 		const Real &density = m_data.density[index];
-		const Vector3r &xi = m_data.posFluid[index];
-		const Vector3r &vi = m_data.velFluid[index];
+		const Vector3d &xi = m_data.posFluid[index];
+		const Vector3d &vi = m_data.velFluid[index];
 		Real delta = 0.0;
 		//const Vector3r &vi = m_model->getVelocity(0, index);
 
@@ -1073,8 +1088,8 @@ void DFSPHCArrays::computeDensityAdv(const unsigned int index, const int numPart
 		for (unsigned int j = 0; j < m_data.getNumberOfNeighbourgs(index); j++)
 		{
 			const unsigned int neighborIndex = m_data.getNeighbour(index, j);
-			const Vector3r &xj = m_data.posFluid[neighborIndex];
-			const Vector3r &vj = m_data.velFluid[neighborIndex];
+			const Vector3d &xj = m_data.posFluid[neighborIndex];
+			const Vector3d &vj = m_data.velFluid[neighborIndex];
 			delta += m_data.mass[neighborIndex] * (vi - vj).dot(m_data.gradW(xi - xj));
 		}
 
@@ -1086,8 +1101,8 @@ void DFSPHCArrays::computeDensityAdv(const unsigned int index, const int numPart
 			for (unsigned int j = 0; j < m_data.getNumberOfNeighbourgs(index, pid); j++)
 			{
 				const unsigned int neighborIndex = m_data.getNeighbour(index, j, pid);
-				const Vector3r &xj = m_data.posBoundary[neighborIndex];
-				const Vector3r &vj = m_data.velBoundary[neighborIndex];
+				const Vector3d &xj = m_data.posBoundary[neighborIndex];
+				const Vector3d &vj = m_data.velBoundary[neighborIndex];
 				delta += m_data.boundaryPsi[neighborIndex] * (vi - vj).dot(m_data.gradW(xi - xj));
 			}
 		}
@@ -1137,8 +1152,8 @@ void DFSPHCArrays::computeDensityChange(const unsigned int index, const Real h, 
 {
 	{
 		Real &densityAdv = m_data.densityAdv[index];
-		const Vector3r &xi = m_data.posFluid[index];
-		const Vector3r &vi = m_data.velFluid[index];
+		const Vector3d &xi = m_data.posFluid[index];
+		const Vector3d &vi = m_data.velFluid[index];
 		densityAdv = 0.0;
 		unsigned int numNeighbors = m_data.getNumberOfNeighbourgs(index);
 		
@@ -1155,8 +1170,8 @@ void DFSPHCArrays::computeDensityChange(const unsigned int index, const Real h, 
 			densityAdv += m_data.mass[neighborIndex] * (vi - vj).dot(m_data.gradW(xi - xj));
 			//*/
 			const unsigned int neighborIndex = m_data.getNeighbour(index, j);
-			const Vector3r &xj = m_data.posFluid[neighborIndex];
-			const Vector3r &vj = m_data.velFluid[neighborIndex];
+			const Vector3d &xj = m_data.posFluid[neighborIndex];
+			const Vector3d &vj = m_data.velFluid[neighborIndex];
 			densityAdv += m_data.mass[neighborIndex] * (vi - vj).dot(m_data.gradW(xi - xj));
 		}
 
@@ -1169,8 +1184,8 @@ void DFSPHCArrays::computeDensityChange(const unsigned int index, const Real h, 
 			for (unsigned int j = 0; j <  m_data.getNumberOfNeighbourgs(index, pid); j++)
 			{
 				const unsigned int neighborIndex = m_data.getNeighbour(index, j, pid);
-				const Vector3r &xj = m_data.posBoundary[neighborIndex];
-				const Vector3r &vj = m_data.velBoundary[neighborIndex];
+				const Vector3d &xj = m_data.posBoundary[neighborIndex];
+				const Vector3d &vj = m_data.velBoundary[neighborIndex];
 				densityAdv += m_data.boundaryPsi[neighborIndex] * (vi - vj).dot(m_data.gradW(xi - xj));
 			}
 		}
@@ -1273,7 +1288,7 @@ void DFSPHCArrays::computeDensities()
 
 				// Compute current density for particle i
 				density = m_data.mass[i] * m_data.W_zero;
-				const Vector3r &xi = m_data.posFluid[i];
+				const Vector3d &xi = m_data.posFluid[i];
 
 				//////////////////////////////////////////////////////////////////////////
 				// Fluid
@@ -1281,7 +1296,7 @@ void DFSPHCArrays::computeDensities()
 				for (unsigned int j = 0; j < m_data.getNumberOfNeighbourgs(i); j++)
 				{
 					const unsigned int neighborIndex = m_data.getNeighbour(i, j);
-					const Vector3r &xj = m_data.posFluid[neighborIndex];
+					const Vector3d &xj = m_data.posFluid[neighborIndex];
 					density += m_data.mass[neighborIndex] * m_data.W(xi - xj);
 				}
 
@@ -1293,7 +1308,7 @@ void DFSPHCArrays::computeDensities()
 					for (unsigned int j = 0; j < m_data.getNumberOfNeighbourgs(i, pid); j++)
 					{
 						const unsigned int neighborIndex = m_data.getNeighbour(i, j, pid);
-						const Vector3r &xj = m_data.posBoundary[neighborIndex];
+						const Vector3d &xj = m_data.posBoundary[neighborIndex];
 
 						// Boundary: Akinci2012
 						density += m_data.boundaryPsi[neighborIndex] * m_data.W(xi - xj);
@@ -1343,7 +1358,10 @@ void DFSPHCArrays::computeDensities()
 void DFSPHCArrays::clearAccelerations()
 {
 	const unsigned int count = m_data.numFluidParticles;
-	const Vector3r &grav = m_data.gravitation;
+	const Vector3d &grav = m_data.gravitation;
+
+	checkVector3("clearAccelerations: check gravitation value:", m_model->getGravitation(), m_data.gravitation);
+
 	for (unsigned int i = 0; i < count; i++)
 	{
 		{
@@ -1357,10 +1375,10 @@ void DFSPHCArrays::clearAccelerations()
 			// Clear accelerations of existing particles
 			if (m_model->getMass(i) != 0.0)
 			{
-				m_model->getAcceleration(i) = grav;
+				m_model->getAcceleration(i) = m_model->getGravitation();
 			}
 		}
-		checkVector3r("clearAccelerations: acc:", m_model->getAcceleration(i), m_data.accFluid[i]);
+		checkVector3("clearAccelerations: acc:", m_model->getAcceleration(i), m_data.accFluid[i]);
 	}
 }
 
@@ -1378,7 +1396,7 @@ void DFSPHCArrays::updateVelocities(double h)
 				Vector3r &vel = m_model->getVelocity(0, i);
 				vel += h * m_model->getAcceleration(i);
 			}
-			checkVector3r("updateVelocities:", m_model->getVelocity(0, i), m_data.velFluid[i]);
+			checkVector3("updateVelocities:", m_model->getVelocity(0, i), m_data.velFluid[i]);
 		}
 		
 	}
@@ -1399,7 +1417,7 @@ void DFSPHCArrays::updatePositions(double h)
 				const Vector3r &vi = m_model->getVelocity(0, i);
 				xi += h * vi;
 			}
-			checkVector3r("updatePositions:", m_model->getPosition(0, i), m_data.posFluid[i]);
+			checkVector3("updatePositions:", m_model->getPosition(0, i), m_data.posFluid[i]);
 		}
 	}
 }
@@ -1429,8 +1447,8 @@ void DFSPHCArrays::updateTimeStepSizeCFL(const Real minTimeStepSize)
 		// Approximate max. position change due to current velocities
 		for (unsigned int i = 0; i < numParticles; i++)
 		{
-			const Vector3r &vel = m_data.velFluid[i];
-			const Vector3r &accel = m_data.accFluid[i];
+			const Vector3d &vel = m_data.velFluid[i];
+			const Vector3d &accel = m_data.accFluid[i];
 			const Real velMag = (vel + accel*h).squaredNorm();
 			if (velMag > maxVel)
 				maxVel = velMag;
@@ -1485,23 +1503,23 @@ void DFSPHCArrays::viscosity_XSPH()
 		for (int i = 0; i < (int)numParticles; i++)
 		{
 			{
-				const Vector3r &xi = m_model->getPosition(0, i);
-				const Vector3r &vi = m_model->getVelocity(0, i);
-				Vector3r &ai = m_data.accFluid[i];
-				const Real density_i = m_model->getDensity(i);
+				const Vector3d &xi = m_data.posFluid[i];
+				const Vector3d &vi = m_data.velFluid[i];
+				Vector3d &ai = m_data.accFluid[i];
+				const Real density_i = m_data.density[i];
 
 				//////////////////////////////////////////////////////////////////////////
 				// Fluid
 				//////////////////////////////////////////////////////////////////////////
-				for (unsigned int j = 0; j < m_model->numberOfNeighbors(0, i); j++)
+				for (unsigned int j = 0; j < m_data.getNumberOfNeighbourgs(i); j++)
 				{
-					const unsigned int neighborIndex = m_model->getNeighbor(0, i, j);
-					const Vector3r &xj = m_model->getPosition(0, neighborIndex);
-					const Vector3r &vj = m_model->getVelocity(0, neighborIndex);
+					const unsigned int neighborIndex = m_data.getNeighbour(i, j);
+					const Vector3d &xj = m_data.posFluid[neighborIndex];
+					const Vector3d &vj = m_data.velFluid[neighborIndex];
 
 					// Viscosity
-					const Real density_j = m_model->getDensity(neighborIndex);
-					ai -= invH * m_viscosity->getViscosity() * (m_model->getMass(neighborIndex) / density_j) * (vi - vj) * m_model->W(xi - xj);
+					const Real density_j = m_data.density[neighborIndex];
+					ai -= invH * m_data.viscosity * (m_data.mass[neighborIndex] / density_j) * (vi - vj) * m_data.W(xi - xj);
 				}
 			}
 			{
@@ -1524,7 +1542,7 @@ void DFSPHCArrays::viscosity_XSPH()
 					ai -= invH * m_viscosity->getViscosity() * (m_model->getMass(neighborIndex) / density_j) * (vi - vj) * m_model->W(xi - xj);
 				}
 			}
-			checkVector3r("viscosityXSPH", m_model->getAcceleration(i), m_data.accFluid[i]);
+			checkVector3("viscosityXSPH", m_model->getAcceleration(i), m_data.accFluid[i]);
 		}
 	}
 }
@@ -1547,16 +1565,18 @@ void DFSPHCArrays::checkReal(std::string txt, Real old_v, Real new_v) {
 	}
 }
 
-void DFSPHCArrays::checkVector3r(std::string txt, Vector3r old_v, Vector3r new_v) {
+void DFSPHCArrays::checkVector3(std::string txt, Vector3r old_v, Vector3r new_v) {
 
 	double error = (old_v - new_v).norm();
 	double trigger = std::abs(old_v.norm() / 10000);
 	if (error > trigger) {
 		ostringstream oss;
-		oss << txt<<" old/ new: " << old_v.norm() << " / " << new_v.norm() <<
+		oss << txt << " old/ new: " << old_v.norm() << " / " << new_v.norm() <<
 			" //// " << error << " / " << trigger / 10000 << std::endl;
 		std::cout << oss.str();
 		exit(2679);
 	}
-	
+
 }
+
+

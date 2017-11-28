@@ -99,10 +99,12 @@
     <CudaCompile>
       <Defines>_WINDOWS;_CRT_SECURE_NO_DEPRECATE;SPH_DATA_PATH="../data";CMAKE_INTDIR="Debug";%(Defines)</Defines>
       <AdditionalOptions>%(AdditionalOptions) -Xcompiler="/EHsc -Zi -Ob0"</AdditionalOptions>
+      <CodeGeneration>compute_61,sm_61</CodeGeneration>
       <Include>D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH;%(Include)</Include>
       <Optimization>Od</Optimization>
       <Runtime>MDd</Runtime>
       <RuntimeChecks>RTC1</RuntimeChecks>
+      <TargetMachinePlatform>64</TargetMachinePlatform>
       <TypeInfo>true</TypeInfo>
       <Warning>W3</Warning>
     </CudaCompile>
@@ -150,9 +152,11 @@
     <CudaCompile>
       <Defines>_WINDOWS;NDEBUG;_CRT_SECURE_NO_DEPRECATE;SPH_DATA_PATH="../data";CMAKE_INTDIR="Release";%(Defines)</Defines>
       <AdditionalOptions>%(AdditionalOptions) -Xcompiler="/EHsc -Ob2"</AdditionalOptions>
+      <CodeGeneration>compute_61,sm_61</CodeGeneration>
       <Include>D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH;%(Include)</Include>
       <Optimization>O2</Optimization>
       <Runtime>MD</Runtime>
+      <TargetMachinePlatform>64</TargetMachinePlatform>
       <TypeInfo>true</TypeInfo>
       <Warning>W3</Warning>
     </CudaCompile>
@@ -195,9 +199,11 @@
     <CudaCompile>
       <Defines>_WINDOWS;NDEBUG;_CRT_SECURE_NO_DEPRECATE;SPH_DATA_PATH="../data";CMAKE_INTDIR="MinSizeRel";%(Defines)</Defines>
       <AdditionalOptions>%(AdditionalOptions) -Xcompiler="/EHsc -Ob1"</AdditionalOptions>
+      <CodeGeneration>compute_61,sm_61</CodeGeneration>
       <Include>D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH;%(Include)</Include>
       <Optimization>O1</Optimization>
       <Runtime>MD</Runtime>
+      <TargetMachinePlatform>64</TargetMachinePlatform>
       <TypeInfo>true</TypeInfo>
       <Warning>W3</Warning>
     </CudaCompile>
@@ -240,9 +246,11 @@
     <CudaCompile>
       <Defines>_WINDOWS;NDEBUG;_CRT_SECURE_NO_DEPRECATE;SPH_DATA_PATH="../data";CMAKE_INTDIR="RelWithDebInfo";%(Defines)</Defines>
       <AdditionalOptions>%(AdditionalOptions) -Xcompiler="/EHsc -Zi -Ob1"</AdditionalOptions>
+      <CodeGeneration>compute_61,sm_61</CodeGeneration>
       <Include>D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH;%(Include)</Include>
       <Optimization>O2</Optimization>
       <Runtime>MD</Runtime>
+      <TargetMachinePlatform>64</TargetMachinePlatform>
       <TypeInfo>true</TypeInfo>
       <Warning>W3</Warning>
     </CudaCompile>

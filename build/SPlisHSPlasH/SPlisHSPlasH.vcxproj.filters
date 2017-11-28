@@ -307,12 +307,6 @@
     <Filter Include="Header Files\Utils">
       <UniqueIdentifier>{CE3694FE-644E-3C0E-839D-70E032BB2A96}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Source Files">
-      <UniqueIdentifier>{856C601E-746E-3F9A-A835-24553F07107F}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Header Files">
-      <UniqueIdentifier>{8A583372-D5DE-3B9B-8DF6-2DF0AD88272C}</UniqueIdentifier>
-    </Filter>
     <Filter Include="Source Files\WCSPH">
       <UniqueIdentifier>{09235564-D287-3BC1-B782-A6CAAA28B7F4}</UniqueIdentifier>
     </Filter>
@@ -345,6 +339,12 @@
     </Filter>
     <Filter Include="Source Files\Utils">
       <UniqueIdentifier>{280F3B42-64FC-3B56-AB9D-6B512BA8D9ED}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files">
+      <UniqueIdentifier>{856C601E-746E-3F9A-A835-24553F07107F}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files">
+      <UniqueIdentifier>{8A583372-D5DE-3B9B-8DF6-2DF0AD88272C}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
 </Project>

@@ -1,7 +1,10 @@
-cmake_minimum_required(VERSION 2.8)
+cmake_minimum_required(VERSION 3.9)
 
 project(SPlishSPlasH LANGUAGES C CXX CUDA)
 
+set(CMAKE_CUDA_STANDARD 14)
+set(CMAKE_CXX_STANDARD 14)
+ 
 set(PROJECT_PATH ${PROJECT_SOURCE_DIR})
 include_directories(${PROJECT_SOURCE_DIR})
 
@@ -9,6 +12,9 @@ set(CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/CMake" ${CMAKE_MODULE_PATH})
 set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 
 include(${PROJECT_PATH}/CMake/Common.cmake)
+
+string(APPEND CMAKE_CUDA_FLAGS "  -gencode arch=compute_61,code=sm_61")
+
 
 if (WIN32)
   subdirs(
@@ -30,6 +36,9 @@ else()
 endif()
 
 add_definitions(-DSPH_DATA_PATH="../data")
+
+message(STATUS "message to display: " ${CMAKE_CUDA_FLAGS})
+message(STATUS "message to display2: " ${CMAKE_CUDA_STANDARD})
 
 
 ## PositionBasedDynamics

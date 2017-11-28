@@ -3,40 +3,35 @@
 #include "device_launch_parameters.h"
 #include "DFSPH_cuda_basic.h"
 #include <stdio.h>
-
-
-//#include <Eigen/Dense>
-
-
-class TestVector
-{
-public:
-
-	//Eigen::Matrix<double, 3, 1> vect;
-	int x, y, z;
-
-	TestVector(int a, int b, int c) {
-		x = a; y = b; z = c;
-	}
-
-	TestVector() {
-		x = 0; y = 0; z = 0;
-	}
-};
+#include "DFSPH_c_arrays_structure.h"
 
 
 
 
+void allocate_c_array_struct_cuda_managed(SPH::DFSPHCData& data) {
+	//cudaMallocManaged(&x, N * sizeof(float));
+	//cudaMallocManaged(&y, N * sizeof(float));
+	
+	cudaMallocManaged(&(data.posBoundary),data.numBoundaryParticles * sizeof(Vector3d));
+	cudaMallocManaged(&(data.velBoundary), data.numBoundaryParticles * sizeof(Vector3d));
+	cudaMallocManaged(&(data.velBoundary), data.numBoundaryParticles * sizeof(Vector3d));
+	cudaMallocManaged(&(data.boundaryPsi), data.numBoundaryParticles * sizeof(Real));
 
 
+	//handle the fluid
+	cudaMallocManaged(&(data.mass), data.numFluidParticles * sizeof(Real));
+	cudaMallocManaged(&(data.posFluid), data.numFluidParticles * sizeof(Vector3d));
+	cudaMallocManaged(&(data.velFluid), data.numFluidParticles * sizeof(Vector3d));
+	cudaMallocManaged(&(data.accFluid) , data.numFluidParticles * sizeof(Vector3d));
+	cudaMallocManaged(&(data.numberOfNeighbourgs), data.numFluidParticles * 2 * sizeof(int));
+	cudaMallocManaged(&(data.neighbourgs), data.numFluidParticles * 2 * MAX_NEIGHBOURS * sizeof(int));
 
-
-
-
-
-
-
-
+	cudaMallocManaged(&(data.density), data.numFluidParticles * sizeof(Real));
+	cudaMallocManaged(&(data.factor), data.numFluidParticles * sizeof(Real));
+	cudaMallocManaged(&(data.kappa), data.numFluidParticles * sizeof(Real));
+	cudaMallocManaged(&(data.kappaV), data.numFluidParticles * sizeof(Real));
+	cudaMallocManaged(&(data.densityAdv), data.numFluidParticles * sizeof(Real));
+}
 
 
 
@@ -53,7 +48,7 @@ __global__ void addKernel(int *c, const int *a, const int *b)
 	c[i] = a[i] + b[i];
 }
 //*
-__global__ void addKernel(TestVector* vect)
+__global__ void addKernel(Vector3d* vect)
 {
 	int i = threadIdx.x;
 	vect[i].z = vect[i].x + vect[i].y;
@@ -61,19 +56,20 @@ __global__ void addKernel(TestVector* vect)
 //*/
 int test_cuda()
 {
+	//DFSPHCData* data;
 	
 	const int arraySize = 5;
 	const int a[arraySize] = { 1, 2, 3, 4, 5 };
 	const int b[arraySize] = { 10, 20, 30, 40, 50 };
 	int c[arraySize] = { 0 };
 	//*
-	TestVector* vect;
-	cudaMallocManaged(&vect, arraySize * sizeof(TestVector));
+	Vector3d* vect;
+	cudaMallocManaged(&vect, arraySize * sizeof(Vector3d));
 	for (int i = 0; i < arraySize; ++i) {
 		vect[i].x = a[i];
 		vect[i].y = b[i];
 	}
-	//*/
+	//*/*
 
 	// Add vectors in parallel.
 	cudaError_t cudaStatus = addWithCuda(c, a, b, arraySize);

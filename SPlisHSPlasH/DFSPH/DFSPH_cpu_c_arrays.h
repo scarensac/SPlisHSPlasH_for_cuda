@@ -64,7 +64,8 @@ namespace SPH
 		void setEnableDivergenceSolver(bool val) { m_enableDivergenceSolver = val; }
 
 		void checkReal(std::string txt, Real old_v, Real new_v);
-		void checkVector3r(std::string txt, Vector3r old_v, Vector3r new_v);
+		void checkVector3(std::string txt, Vector3r old_v, Vector3r new_v);
+		inline void checkVector3(std::string txt, Vector3r old_v, Vector3d new_v) {checkVector3(txt, old_v, vector3dTo3r(new_v));}
 	};
 }
 

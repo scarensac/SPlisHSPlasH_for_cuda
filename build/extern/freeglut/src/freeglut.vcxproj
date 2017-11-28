@@ -106,10 +106,12 @@
     <CudaCompile>
       <Defines>_WINDOWS;_CRT_SECURE_NO_DEPRECATE;SPH_DATA_PATH="../data";FREEGLUT_EXPORTS;_USRDLL;_CRT_SECURE_NO_WARNINGS;CMAKE_INTDIR="Debug";freeglut_EXPORTS;%(Defines)</Defines>
       <AdditionalOptions>%(AdditionalOptions) -Xcompiler="/EHsc -Zi -Ob0"</AdditionalOptions>
+      <CodeGeneration>compute_61,sm_61</CodeGeneration>
       <Include>D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\freeglut\include;%(Include)</Include>
       <Optimization>Od</Optimization>
       <Runtime>MDd</Runtime>
       <RuntimeChecks>RTC1</RuntimeChecks>
+      <TargetMachinePlatform>64</TargetMachinePlatform>
       <TypeInfo>true</TypeInfo>
       <Warning>W3</Warning>
     </CudaCompile>
@@ -130,7 +132,6 @@
       <ImportLibrary>D:/Users/scarensac/Documents/GitHub/SPlisHSPlasH/lib/Debug/freeglut_d.lib</ImportLibrary>
       <ProgramDataBaseFile>D:/Users/scarensac/Documents/GitHub/SPlisHSPlasH/bin/freeglut_d.pdb</ProgramDataBaseFile>
       <SubSystem>Console</SubSystem>
-      <Version></Version>
     </Link>
     <ProjectReference>
       <LinkLibraryDependencies>false</LinkLibraryDependencies>
@@ -163,9 +164,11 @@
     <CudaCompile>
       <Defines>_WINDOWS;NDEBUG;_CRT_SECURE_NO_DEPRECATE;SPH_DATA_PATH="../data";FREEGLUT_EXPORTS;_USRDLL;_CRT_SECURE_NO_WARNINGS;CMAKE_INTDIR="Release";freeglut_EXPORTS;%(Defines)</Defines>
       <AdditionalOptions>%(AdditionalOptions) -Xcompiler="/EHsc -Ob2"</AdditionalOptions>
+      <CodeGeneration>compute_61,sm_61</CodeGeneration>
       <Include>D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\freeglut\include;%(Include)</Include>
       <Optimization>O2</Optimization>
       <Runtime>MD</Runtime>
+      <TargetMachinePlatform>64</TargetMachinePlatform>
       <TypeInfo>true</TypeInfo>
       <Warning>W3</Warning>
     </CudaCompile>
@@ -186,7 +189,6 @@
       <ImportLibrary>D:/Users/scarensac/Documents/GitHub/SPlisHSPlasH/lib/Release/freeglut.lib</ImportLibrary>
       <ProgramDataBaseFile>D:/Users/scarensac/Documents/GitHub/SPlisHSPlasH/bin/freeglut.pdb</ProgramDataBaseFile>
       <SubSystem>Console</SubSystem>
-      <Version></Version>
     </Link>
     <ProjectReference>
       <LinkLibraryDependencies>false</LinkLibraryDependencies>
@@ -219,9 +221,11 @@
     <CudaCompile>
       <Defines>_WINDOWS;NDEBUG;_CRT_SECURE_NO_DEPRECATE;SPH_DATA_PATH="../data";FREEGLUT_EXPORTS;_USRDLL;_CRT_SECURE_NO_WARNINGS;CMAKE_INTDIR="MinSizeRel";freeglut_EXPORTS;%(Defines)</Defines>
       <AdditionalOptions>%(AdditionalOptions) -Xcompiler="/EHsc -Ob1"</AdditionalOptions>
+      <CodeGeneration>compute_61,sm_61</CodeGeneration>
       <Include>D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\freeglut\include;%(Include)</Include>
       <Optimization>O1</Optimization>
       <Runtime>MD</Runtime>
+      <TargetMachinePlatform>64</TargetMachinePlatform>
       <TypeInfo>true</TypeInfo>
       <Warning>W3</Warning>
     </CudaCompile>
@@ -242,7 +246,6 @@
       <ImportLibrary>D:/Users/scarensac/Documents/GitHub/SPlisHSPlasH/lib/MinSizeRel/freeglut_ms.lib</ImportLibrary>
       <ProgramDataBaseFile>D:/Users/scarensac/Documents/GitHub/SPlisHSPlasH/bin/freeglut_ms.pdb</ProgramDataBaseFile>
       <SubSystem>Console</SubSystem>
-      <Version></Version>
     </Link>
     <ProjectReference>
       <LinkLibraryDependencies>false</LinkLibraryDependencies>
@@ -275,9 +278,11 @@
     <CudaCompile>
       <Defines>_WINDOWS;NDEBUG;_CRT_SECURE_NO_DEPRECATE;SPH_DATA_PATH="../data";FREEGLUT_EXPORTS;_USRDLL;_CRT_SECURE_NO_WARNINGS;CMAKE_INTDIR="RelWithDebInfo";freeglut_EXPORTS;%(Defines)</Defines>
       <AdditionalOptions>%(AdditionalOptions) -Xcompiler="/EHsc -Zi -Ob1"</AdditionalOptions>
+      <CodeGeneration>compute_61,sm_61</CodeGeneration>
       <Include>D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\freeglut\include;%(Include)</Include>
       <Optimization>O2</Optimization>
       <Runtime>MD</Runtime>
+      <TargetMachinePlatform>64</TargetMachinePlatform>
       <TypeInfo>true</TypeInfo>
       <Warning>W3</Warning>
     </CudaCompile>
@@ -298,7 +303,6 @@
       <ImportLibrary>D:/Users/scarensac/Documents/GitHub/SPlisHSPlasH/lib/RelWithDebInfo/freeglut_rd.lib</ImportLibrary>
       <ProgramDataBaseFile>D:/Users/scarensac/Documents/GitHub/SPlisHSPlasH/bin/freeglut_rd.pdb</ProgramDataBaseFile>
       <SubSystem>Console</SubSystem>
-      <Version></Version>
     </Link>
     <ProjectReference>
       <LinkLibraryDependencies>false</LinkLibraryDependencies>
