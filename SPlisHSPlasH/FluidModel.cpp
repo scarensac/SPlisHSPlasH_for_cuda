@@ -350,21 +350,25 @@ void SPH::FluidModel::setKernel(unsigned int val)
 	{
 		m_W_zero = CubicKernel::W_zero();
 		m_kernelFct = CubicKernel::W;
+		m_kernelFctd = CubicKernel::W;
 	}
 	else if (m_kernelMethod == 1)
 	{
 		m_W_zero = Poly6Kernel::W_zero();
 		m_kernelFct = Poly6Kernel::W;
+		m_kernelFctd = Poly6Kernel::W;
 	}
 	else if (m_kernelMethod == 2)
 	{
 		m_W_zero = SpikyKernel::W_zero();
 		m_kernelFct = SpikyKernel::W;
+		m_kernelFctd = SpikyKernel::W;
 	}
 	else if (m_kernelMethod == 3)
 	{
 		m_W_zero = FluidModel::PrecomputedCubicKernel::W_zero();
 		m_kernelFct = FluidModel::PrecomputedCubicKernel::W;
+		m_kernelFctd = FluidModel::PrecomputedCubicKernel::W;
 	}
 }
 

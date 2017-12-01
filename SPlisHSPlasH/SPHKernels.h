@@ -401,7 +401,7 @@ namespace SPH
 	template<typename KernelType, unsigned int resolution = 1000u>
 	class PrecomputedKernel
 	{
-	protected:
+	public:
 		static Real m_W[resolution];
 		static Real m_gradW[resolution + 1];
 		static Real m_radius;

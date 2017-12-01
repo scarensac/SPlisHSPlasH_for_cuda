@@ -49,6 +49,7 @@ namespace SPH
 			unsigned int m_gradKernelMethod;
 			Real m_W_zero;
 			Real(*m_kernelFct)(const Vector3r &);
+			Real(*m_kernelFctd)(const double);
 			Vector3r(*m_gradKernelFct)(const Vector3r &r);
 
 			std::vector<ParticleObject*> m_particleObjects;
@@ -115,6 +116,7 @@ namespace SPH
 
 			FORCE_INLINE Real W_zero() const { return m_W_zero; }
 			FORCE_INLINE Real W(const Vector3r &r) const { return m_kernelFct(r); }
+			FORCE_INLINE Real W(const double r) const { return m_kernelFctd(r); }
 			FORCE_INLINE Vector3r gradW(const Vector3r &r) { return m_gradKernelFct(r); }
 
 			const SPH::Vector3r& getGravitation() const { return m_gravitation; }

@@ -32,8 +32,8 @@
     <CustomBuild Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\Demos\StaticBoundaryDemo\CMakeLists.txt" />
   </ItemGroup>
   <ItemGroup>
-    <Filter Include="Header Files\Visualization">
-      <UniqueIdentifier>{FC840617-2080-3F54-8A2C-62AF292469BC}</UniqueIdentifier>
+    <Filter Include="Source Files\Visualization">
+      <UniqueIdentifier>{00B424D5-0D6B-33FE-8FEE-B91891B68FB4}</UniqueIdentifier>
     </Filter>
     <Filter Include="Source Files">
       <UniqueIdentifier>{856C601E-746E-3F9A-A835-24553F07107F}</UniqueIdentifier>
@@ -41,8 +41,8 @@
     <Filter Include="Header Files">
       <UniqueIdentifier>{8A583372-D5DE-3B9B-8DF6-2DF0AD88272C}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Source Files\Visualization">
-      <UniqueIdentifier>{00B424D5-0D6B-33FE-8FEE-B91891B68FB4}</UniqueIdentifier>
+    <Filter Include="Header Files\Visualization">
+      <UniqueIdentifier>{FC840617-2080-3F54-8A2C-62AF292469BC}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
 </Project>
