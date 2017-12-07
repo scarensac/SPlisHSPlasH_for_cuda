@@ -1,5 +1,5 @@
-#ifndef __DFSPHCArrays_h__
-#define __DFSPHCArrays_h__
+#ifndef __DFSPHCArraysAdvanced_h__
+#define __DFSPHCArraysAdvanced_h__
 
 #include "SPlisHSPlasH/Common.h"
 #include "SPlisHSPlasH/TimeStep.h"
@@ -15,7 +15,7 @@ namespace SPH
 	/** \brief This class implements the Divergence-free Smoothed Particle Hydrodynamics approach introduced
 	* by Bender and Koschier \cite Bender:2015, \cite Bender2017.
 	*/
-	class DFSPHCArrays : public TimeStep
+	class DFSPHCArraysAdvanced : public TimeStep
 	{
 	protected:
 		DFSPHCData m_data;
@@ -29,7 +29,7 @@ namespace SPH
 		void pressureSolve();
 		void divergenceSolve();
 		void computeDensityAdv(const unsigned int index, const int numParticles, const Real h, const Real density0);
-		void computeDensityChange(const unsigned int index, const Real h, const Real density0);
+		void computeDensityChange(const unsigned int index);
 
 		/** Perform the neighborhood search for all fluid particles.
 		*/
@@ -54,8 +54,8 @@ namespace SPH
 		virtual void updateTimeStepSizeCFL(const Real minTimeStepSize);
 
 	public:
-		DFSPHCArrays(FluidModel *model);
-		virtual ~DFSPHCArrays(void);
+		DFSPHCArraysAdvanced(FluidModel *model);
+		virtual ~DFSPHCArraysAdvanced(void);
 
 		virtual void step();
 		virtual void reset();

@@ -131,8 +131,6 @@ void DFSPHCArrays::step()
 
 	m_data.h_past = m_data.h;
 	m_data.h = m_data.h_future;
-	//start of the c arrays
-	//m_data.readDynamicData(m_model, m_simulationData);
 
 
 	// Compute new time	
