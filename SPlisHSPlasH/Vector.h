@@ -14,6 +14,7 @@ public:
 	double x, y, z;
 
 	FUNCTION Vector3d(double a, double b, double c) { x = a; y = b; z = c; }
+	FUNCTION Vector3d(double val) { x = val; y = val; z = val; }
 
 	FUNCTION Vector3d() { setZero(); }
 
@@ -46,7 +47,10 @@ public:
 	FUNCTION inline double dot(const Vector3d &o) { return x * o.x + y * o.y + z * o.z; }
 
 	inline Vector3d& toAbs() { if (x < 0)x *= -1; if (y < 0)y *= -1; if (z < 0)z *= -1; return *this; }
-	inline Vector3d& clampTo(const double val) {if (x < val)x = val; if (y < val)y = val; if (z < val)z = val; return *this; }
+	inline Vector3d& clampTo(const double val) { if (x < val)x = val; if (y < val)y = val; if (z < val)z = val; return *this; }
+	inline Vector3d& clampTo(const Vector3d &o) { if (x < o.x)x = o.x; if (y < o.y)y = o.y; if (z < o.z)z = o.z; return *this; }
+	inline double avg() { return (x + y + z) / 3.0; }
+	inline Vector3d& toAvg() { (*this) = Vector3d(avg()); return *this; }
 
 };
 

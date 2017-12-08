@@ -52,7 +52,7 @@ set(error_code 1)
 set(number_of_tries 0)
 while(error_code AND number_of_tries LESS 3)
   execute_process(
-    COMMAND "D:/Users/scarensac/AppData/Local/GitHubDesktop/app-1.0.6/resources/app/git/cmd/git.exe" ${git_options} clone ${git_clone_options} --origin "origin" "https://github.com/InteractiveComputerGraphics/CompactNSearch.git" "ExternalProject_CompactNSearch"
+    COMMAND "C:/Program Files/Git/cmd/git.exe" ${git_options} clone ${git_clone_options} --origin "origin" "https://github.com/InteractiveComputerGraphics/CompactNSearch.git" "ExternalProject_CompactNSearch"
     WORKING_DIRECTORY "D:/Users/scarensac/Documents/GitHub/SPlisHSPlasH/extern/CompactNSearch/src"
     RESULT_VARIABLE error_code
     )
@@ -67,7 +67,7 @@ if(error_code)
 endif()
 
 execute_process(
-  COMMAND "D:/Users/scarensac/AppData/Local/GitHubDesktop/app-1.0.6/resources/app/git/cmd/git.exe" ${git_options} checkout 1d9cf800ab4cbb2af956577b99fdd355c16181ba --
+  COMMAND "C:/Program Files/Git/cmd/git.exe" ${git_options} checkout 1d9cf800ab4cbb2af956577b99fdd355c16181ba --
   WORKING_DIRECTORY "D:/Users/scarensac/Documents/GitHub/SPlisHSPlasH/extern/CompactNSearch/src/ExternalProject_CompactNSearch"
   RESULT_VARIABLE error_code
   )
@@ -76,7 +76,7 @@ if(error_code)
 endif()
 
 execute_process(
-  COMMAND "D:/Users/scarensac/AppData/Local/GitHubDesktop/app-1.0.6/resources/app/git/cmd/git.exe" ${git_options} submodule init 
+  COMMAND "C:/Program Files/Git/cmd/git.exe" ${git_options} submodule init 
   WORKING_DIRECTORY "D:/Users/scarensac/Documents/GitHub/SPlisHSPlasH/extern/CompactNSearch/src/ExternalProject_CompactNSearch"
   RESULT_VARIABLE error_code
   )
@@ -85,7 +85,7 @@ if(error_code)
 endif()
 
 execute_process(
-  COMMAND "D:/Users/scarensac/AppData/Local/GitHubDesktop/app-1.0.6/resources/app/git/cmd/git.exe" ${git_options} submodule update --recursive --init 
+  COMMAND "C:/Program Files/Git/cmd/git.exe" ${git_options} submodule update --recursive --init 
   WORKING_DIRECTORY "D:/Users/scarensac/Documents/GitHub/SPlisHSPlasH/extern/CompactNSearch/src/ExternalProject_CompactNSearch"
   RESULT_VARIABLE error_code
   )

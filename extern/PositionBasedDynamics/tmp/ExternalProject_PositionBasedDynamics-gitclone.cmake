@@ -52,7 +52,7 @@ set(error_code 1)
 set(number_of_tries 0)
 while(error_code AND number_of_tries LESS 3)
   execute_process(
-    COMMAND "D:/Users/scarensac/AppData/Local/GitHubDesktop/app-1.0.6/resources/app/git/cmd/git.exe" ${git_options} clone ${git_clone_options} --origin "origin" "https://github.com/InteractiveComputerGraphics/PositionBasedDynamics.git" "ExternalProject_PositionBasedDynamics"
+    COMMAND "C:/Program Files/Git/cmd/git.exe" ${git_options} clone ${git_clone_options} --origin "origin" "https://github.com/InteractiveComputerGraphics/PositionBasedDynamics.git" "ExternalProject_PositionBasedDynamics"
     WORKING_DIRECTORY "D:/Users/scarensac/Documents/GitHub/SPlisHSPlasH/extern/PositionBasedDynamics/src"
     RESULT_VARIABLE error_code
     )
@@ -67,7 +67,7 @@ if(error_code)
 endif()
 
 execute_process(
-  COMMAND "D:/Users/scarensac/AppData/Local/GitHubDesktop/app-1.0.6/resources/app/git/cmd/git.exe" ${git_options} checkout 39a5099c39df84494df14aaad6fb9af845793ff7 --
+  COMMAND "C:/Program Files/Git/cmd/git.exe" ${git_options} checkout 39a5099c39df84494df14aaad6fb9af845793ff7 --
   WORKING_DIRECTORY "D:/Users/scarensac/Documents/GitHub/SPlisHSPlasH/extern/PositionBasedDynamics/src/ExternalProject_PositionBasedDynamics"
   RESULT_VARIABLE error_code
   )
@@ -76,7 +76,7 @@ if(error_code)
 endif()
 
 execute_process(
-  COMMAND "D:/Users/scarensac/AppData/Local/GitHubDesktop/app-1.0.6/resources/app/git/cmd/git.exe" ${git_options} submodule init 
+  COMMAND "C:/Program Files/Git/cmd/git.exe" ${git_options} submodule init 
   WORKING_DIRECTORY "D:/Users/scarensac/Documents/GitHub/SPlisHSPlasH/extern/PositionBasedDynamics/src/ExternalProject_PositionBasedDynamics"
   RESULT_VARIABLE error_code
   )
@@ -85,7 +85,7 @@ if(error_code)
 endif()
 
 execute_process(
-  COMMAND "D:/Users/scarensac/AppData/Local/GitHubDesktop/app-1.0.6/resources/app/git/cmd/git.exe" ${git_options} submodule update --recursive --init 
+  COMMAND "C:/Program Files/Git/cmd/git.exe" ${git_options} submodule update --recursive --init 
   WORKING_DIRECTORY "D:/Users/scarensac/Documents/GitHub/SPlisHSPlasH/extern/PositionBasedDynamics/src/ExternalProject_PositionBasedDynamics"
   RESULT_VARIABLE error_code
   )

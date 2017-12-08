@@ -139,8 +139,9 @@ void DFSPHCData::loadDynamicData(FluidModel *model, const SimulationDataDFSPH& d
 		exit(1569);
 	}
 
-	//density and acc are not conserved between timesteps so no need to copy them
+
 	//*
+	//copy the data on the inital step
 	static bool first_time = true;
 	if (first_time) {
 		for (int i = 0; i < numFluidParticles; ++i) {

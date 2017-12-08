@@ -27,9 +27,13 @@ namespace SPH
 
 		void computeDFSPHFactor();
 		void pressureSolve();
+		template <bool warm_start> void pressureSolveParticle(const unsigned int i);
+		
 		void divergenceSolve();
+		template <bool warm_start> void divergenceSolveParticle(const unsigned int i);
+
 		void computeDensityAdv(const unsigned int index, const int numParticles, const Real h, const Real density0);
-		void computeDensityChange(const unsigned int index, const Real h, const Real density0);
+		void computeDensityChange(const unsigned int index);
 
 		/** Perform the neighborhood search for all fluid particles.
 		*/
@@ -49,7 +53,8 @@ namespace SPH
 		void updateVelocities(double h);
 		void updatePositions(double h);
 
-		/** Update time step size by CFL condition.*/
+		/** Update time step size by CFL condition.
+		*/
 		virtual void updateTimeStepSizeCFL(const Real minTimeStepSize);
 
 	public:

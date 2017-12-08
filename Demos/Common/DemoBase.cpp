@@ -277,7 +277,10 @@ void DemoBase::initParameters()
 		m_parameters.push_back(Parameter(ParameterIDs::WCSPH_Exponent, "WCSPH_Exponent", TW_TYPE_REAL, " label='Exponent (gamma)' min=0.0 group=WCSPH", this));
 	}
 
-	if (m_simulationMethod.simulationMethod == SimulationMethods::DFSPH)
+	if (m_simulationMethod.simulationMethod == SimulationMethods::DFSPH ||
+		m_simulationMethod.simulationMethod == SimulationMethods::DFSPH_C_ARRAY ||
+		m_simulationMethod.simulationMethod == SimulationMethods::DFSPH_C_ARRAY_ADVANCED||
+		m_simulationMethod.simulationMethod == SimulationMethods::DFSPH_CUDA )
 	{
 		m_parameters.push_back(Parameter(ParameterIDs::IterationCountV, "IterationCountV", TW_TYPE_UINT32, " label='Iterations (divergence)' readonly=true group=DFSPH ", this));
 		m_parameters.push_back(Parameter(ParameterIDs::DFSPH_EnableDivergenceSolver, "DFSPH_EnableDivergenceSolver", TW_TYPE_BOOL32, " label='Enable divergence solver' group=DFSPH", this));
@@ -842,7 +845,8 @@ void TW_CALL DemoBase::getParameter(void *value, void *clientData)
 	{
 		if (sm.simulationMethod == SimulationMethods::DFSPH)
 			*(bool *)(value) = ((TimeStepDFSPH*)sm.simulation)->getEnableDivergenceSolver();
-
+		if (sm.simulationMethod == SimulationMethods::DFSPH_C_ARRAY_ADVANCED)
+			*(bool *)(value) = ((DFSPHCArraysAdvanced*)sm.simulation)->getEnableDivergenceSolver();
 	}
 	else if (p->id == ParameterIDs::CFL_Method)
 	{

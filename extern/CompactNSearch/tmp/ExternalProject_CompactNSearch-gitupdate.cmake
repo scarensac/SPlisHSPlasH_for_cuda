@@ -3,7 +3,7 @@ if("1d9cf800ab4cbb2af956577b99fdd355c16181ba" STREQUAL "")
 endif()
 
 execute_process(
-  COMMAND "D:/Users/scarensac/AppData/Local/GitHubDesktop/app-1.0.6/resources/app/git/cmd/git.exe" rev-list --max-count=1 HEAD
+  COMMAND "C:/Program Files/Git/cmd/git.exe" rev-list --max-count=1 HEAD
   WORKING_DIRECTORY "D:/Users/scarensac/Documents/GitHub/SPlisHSPlasH/extern/CompactNSearch/src/ExternalProject_CompactNSearch"
   RESULT_VARIABLE error_code
   OUTPUT_VARIABLE head_sha
@@ -14,7 +14,7 @@ if(error_code)
 endif()
 
 execute_process(
-  COMMAND "D:/Users/scarensac/AppData/Local/GitHubDesktop/app-1.0.6/resources/app/git/cmd/git.exe" show-ref 1d9cf800ab4cbb2af956577b99fdd355c16181ba
+  COMMAND "C:/Program Files/Git/cmd/git.exe" show-ref 1d9cf800ab4cbb2af956577b99fdd355c16181ba
   WORKING_DIRECTORY "D:/Users/scarensac/Documents/GitHub/SPlisHSPlasH/extern/CompactNSearch/src/ExternalProject_CompactNSearch"
   OUTPUT_VARIABLE show_ref_output
   )
@@ -40,7 +40,7 @@ endif()
 # This will fail if the tag does not exist (it probably has not been fetched
 # yet).
 execute_process(
-  COMMAND "D:/Users/scarensac/AppData/Local/GitHubDesktop/app-1.0.6/resources/app/git/cmd/git.exe" rev-list --max-count=1 1d9cf800ab4cbb2af956577b99fdd355c16181ba
+  COMMAND "C:/Program Files/Git/cmd/git.exe" rev-list --max-count=1 1d9cf800ab4cbb2af956577b99fdd355c16181ba
   WORKING_DIRECTORY "D:/Users/scarensac/Documents/GitHub/SPlisHSPlasH/extern/CompactNSearch/src/ExternalProject_CompactNSearch"
   RESULT_VARIABLE error_code
   OUTPUT_VARIABLE tag_sha
@@ -50,7 +50,7 @@ execute_process(
 # Is the hash checkout out that we want?
 if(error_code OR is_remote_ref OR NOT ("${tag_sha}" STREQUAL "${head_sha}"))
   execute_process(
-    COMMAND "D:/Users/scarensac/AppData/Local/GitHubDesktop/app-1.0.6/resources/app/git/cmd/git.exe" fetch
+    COMMAND "C:/Program Files/Git/cmd/git.exe" fetch
     WORKING_DIRECTORY "D:/Users/scarensac/Documents/GitHub/SPlisHSPlasH/extern/CompactNSearch/src/ExternalProject_CompactNSearch"
     RESULT_VARIABLE error_code
     )
@@ -61,7 +61,7 @@ if(error_code OR is_remote_ref OR NOT ("${tag_sha}" STREQUAL "${head_sha}"))
   if(is_remote_ref)
     # Check if stash is needed
     execute_process(
-      COMMAND "D:/Users/scarensac/AppData/Local/GitHubDesktop/app-1.0.6/resources/app/git/cmd/git.exe" status --porcelain
+      COMMAND "C:/Program Files/Git/cmd/git.exe" status --porcelain
       WORKING_DIRECTORY "D:/Users/scarensac/Documents/GitHub/SPlisHSPlasH/extern/CompactNSearch/src/ExternalProject_CompactNSearch"
       RESULT_VARIABLE error_code
       OUTPUT_VARIABLE repo_status
@@ -75,7 +75,7 @@ if(error_code OR is_remote_ref OR NOT ("${tag_sha}" STREQUAL "${head_sha}"))
     # perform git pull --rebase
     if(need_stash)
       execute_process(
-        COMMAND "D:/Users/scarensac/AppData/Local/GitHubDesktop/app-1.0.6/resources/app/git/cmd/git.exe" stash save --all;--quiet
+        COMMAND "C:/Program Files/Git/cmd/git.exe" stash save --all;--quiet
         WORKING_DIRECTORY "D:/Users/scarensac/Documents/GitHub/SPlisHSPlasH/extern/CompactNSearch/src/ExternalProject_CompactNSearch"
         RESULT_VARIABLE error_code
         )
@@ -86,19 +86,19 @@ if(error_code OR is_remote_ref OR NOT ("${tag_sha}" STREQUAL "${head_sha}"))
 
     # Pull changes from the remote branch
     execute_process(
-      COMMAND "D:/Users/scarensac/AppData/Local/GitHubDesktop/app-1.0.6/resources/app/git/cmd/git.exe" rebase ${git_remote}/${git_tag}
+      COMMAND "C:/Program Files/Git/cmd/git.exe" rebase ${git_remote}/${git_tag}
       WORKING_DIRECTORY "D:/Users/scarensac/Documents/GitHub/SPlisHSPlasH/extern/CompactNSearch/src/ExternalProject_CompactNSearch"
       RESULT_VARIABLE error_code
       )
     if(error_code)
       # Rebase failed: Restore previous state.
       execute_process(
-        COMMAND "D:/Users/scarensac/AppData/Local/GitHubDesktop/app-1.0.6/resources/app/git/cmd/git.exe" rebase --abort
+        COMMAND "C:/Program Files/Git/cmd/git.exe" rebase --abort
         WORKING_DIRECTORY "D:/Users/scarensac/Documents/GitHub/SPlisHSPlasH/extern/CompactNSearch/src/ExternalProject_CompactNSearch"
       )
       if(need_stash)
         execute_process(
-          COMMAND "D:/Users/scarensac/AppData/Local/GitHubDesktop/app-1.0.6/resources/app/git/cmd/git.exe" stash pop --index --quiet
+          COMMAND "C:/Program Files/Git/cmd/git.exe" stash pop --index --quiet
           WORKING_DIRECTORY "D:/Users/scarensac/Documents/GitHub/SPlisHSPlasH/extern/CompactNSearch/src/ExternalProject_CompactNSearch"
           )
       endif()
@@ -107,30 +107,30 @@ if(error_code OR is_remote_ref OR NOT ("${tag_sha}" STREQUAL "${head_sha}"))
 
     if(need_stash)
       execute_process(
-        COMMAND "D:/Users/scarensac/AppData/Local/GitHubDesktop/app-1.0.6/resources/app/git/cmd/git.exe" stash pop --index --quiet
+        COMMAND "C:/Program Files/Git/cmd/git.exe" stash pop --index --quiet
         WORKING_DIRECTORY "D:/Users/scarensac/Documents/GitHub/SPlisHSPlasH/extern/CompactNSearch/src/ExternalProject_CompactNSearch"
         RESULT_VARIABLE error_code
         )
       if(error_code)
         # Stash pop --index failed: Try again dropping the index
         execute_process(
-          COMMAND "D:/Users/scarensac/AppData/Local/GitHubDesktop/app-1.0.6/resources/app/git/cmd/git.exe" reset --hard --quiet
+          COMMAND "C:/Program Files/Git/cmd/git.exe" reset --hard --quiet
           WORKING_DIRECTORY "D:/Users/scarensac/Documents/GitHub/SPlisHSPlasH/extern/CompactNSearch/src/ExternalProject_CompactNSearch"
           RESULT_VARIABLE error_code
           )
         execute_process(
-          COMMAND "D:/Users/scarensac/AppData/Local/GitHubDesktop/app-1.0.6/resources/app/git/cmd/git.exe" stash pop --quiet
+          COMMAND "C:/Program Files/Git/cmd/git.exe" stash pop --quiet
           WORKING_DIRECTORY "D:/Users/scarensac/Documents/GitHub/SPlisHSPlasH/extern/CompactNSearch/src/ExternalProject_CompactNSearch"
           RESULT_VARIABLE error_code
           )
         if(error_code)
           # Stash pop failed: Restore previous state.
           execute_process(
-            COMMAND "D:/Users/scarensac/AppData/Local/GitHubDesktop/app-1.0.6/resources/app/git/cmd/git.exe" reset --hard --quiet ${head_sha}
+            COMMAND "C:/Program Files/Git/cmd/git.exe" reset --hard --quiet ${head_sha}
             WORKING_DIRECTORY "D:/Users/scarensac/Documents/GitHub/SPlisHSPlasH/extern/CompactNSearch/src/ExternalProject_CompactNSearch"
           )
           execute_process(
-            COMMAND "D:/Users/scarensac/AppData/Local/GitHubDesktop/app-1.0.6/resources/app/git/cmd/git.exe" stash pop --index --quiet
+            COMMAND "C:/Program Files/Git/cmd/git.exe" stash pop --index --quiet
             WORKING_DIRECTORY "D:/Users/scarensac/Documents/GitHub/SPlisHSPlasH/extern/CompactNSearch/src/ExternalProject_CompactNSearch"
           )
           message(FATAL_ERROR "\nFailed to unstash changes in: 'D:/Users/scarensac/Documents/GitHub/SPlisHSPlasH/extern/CompactNSearch/src/ExternalProject_CompactNSearch/'.\nYou will have to resolve the conflicts manually")
@@ -139,7 +139,7 @@ if(error_code OR is_remote_ref OR NOT ("${tag_sha}" STREQUAL "${head_sha}"))
     endif()
   else()
     execute_process(
-      COMMAND "D:/Users/scarensac/AppData/Local/GitHubDesktop/app-1.0.6/resources/app/git/cmd/git.exe" checkout 1d9cf800ab4cbb2af956577b99fdd355c16181ba
+      COMMAND "C:/Program Files/Git/cmd/git.exe" checkout 1d9cf800ab4cbb2af956577b99fdd355c16181ba
       WORKING_DIRECTORY "D:/Users/scarensac/Documents/GitHub/SPlisHSPlasH/extern/CompactNSearch/src/ExternalProject_CompactNSearch"
       RESULT_VARIABLE error_code
       )
@@ -149,7 +149,7 @@ if(error_code OR is_remote_ref OR NOT ("${tag_sha}" STREQUAL "${head_sha}"))
   endif()
 
   execute_process(
-    COMMAND "D:/Users/scarensac/AppData/Local/GitHubDesktop/app-1.0.6/resources/app/git/cmd/git.exe" submodule update --recursive --init 
+    COMMAND "C:/Program Files/Git/cmd/git.exe" submodule update --recursive --init 
     WORKING_DIRECTORY "D:/Users/scarensac/Documents/GitHub/SPlisHSPlasH/extern/CompactNSearch/src/ExternalProject_CompactNSearch/"
     RESULT_VARIABLE error_code
     )
