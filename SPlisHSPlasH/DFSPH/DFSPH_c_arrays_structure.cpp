@@ -123,6 +123,7 @@ void DFSPHCData::reset(FluidModel *model) {
 	h = TimeManager::getCurrent()->getTimeStepSize();
 	h_future = h;
 	h_past = h;
+	h_ratio_to_past = 1.0;
 
 	for (int i = 0; i < numFluidParticles; ++i) {
 		posFluid[i] = vector3rTo3d(model->getPosition(0, i));

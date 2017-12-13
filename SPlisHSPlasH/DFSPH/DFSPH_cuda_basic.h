@@ -5,35 +5,26 @@
 #include "SPlisHSPlasH\Vector.h"
 #include "DFSPH_c_arrays_structure.h"
 
-//compute the density of the particles 
-void cuda_compute_density(SPH::DFSPHCData& data);
+void cuda_divergence_warmstart_init(SPH::DFSPHCData& data);
+template<bool warmstart> void cuda_divergence_compute(SPH::DFSPHCData& data);
+void cuda_divergence_init(SPH::DFSPHCData& data);//also compute densities and factors
+Real cuda_divergence_loop_end(SPH::DFSPHCData& data);//reinit the densityadv and calc the error
 
-void cuda_computeDFSPHFactor(SPH::DFSPHCData& data);
+void cuda_viscosityXSPH(SPH::DFSPHCData& data);
 
-//use the algo XSPH to simulate the viscosity 
-//start by setting the acc to the gravitation this remove the need of an addictional kernel to do it
-void cuda_viscosity_XSPH(SPH::DFSPHCData& data);
+void cuda_CFL(SPH::DFSPHCData& data, const Real minTimeStepSize, Real m_cflFactor, Real m_cflMaxTimeStepSize);
 
-void cuda_updateVelocities(SPH::DFSPHCData& data);
-void cuda_updatePositions(SPH::DFSPHCData& data);
+void cuda_update_vel(SPH::DFSPHCData& data);
 
-//the next functions are for the internal working of the dfsph algortihm
-//the first function execute the whole algorithm and the others are for partial integration
-//in the cpu algorithm
-//void cuda_divergenceSolve(SPH::DFSPHCData& data);
-void cuda_divergenceSolve_warmStart_firstLoop(SPH::DFSPHCData& data);
-void cuda_divergenceSolve_warmStart_secondLoop(SPH::DFSPHCData& data);
-void cuda_divergenceSolve_initialize(SPH::DFSPHCData& data);
+template<bool warmstart> void cuda_pressure_compute(SPH::DFSPHCData& data); 
+void cuda_pressure_init(SPH::DFSPHCData& data);
+Real cuda_pressure_loop_end(SPH::DFSPHCData& data);
 
+void cuda_update_pos(SPH::DFSPHCData& data);
 
-
-
-
-
-
-
-
-
+//Return the number fo iterations
+int cuda_divergenceSolve(SPH::DFSPHCData& data, const unsigned int maxIter, const Real maxError);
+int cuda_pressureSolve(SPH::DFSPHCData& data, const unsigned int maxIter, const Real maxError);
 
 void allocate_c_array_struct_cuda_managed(SPH::DFSPHCData& data);
 void allocate_precomputed_kernel_managed(SPH::PrecomputedCubicKernelPerso& kernel);

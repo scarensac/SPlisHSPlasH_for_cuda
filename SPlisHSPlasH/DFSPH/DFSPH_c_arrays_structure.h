@@ -109,7 +109,7 @@ namespace SPH
 		void setRadius(Real val);
 
 	public:
-		FUNCTION Real W(const Vector3d &r) const 
+		FUNCTION Real W(const Vector3d &r) const
 		{
 			Real res = 0.0;
 			const Real r2 = r.squaredNorm();
@@ -206,9 +206,17 @@ namespace SPH
 		Real* densityAdv;
 
 		int numFluidParticles;
-		double h;
-		double h_future;
-		double h_past;
+		Real h;
+		Real h_future;
+		Real h_past;
+		Real h_ratio_to_past;
+		Real h_ratio_to_past2;
+		Real invH;
+		Real invH2;
+		Real invH_past;
+		Real invH2_past;
+		Real invH_future;
+		Real invH2_future;
 
 		DFSPHCData(FluidModel *model);
 
@@ -217,6 +225,22 @@ namespace SPH
 		void sortDynamicData(FluidModel *model);
 
 		void reset(FluidModel *model);
+		inline void updateTimeStep(Real h_fut) {
+			h_future = h_fut;
+			invH_future = 1.0 / h_future;
+			invH2_future = 1.0 / (h_future*h_future);
+			h_ratio_to_past = h / h_future;
+			h_ratio_to_past2 = (h*h) / (h_future*h_future);
+		}
+
+		inline void onSimulationStepEnd() {
+			h_past = h;
+			invH_past = invH;
+			invH2_past = invH2;
+			h = h_future;
+			invH = invH_future;
+			invH2 = invH2_future;
+		}
 
 		FUNCTION inline unsigned int getNeighbour(int particle_id, int neighbour_id, int body_id = 0) {
 			return neighbourgs[body_id*numFluidParticles*MAX_NEIGHBOURS + particle_id * MAX_NEIGHBOURS + neighbour_id];

@@ -9,19 +9,516 @@
 #define m_eps 1.0e-5
 
 
+#define USE_WARMSTART
+#define USE_WARMSTART_V
 
-__global__ void DFSPH_updateVelocity_kernel(SPH::DFSPHCData m_data) {
+/*
+//this is the bases for all kernels based function
+__global__ void DFSPH__kernel(SPH::DFSPHCData m_data) {
+	int i = blockIdx.x * blockDim.x + threadIdx.x;
+	if (i >= m_data.numFluidParticles) { return; }
+
+}
+void cuda_(SPH::DFSPHCData& data) {
+	int numBlocks = (data.numFluidParticles + BLOCKSIZE - 1) / BLOCKSIZE;
+	DFSPH__kernel << <numBlocks, BLOCKSIZE >> > (data);
+
+	cudaError_t cudaStatus = cudaDeviceSynchronize();
+	if (cudaStatus != cudaSuccess) {
+		fprintf(stderr, "cuda_compute_density failed: %d\n", (int)cudaStatus);
+		exit(1598);
+	}
+}
+//*/
+
+__device__ void computeDensityChange(SPH::DFSPHCData& m_data,const unsigned int index) {
+	unsigned int numNeighbors = m_data.getNumberOfNeighbourgs(index);
+	// in case of particle deficiency do not perform a divergence solve
+	if (numNeighbors < 20) {
+		for (unsigned int pid = 1; pid < 2; pid++)
+		{
+			numNeighbors += m_data.getNumberOfNeighbourgs(index, pid);
+		}
+	}
+	if (numNeighbors < 20) {
+		m_data.densityAdv[index] = 0;
+	}
+	else {
+		Real densityAdv = 0.0;
+		const Vector3d &xi = m_data.posFluid[index];
+		const Vector3d &vi = m_data.velFluid[index];
+		//////////////////////////////////////////////////////////////////////////
+		// Fluid
+		//////////////////////////////////////////////////////////////////////////
+		for (unsigned int j = 0; j < m_data.getNumberOfNeighbourgs(index); j++)
+		{
+			const unsigned int neighborIndex = m_data.getNeighbour(index, j);
+			densityAdv += m_data.mass[neighborIndex] * (vi - m_data.velFluid[neighborIndex]).dot(m_data.gradW(xi - m_data.posFluid[neighborIndex]));
+		}
+
+		//////////////////////////////////////////////////////////////////////////
+		// Boundary
+		//////////////////////////////////////////////////////////////////////////
+		for (unsigned int pid = 1; pid < 2; pid++)
+		{
+			//numNeighbors += m_data.getNumberOfNeighbourgs(index, pid);
+			for (unsigned int j = 0; j < m_data.getNumberOfNeighbourgs(index, pid); j++)
+			{
+				const unsigned int neighborIndex = m_data.getNeighbour(index, j, pid);
+				densityAdv += m_data.boundaryPsi[neighborIndex] * (vi - m_data.velBoundary[neighborIndex]).dot(m_data.gradW(xi - m_data.posBoundary[neighborIndex]));
+			}
+		}
+
+		// only correct positive divergence
+		m_data.densityAdv[index] = fmax(densityAdv, 0.0);
+	}
+}
+template <bool warm_start> __device__ void divergenceSolveParticle(SPH::DFSPHCData& m_data, const unsigned int i) {
+	Vector3d v_i = Vector3d(0, 0, 0);
+	//////////////////////////////////////////////////////////////////////////
+	// Evaluate rhs
+	//////////////////////////////////////////////////////////////////////////
+	const Real ki = (warm_start) ? m_data.kappaV[i] : (m_data.densityAdv[i])*m_data.factor[i];
+
+#ifdef USE_WARMSTART_V
+	if (!warm_start) { m_data.kappaV[i] += ki; }
+#endif
+
+	const Vector3d &xi = m_data.posFluid[i];
+
+
+	//////////////////////////////////////////////////////////////////////////
+	// Fluid
+	//////////////////////////////////////////////////////////////////////////
+	for (unsigned int j = 0; j < m_data.getNumberOfNeighbourgs(i); j++)
+	{
+		const unsigned int neighborIndex = m_data.getNeighbour(i, j);
+		const Real kSum = (ki + ((warm_start) ? m_data.kappaV[neighborIndex] : (m_data.densityAdv[neighborIndex])*m_data.factor[neighborIndex]));
+		if (fabs(kSum) > m_eps)
+		{
+			// ki, kj already contain inverse density
+			v_i += kSum *  m_data.mass[neighborIndex] * m_data.gradW(xi - m_data.posFluid[neighborIndex]);
+		}
+	}
+
+	//////////////////////////////////////////////////////////////////////////
+	// Boundary
+	//////////////////////////////////////////////////////////////////////////
+	if (fabs(ki) > m_eps)
+	{
+		for (unsigned int pid = 1; pid < 2; pid++)
+		{
+			for (unsigned int j = 0; j < m_data.getNumberOfNeighbourgs(i, pid); j++)
+			{
+				const unsigned int neighborIndex = m_data.getNeighbour(i, j, pid);
+				///TODO fuse those lines
+				const Vector3d delta = ki * m_data.boundaryPsi[neighborIndex] * m_data.gradW(xi - m_data.posBoundary[neighborIndex]);
+				v_i += delta;// ki already contains inverse density
+
+							 ///TODO reactivate this for objects see theoriginal sign to see the the actual sign
+							 //m_model->getForce(pid, neighborIndex) -= m_model->getMass(i) * ki * grad_p_j;
+			}
+		}
+	}
+
+	m_data.velFluid[i] += v_i*m_data.h;
+}
+__device__ void computeDensityAdv(SPH::DFSPHCData& m_data, const unsigned int index) {
+	const Vector3d &xi = m_data.posFluid[index];
+	const Vector3d &vi = m_data.velFluid[index];
+	Real delta = 0.0;
+
+	//////////////////////////////////////////////////////////////////////////
+	// Fluid
+	//////////////////////////////////////////////////////////////////////////
+	for (unsigned int j = 0; j < m_data.getNumberOfNeighbourgs(index); j++)
+	{
+		const unsigned int neighborIndex = m_data.getNeighbour(index, j);
+		delta += m_data.mass[neighborIndex] * (vi - m_data.velFluid[neighborIndex]).dot(m_data.gradW(xi - m_data.posFluid[neighborIndex]));
+	}
+
+	//////////////////////////////////////////////////////////////////////////
+	// Boundary
+	//////////////////////////////////////////////////////////////////////////
+	for (unsigned int pid = 1; pid < 2; pid++)
+	{
+		for (unsigned int j = 0; j < m_data.getNumberOfNeighbourgs(index, pid); j++)
+		{
+			const unsigned int neighborIndex = m_data.getNeighbour(index, j, pid);
+			delta += m_data.boundaryPsi[neighborIndex] * (vi - m_data.velBoundary[neighborIndex]).dot(m_data.gradW(xi - m_data.posBoundary[neighborIndex]));
+		}
+	}
+	m_data.densityAdv[index] = fmax(m_data.density[index] + m_data.h_future*delta - m_data.density0, 0.0);
+}
+template <bool warm_start> __device__ void pressureSolveParticle(SPH::DFSPHCData& m_data, const unsigned int i) {
+	//////////////////////////////////////////////////////////////////////////
+	// Evaluate rhs
+	//////////////////////////////////////////////////////////////////////////
+	const Real ki = (warm_start) ? m_data.kappa[i] : (m_data.densityAdv[i])*m_data.factor[i];
+
+#ifdef USE_WARMSTART
+	if (!warm_start) { m_data.kappa[i] += ki; }
+#endif
+
+
+	Vector3d v_i = Vector3d(0, 0, 0);
+	const Vector3d &xi = m_data.posFluid[i];
+
+	//////////////////////////////////////////////////////////////////////////
+	// Fluid
+	//////////////////////////////////////////////////////////////////////////
+	for (unsigned int j = 0; j < m_data.getNumberOfNeighbourgs(i); j++)
+	{
+		const unsigned int neighborIndex = m_data.getNeighbour(i, j);
+		const Real kSum = (ki + ((warm_start) ? m_data.kappa[neighborIndex] : (m_data.densityAdv[neighborIndex])*m_data.factor[neighborIndex]));
+		if (fabs(kSum) > m_eps)
+		{
+			// ki, kj already contain inverse density
+			v_i += kSum * m_data.mass[neighborIndex] * m_data.gradW(xi - m_data.posFluid[neighborIndex]);
+		}
+	}
+
+	//////////////////////////////////////////////////////////////////////////
+	// Boundary
+	//////////////////////////////////////////////////////////////////////////
+	if (fabs(ki) > m_eps)
+	{
+		for (unsigned int pid = 1; pid < 2; pid++)
+		{
+			for (unsigned int j = 0; j < m_data.getNumberOfNeighbourgs(i, pid); j++)
+			{
+				const unsigned int neighborIndex = m_data.getNeighbour(i, j, pid);
+				const Vector3d delta = ki * m_data.boundaryPsi[neighborIndex] * m_data.gradW(xi - m_data.posBoundary[neighborIndex]);
+
+				v_i += delta;// ki already contains inverse density
+
+							 ///TODO reactivate the external forces check the original formula to be sure of the sign
+							 //m_model->getForce(pid, neighborIndex) -= m_model->getMass(i) * ki * grad_p_j;
+			}
+		}
+	}
+	// Directly update velocities instead of storing pressure accelerations
+	m_data.velFluid[i] += v_i*m_data.h_future;
+}
+
+__global__ void DFSPH_divergence_warmstart_init_kernel(SPH::DFSPHCData m_data) {
+	int i = blockIdx.x * blockDim.x + threadIdx.x;
+	if (i >= m_data.numFluidParticles) { return; }
+
+	m_data.kappaV[i] = 0.5*fmax(m_data.kappaV[i] * m_data.h_ratio_to_past, -0.5);
+	computeDensityChange(m_data ,i);
+}
+void cuda_divergence_warmstart_init(SPH::DFSPHCData& data) {
+	int numBlocks = (data.numFluidParticles + BLOCKSIZE - 1) / BLOCKSIZE;
+	DFSPH_divergence_warmstart_init_kernel << <numBlocks, BLOCKSIZE >> > (data);
+
+	cudaError_t cudaStatus = cudaDeviceSynchronize();
+	if (cudaStatus != cudaSuccess) {
+		fprintf(stderr, "cuda_compute_density failed: %d\n", (int)cudaStatus);
+		exit(1598);
+	}
+}
+
+template<bool warmstart> __global__ void DFSPH_divergence_compute_kernel(SPH::DFSPHCData m_data) {
+	int i = blockIdx.x * blockDim.x + threadIdx.x;
+	if (i >= m_data.numFluidParticles) { return; }
+
+	if (warmstart) {
+		if (m_data.densityAdv[i] > 0.0) {
+			divergenceSolveParticle<warmstart>(m_data, i);
+		}
+	}
+	else {
+		divergenceSolveParticle<warmstart>(m_data, i);
+	}
+	
+}
+template<bool warmstart> void cuda_divergence_compute(SPH::DFSPHCData& data) {
+	int numBlocks = (data.numFluidParticles + BLOCKSIZE - 1) / BLOCKSIZE;
+	DFSPH_divergence_compute_kernel<warmstart> << <numBlocks, BLOCKSIZE >> > (data);
+
+	cudaError_t cudaStatus = cudaDeviceSynchronize();
+	if (cudaStatus != cudaSuccess) {
+		fprintf(stderr, "cuda_compute_density failed: %d\n", (int)cudaStatus);
+		exit(1598);
+	}
+}
+template void cuda_divergence_compute<true>(SPH::DFSPHCData& data);
+template void cuda_divergence_compute<false>(SPH::DFSPHCData& data);
+
+__global__ void DFSPH_divergence_init_kernel(SPH::DFSPHCData m_data) {
+	int i = blockIdx.x * blockDim.x + threadIdx.x;
+	if (i >= m_data.numFluidParticles) { return; }
+
+	{
+		///TODO when doing this kernel I can actually fuse the code for all those computation to limit the number
+		///of time I read the particles positions
+		computeDensityChange(m_data,i);
+
+		//I can actually make the factor and desity computation here
+		{
+			//////////////////////////////////////////////////////////////////////////
+			// Compute gradient dp_i/dx_j * (1/k)  and dp_j/dx_j * (1/k)
+			//////////////////////////////////////////////////////////////////////////
+			const Vector3d &xi = m_data.posFluid[i];
+			Real sum_grad_p_k = 0.0;
+			Vector3d grad_p_i;
+			grad_p_i.setZero();
+
+			Real density = m_data.mass[i] * m_data.W_zero;
+
+			//////////////////////////////////////////////////////////////////////////
+			// Fluid
+			//////////////////////////////////////////////////////////////////////////
+			for (unsigned int j = 0; j < m_data.getNumberOfNeighbourgs(i); j++)
+			{
+				const unsigned int neighborIndex = m_data.getNeighbour(i, j);
+				const Vector3d &xj = m_data.posFluid[neighborIndex];
+				density += m_data.mass[neighborIndex] * m_data.W(xi - xj);
+				const Vector3d grad_p_j = m_data.mass[neighborIndex] * m_data.gradW(xi - xj);
+				sum_grad_p_k += grad_p_j.squaredNorm();
+				grad_p_i += grad_p_j;
+			}
+
+			//////////////////////////////////////////////////////////////////////////
+			// Boundary
+			//////////////////////////////////////////////////////////////////////////
+			for (unsigned int pid = 1; pid < 2; pid++)
+			{
+				for (unsigned int j = 0; j < m_data.getNumberOfNeighbourgs(i, pid); j++)
+				{
+					const unsigned int neighborIndex = m_data.getNeighbour(i, j, pid);
+					const Vector3d &xj = m_data.posBoundary[neighborIndex];
+					density += m_data.boundaryPsi[neighborIndex] * m_data.W(xi - xj);
+					const Vector3d grad_p_j = m_data.boundaryPsi[neighborIndex] * m_data.gradW(xi - xj);
+					sum_grad_p_k += grad_p_j.squaredNorm();
+					grad_p_i += grad_p_j;
+				}
+			}
+
+			sum_grad_p_k += grad_p_i.squaredNorm();
+
+			//////////////////////////////////////////////////////////////////////////
+			// Compute pressure stiffness denominator
+			//////////////////////////////////////////////////////////////////////////
+			m_data.factor[i] = (-m_data.invH / (fmax(sum_grad_p_k, m_eps)));
+			m_data.density[i] = density;
+
+		}
+
+#ifdef USE_WARMSTART_V
+		m_data.kappaV[i] = 0.0;
+#endif
+	}
+
+}
+void cuda_divergence_init(SPH::DFSPHCData& data) {
+	int numBlocks = (data.numFluidParticles + BLOCKSIZE - 1) / BLOCKSIZE;
+	DFSPH_divergence_init_kernel << <numBlocks, BLOCKSIZE >> > (data);
+
+	cudaError_t cudaStatus = cudaDeviceSynchronize();
+	if (cudaStatus != cudaSuccess) {
+		fprintf(stderr, "cuda_compute_density failed: %d\n", (int)cudaStatus);
+		exit(1598);
+	}
+}
+
+__global__ void DFSPH_divergence_loop_end_kernel(SPH::DFSPHCData m_data, Real* avg_density_err) {
+	int i = blockIdx.x * blockDim.x + threadIdx.x;
+	if (i >= m_data.numFluidParticles) { return; }
+
+	computeDensityChange(m_data,i);
+	atomicAdd(avg_density_err, m_data.densityAdv[i]);
+}
+Real cuda_divergence_loop_end(SPH::DFSPHCData& data) {
+	int numBlocks = (data.numFluidParticles + BLOCKSIZE - 1) / BLOCKSIZE;
+	Real* avg_density_err;
+	cudaMallocManaged(&(avg_density_err), sizeof(Real));
+	*avg_density_err = 0.0;
+	DFSPH_divergence_loop_end_kernel << <numBlocks, BLOCKSIZE >> > (data,avg_density_err);
+
+	cudaError_t cudaStatus = cudaDeviceSynchronize();
+	if (cudaStatus != cudaSuccess) {
+		fprintf(stderr, "cuda_compute_density failed: %d\n", (int)cudaStatus);
+		exit(1598);
+	}
+
+	Real result = *avg_density_err;
+	cudaFree(avg_density_err);
+	return result;
+}
+
+__global__ void DFSPH_viscosityXSPH_kernel(SPH::DFSPHCData m_data) {
+	int i = blockIdx.x * blockDim.x + threadIdx.x;
+	if (i >= m_data.numFluidParticles) { return; }
+
+	//I set the gravitation directly here to lover the number of kernels
+	Vector3d ai = Vector3d(0, 0, 0);
+	const Vector3d &xi = m_data.posFluid[i];
+	const Vector3d &vi = m_data.velFluid[i];
+
+	//////////////////////////////////////////////////////////////////////////
+	// Fluid
+	//////////////////////////////////////////////////////////////////////////
+	for (unsigned int j = 0; j < m_data.getNumberOfNeighbourgs(i); j++)
+	{
+		const unsigned int neighborIndex = m_data.getNeighbour(i, j);
+
+		// Viscosity
+		ai -= m_data.invH * m_data.viscosity * (m_data.mass[neighborIndex] / m_data.density[neighborIndex]) *
+			(vi - m_data.velFluid[neighborIndex]) * m_data.W(xi - m_data.posFluid[neighborIndex]);
+	}
+
+	m_data.accFluid[i] = m_data.gravitation + ai;
+}
+void cuda_viscosityXSPH(SPH::DFSPHCData& data) {
+	int numBlocks = (data.numFluidParticles + BLOCKSIZE - 1) / BLOCKSIZE;
+	DFSPH_viscosityXSPH_kernel << <numBlocks, BLOCKSIZE >> > (data);
+
+	cudaError_t cudaStatus = cudaDeviceSynchronize();
+	if (cudaStatus != cudaSuccess) {
+		fprintf(stderr, "cuda_compute_density failed: %d\n", (int)cudaStatus);
+		exit(1598);
+	}
+}
+
+__global__ void DFSPH_CFL_kernel(SPH::DFSPHCData m_data, Real* maxVel) {
+	int i = blockIdx.x * blockDim.x + threadIdx.x;
+	if (i >= m_data.numFluidParticles) { return; }
+
+	for (unsigned int i = 0; i < m_data.numFluidParticles; i++)
+	{
+		const Real velMag = (m_data.velFluid[i] + m_data.accFluid[i] * m_data.h).squaredNorm();
+		if (velMag > *maxVel)
+			*maxVel = velMag;
+	}
+}
+void cuda_CFL(SPH::DFSPHCData& m_data, const Real minTimeStepSize, Real m_cflFactor, Real m_cflMaxTimeStepSize) {
+	Real* out_buff;
+	cudaMallocManaged(&(out_buff), sizeof(Real));
+	*out_buff = 0.1;
+	DFSPH_CFL_kernel << <1, 1 >> > (m_data, out_buff);
+
+	cudaError_t cudaStatus = cudaDeviceSynchronize();
+	if (cudaStatus != cudaSuccess) {
+		fprintf(stderr, "cuda_compute_density failed: %d\n", (int)cudaStatus);
+		exit(1598);
+	}
+
+	Real maxVel = *out_buff;
+	cudaFree(out_buff);
+
+
+	Real h = m_data.h;	
+
+	// Approximate max. time step size 		
+	h = m_cflFactor * .4 * (2.0*m_data.particleRadius / (sqrt(maxVel)));
+
+	h = min(h, m_cflMaxTimeStepSize);
+	h = max(h, minTimeStepSize);
+
+	m_data.updateTimeStep(h);
+}
+
+__global__ void DFSPH_update_vel_kernel(SPH::DFSPHCData m_data) {
 	int i = blockIdx.x * blockDim.x + threadIdx.x;
 	if (i >= m_data.numFluidParticles) { return; }
 
 	m_data.velFluid[i] += m_data.h * m_data.accFluid[i];
+
+#ifdef USE_WARMSTART	
+	//done here to have one less kernel
+	m_data.kappa[i] = fmax(m_data.kappa[i] * m_data.h_ratio_to_past2, -0.5);
+#endif
+}
+void cuda_update_vel(SPH::DFSPHCData& data) {
+	int numBlocks = (data.numFluidParticles + BLOCKSIZE - 1) / BLOCKSIZE;
+	DFSPH_update_vel_kernel << <numBlocks, BLOCKSIZE >> > (data);
+
+	cudaError_t cudaStatus = cudaDeviceSynchronize();
+	if (cudaStatus != cudaSuccess) {
+		fprintf(stderr, "cuda_compute_density failed: %d\n", (int)cudaStatus);
+		exit(1598);
+	}
 }
 
+template<bool warmstart> __global__ void DFSPH_pressure_compute_kernel(SPH::DFSPHCData m_data) {
+	int i = blockIdx.x * blockDim.x + threadIdx.x;
+	if (i >= m_data.numFluidParticles) { return; }
 
+	pressureSolveParticle<warmstart>(m_data, i);
 
-void cuda_updateVelocities(SPH::DFSPHCData& data) {
+}
+template<bool warmstart> void cuda_pressure_compute(SPH::DFSPHCData& data) {
 	int numBlocks = (data.numFluidParticles + BLOCKSIZE - 1) / BLOCKSIZE;
-	DFSPH_updateVelocity_kernel << <numBlocks, BLOCKSIZE >> > (data);
+	DFSPH_pressure_compute_kernel<warmstart> << <numBlocks, BLOCKSIZE >> > (data);
+
+	cudaError_t cudaStatus = cudaDeviceSynchronize();
+	if (cudaStatus != cudaSuccess) {
+		fprintf(stderr, "cuda_compute_density failed: %d\n", (int)cudaStatus);
+		exit(1598);
+	}
+}
+template void cuda_pressure_compute<true>(SPH::DFSPHCData& data);
+template void cuda_pressure_compute<false>(SPH::DFSPHCData& data);
+
+__global__ void DFSPH_pressure_init_kernel(SPH::DFSPHCData m_data) {
+	int i = blockIdx.x * blockDim.x + threadIdx.x;
+	if (i >= m_data.numFluidParticles) { return; }
+
+	computeDensityAdv(m_data, i);
+
+	m_data.factor[i] *= m_data.invH_future;
+#ifdef USE_WARMSTART
+	m_data.kappa[i] = 0.0;
+#endif
+
+}
+void cuda_pressure_init(SPH::DFSPHCData& data) {
+	int numBlocks = (data.numFluidParticles + BLOCKSIZE - 1) / BLOCKSIZE;
+	DFSPH_pressure_init_kernel << <numBlocks, BLOCKSIZE >> > (data);
+
+	cudaError_t cudaStatus = cudaDeviceSynchronize();
+	if (cudaStatus != cudaSuccess) {
+		fprintf(stderr, "cuda_compute_density failed: %d\n", (int)cudaStatus);
+		exit(1598);
+	}
+}
+
+__global__ void DFSPH_pressure_loop_end_kernel(SPH::DFSPHCData m_data, Real* avg_density_err) {
+	int i = blockIdx.x * blockDim.x + threadIdx.x;
+	if (i >= m_data.numFluidParticles) { return; }
+
+	computeDensityAdv(m_data, i);
+	atomicAdd(avg_density_err, m_data.densityAdv[i]);
+}
+Real cuda_pressure_loop_end(SPH::DFSPHCData& data) {
+	int numBlocks = (data.numFluidParticles + BLOCKSIZE - 1) / BLOCKSIZE;
+	Real* avg_density_err;
+	cudaMallocManaged(&(avg_density_err), sizeof(Real));
+	*avg_density_err = 0.0;
+	DFSPH_pressure_loop_end_kernel << <numBlocks, BLOCKSIZE >> > (data, avg_density_err);
+
+	cudaError_t cudaStatus = cudaDeviceSynchronize();
+	if (cudaStatus != cudaSuccess) {
+		fprintf(stderr, "cuda_compute_density failed: %d\n", (int)cudaStatus);
+		exit(1598);
+	}
+
+	Real result = *avg_density_err;
+	cudaFree(avg_density_err);
+	return result;
+}
+
+__global__ void DFSPH_update_pos_kernel(SPH::DFSPHCData m_data) {
+	int i = blockIdx.x * blockDim.x + threadIdx.x;
+	if (i >= m_data.numFluidParticles) { return; }
+
+	m_data.posFluid[i] += m_data.h * m_data.velFluid[i];
+}
+void cuda_update_pos(SPH::DFSPHCData& data) {
+	int numBlocks = (data.numFluidParticles + BLOCKSIZE - 1) / BLOCKSIZE;
+	DFSPH_update_pos_kernel << <numBlocks, BLOCKSIZE >> > (data);
 
 	cudaError_t cudaStatus = cudaDeviceSynchronize();
 	if (cudaStatus != cudaSuccess) {
@@ -31,11 +528,93 @@ void cuda_updateVelocities(SPH::DFSPHCData& data) {
 }
 
 
+int cuda_divergenceSolve(SPH::DFSPHCData& m_data, const unsigned int maxIter, const Real maxError) {
+	//////////////////////////////////////////////////////////////////////////
+	// Init parameters
+	//////////////////////////////////////////////////////////////////////////
+
+	const Real h = m_data.h;
+	const int numParticles = m_data.numFluidParticles;
+	const Real density0 = m_data.density0;
+
+#ifdef USE_WARMSTART_V
+	cuda_divergence_warmstart_init(m_data);
+	cuda_divergence_compute<true>(m_data);
+#endif
 
 
+	//////////////////////////////////////////////////////////////////////////
+	// Compute velocity of density change
+	//////////////////////////////////////////////////////////////////////////
+	cuda_divergence_init(m_data);
 
 
+	unsigned int m_iterationsV = 0;
 
+	//////////////////////////////////////////////////////////////////////////
+	// Start solver
+	//////////////////////////////////////////////////////////////////////////
+
+	// Maximal allowed density fluctuation
+	// use maximal density error divided by time step size
+	const Real eta = (1.0 / h) * maxError * 0.01 * density0;  // maxError is given in percent
+
+	Real avg_density_err = 0.0;
+	while (((avg_density_err > eta) || (m_iterationsV < 1)) && (m_iterationsV < maxIter))
+	{
+
+		//////////////////////////////////////////////////////////////////////////
+		// Perform Jacobi iteration over all blocks
+		//////////////////////////////////////////////////////////////////////////	
+		cuda_divergence_compute<false>(m_data);
+		
+		avg_density_err = cuda_divergence_loop_end(m_data);
+
+		avg_density_err /= numParticles;
+		m_iterationsV++;
+	}
+
+	return m_iterationsV;
+}
+
+
+int cuda_pressureSolve(SPH::DFSPHCData& m_data, const unsigned int m_maxIterations, const Real m_maxError) {
+	const Real density0 = m_data.density0;
+	const int numParticles = (int)m_data.numFluidParticles;
+	Real avg_density_err = 0.0;
+
+#ifdef USE_WARMSTART		
+	cuda_pressure_compute<true>(m_data);
+#endif
+
+
+	//////////////////////////////////////////////////////////////////////////
+	// Compute rho_adv
+	//////////////////////////////////////////////////////////////////////////
+	cuda_pressure_init(m_data);
+
+	unsigned int m_iterations = 0;
+
+	//////////////////////////////////////////////////////////////////////////
+	// Start solver
+	//////////////////////////////////////////////////////////////////////////
+
+	// Maximal allowed density fluctuation
+	const Real eta = m_maxError * 0.01 * density0;  // maxError is given in percent
+
+	while (((avg_density_err > eta) || (m_iterations < 2)) && (m_iterations < m_maxIterations))
+	{
+
+		cuda_pressure_compute<false>(m_data);
+		avg_density_err = cuda_pressure_loop_end(m_data);
+
+		avg_density_err /= numParticles;
+
+		m_iterations++;
+	}
+	return m_iterations;
+
+}
 
 /*
 	THE NEXT FUNCTIONS ARE FOR THE MEMORY ALLOCATION
