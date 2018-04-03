@@ -1,5 +1,5 @@
-﻿<?xml version="1.0" encoding="UTF-8"?>
-<Project DefaultTargets="Build" ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" ToolsVersion="14.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup Label="ProjectConfigurations">
     <ProjectConfiguration Include="Debug|x64">
       <Configuration>Debug</Configuration>
@@ -30,26 +30,26 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
     <ConfigurationType>StaticLibrary</ConfigurationType>
     <CharacterSet>MultiByte</CharacterSet>
-    <PlatformToolset>v141</PlatformToolset>
+    <PlatformToolset>v140</PlatformToolset>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
     <ConfigurationType>StaticLibrary</ConfigurationType>
     <CharacterSet>MultiByte</CharacterSet>
-    <PlatformToolset>v141</PlatformToolset>
+    <PlatformToolset>v140</PlatformToolset>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'" Label="Configuration">
     <ConfigurationType>StaticLibrary</ConfigurationType>
     <CharacterSet>MultiByte</CharacterSet>
-    <PlatformToolset>v141</PlatformToolset>
+    <PlatformToolset>v140</PlatformToolset>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'" Label="Configuration">
     <ConfigurationType>StaticLibrary</ConfigurationType>
     <CharacterSet>MultiByte</CharacterSet>
-    <PlatformToolset>v141</PlatformToolset>
+    <PlatformToolset>v140</PlatformToolset>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
   <ImportGroup Label="ExtensionSettings">
-    <Import Project="$(VCTargetsPath)\BuildCustomizations\CUDA 9.0.props" />
+    <Import Project="$(VCTargetsPath)\BuildCustomizations\CUDA 9.1.props" />
   </ImportGroup>
   <ImportGroup Label="PropertySheets">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
@@ -76,7 +76,7 @@
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>
-      <AdditionalIncludeDirectories>D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\eigen;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\install\CompactNSearch\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\eigen;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\install\CompactNSearch\include;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\cub-1.7.4\cub;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <AssemblerListingLocation>Debug/</AssemblerListingLocation>
       <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
       <CompileAs>CompileAsCpp</CompileAs>
@@ -94,13 +94,13 @@
     </ClCompile>
     <ResourceCompile>
       <PreprocessorDefinitions>WIN32;_DEBUG;_WINDOWS;_CRT_SECURE_NO_DEPRECATE;SPH_DATA_PATH=\"../data\";CMAKE_INTDIR=\"Debug\";%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\eigen;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\install\CompactNSearch\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\eigen;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\install\CompactNSearch\include;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\cub-1.7.4\cub;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ResourceCompile>
     <CudaCompile>
       <Defines>_WINDOWS;_CRT_SECURE_NO_DEPRECATE;SPH_DATA_PATH="../data";CMAKE_INTDIR="Debug";%(Defines)</Defines>
       <AdditionalOptions>%(AdditionalOptions) -Xcompiler="/EHsc -Zi -Ob0"</AdditionalOptions>
       <CodeGeneration>compute_61,sm_61</CodeGeneration>
-      <Include>D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\eigen;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\install\CompactNSearch\include;%(Include)</Include>
+      <Include>D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\eigen;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\install\CompactNSearch\include;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\cub-1.7.4\cub;%(Include)</Include>
       <Optimization>Od</Optimization>
       <Runtime>MDd</Runtime>
       <RuntimeChecks>RTC1</RuntimeChecks>
@@ -109,7 +109,7 @@
       <Warning>W3</Warning>
     </CudaCompile>
     <Midl>
-      <AdditionalIncludeDirectories>D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\eigen;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\install\CompactNSearch\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\eigen;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\install\CompactNSearch\include;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\cub-1.7.4\cub;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <OutputDirectory>$(ProjectDir)/$(IntDir)</OutputDirectory>
       <HeaderFileName>%(Filename).h</HeaderFileName>
       <TypeLibraryName>%(Filename).tlb</TypeLibraryName>
@@ -126,7 +126,7 @@
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <ClCompile>
-      <AdditionalIncludeDirectories>D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\eigen;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\install\CompactNSearch\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\eigen;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\install\CompactNSearch\include;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\cub-1.7.4\cub;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <AssemblerListingLocation>Release/</AssemblerListingLocation>
       <CompileAs>CompileAsCpp</CompileAs>
       <ExceptionHandling>Sync</ExceptionHandling>
@@ -143,17 +143,18 @@
       <WarningLevel>Level3</WarningLevel>
       <PreprocessorDefinitions>WIN32;_WINDOWS;NDEBUG;_CRT_SECURE_NO_DEPRECATE;SPH_DATA_PATH="../data";CMAKE_INTDIR="Release";%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ObjectFileName>$(IntDir)</ObjectFileName>
-      <DebugInformationFormat></DebugInformationFormat>
+      <DebugInformationFormat>
+      </DebugInformationFormat>
     </ClCompile>
     <ResourceCompile>
       <PreprocessorDefinitions>WIN32;_WINDOWS;NDEBUG;_CRT_SECURE_NO_DEPRECATE;SPH_DATA_PATH=\"../data\";CMAKE_INTDIR=\"Release\";%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\eigen;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\install\CompactNSearch\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\eigen;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\install\CompactNSearch\include;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\cub-1.7.4\cub;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ResourceCompile>
     <CudaCompile>
       <Defines>_WINDOWS;NDEBUG;_CRT_SECURE_NO_DEPRECATE;SPH_DATA_PATH="../data";CMAKE_INTDIR="Release";%(Defines)</Defines>
       <AdditionalOptions>%(AdditionalOptions) -Xcompiler="/EHsc -Ob2"</AdditionalOptions>
       <CodeGeneration>compute_61,sm_61</CodeGeneration>
-      <Include>D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\eigen;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\install\CompactNSearch\include;%(Include)</Include>
+      <Include>D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\eigen;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\install\CompactNSearch\include;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\cub-1.7.4\cub;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\glew\include;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\freeglut\include;%(Include)</Include>
       <Optimization>O2</Optimization>
       <Runtime>MD</Runtime>
       <TargetMachinePlatform>64</TargetMachinePlatform>
@@ -161,7 +162,7 @@
       <Warning>W3</Warning>
     </CudaCompile>
     <Midl>
-      <AdditionalIncludeDirectories>D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\eigen;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\install\CompactNSearch\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\eigen;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\install\CompactNSearch\include;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\cub-1.7.4\cub;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <OutputDirectory>$(ProjectDir)/$(IntDir)</OutputDirectory>
       <HeaderFileName>%(Filename).h</HeaderFileName>
       <TypeLibraryName>%(Filename).tlb</TypeLibraryName>
@@ -178,7 +179,7 @@
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">
     <ClCompile>
-      <AdditionalIncludeDirectories>D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\eigen;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\install\CompactNSearch\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\eigen;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\install\CompactNSearch\include;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\cub-1.7.4\cub;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <AssemblerListingLocation>MinSizeRel/</AssemblerListingLocation>
       <CompileAs>CompileAsCpp</CompileAs>
       <ExceptionHandling>Sync</ExceptionHandling>
@@ -190,17 +191,18 @@
       <WarningLevel>Level3</WarningLevel>
       <PreprocessorDefinitions>WIN32;_WINDOWS;NDEBUG;_CRT_SECURE_NO_DEPRECATE;SPH_DATA_PATH="../data";CMAKE_INTDIR="MinSizeRel";%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ObjectFileName>$(IntDir)</ObjectFileName>
-      <DebugInformationFormat></DebugInformationFormat>
+      <DebugInformationFormat>
+      </DebugInformationFormat>
     </ClCompile>
     <ResourceCompile>
       <PreprocessorDefinitions>WIN32;_WINDOWS;NDEBUG;_CRT_SECURE_NO_DEPRECATE;SPH_DATA_PATH=\"../data\";CMAKE_INTDIR=\"MinSizeRel\";%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\eigen;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\install\CompactNSearch\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\eigen;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\install\CompactNSearch\include;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\cub-1.7.4\cub;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ResourceCompile>
     <CudaCompile>
       <Defines>_WINDOWS;NDEBUG;_CRT_SECURE_NO_DEPRECATE;SPH_DATA_PATH="../data";CMAKE_INTDIR="MinSizeRel";%(Defines)</Defines>
       <AdditionalOptions>%(AdditionalOptions) -Xcompiler="/EHsc -Ob1"</AdditionalOptions>
       <CodeGeneration>compute_61,sm_61</CodeGeneration>
-      <Include>D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\eigen;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\install\CompactNSearch\include;%(Include)</Include>
+      <Include>D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\eigen;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\install\CompactNSearch\include;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\cub-1.7.4\cub;%(Include)</Include>
       <Optimization>O1</Optimization>
       <Runtime>MD</Runtime>
       <TargetMachinePlatform>64</TargetMachinePlatform>
@@ -208,7 +210,7 @@
       <Warning>W3</Warning>
     </CudaCompile>
     <Midl>
-      <AdditionalIncludeDirectories>D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\eigen;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\install\CompactNSearch\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\eigen;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\install\CompactNSearch\include;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\cub-1.7.4\cub;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <OutputDirectory>$(ProjectDir)/$(IntDir)</OutputDirectory>
       <HeaderFileName>%(Filename).h</HeaderFileName>
       <TypeLibraryName>%(Filename).tlb</TypeLibraryName>
@@ -225,7 +227,7 @@
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">
     <ClCompile>
-      <AdditionalIncludeDirectories>D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\eigen;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\install\CompactNSearch\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\eigen;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\install\CompactNSearch\include;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\cub-1.7.4\cub;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <AssemblerListingLocation>RelWithDebInfo/</AssemblerListingLocation>
       <CompileAs>CompileAsCpp</CompileAs>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
@@ -241,13 +243,13 @@
     </ClCompile>
     <ResourceCompile>
       <PreprocessorDefinitions>WIN32;_WINDOWS;NDEBUG;_CRT_SECURE_NO_DEPRECATE;SPH_DATA_PATH=\"../data\";CMAKE_INTDIR=\"RelWithDebInfo\";%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\eigen;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\install\CompactNSearch\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\eigen;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\install\CompactNSearch\include;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\cub-1.7.4\cub;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ResourceCompile>
     <CudaCompile>
       <Defines>_WINDOWS;NDEBUG;_CRT_SECURE_NO_DEPRECATE;SPH_DATA_PATH="../data";CMAKE_INTDIR="RelWithDebInfo";%(Defines)</Defines>
       <AdditionalOptions>%(AdditionalOptions) -Xcompiler="/EHsc -Zi -Ob1"</AdditionalOptions>
       <CodeGeneration>compute_61,sm_61</CodeGeneration>
-      <Include>D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\eigen;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\install\CompactNSearch\include;%(Include)</Include>
+      <Include>D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\eigen;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\install\CompactNSearch\include;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\cub-1.7.4\cub;%(Include)</Include>
       <Optimization>O2</Optimization>
       <Runtime>MD</Runtime>
       <TargetMachinePlatform>64</TargetMachinePlatform>
@@ -255,7 +257,7 @@
       <Warning>W3</Warning>
     </CudaCompile>
     <Midl>
-      <AdditionalIncludeDirectories>D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\eigen;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\install\CompactNSearch\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\eigen;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\install\CompactNSearch\include;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\cub-1.7.4\cub;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <OutputDirectory>$(ProjectDir)/$(IntDir)</OutputDirectory>
       <HeaderFileName>%(Filename).h</HeaderFileName>
       <TypeLibraryName>%(Filename).tlb</TypeLibraryName>
@@ -329,42 +331,42 @@ if %errorlevel% neq 0 goto :VCEnd</Command>
   <ItemGroup>
     <ClInclude Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\SPlisHSPlasH\Common.h" />
     <ClInclude Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\SPlisHSPlasH\Vector.h" />
-    <ClCompile Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\SPlisHSPlasH\Emitter.cpp"  />
+    <ClCompile Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\SPlisHSPlasH\Emitter.cpp" />
     <ClInclude Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\SPlisHSPlasH\Emitter.h" />
-    <ClCompile Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\SPlisHSPlasH\EmitterSystem.cpp"  />
+    <ClCompile Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\SPlisHSPlasH\EmitterSystem.cpp" />
     <ClInclude Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\SPlisHSPlasH\EmitterSystem.h" />
-    <ClCompile Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\SPlisHSPlasH\FluidModel.cpp"  />
+    <ClCompile Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\SPlisHSPlasH\FluidModel.cpp" />
     <ClInclude Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\SPlisHSPlasH\FluidModel.h" />
     <ClInclude Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\SPlisHSPlasH\RigidBodyObject.h" />
-    <ClCompile Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\SPlisHSPlasH\SPHKernels.cpp"  />
+    <ClCompile Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\SPlisHSPlasH\SPHKernels.cpp" />
     <ClInclude Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\SPlisHSPlasH\SPHKernels.h" />
     <ClInclude Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\SPlisHSPlasH\StaticRigidBody.h" />
-    <ClCompile Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\SPlisHSPlasH\TimeManager.cpp"  />
+    <ClCompile Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\SPlisHSPlasH\TimeManager.cpp" />
     <ClInclude Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\SPlisHSPlasH\TimeManager.h" />
-    <ClCompile Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\SPlisHSPlasH\TimeStep.cpp"  />
+    <ClCompile Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\SPlisHSPlasH\TimeStep.cpp" />
     <ClInclude Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\SPlisHSPlasH\TimeStep.h" />
-    <ClCompile Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\SPlisHSPlasH\TriangleMesh.cpp"  />
+    <ClCompile Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\SPlisHSPlasH\TriangleMesh.cpp" />
     <ClInclude Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\SPlisHSPlasH\TriangleMesh.h" />
-    <ClCompile Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\SPlisHSPlasH\NonPressureForceBase.cpp"  />
+    <ClCompile Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\SPlisHSPlasH\NonPressureForceBase.cpp" />
     <ClInclude Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\SPlisHSPlasH\NonPressureForceBase.h" />
     <ClInclude Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\SPlisHSPlasH\WCSPH\SimulationDataWCSPH.h" />
     <ClInclude Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\SPlisHSPlasH\WCSPH\TimeStepWCSPH.h" />
-    <ClCompile Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\SPlisHSPlasH\WCSPH\SimulationDataWCSPH.cpp"  />
-    <ClCompile Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\SPlisHSPlasH\WCSPH\TimeStepWCSPH.cpp"  />
+    <ClCompile Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\SPlisHSPlasH\WCSPH\SimulationDataWCSPH.cpp" />
+    <ClCompile Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\SPlisHSPlasH\WCSPH\TimeStepWCSPH.cpp" />
     <ClInclude Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\SPlisHSPlasH\PCISPH\SimulationDataPCISPH.h" />
     <ClInclude Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\SPlisHSPlasH\PCISPH\TimeStepPCISPH.h" />
-    <ClCompile Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\SPlisHSPlasH\PCISPH\SimulationDataPCISPH.cpp"  />
-    <ClCompile Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\SPlisHSPlasH\PCISPH\TimeStepPCISPH.cpp"  />
+    <ClCompile Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\SPlisHSPlasH\PCISPH\SimulationDataPCISPH.cpp" />
+    <ClCompile Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\SPlisHSPlasH\PCISPH\TimeStepPCISPH.cpp" />
     <ClInclude Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\SPlisHSPlasH\PBF\SimulationDataPBF.h" />
     <ClInclude Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\SPlisHSPlasH\PBF\TimeStepPBF.h" />
     <ClInclude Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\SPlisHSPlasH\PBF\TimeIntegration.h" />
-    <ClCompile Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\SPlisHSPlasH\PBF\SimulationDataPBF.cpp"  />
-    <ClCompile Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\SPlisHSPlasH\PBF\TimeStepPBF.cpp"  />
-    <ClCompile Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\SPlisHSPlasH\PBF\TimeIntegration.cpp"  />
+    <ClCompile Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\SPlisHSPlasH\PBF\SimulationDataPBF.cpp" />
+    <ClCompile Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\SPlisHSPlasH\PBF\TimeStepPBF.cpp" />
+    <ClCompile Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\SPlisHSPlasH\PBF\TimeIntegration.cpp" />
     <ClInclude Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\SPlisHSPlasH\IISPH\SimulationDataIISPH.h" />
     <ClInclude Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\SPlisHSPlasH\IISPH\TimeStepIISPH.h" />
-    <ClCompile Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\SPlisHSPlasH\IISPH\SimulationDataIISPH.cpp"  />
-    <ClCompile Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\SPlisHSPlasH\IISPH\TimeStepIISPH.cpp"  />
+    <ClCompile Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\SPlisHSPlasH\IISPH\SimulationDataIISPH.cpp" />
+    <ClCompile Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\SPlisHSPlasH\IISPH\TimeStepIISPH.cpp" />
     <ClInclude Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\SPlisHSPlasH\DFSPH\DFSPH_cuda_basic.h" />
     <ClInclude Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\SPlisHSPlasH\DFSPH\DFSPH_c_arrays_structure.h" />
     <ClInclude Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\SPlisHSPlasH\DFSPH\DFSPH_cpu_c_arrays_advanced.h" />
@@ -372,54 +374,54 @@ if %errorlevel% neq 0 goto :VCEnd</Command>
     <ClInclude Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\SPlisHSPlasH\DFSPH\DFSPH_cpu_c_arrays.h" />
     <ClInclude Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\SPlisHSPlasH\DFSPH\SimulationDataDFSPH.h" />
     <ClInclude Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\SPlisHSPlasH\DFSPH\TimeStepDFSPH.h" />
-    <CudaCompile Include="..\..\SPlisHSPlasH\DFSPH\DFSPH_cuda_basic.cu"  />
-    <ClCompile Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\SPlisHSPlasH\DFSPH\DFSPH_cpu_c_arrays.cpp"  />
-    <ClCompile Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\SPlisHSPlasH\DFSPH\DFSPH_cpu_c_arrays_advanced.cpp"  />
-    <ClCompile Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\SPlisHSPlasH\DFSPH\DFSPH_c_arrays_structure.cpp"  />
-    <ClCompile Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\SPlisHSPlasH\DFSPH\DFSPH_CUDA.cpp"  />
-    <ClCompile Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\SPlisHSPlasH\DFSPH\SimulationDataDFSPH.cpp"  />
-    <ClCompile Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\SPlisHSPlasH\DFSPH\TimeStepDFSPH.cpp"  />
+    <CudaCompile Include="..\..\SPlisHSPlasH\DFSPH\DFSPH_cuda_basic.cu" />
+    <ClCompile Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\SPlisHSPlasH\DFSPH\DFSPH_cpu_c_arrays.cpp" />
+    <ClCompile Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\SPlisHSPlasH\DFSPH\DFSPH_cpu_c_arrays_advanced.cpp" />
+    <ClCompile Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\SPlisHSPlasH\DFSPH\DFSPH_c_arrays_structure.cpp" />
+    <ClCompile Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\SPlisHSPlasH\DFSPH\DFSPH_CUDA.cpp" />
+    <ClCompile Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\SPlisHSPlasH\DFSPH\SimulationDataDFSPH.cpp" />
+    <ClCompile Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\SPlisHSPlasH\DFSPH\TimeStepDFSPH.cpp" />
     <ClInclude Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\SPlisHSPlasH\PF\SimulationDataPF.h" />
     <ClInclude Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\SPlisHSPlasH\PF\TimeStepPF.h" />
-    <ClCompile Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\SPlisHSPlasH\PF\SimulationDataPF.cpp"  />
-    <ClCompile Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\SPlisHSPlasH\PF\TimeStepPF.cpp"  />
+    <ClCompile Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\SPlisHSPlasH\PF\SimulationDataPF.cpp" />
+    <ClCompile Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\SPlisHSPlasH\PF\TimeStepPF.cpp" />
     <ClInclude Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\SPlisHSPlasH\Viscosity\ViscosityBase.h" />
     <ClInclude Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\SPlisHSPlasH\Viscosity\Viscosity_XSPH.h" />
     <ClInclude Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\SPlisHSPlasH\Viscosity\Viscosity_Standard.h" />
     <ClInclude Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\SPlisHSPlasH\Viscosity\Viscosity_Bender2017.h" />
     <ClInclude Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\SPlisHSPlasH\Viscosity\Viscosity_Peer2015.h" />
     <ClInclude Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\SPlisHSPlasH\Viscosity\Viscosity_Peer2016.h" />
-    <ClCompile Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\SPlisHSPlasH\Viscosity\ViscosityBase.cpp"  />
-    <ClCompile Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\SPlisHSPlasH\Viscosity\Viscosity_XSPH.cpp"  />
-    <ClCompile Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\SPlisHSPlasH\Viscosity\Viscosity_Standard.cpp"  />
-    <ClCompile Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\SPlisHSPlasH\Viscosity\Viscosity_Bender2017.cpp"  />
-    <ClCompile Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\SPlisHSPlasH\Viscosity\Viscosity_Peer2015.cpp"  />
-    <ClCompile Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\SPlisHSPlasH\Viscosity\Viscosity_Peer2016.cpp"  />
+    <ClCompile Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\SPlisHSPlasH\Viscosity\ViscosityBase.cpp" />
+    <ClCompile Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\SPlisHSPlasH\Viscosity\Viscosity_XSPH.cpp" />
+    <ClCompile Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\SPlisHSPlasH\Viscosity\Viscosity_Standard.cpp" />
+    <ClCompile Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\SPlisHSPlasH\Viscosity\Viscosity_Bender2017.cpp" />
+    <ClCompile Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\SPlisHSPlasH\Viscosity\Viscosity_Peer2015.cpp" />
+    <ClCompile Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\SPlisHSPlasH\Viscosity\Viscosity_Peer2016.cpp" />
     <ClInclude Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\SPlisHSPlasH\SurfaceTension\SurfaceTensionBase.h" />
     <ClInclude Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\SPlisHSPlasH\SurfaceTension\SurfaceTension_Becker2007.h" />
     <ClInclude Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\SPlisHSPlasH\SurfaceTension\SurfaceTension_Akinci2013.h" />
     <ClInclude Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\SPlisHSPlasH\SurfaceTension\SurfaceTension_He2014.h" />
-    <ClCompile Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\SPlisHSPlasH\SurfaceTension\SurfaceTensionBase.cpp"  />
-    <ClCompile Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\SPlisHSPlasH\SurfaceTension\SurfaceTension_Becker2007.cpp"  />
-    <ClCompile Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\SPlisHSPlasH\SurfaceTension\SurfaceTension_Akinci2013.cpp"  />
-    <ClCompile Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\SPlisHSPlasH\SurfaceTension\SurfaceTension_He2014.cpp"  />
+    <ClCompile Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\SPlisHSPlasH\SurfaceTension\SurfaceTensionBase.cpp" />
+    <ClCompile Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\SPlisHSPlasH\SurfaceTension\SurfaceTension_Becker2007.cpp" />
+    <ClCompile Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\SPlisHSPlasH\SurfaceTension\SurfaceTension_Akinci2013.cpp" />
+    <ClCompile Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\SPlisHSPlasH\SurfaceTension\SurfaceTension_He2014.cpp" />
     <ClInclude Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\SPlisHSPlasH\Vorticity\VorticityBase.h" />
     <ClInclude Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\SPlisHSPlasH\Vorticity\MicropolarModel_Bender2017.h" />
     <ClInclude Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\SPlisHSPlasH\Vorticity\VorticityConfinement.h" />
-    <ClCompile Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\SPlisHSPlasH\Vorticity\VorticityBase.cpp"  />
-    <ClCompile Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\SPlisHSPlasH\Vorticity\MicropolarModel_Bender2017.cpp"  />
-    <ClCompile Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\SPlisHSPlasH\Vorticity\VorticityConfinement.cpp"  />
+    <ClCompile Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\SPlisHSPlasH\Vorticity\VorticityBase.cpp" />
+    <ClCompile Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\SPlisHSPlasH\Vorticity\MicropolarModel_Bender2017.cpp" />
+    <ClCompile Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\SPlisHSPlasH\Vorticity\VorticityConfinement.cpp" />
     <ClInclude Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\SPlisHSPlasH\Drag\DragBase.h" />
     <ClInclude Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\SPlisHSPlasH\Drag\DragForce_Gissler2017.h" />
     <ClInclude Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\SPlisHSPlasH\Drag\DragForce_Macklin2014.h" />
-    <ClCompile Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\SPlisHSPlasH\Drag\DragBase.cpp"  />
-    <ClCompile Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\SPlisHSPlasH\Drag\DragForce_Gissler2017.cpp"  />
-    <ClCompile Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\SPlisHSPlasH\Drag\DragForce_Macklin2014.cpp"  />
+    <ClCompile Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\SPlisHSPlasH\Drag\DragBase.cpp" />
+    <ClCompile Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\SPlisHSPlasH\Drag\DragForce_Gissler2017.cpp" />
+    <ClCompile Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\SPlisHSPlasH\Drag\DragForce_Macklin2014.cpp" />
     <ClInclude Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\SPlisHSPlasH\Utilities\PoissonDiskSampling.h" />
     <ClInclude Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\SPlisHSPlasH\Utilities\Timing.h" />
     <ClInclude Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\SPlisHSPlasH\Utilities\MatrixFreeSolver.h" />
-    <ClCompile Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\SPlisHSPlasH\Utilities\PoissonDiskSampling.cpp"  />
-    <ClCompile Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\SPlisHSPlasH\Utilities\Timing.cpp"  />
+    <ClCompile Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\SPlisHSPlasH\Utilities\PoissonDiskSampling.cpp" />
+    <ClCompile Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\SPlisHSPlasH\Utilities\Timing.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\build\ZERO_CHECK.vcxproj">
@@ -433,6 +435,6 @@ if %errorlevel% neq 0 goto :VCEnd</Command>
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
-    <Import Project="$(VCTargetsPath)\BuildCustomizations\CUDA 9.0.targets" />
+    <Import Project="$(VCTargetsPath)\BuildCustomizations\CUDA 9.1.targets" />
   </ImportGroup>
 </Project>

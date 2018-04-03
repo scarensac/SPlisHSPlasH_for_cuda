@@ -1,5 +1,5 @@
 ﻿<?xml version="1.0" encoding="UTF-8"?>
-<Project ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+<Project ToolsVersion="14.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
     <CustomBuild Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\CMakeLists.txt" />
     <CustomBuild Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\build\CMakeFiles\6f557b5eb8b77ca00dc85f371f793e23\ExternalProject_PositionBasedDynamics-mkdir.rule">

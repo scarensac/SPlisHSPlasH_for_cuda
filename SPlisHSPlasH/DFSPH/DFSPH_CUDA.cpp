@@ -40,46 +40,45 @@ void DFSPHCUDA::step()
 
 	m_data.viscosity = m_viscosity->getViscosity();
 
-
-	const unsigned int numParticles = m_model->numActiveParticles();
-
-
 	performNeighborhoodSearch();
 
 
+	if (true) {
+		m_data.loadDynamicData(m_model, m_simulationData);
+		cuda_neighborsSearch(m_data);
+	
+		//start of the c arrays
 
-	//start of the c arrays
-	m_data.loadDynamicData(m_model, m_simulationData);
+		if (m_enableDivergenceSolver)
+		{
+			m_iterationsV = cuda_divergenceSolve(m_data, m_maxIterationsV, m_maxErrorV);
+		}
+		else
+		{
+			m_iterationsV = 0;
+		}
 
-	for (unsigned int i = 0; i < m_data.m_kernel_precomp.m_resolution; ++i) {
-		checkReal("kernel values check:", FluidModel::PrecomputedCubicKernel::m_W[i], m_data.m_kernel_precomp.m_W[i]);
-		checkReal("kernel grad values check:", FluidModel::PrecomputedCubicKernel::m_gradW[i], m_data.m_kernel_precomp.m_gradW[i]);
-	}
-	checkReal("kernel values w_0 check:", FluidModel::PrecomputedCubicKernel::m_W_zero, m_data.m_kernel_precomp.m_W_zero);
+		cuda_viscosityXSPH(m_data);
 
+		cuda_CFL(m_data, 0.0001, m_cflFactor, m_cflMaxTimeStepSize);
 
-	if (m_enableDivergenceSolver)
-	{
-		m_iterationsV=cuda_divergenceSolve(m_data, m_maxIterationsV, m_maxErrorV);
-	}
-	else 
-	{
-		m_iterationsV = 0;
-	}
+		cuda_update_vel(m_data);
+
+		m_iterations = cuda_pressureSolve(m_data, m_maxIterations, m_maxError);
+
+		cuda_update_pos(m_data);
+		//*/
+
+		m_data.onSimulationStepEnd();
 		
+		m_data.readDynamicData(m_model, m_simulationData);
 
 
-	cuda_viscosityXSPH(m_data);
+		// Compute new time	
+		TimeManager::getCurrent()->setTime(TimeManager::getCurrent()->getTime() + m_data.h);
+	}
 
-	cuda_CFL(m_data, 0.0001,m_cflFactor,m_cflMaxTimeStepSize);
-
-	cuda_update_vel(m_data);
-
-	m_iterations = cuda_pressureSolve(m_data, m_maxIterations, m_maxError);
-
-	cuda_update_pos(m_data);
-
-	if (true){
+	if (false){
 		//original code
 		TimeManager *tm = TimeManager::getCurrent();
 		const Real h = tm->getTimeStepSize();
@@ -132,32 +131,18 @@ void DFSPHCUDA::step()
 				xi += h * vi;
 			}
 		}
+
+		emitParticles();
+
+		tm->setTime(tm->getTime() + h);
 	}
 
 
-	emitParticles();
 
-	m_data.onSimulationStepEnd();
+	
 
-	for (int i = 0; i < (int)m_data.numFluidParticles; i++) {
-		checkVector3("check pos:", m_model->getPosition(0, i), m_data.posFluid[i]);
-	}
-	for (int i = 0; i < (int)m_data.numFluidParticles; i++) {
-		checkVector3("check vel:", m_model->getVelocity(0, i), m_data.velFluid[i]);
-	}
-	for (int i = 0; i < (int)m_data.numFluidParticles; i++) {
-		//checkReal("check kappa:", m_simulationData.getKappa(i), m_data.kappa[i] * m_data.h* m_data.h);
-	}
-	for (int i = 0; i < (int)m_data.numFluidParticles; i++) {
-		//checkReal("check kappaV:", m_simulationData.getKappaV(i), m_data.kappaV[i]* m_data.h_past);
-	}
-
-
-	// Compute new time	
-	TimeManager::getCurrent()->setTime(TimeManager::getCurrent()->getTime() + m_data.h);
-
-
-	std::cout << "step finished" << std::endl;
+	static int count = 0;
+	std::cout << "step finished: " <<count++ << std::endl;
 }
 
 void DFSPHCUDA::computeDFSPHFactor()
@@ -963,6 +948,12 @@ void DFSPHCUDA::checkVector3(std::string txt, Vector3d old_v, Vector3d new_v) {
 		exit(2679);
 	}
 
+}
+
+
+
+void DFSPHCUDA::renderFluid() {
+	cuda_renderFluid(m_data);
 }
 
 

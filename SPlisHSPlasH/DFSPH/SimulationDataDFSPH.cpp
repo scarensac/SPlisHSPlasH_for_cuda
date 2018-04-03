@@ -26,6 +26,9 @@ void SimulationDataDFSPH::init(FluidModel *model)
 	m_kappa.resize(model->numParticles(), 0.0);
 	m_kappaV.resize(model->numParticles(), 0.0);
 	m_density_adv.resize(model->numParticles(), 0.0);
+
+
+
 }
 
 void SimulationDataDFSPH::cleanup()

@@ -1,7 +1,0 @@
-# ninja log v5
-8	1911	0	demo/CMakeFiles/Demo.dir/main.cpp.obj	6b4a1571ab4725d0
-1	2232	0	CMakeFiles/CompactNSearch.dir/src/CompactNSearch.cpp.obj	5523c01b048cce8a
-2234	2309	0	CompactNSearch_d.lib	4f7b219dbc85bdf0
-2310	3155	0	demo/Demo.exe	909b9bfff55e32f9
-1	64	0	CMakeFiles/install.util	7f928a6e658e2fee
-1	77	0	CMakeFiles/install.util	7f928a6e658e2fee

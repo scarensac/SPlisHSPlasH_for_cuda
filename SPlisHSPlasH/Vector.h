@@ -27,9 +27,13 @@ public:
 
 	FUNCTION inline Vector3d& operator-= (const Vector3d &o) { x -= o.x; y -= o.y; z -= o.z; return *this; }
 	FUNCTION inline friend Vector3d operator- (const Vector3d& v1, const Vector3d &v2) { return Vector3d(v1.x - v2.x, v1.y - v2.y, v1.z - v2.z); }
+	FUNCTION inline friend Vector3d operator- (const Vector3d& v1, const double val) { return Vector3d(v1.x - val, v1.y - val, v1.z - val); }
+	FUNCTION inline friend Vector3d operator- (const double val, const Vector3d& v1) { return Vector3d(v1.x - val, v1.y - val, v1.z - val); }
 	
 	FUNCTION inline Vector3d& operator+= (const Vector3d &o) { x += o.x; y += o.y; z += o.z; return *this; }
 	FUNCTION inline friend Vector3d operator+ (const Vector3d& v1, const Vector3d &v2) { return Vector3d(v1.x + v2.x, v1.y + v2.y, v1.z + v2.z); }
+	FUNCTION inline friend Vector3d operator+ (const Vector3d& v1, const double val) { return Vector3d(v1.x + val, v1.y + val, v1.z + val); }
+	FUNCTION inline friend Vector3d operator+ (const double val, const Vector3d& v1) { return Vector3d(v1.x + val, v1.y + val, v1.z + val); }
 
 	FUNCTION inline Vector3d& operator*= (const double val) { x *= val; y *= val; z *= val; return *this; }
 	FUNCTION inline friend Vector3d operator* (const Vector3d& v1, const double val) { return Vector3d(v1.x * val, v1.y * val, v1.z * val); }

@@ -1,5 +1,5 @@
 ﻿<?xml version="1.0" encoding="UTF-8"?>
-<Project DefaultTargets="Build" ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+<Project DefaultTargets="Build" ToolsVersion="14.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup Label="ProjectConfigurations">
     <ProjectConfiguration Include="Debug|x64">
       <Configuration>Debug</Configuration>
@@ -30,26 +30,26 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
     <ConfigurationType>Utility</ConfigurationType>
     <CharacterSet>MultiByte</CharacterSet>
-    <PlatformToolset>v141</PlatformToolset>
+    <PlatformToolset>v140</PlatformToolset>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
     <ConfigurationType>Utility</ConfigurationType>
     <CharacterSet>MultiByte</CharacterSet>
-    <PlatformToolset>v141</PlatformToolset>
+    <PlatformToolset>v140</PlatformToolset>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'" Label="Configuration">
     <ConfigurationType>Utility</ConfigurationType>
     <CharacterSet>MultiByte</CharacterSet>
-    <PlatformToolset>v141</PlatformToolset>
+    <PlatformToolset>v140</PlatformToolset>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'" Label="Configuration">
     <ConfigurationType>Utility</ConfigurationType>
     <CharacterSet>MultiByte</CharacterSet>
-    <PlatformToolset>v141</PlatformToolset>
+    <PlatformToolset>v140</PlatformToolset>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
   <ImportGroup Label="ExtensionSettings">
-    <Import Project="$(VCTargetsPath)\BuildCustomizations\CUDA 9.0.props" />
+    <Import Project="$(VCTargetsPath)\BuildCustomizations\CUDA 9.1.props" />
   </ImportGroup>
   <ImportGroup Label="PropertySheets">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
@@ -486,7 +486,7 @@ cd D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\CompactNSearch\src\Ex
 if %errorlevel% neq 0 goto :cmEnd
 D:
 if %errorlevel% neq 0 goto :cmEnd
-"C:\Program Files\CMake\bin\cmake.exe" -DCMAKE_INSTALL_PREFIX:PATH=D:/Users/scarensac/Documents/GitHub/SPlisHSPlasH/extern/install/CompactNSearch "-GVisual Studio 15 2017 Win64" D:/Users/scarensac/Documents/GitHub/SPlisHSPlasH/extern/CompactNSearch/src/ExternalProject_CompactNSearch
+"C:\Program Files\CMake\bin\cmake.exe" -DCMAKE_INSTALL_PREFIX:PATH=D:/Users/scarensac/Documents/GitHub/SPlisHSPlasH/extern/install/CompactNSearch "-GVisual Studio 14 2015 Win64" D:/Users/scarensac/Documents/GitHub/SPlisHSPlasH/extern/CompactNSearch/src/ExternalProject_CompactNSearch
 if %errorlevel% neq 0 goto :cmEnd
 "C:\Program Files\CMake\bin\cmake.exe" -E touch D:/Users/scarensac/Documents/GitHub/SPlisHSPlasH/extern/CompactNSearch/src/ExternalProject_CompactNSearch-stamp/$(Configuration)/ExternalProject_CompactNSearch-configure
 if %errorlevel% neq 0 goto :cmEnd
@@ -505,7 +505,7 @@ cd D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\CompactNSearch\src\Ex
 if %errorlevel% neq 0 goto :cmEnd
 D:
 if %errorlevel% neq 0 goto :cmEnd
-"C:\Program Files\CMake\bin\cmake.exe" -DCMAKE_INSTALL_PREFIX:PATH=D:/Users/scarensac/Documents/GitHub/SPlisHSPlasH/extern/install/CompactNSearch "-GVisual Studio 15 2017 Win64" D:/Users/scarensac/Documents/GitHub/SPlisHSPlasH/extern/CompactNSearch/src/ExternalProject_CompactNSearch
+"C:\Program Files\CMake\bin\cmake.exe" -DCMAKE_INSTALL_PREFIX:PATH=D:/Users/scarensac/Documents/GitHub/SPlisHSPlasH/extern/install/CompactNSearch "-GVisual Studio 14 2015 Win64" D:/Users/scarensac/Documents/GitHub/SPlisHSPlasH/extern/CompactNSearch/src/ExternalProject_CompactNSearch
 if %errorlevel% neq 0 goto :cmEnd
 "C:\Program Files\CMake\bin\cmake.exe" -E touch D:/Users/scarensac/Documents/GitHub/SPlisHSPlasH/extern/CompactNSearch/src/ExternalProject_CompactNSearch-stamp/$(Configuration)/ExternalProject_CompactNSearch-configure
 if %errorlevel% neq 0 goto :cmEnd
@@ -524,7 +524,7 @@ cd D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\CompactNSearch\src\Ex
 if %errorlevel% neq 0 goto :cmEnd
 D:
 if %errorlevel% neq 0 goto :cmEnd
-"C:\Program Files\CMake\bin\cmake.exe" -DCMAKE_INSTALL_PREFIX:PATH=D:/Users/scarensac/Documents/GitHub/SPlisHSPlasH/extern/install/CompactNSearch "-GVisual Studio 15 2017 Win64" D:/Users/scarensac/Documents/GitHub/SPlisHSPlasH/extern/CompactNSearch/src/ExternalProject_CompactNSearch
+"C:\Program Files\CMake\bin\cmake.exe" -DCMAKE_INSTALL_PREFIX:PATH=D:/Users/scarensac/Documents/GitHub/SPlisHSPlasH/extern/install/CompactNSearch "-GVisual Studio 14 2015 Win64" D:/Users/scarensac/Documents/GitHub/SPlisHSPlasH/extern/CompactNSearch/src/ExternalProject_CompactNSearch
 if %errorlevel% neq 0 goto :cmEnd
 "C:\Program Files\CMake\bin\cmake.exe" -E touch D:/Users/scarensac/Documents/GitHub/SPlisHSPlasH/extern/CompactNSearch/src/ExternalProject_CompactNSearch-stamp/$(Configuration)/ExternalProject_CompactNSearch-configure
 if %errorlevel% neq 0 goto :cmEnd
@@ -543,7 +543,7 @@ cd D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\CompactNSearch\src\Ex
 if %errorlevel% neq 0 goto :cmEnd
 D:
 if %errorlevel% neq 0 goto :cmEnd
-"C:\Program Files\CMake\bin\cmake.exe" -DCMAKE_INSTALL_PREFIX:PATH=D:/Users/scarensac/Documents/GitHub/SPlisHSPlasH/extern/install/CompactNSearch "-GVisual Studio 15 2017 Win64" D:/Users/scarensac/Documents/GitHub/SPlisHSPlasH/extern/CompactNSearch/src/ExternalProject_CompactNSearch
+"C:\Program Files\CMake\bin\cmake.exe" -DCMAKE_INSTALL_PREFIX:PATH=D:/Users/scarensac/Documents/GitHub/SPlisHSPlasH/extern/install/CompactNSearch "-GVisual Studio 14 2015 Win64" D:/Users/scarensac/Documents/GitHub/SPlisHSPlasH/extern/CompactNSearch/src/ExternalProject_CompactNSearch
 if %errorlevel% neq 0 goto :cmEnd
 "C:\Program Files\CMake\bin\cmake.exe" -E touch D:/Users/scarensac/Documents/GitHub/SPlisHSPlasH/extern/CompactNSearch/src/ExternalProject_CompactNSearch-stamp/$(Configuration)/ExternalProject_CompactNSearch-configure
 if %errorlevel% neq 0 goto :cmEnd
@@ -849,6 +849,6 @@ if %errorlevel% neq 0 goto :VCEnd</Command>
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
-    <Import Project="$(VCTargetsPath)\BuildCustomizations\CUDA 9.0.targets" />
+    <Import Project="$(VCTargetsPath)\BuildCustomizations\CUDA 9.1.targets" />
   </ImportGroup>
 </Project>

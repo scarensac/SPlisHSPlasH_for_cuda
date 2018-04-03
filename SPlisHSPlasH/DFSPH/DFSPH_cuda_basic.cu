@@ -4,13 +4,26 @@
 #include "DFSPH_cuda_basic.h"
 #include <stdio.h>
 #include "DFSPH_c_arrays_structure.h"
+#include "cub.cuh"
 
 #define BLOCKSIZE 256
 #define m_eps 1.0e-5
-
+#define CELL_ROW_LENGTH 256
+#define CELL_COUNT CELL_ROW_LENGTH*CELL_ROW_LENGTH*CELL_ROW_LENGTH
 
 #define USE_WARMSTART
 #define USE_WARMSTART_V
+
+//easy function to check errors
+#define gpuErrchk(ans) { gpuAssert((ans), __FILE__, __LINE__); }
+inline void gpuAssert(cudaError_t code, const char *file, int line, bool abort = true)
+{
+	if (code != cudaSuccess)
+	{
+		fprintf(stderr, "GPUassert: %s %s %d\n", cudaGetErrorString(code), file, line);
+		if (abort) exit(code);
+	}
+}
 
 /*
 //this is the bases for all kernels based function
@@ -31,7 +44,7 @@ void cuda_(SPH::DFSPHCData& data) {
 }
 //*/
 
-__device__ void computeDensityChange(SPH::DFSPHCData& m_data,const unsigned int index) {
+__device__ void computeDensityChange(SPH::DFSPHCData& m_data, const unsigned int index) {
 	unsigned int numNeighbors = m_data.getNumberOfNeighbourgs(index);
 	// in case of particle deficiency do not perform a divergence solve
 	if (numNeighbors < 20) {
@@ -206,7 +219,7 @@ __global__ void DFSPH_divergence_warmstart_init_kernel(SPH::DFSPHCData m_data) {
 	if (i >= m_data.numFluidParticles) { return; }
 
 	m_data.kappaV[i] = 0.5*fmax(m_data.kappaV[i] * m_data.h_ratio_to_past, -0.5);
-	computeDensityChange(m_data ,i);
+	computeDensityChange(m_data, i);
 }
 void cuda_divergence_warmstart_init(SPH::DFSPHCData& data) {
 	int numBlocks = (data.numFluidParticles + BLOCKSIZE - 1) / BLOCKSIZE;
@@ -231,7 +244,7 @@ template<bool warmstart> __global__ void DFSPH_divergence_compute_kernel(SPH::DF
 	else {
 		divergenceSolveParticle<warmstart>(m_data, i);
 	}
-	
+
 }
 template<bool warmstart> void cuda_divergence_compute(SPH::DFSPHCData& data) {
 	int numBlocks = (data.numFluidParticles + BLOCKSIZE - 1) / BLOCKSIZE;
@@ -253,7 +266,7 @@ __global__ void DFSPH_divergence_init_kernel(SPH::DFSPHCData m_data) {
 	{
 		///TODO when doing this kernel I can actually fuse the code for all those computation to limit the number
 		///of time I read the particles positions
-		computeDensityChange(m_data,i);
+		computeDensityChange(m_data, i);
 
 		//I can actually make the factor and desity computation here
 		{
@@ -327,7 +340,7 @@ __global__ void DFSPH_divergence_loop_end_kernel(SPH::DFSPHCData m_data, Real* a
 	int i = blockIdx.x * blockDim.x + threadIdx.x;
 	if (i >= m_data.numFluidParticles) { return; }
 
-	computeDensityChange(m_data,i);
+	computeDensityChange(m_data, i);
 	atomicAdd(avg_density_err, m_data.densityAdv[i]);
 }
 Real cuda_divergence_loop_end(SPH::DFSPHCData& data) {
@@ -335,7 +348,7 @@ Real cuda_divergence_loop_end(SPH::DFSPHCData& data) {
 	Real* avg_density_err;
 	cudaMallocManaged(&(avg_density_err), sizeof(Real));
 	*avg_density_err = 0.0;
-	DFSPH_divergence_loop_end_kernel << <numBlocks, BLOCKSIZE >> > (data,avg_density_err);
+	DFSPH_divergence_loop_end_kernel << <numBlocks, BLOCKSIZE >> > (data, avg_density_err);
 
 	cudaError_t cudaStatus = cudaDeviceSynchronize();
 	if (cudaStatus != cudaSuccess) {
@@ -409,7 +422,7 @@ void cuda_CFL(SPH::DFSPHCData& m_data, const Real minTimeStepSize, Real m_cflFac
 	cudaFree(out_buff);
 
 
-	Real h = m_data.h;	
+	Real h = m_data.h;
 
 	// Approximate max. time step size 		
 	h = m_cflFactor * .4 * (2.0*m_data.particleRadius / (sqrt(maxVel)));
@@ -567,7 +580,7 @@ int cuda_divergenceSolve(SPH::DFSPHCData& m_data, const unsigned int maxIter, co
 		// Perform Jacobi iteration over all blocks
 		//////////////////////////////////////////////////////////////////////////	
 		cuda_divergence_compute<false>(m_data);
-		
+
 		avg_density_err = cuda_divergence_loop_end(m_data);
 
 		avg_density_err /= numParticles;
@@ -576,8 +589,6 @@ int cuda_divergenceSolve(SPH::DFSPHCData& m_data, const unsigned int maxIter, co
 
 	return m_iterationsV;
 }
-
-
 int cuda_pressureSolve(SPH::DFSPHCData& m_data, const unsigned int m_maxIterations, const Real m_maxError) {
 	const Real density0 = m_data.density0;
 	const int numParticles = (int)m_data.numFluidParticles;
@@ -616,16 +627,552 @@ int cuda_pressureSolve(SPH::DFSPHCData& m_data, const unsigned int m_maxIteratio
 
 }
 
+
+template<unsigned int grid_size, bool z_curve>
+__global__ void DFSPH_computeGridIdx_kernel(Vector3d* in, unsigned int* out, Real kernel_radius, unsigned int num_particles) {
+
+	int i = blockIdx.x * blockDim.x + threadIdx.x;
+	if (i >= num_particles) { return; }
+
+	if (z_curve) {
+
+	}
+	else {
+		//the +50 is an offset so that I don't use the border of the grid
+		//it allosw me to be sure that I won't have particles outside of the grid
+		//the main thing is that their domain has negative position values
+		//that +10 prevent having any negative index by positioning the bounding area of the particles 
+		//incide the area  described by our cells
+		Vector3d pos = (in[i] / kernel_radius) +50;
+		out[i] = (int)pos.x + ((int)pos.y)*grid_size + ((int)pos.z)*grid_size*grid_size;
+	}
+}
+
+__global__ void DFSPH_Histogram_kernel(unsigned int* in, unsigned int* out, unsigned int num_particles) {
+
+	int i = blockIdx.x * blockDim.x + threadIdx.x;
+	if (i >= num_particles) { return; }
+
+	atomicAdd(&(out[in[i]]), 1);
+
+}
+
+__global__ void DFSPH_setBufferValueToItself_kernel(unsigned int* buff, unsigned int buff_size) {
+	int i = blockIdx.x * blockDim.x + threadIdx.x;
+	if (i >= buff_size) { return; }
+
+	buff[i] = i;
+}
+
+template<unsigned int grid_size, bool z_curve>
+__global__ void DFSPH_neighborsSearch_kernel(unsigned int numFluidParticles, Real radius, 
+	Vector3d* posFluid, Vector3d* posBoundary, int* neighbors_buff, int* nb_neighbors_buff,
+	unsigned int* p_id_sorted, unsigned int* cell_start_end, unsigned int* p_id_sorted_b, unsigned int* cell_start_end_b) {
+
+	int i = blockIdx.x * blockDim.x + threadIdx.x;
+	if (i >= numFluidParticles) { return; }
+	
+	nb_neighbors_buff[i + numFluidParticles] = 0;
+	nb_neighbors_buff[i] = 0;
+
+	Real radius_sq = radius;
+	Vector3d pos = posFluid[i];
+	Vector3d pos_cell = (pos / radius_sq) + 50; //on that line the radius is not yet squared
+	int x = (int)pos_cell.x;
+	int y = (int)pos_cell.y;
+	int z = (int)pos_cell.z;
+	radius_sq *= radius_sq;
+
+	unsigned int nb_neighbors_fluid = 0;
+	unsigned int nb_neighbors_boundary = 0;
+	//int neighbors_fluid[MAX_NEIGHBOURS];//doing it with local buffer was not faster
+	//int neighbors_boundary[MAX_NEIGHBOURS];
+	//now we iterate on the 9 cell block surronding the cell in which we have our particle
+	for (int k = -1; k < 2; ++k) {
+		for (int m = -1; m < 2; ++m) {
+			//for (int l = -1; l < 2; ++l) {// I don't need to iter on x since the 3cells are successives: large gains
+				//we iterate on the particles inside that cell
+				unsigned int cur_cell_id = (x + -1) + (y + m)*grid_size + (z + k)*grid_size*grid_size;
+				unsigned int end;
+				//*
+				//for the fluid particles
+				end = cell_start_end[cur_cell_id + 3];
+				for (unsigned int cur_particle = cell_start_end[cur_cell_id]; cur_particle < end; ++cur_particle) {
+					unsigned int j = p_id_sorted[cur_particle];
+					if (i != j) {
+						if ((pos - posFluid[j]).squaredNorm() < radius_sq) {
+							neighbors_buff[i*MAX_NEIGHBOURS + nb_neighbors_fluid] = j;
+							//neighbors_fluid[nb_neighbors_fluid] = j;
+							nb_neighbors_fluid++;
+						}
+					}
+				}
+				//*/
+				//*
+				//for the boundaries particles
+				end = cell_start_end_b[cur_cell_id + 3];
+				for (unsigned int cur_particle = cell_start_end_b[cur_cell_id]; cur_particle < end; ++cur_particle) {
+					unsigned int j = p_id_sorted_b[cur_particle];
+					if ((pos - posBoundary[j]).squaredNorm() < radius_sq) {
+						neighbors_buff[1 * numFluidParticles*MAX_NEIGHBOURS + i*MAX_NEIGHBOURS + nb_neighbors_boundary] = j;
+						//neighbors_boundary[nb_neighbors_boundary] = j;
+						nb_neighbors_boundary++;
+					}
+				}
+				//*/
+			//}
+		}
+	}
+
+
+	nb_neighbors_buff[i]=nb_neighbors_fluid;
+	nb_neighbors_buff[i + numFluidParticles]=nb_neighbors_boundary;
+
+	//memcpy((neighbors_buff + i*MAX_NEIGHBOURS), neighbors_fluid, sizeof(int)*nb_neighbors_fluid);
+	//memcpy((neighbors_buff + numFluidParticles*MAX_NEIGHBOURS + i*MAX_NEIGHBOURS), neighbors_boundary, sizeof(int)*nb_neighbors_boundary);
+
+
+}
+
+void cuda_neighborsSearchInternal(Vector3d* pos, Real kernel_radius, int numParticles, void **d_temp_storage_pair_sort,
+	size_t   &temp_storage_bytes_pair_sort, unsigned int* cell_id, unsigned int* cell_id_sorted,
+	unsigned int* p_id, unsigned int* p_id_sorted, unsigned int* hist, void **d_temp_storage_cumul_hist,
+	size_t   &temp_storage_bytes_cumul_hist, unsigned int* cell_start_end) {
+	cudaError_t cudaStatus;
+	/*
+	//some test for the definition domain (it is just for debugging purposes)
+	//check for negatives values
+	for (int i = 0; i < numParticles; ++i) {
+		Vector3d temp = (pos[i] / kernel_radius) + 2;
+		if (temp.x <= 0 || temp.y <= 0 || temp.z <= 0 ) {
+			fprintf(stderr, "negative coordinates: %d\n", (int)i);
+			exit(1598);
+		}
+	}
+
+	
+	//find the bounding box of the particles
+	Vector3d min = pos[0];
+	Vector3d max = pos[0];
+	for (int i = 0; i < numParticles; ++i) {
+
+		if (pos[i].x < min.x) { min.x = pos[i].x; }
+		if (pos[i].y < min.y) { min.y = pos[i].y; }
+		if (pos[i].z < min.z) { min.z = pos[i].z; }
+
+		if (pos[i].x > max.x) { max.x = pos[i].x; }
+		if (pos[i].y > max.y) { max.y = pos[i].y; }
+		if (pos[i].z > max.z) { max.z = pos[i].z; }
+		
+	}
+	fprintf(stderr, "min: %f // %f // %f\n", min.x, min.y, min.z);
+	fprintf(stderr, "max: %f // %f // %f\n", max.x, max.y, max.z);
+	fprintf(stderr, "description: %f\n", CELL_ROW_LENGTH*kernel_radius);
+	exit(1598);
+	//*/
+
+	//reset the particle id
+	int numBlocks = (numParticles + BLOCKSIZE - 1) / BLOCKSIZE;
+	DFSPH_setBufferValueToItself_kernel << <numBlocks, BLOCKSIZE >> > (p_id, numParticles);
+
+	cudaStatus = cudaDeviceSynchronize();
+	if (cudaStatus != cudaSuccess) {
+		fprintf(stderr, "p_id init idxs failed: %d\n", (int)cudaStatus);
+		exit(1598);
+	}
+
+	/// now we will work on sorting the boundaries particles
+	//compute the idx of the cell for each particles
+	DFSPH_computeGridIdx_kernel<CELL_ROW_LENGTH, false> << <numBlocks, BLOCKSIZE >> > (pos, cell_id,
+		kernel_radius, numParticles);
+
+	cudaStatus = cudaDeviceSynchronize();
+	if (cudaStatus != cudaSuccess) {
+		fprintf(stderr, "idxs failed: %d\n", (int)cudaStatus);
+		exit(1598);
+	}
+
+	//do the actual sort
+	//first Determine temporary device storage requirements
+	if ((*d_temp_storage_pair_sort) == NULL) {
+		temp_storage_bytes_pair_sort = 0;
+		cub::DeviceRadixSort::SortPairs(*d_temp_storage_pair_sort, temp_storage_bytes_pair_sort,
+			cell_id, cell_id_sorted, p_id, p_id_sorted, numParticles);
+		// Allocate temporary storage
+		cudaMalloc(d_temp_storage_pair_sort, temp_storage_bytes_pair_sort);
+
+	}
+
+	// Run sorting operation
+	cub::DeviceRadixSort::SortPairs(*d_temp_storage_pair_sort, temp_storage_bytes_pair_sort,
+		cell_id, cell_id_sorted, p_id, p_id_sorted, numParticles);
+	//*/
+
+	cudaStatus = cudaDeviceSynchronize();
+	if (cudaStatus != cudaSuccess) {
+		fprintf(stderr, "sort failed: %d\n", (int)cudaStatus);
+		exit(1598);
+	}
+	
+	//Now we need to determine the start and end of each cell
+	//init the histogram values. Maybe doing it wiith thrust fill is faster.
+	//the doc is not realy clear
+	cudaMemset(hist, 0, (CELL_COUNT + 1) * sizeof(unsigned int));
+
+	cudaStatus = cudaDeviceSynchronize();
+	if (cudaStatus != cudaSuccess) {
+		fprintf(stderr, "histogram value reset failed: %d\n", (int)cudaStatus);
+		exit(1598);
+	}
+
+	//compute the actual histogram (done here with atomic adds)
+	DFSPH_Histogram_kernel << <numBlocks, BLOCKSIZE >> > (cell_id_sorted, hist, numParticles);
+
+	cudaStatus = cudaDeviceSynchronize();
+	if (cudaStatus != cudaSuccess) {
+		fprintf(stderr, "histogram failed: %d\n", (int)cudaStatus);
+		exit(1598);
+	}
+
+	//transformour histogram to a cumulative histogram to have  the start and end of each cell
+	//note: the exlusive sum make so that each cell will contains it's start value
+	
+	if ((*d_temp_storage_cumul_hist) == NULL) {
+		temp_storage_bytes_cumul_hist = 0;
+		//get the necessary size
+		cub::DeviceScan::ExclusiveSum(*d_temp_storage_cumul_hist, temp_storage_bytes_cumul_hist, hist, cell_start_end, (CELL_COUNT + 1));
+		// Allocate temporary storage
+		cudaMalloc(d_temp_storage_cumul_hist, temp_storage_bytes_cumul_hist);
+	}
+	// Run exclusive prefix sum
+	cub::DeviceScan::ExclusiveSum(*d_temp_storage_cumul_hist, temp_storage_bytes_cumul_hist, hist, cell_start_end, (CELL_COUNT + 1));
+
+	cudaStatus = cudaDeviceSynchronize();
+	if (cudaStatus != cudaSuccess) {
+		fprintf(stderr, "cumulative histogram failed: %d\n", (int)cudaStatus);
+		exit(1598);
+	}
+}
+
+void cuda_neighborsSearch(SPH::DFSPHCData& data) {
+	
+	cudaError_t cudaStatus;
+
+	static unsigned int* cell_id;
+	static unsigned int* cell_id_sorted;
+	static unsigned int* local_id;
+	static unsigned int* p_id;
+	static unsigned int* p_id_sorted;
+	static unsigned int* cell_start_end;
+	static unsigned int* hist;
+	void *d_temp_storage_pair_sort = NULL;
+	size_t temp_storage_bytes_pair_sort = 0;
+	void *d_temp_storage_cumul_hist = NULL;
+	size_t temp_storage_bytes_cumul_hist = 0;
+
+	static unsigned int* cell_id_b;
+	static unsigned int* cell_id_sorted_b;
+	static unsigned int* local_id_b;
+	static unsigned int* p_id_b;
+	static unsigned int* p_id_sorted_b;
+	static unsigned int* cell_start_end_b;
+	static unsigned int* hist_b;
+	void *d_temp_storage_pair_sort_b = NULL;
+	size_t temp_storage_bytes_pair_sort_b = 0;
+	void *d_temp_storage_cumul_hist_b = NULL;
+	size_t temp_storage_bytes_cumul_hist_b = 0;
+
+
+	static int* neighbors_buff;
+	static int* nb_neighbors_buff;
+
+	
+	static bool first_time = true;
+	if (first_time) {
+		first_time = false;
+
+		//allocatethe mme for fluid particles
+		cudaMallocManaged(&(cell_id), data.numFluidParticles * sizeof(unsigned int));
+		cudaMallocManaged(&(cell_id_sorted), data.numFluidParticles * sizeof(unsigned int));
+		cudaMallocManaged(&(local_id), data.numFluidParticles * sizeof(unsigned int));
+		cudaMallocManaged(&(p_id), data.numFluidParticles * sizeof(unsigned int));
+		cudaMallocManaged(&(p_id_sorted), data.numFluidParticles * sizeof(unsigned int));
+		cudaMallocManaged(&(cell_start_end), (CELL_COUNT + 1) * sizeof(unsigned int));
+		cudaMallocManaged(&(hist), (CELL_COUNT + 1) * sizeof(unsigned int));
+		
+		//allocate memory for boundaries particles
+		cudaMallocManaged(&(cell_id_b), data.numBoundaryParticles * sizeof(unsigned int));
+		cudaMallocManaged(&(cell_id_sorted_b), data.numBoundaryParticles * sizeof(unsigned int));
+		cudaMallocManaged(&(local_id_b), data.numBoundaryParticles * sizeof(unsigned int));
+		cudaMallocManaged(&(p_id_b), data.numBoundaryParticles * sizeof(unsigned int));
+		cudaMallocManaged(&(p_id_sorted_b), data.numBoundaryParticles * sizeof(unsigned int));
+		cudaMallocManaged(&(cell_start_end_b), (CELL_COUNT + 1) * sizeof(unsigned int));
+		cudaMallocManaged(&(hist_b), (CELL_COUNT + 1) * sizeof(unsigned int));
+		
+		cudaMallocManaged(&(nb_neighbors_buff), data.numFluidParticles * 2 * sizeof(int));
+		cudaMallocManaged(&(neighbors_buff), data.numFluidParticles * 2 * MAX_NEIGHBOURS * sizeof(int));
+
+		cudaMemset(nb_neighbors_buff, 0, data.numFluidParticles * 2 * sizeof(int));
+		cudaMemset(neighbors_buff, 0, data.numFluidParticles * 2 * MAX_NEIGHBOURS * sizeof(int));
+
+
+		cudaStatus = cudaDeviceSynchronize();
+		if (cudaStatus != cudaSuccess) {
+			fprintf(stderr, "neighbours storage init failed: %d\n", (int)cudaStatus);
+			exit(1598);
+		}
+
+		
+		
+		//Compute the cell id and an array ith the id of the particles sorted
+		//Also compute the start and end index of each cell
+		cuda_neighborsSearchInternal(data.posBoundary, data.m_kernel_precomp.getRadius(), data.numBoundaryParticles,
+			&d_temp_storage_pair_sort_b, temp_storage_bytes_pair_sort_b, cell_id_b, cell_id_sorted_b,
+			p_id_b, p_id_sorted_b, hist_b, &d_temp_storage_cumul_hist_b, temp_storage_bytes_cumul_hist_b,
+			cell_start_end_b);
+
+	}
+	/*
+	unsigned int grid_size = CELL_ROW_LENGTH;
+	for (int i = 0; i < data.numBoundaryParticles; ++i) {
+		Vector3d pos = (data.posBoundary[i] / data.m_kernel_precomp.getRadius())-2;
+		if (pos.x > grid_size || pos.y > grid_size || pos.z > grid_size) {
+			fprintf(stderr, "the particle is outside of the possible indexes\n");
+			exit(1256);
+		}
+		local_id_b[i] = (int)pos.x + ((int)pos.y)*grid_size + ((int)pos.z)*grid_size*grid_size;
+	}//*/
+	//*
+	//fluid particles
+
+	//Compute the cell id and an array ith the id of the particles sorted
+	//Also compute the start and end index of each cell
+	cuda_neighborsSearchInternal(data.posFluid, data.m_kernel_precomp.getRadius(), data.numFluidParticles,
+		&d_temp_storage_pair_sort, temp_storage_bytes_pair_sort, cell_id, cell_id_sorted,
+		p_id, p_id_sorted, hist, &d_temp_storage_cumul_hist, temp_storage_bytes_cumul_hist,
+		cell_start_end);
+
+	
+
+	//*
+	//basic version
+	if (false) {
+		double radius_sq = data.m_kernel_precomp.getRadius();
+		radius_sq *= radius_sq;
+		for (int i = 0; i < data.numFluidParticles; ++i) {
+			//search the neigbors within the fluid particles
+			for (int j = 0; j < data.numFluidParticles; ++j) {
+				if (i != j) {
+					if ((data.posFluid[i] - data.posFluid[j]).squaredNorm() < radius_sq) {
+						neighbors_buff[i*MAX_NEIGHBOURS + nb_neighbors_buff[i]] = j;
+						nb_neighbors_buff[i]++;
+					}
+				}
+			}
+			//search the neigbors within the boundary particles
+			for (int j = 0; j < data.numBoundaryParticles; ++j) {
+				if ((data.posFluid[i] - data.posBoundary[j]).squaredNorm() < radius_sq) {
+					neighbors_buff[data.numFluidParticles*MAX_NEIGHBOURS + i*MAX_NEIGHBOURS + nb_neighbors_buff[i + data.numFluidParticles]] = j;
+					nb_neighbors_buff[i + data.numFluidParticles]++;
+				}
+			}
+		}
+	}
+	//*/
+	//using our grid (no firther optimization however)
+	if (false) {
+		unsigned int grid_size = CELL_ROW_LENGTH;
+		for (int i = 0; i < data.numFluidParticles; ++i) {
+			nb_neighbors_buff[i + data.numFluidParticles]=0; 
+			nb_neighbors_buff[i] = 0;
+
+			Real radius_sq = data.m_kernel_precomp.getRadius();
+			Vector3d pos = data.posFluid[i];
+			Vector3d pos_cell = (pos / radius_sq) + 50; //on that line the radius is not yet squared
+			int x = (int)pos_cell.x;
+			int y = (int)pos_cell.y;
+			int z = (int)pos_cell.z;
+			radius_sq *= radius_sq;
+
+			//now we iterate on the 9 cell block surronding the cell in which we have our particle
+			for (int k = -1; k < 2; ++k) {
+				for (int m = -1; m < 2; ++m) {
+					for (int l = -1; l < 2; ++l) {
+						//we iterate on the particles inside that cell
+						unsigned int cur_cell_id = (x + k) + (y + m)*grid_size + (z + l)*grid_size*grid_size;
+						unsigned int end;
+						//*
+						//for the fluid particles
+						end = cell_start_end[cur_cell_id + 1];
+						for (unsigned int cur_particle = cell_start_end[cur_cell_id]; cur_particle < end; ++cur_particle) {
+							unsigned int j = p_id_sorted[cur_particle];
+							if (i != j) {
+								if ((pos - data.posFluid[j]).squaredNorm() < radius_sq) {
+									neighbors_buff[i*MAX_NEIGHBOURS + nb_neighbors_buff[i]] = j;
+									nb_neighbors_buff[i]++;
+								}
+							}
+						}
+						//*/
+						//*
+						//for the boundaries particles
+						end = cell_start_end_b[cur_cell_id + 1];
+						for (unsigned int cur_particle = cell_start_end_b[cur_cell_id]; cur_particle < end; ++cur_particle) {
+							unsigned int j = p_id_sorted_b[cur_particle];
+							if ((pos - data.posBoundary[j]).squaredNorm() < radius_sq) {
+								neighbors_buff[1 * data.numFluidParticles*MAX_NEIGHBOURS + i*MAX_NEIGHBOURS + nb_neighbors_buff[i + data.numFluidParticles]] = j;
+								nb_neighbors_buff[i + data.numFluidParticles]++;
+							}
+						}
+						//*/
+					}
+				}
+			}
+		}
+	}
+
+	if (true) {
+
+		float time;
+		static float time_avg = 0;
+		static unsigned int time_count = 0;
+		cudaEvent_t start, stop;
+
+		(cudaEventCreate(&start));
+		(cudaEventCreate(&stop));
+		(cudaEventRecord(start, 0));
+
+
+		//cuda way
+		int numBlocks = (data.numFluidParticles + BLOCKSIZE - 1) / BLOCKSIZE;
+		DFSPH_neighborsSearch_kernel<CELL_ROW_LENGTH, false> << <numBlocks, BLOCKSIZE >> > (data.numFluidParticles,
+			data.m_kernel_precomp.getRadius(), data.posFluid, data.posBoundary, neighbors_buff, nb_neighbors_buff,
+			p_id_sorted, cell_start_end, p_id_sorted_b,cell_start_end_b);
+
+
+
+		cudaStatus = cudaDeviceSynchronize();
+		if (cudaStatus != cudaSuccess) {
+			fprintf(stderr, "cuda neighbors search failed: %d\n", (int)cudaStatus);
+			exit(1598);
+		}
+
+		(cudaEventRecord(stop, 0));
+		(cudaEventSynchronize(stop));
+		(cudaEventElapsedTime(&time, start, stop));
+
+		time_avg += time;
+		time_count++;
+		printf("Time to generate: %f ms   avg: %f ms \n", time, time_avg/time_count);
+	}
+
+	for (int i = 0; i < data.numFluidParticles; ++i) {
+		if (nb_neighbors_buff[i] != data.getNumberOfNeighbourgs(i)) {
+			fprintf(stderr, "incoherent not the same number of neighbours: %d,  %d,  %d\n", i, nb_neighbors_buff[i], data.getNumberOfNeighbourgs(i));
+			exit(1256);
+		}
+		if (nb_neighbors_buff[i + data.numFluidParticles] != data.getNumberOfNeighbourgs(i, 1)) {
+			fprintf(stderr, "incoherent not the same number of neighbours boundary: %d,  %d,  %d\n", i, nb_neighbors_buff[i + data.numFluidParticles],
+				data.getNumberOfNeighbourgs(i, 1));
+			exit(1256);
+		}
+	}
+	
+}
+
+/*
+FUNCTION inline unsigned int getNeighbour(int particle_id, int neighbour_id, int body_id = 0) {
+return neighbourgs[body_id*numFluidParticles*MAX_NEIGHBOURS + particle_id * MAX_NEIGHBOURS + neighbour_id];
+}
+
+FUNCTION inline unsigned int getNumberOfNeighbourgs(int particle_id, int body_id = 0) {
+return numberOfNeighbourgs[body_id*numFluidParticles + particle_id];
+}
+*/
+
+
+void cuda_renderFluid(SPH::DFSPHCData& data) {
+	cuda_opengl_renderFluid(data);
+}
+
+#include <GL/glew.h>
+
+
+void cuda_opengl_initFluidRendering(SPH::DFSPHCData& data) {
+	glGenVertexArrays(1, &data.vao); // Créer le VAO
+	glBindVertexArray(data.vao); // Lier le VAO pour l'utiliser
+
+
+	glGenBuffers(1, &data.pos_buffer);
+	// selectionne le buffer pour l'initialiser
+	glBindBuffer(GL_ARRAY_BUFFER, data.pos_buffer);
+	// dimensionne le buffer actif sur array_buffer, l'alloue et l'initialise avec les positions des sommets de l'objet
+	glBufferData(GL_ARRAY_BUFFER,
+		/* length */	data.numFluidParticles * sizeof(Vector3d),
+		/* data */      &(data.posFluid[0]),
+		/* usage */     GL_DYNAMIC_DRAW);
+	//set it to the attribute
+	glEnableVertexAttribArray(0);
+	glVertexAttribPointer(0, 3, GL_DOUBLE, GL_FALSE, 0, 0);
+
+	glGenBuffers(1, &data.vel_buffer);
+	// selectionne le buffer pour l'initialiser
+	glBindBuffer(GL_ARRAY_BUFFER, data.vel_buffer);
+	// dimensionne le buffer actif sur array_buffer, l'alloue et l'initialise avec les positions des sommets de l'objet
+	glBufferData(GL_ARRAY_BUFFER,
+		/* length */	data.numFluidParticles * sizeof(Vector3d),
+		/* data */      &(data.velFluid[0]),
+		/* usage */     GL_DYNAMIC_DRAW);
+	//set it to the attribute
+	glEnableVertexAttribArray(1);
+	glVertexAttribPointer(1, 3, GL_DOUBLE, GL_FALSE, 0, 0);
+
+	// nettoyage
+	glBindVertexArray(0);
+	glBindBuffer(GL_ARRAY_BUFFER, 0);
+
+
+
+}
+
+void cuda_opengl_renderFluid(SPH::DFSPHCData& data) {
+	glBindVertexArray(data.vao); // link the vao
+
+	glBindBuffer(GL_ARRAY_BUFFER, data.pos_buffer);
+	glBufferSubData(GL_ARRAY_BUFFER,
+		0,
+		data.numFluidParticles * sizeof(Vector3d),
+		&(data.posFluid[0]));
+	
+	glBindBuffer(GL_ARRAY_BUFFER, data.vel_buffer);
+	glBufferSubData(GL_ARRAY_BUFFER,
+		0,
+		data.numFluidParticles * sizeof(Vector3d),
+		&(data.velFluid[0]));
+	
+	glBindBuffer(GL_ARRAY_BUFFER, 0);
+
+	glDrawArrays(GL_POINTS, 0, data.numFluidParticles);
+
+	glBindVertexArray(0); // unlink the vao
+}
+
+
+
+
+
+
+
+
+
+
 /*
 	THE NEXT FUNCTIONS ARE FOR THE MEMORY ALLOCATION
 */
 
-void allocate_c_array_struct_cuda_managed(SPH::DFSPHCData& data) {
-	//cudaMallocManaged(&x, N * sizeof(float));
-	//cudaMallocManaged(&y, N * sizeof(float));
+void allocate_c_array_struct_cuda_managed(SPH::DFSPHCData& data, bool minimize_managed) {
 
 	cudaMallocManaged(&(data.posBoundary), data.numBoundaryParticles * sizeof(Vector3d));
-	cudaMallocManaged(&(data.velBoundary), data.numBoundaryParticles * sizeof(Vector3d));
 	cudaMallocManaged(&(data.velBoundary), data.numBoundaryParticles * sizeof(Vector3d));
 	cudaMallocManaged(&(data.boundaryPsi), data.numBoundaryParticles * sizeof(Real));
 
@@ -643,13 +1190,121 @@ void allocate_c_array_struct_cuda_managed(SPH::DFSPHCData& data) {
 	cudaMallocManaged(&(data.kappa), data.numFluidParticles * sizeof(Real));
 	cudaMallocManaged(&(data.kappaV), data.numFluidParticles * sizeof(Real));
 	cudaMallocManaged(&(data.densityAdv), data.numFluidParticles * sizeof(Real));
+
+}
+
+void reset_c_array_struct_cuda_from_values(SPH::DFSPHCData& data, Vector3d* posBoundary, Vector3d* velBoundary, 
+	Real* boundaryPsi, Vector3d* posFluid, Vector3d* velFluid, Real* mass) {
+	
+	fprintf(stderr, "start of reset values gpu: \n");
+
+	cudaError_t cudaStatus;
+	//boundaries
+	gpuErrchk( cudaMemcpy(data.posBoundary, posBoundary, data.numBoundaryParticles * sizeof(Vector3d), cudaMemcpyHostToDevice));
+	gpuErrchk( cudaMemcpy(data.velBoundary, velBoundary, data.numBoundaryParticles * sizeof(Vector3d), cudaMemcpyHostToDevice));
+	gpuErrchk( cudaMemcpy(data.boundaryPsi, boundaryPsi, data.numBoundaryParticles * sizeof(Real), cudaMemcpyHostToDevice));
+
+	cudaStatus = cudaDeviceSynchronize();
+	if (cudaStatus != cudaSuccess) { 
+		fprintf(stderr, "init of boundaries particles from data failed: %d\n", (int)cudaStatus);
+		exit(1598);
+	}
+
+	//fluid
+	gpuErrchk(cudaMemcpy(data.posFluid, posFluid, data.numFluidParticles * sizeof(Vector3d), cudaMemcpyHostToDevice));
+	gpuErrchk(cudaMemcpy(data.velFluid, velFluid, data.numFluidParticles * sizeof(Vector3d), cudaMemcpyHostToDevice));
+	gpuErrchk(cudaMemcpy(data.mass, mass, data.numFluidParticles * sizeof(Real), cudaMemcpyHostToDevice));
+	gpuErrchk(cudaMemset(data.accFluid, 0, data.numFluidParticles * sizeof(Vector3d)));
+
+	cudaStatus = cudaDeviceSynchronize();
+	if (cudaStatus != cudaSuccess) {
+		fprintf(stderr, "init of fluid particles from data failed: %d\n", (int)cudaStatus);
+		exit(1598);
+	}
+
+	//ohter values normaly only kappa and kappaV are necessary (ut this function is only called 
+	//when reseting the fluid so it does not cost much to make sure everything is clean
+	gpuErrchk(cudaMemset(data.density, 0, data.numFluidParticles * sizeof(Real)));
+	gpuErrchk(cudaMemset(data.factor, 0, data.numFluidParticles * sizeof(Real)));
+	gpuErrchk(cudaMemset(data.kappa, 0, data.numFluidParticles * sizeof(Real)));
+	gpuErrchk(cudaMemset(data.kappaV, 0, data.numFluidParticles * sizeof(Real)));
+	gpuErrchk(cudaMemset(data.densityAdv, 0, data.numFluidParticles * sizeof(Real)));
+
+	cudaStatus = cudaDeviceSynchronize();
+	if (cudaStatus != cudaSuccess) {
+		fprintf(stderr, "init of fluid other values from data failed: %d\n", (int)cudaStatus);
+		exit(1598);
+	}
+
+
+	fprintf(stderr, "end of reset gpu\n");
 }
 
 
-void allocate_precomputed_kernel_managed(SPH::PrecomputedCubicKernelPerso& kernel){
-	cudaMallocManaged(&(kernel.m_W), kernel.m_resolution * sizeof(Real));
-	cudaMallocManaged(&(kernel.m_gradW), (kernel.m_resolution+1) * sizeof(Real));
+void allocate_precomputed_kernel_managed(SPH::PrecomputedCubicKernelPerso& kernel, bool minimize_managed) {
+	
+	if (minimize_managed) {
+		cudaMalloc(&(kernel.m_W), kernel.m_resolution * sizeof(Real));
+		cudaMalloc(&(kernel.m_gradW), (kernel.m_resolution + 1) * sizeof(Real));
+	}
+	else {
+		cudaMallocManaged(&(kernel.m_W), kernel.m_resolution * sizeof(Real));
+		cudaMallocManaged(&(kernel.m_gradW), (kernel.m_resolution + 1) * sizeof(Real));
+	}
 }
+
+
+void init_precomputed_kernel_from_values(SPH::PrecomputedCubicKernelPerso& kernel, Real* w, Real* grad_W) {
+	cudaError_t cudaStatus;
+	//W
+	cudaStatus = cudaMemcpy(kernel.m_W,
+		w,
+		kernel.m_resolution * sizeof(Real),
+		cudaMemcpyHostToDevice);
+	
+	if (cudaStatus != cudaSuccess) {
+		fprintf(stderr, "precomputed initialization of W from data failed: %d\n", (int)cudaStatus);
+		exit(1598);
+	}
+
+	//grad W
+	cudaStatus = cudaMemcpy(kernel.m_gradW,
+		grad_W,
+		(kernel.m_resolution + 1) * sizeof(Real),
+		cudaMemcpyHostToDevice);
+
+	if (cudaStatus != cudaSuccess) {
+		fprintf(stderr, "precomputed initialization of grad W from data failed: %d\n", (int)cudaStatus);
+		exit(1598);
+	}
+
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 /*
 	AFTER THIS ARE ONLY THE TEST FUNCTION TO HAVE CUDA WORKING ...

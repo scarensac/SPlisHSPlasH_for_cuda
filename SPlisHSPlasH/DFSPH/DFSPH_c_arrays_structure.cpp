@@ -15,32 +15,57 @@ using namespace std;
 void PrecomputedCubicKernelPerso::setRadius(Real val)
 {
 	m_resolution = 10000;
+	m_radius = val;
+	m_radius2 = m_radius*m_radius;
+	const Real stepSize = m_radius / (Real)m_resolution;
+	m_invStepSize = 1.0 / stepSize;
+
 	if (true) {
-		allocate_precomputed_kernel_managed(*this);
+		Real* W_temp = new Real[m_resolution];
+		Real* gradW_temp = new Real[m_resolution + 1];
+
+		//init values
+		CubicKernelPerso kernel;
+		kernel.setRadius(val);
+		
+		for (unsigned int i = 0; i < m_resolution; ++i) {
+			W_temp[i] = FluidModel::PrecomputedCubicKernel::m_W[i];
+			gradW_temp[i] = FluidModel::PrecomputedCubicKernel::m_gradW[i];
+		}
+
+		gradW_temp[m_resolution] = 0.0;
+		m_W_zero = kernel.W(0.0);
+
+		
+		allocate_precomputed_kernel_managed(*this, true);
+
+		init_precomputed_kernel_from_values(*this, W_temp, gradW_temp);
+
+		//clean
+		delete[] W_temp;
+		delete[] gradW_temp;
 	}
 	else {
 		m_W = new Real[m_resolution];
 		m_gradW = new Real[m_resolution + 1];
+		
+		//init values
+		CubicKernelPerso kernel;
+		kernel.setRadius(val);
+		for (unsigned int i = 0; i < m_resolution; i++)
+		{
+			const Real posX = stepSize * (Real)i;		// Store kernel values in the middle of an interval
+			m_W[i] = kernel.W(posX);
+			kernel.setRadius(val);
+			if (posX > 1.0e-9)
+				m_gradW[i] = kernel.gradW(Vector3d(posX, 0.0, 0.0)).x / posX;
+			else
+				m_gradW[i] = 0.0;
+		}
+		m_gradW[m_resolution] = 0.0;
+		m_W_zero = W(0.0);
 	}
 	
-	m_radius = val;
-	m_radius2 = m_radius*m_radius;
-	CubicKernelPerso kernel;
-	kernel.setRadius(val);
-	const Real stepSize = m_radius / (Real)m_resolution;
-	m_invStepSize = 1.0 / stepSize;
-	for (unsigned int i = 0; i < m_resolution; i++)
-	{
-		const Real posX = stepSize * (Real)i;		// Store kernel values in the middle of an interval
-		m_W[i] = kernel.W(posX);
-		kernel.setRadius(val);
-		if (posX > 1.0e-9)
-			m_gradW[i] = kernel.gradW(Vector3d(posX, 0.0, 0.0)).x / posX;
-		else
-			m_gradW[i] = 0.0;
-	}
-	m_gradW[m_resolution] = 0.0;
-	m_W_zero = W(0.0);
 }
 
 
@@ -63,6 +88,12 @@ DFSPHCData::DFSPHCData(FluidModel *model) {
 	if (true) {
 		//initialisation on the GPU
 		allocate_c_array_struct_cuda_managed((*this));
+
+		//init the values
+		reset(model);
+
+		//init the rendering
+		cuda_opengl_initFluidRendering(*this);
 	}
 	else {
 		//initialisation on the CPU
@@ -103,32 +134,71 @@ void DFSPHCData::reset(FluidModel *model) {
 		std::cout << "DFSPHCData::reset: fml the nbr of boundaries particles has been modified" << std::endl;
 		exit(9657);
 	}
-	density0 = model->getDensity0();
-
-	for (int i = 0; i < numBoundaryParticles; ++i) {
-		FluidModel::RigidBodyParticleObject* particleObj = static_cast<FluidModel::RigidBodyParticleObject*>(model->m_particleObjects[1]);
-		posBoundary[i] = vector3rTo3d(particleObj->m_x[i]);
-		velBoundary[i] = vector3rTo3d(particleObj->m_v[i]);
-		boundaryPsi[i] = particleObj->m_boundaryPsi[i];
-	}
-
-	for (int i = 0; i < numFluidParticles; ++i) {
-		mass[i] = model->getMass(i);
-
-		//clear the internal kappa and  kappa v
-		kappa[i] = 0.0;
-		kappaV[i] = 0.0;
-	}
 
 	h = TimeManager::getCurrent()->getTimeStepSize();
 	h_future = h;
 	h_past = h;
 	h_ratio_to_past = 1.0;
 
-	for (int i = 0; i < numFluidParticles; ++i) {
-		posFluid[i] = vector3rTo3d(model->getPosition(0, i));
-		velFluid[i] = vector3rTo3d(model->getVelocity(0, i));
+	density0 = model->getDensity0();
+
+	if (true) {
+		// I need to transfer the data to c_typed buffers to use in .cu file
+		Vector3d* posBoundary_temp= new Vector3d[numBoundaryParticles];
+		Vector3d* velBoundary_temp = new Vector3d[numBoundaryParticles];
+		Real* boundaryPsi_temp = new Real[numBoundaryParticles];
+
+		for (int i = 0; i < numBoundaryParticles; ++i) {
+			FluidModel::RigidBodyParticleObject* particleObj = static_cast<FluidModel::RigidBodyParticleObject*>(model->m_particleObjects[1]);
+			posBoundary_temp[i] = vector3rTo3d(particleObj->m_x[i]);
+			velBoundary_temp[i] = vector3rTo3d(particleObj->m_v[i]);
+			boundaryPsi_temp[i] = particleObj->m_boundaryPsi[i];
+		}
+
+		Vector3d* posFluid_temp = new Vector3d[numFluidParticles];
+		Vector3d* velFluid_temp = new Vector3d[numFluidParticles];
+		Real* mass_temp = new Real[numFluidParticles];
+
+		for (int i = 0; i < numFluidParticles; ++i) {
+			posFluid_temp[i] = vector3rTo3d(model->getPosition(0, i));
+			velFluid_temp[i] = vector3rTo3d(model->getVelocity(0, i));
+			mass_temp[i] = model->getMass(i);
+		}
+
+		reset_c_array_struct_cuda_from_values(*this, posBoundary_temp, velBoundary_temp, boundaryPsi_temp,
+			posFluid_temp, velFluid_temp, mass_temp);
+
+		delete[] posBoundary_temp;
+		delete[] velBoundary_temp;
+		delete[] boundaryPsi_temp;
+		delete[] posFluid_temp;
+		delete[] velFluid_temp;
+		delete[] mass_temp;
+
 	}
+	else {
+		
+
+		for (int i = 0; i < numBoundaryParticles; ++i) {
+			FluidModel::RigidBodyParticleObject* particleObj = static_cast<FluidModel::RigidBodyParticleObject*>(model->m_particleObjects[1]);
+			posBoundary[i] = vector3rTo3d(particleObj->m_x[i]);
+			velBoundary[i] = vector3rTo3d(particleObj->m_v[i]);
+			boundaryPsi[i] = particleObj->m_boundaryPsi[i];
+		}
+
+		for (int i = 0; i < numFluidParticles; ++i) {
+			posFluid[i] = vector3rTo3d(model->getPosition(0, i));
+			velFluid[i] = vector3rTo3d(model->getVelocity(0, i));
+			mass[i] = model->getMass(i);
+
+			//clear the internal kappa and  kappa v
+			kappa[i] = 0.0;
+			kappaV[i] = 0.0;
+		}
+
+	}
+
+
 
 }
 
@@ -140,7 +210,13 @@ void DFSPHCData::loadDynamicData(FluidModel *model, const SimulationDataDFSPH& d
 		exit(1569);
 	}
 
-
+	/*
+	//normaly it's only needed on the first step
+	for (int i = 0; i < numFluidParticles; ++i) {
+		posFluid[i] = vector3rTo3d(model->getPosition(0, i));
+		velFluid[i] = vector3rTo3d(model->getVelocity(0, i));
+	}
+	//*/
 	//*
 	//copy the data on the inital step
 	static bool first_time = true;
@@ -148,12 +224,6 @@ void DFSPHCData::loadDynamicData(FluidModel *model, const SimulationDataDFSPH& d
 		for (int i = 0; i < numFluidParticles; ++i) {
 			posFluid[i] = vector3rTo3d(model->getPosition(0, i));
 			velFluid[i] = vector3rTo3d(model->getVelocity(0, i));
-		}
-
-		//load the kernel values
-		for (unsigned int i = 0; i < m_kernel_precomp.m_resolution; ++i) {
-			m_kernel_precomp.m_W[i] = FluidModel::PrecomputedCubicKernel::m_W[i];
-			m_kernel_precomp.m_gradW[i] = FluidModel::PrecomputedCubicKernel::m_gradW[i];
 		}
 
 		first_time = false;
@@ -230,6 +300,7 @@ void DFSPHCData::readDynamicData(FluidModel *model, SimulationDataDFSPH& data) {
 	for (int i = 0; i < numFluidParticles; ++i) {
 		model->getPosition(0, i) = vector3dTo3r(posFluid[i]);
 		model->getVelocity(0, i) = vector3dTo3r(velFluid[i]);
+		
 	}
 }
 

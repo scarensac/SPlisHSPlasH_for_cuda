@@ -105,7 +105,7 @@ namespace SPH
 		Real m_W_zero;
 		unsigned int m_resolution;
 	public:
-		Real getRadius() { return m_radius; }
+		FUNCTION Real getRadius() { return m_radius; }
 		void setRadius(Real val);
 
 	public:
@@ -217,6 +217,12 @@ namespace SPH
 		Real invH2_past;
 		Real invH_future;
 		Real invH2_future;
+
+		//variables for vao
+		//Normaly I should use GLuint but including all gl.h only for that ...
+		unsigned int vao;
+		unsigned int pos_buffer;
+		unsigned int vel_buffer;
 
 		DFSPHCData(FluidModel *model);
 

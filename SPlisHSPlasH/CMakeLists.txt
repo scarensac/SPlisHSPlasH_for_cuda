@@ -144,6 +144,7 @@ include_directories( ${EIGEN3_INCLUDE_DIR} )
 # CompactNSearch
 ############################################################
 include_directories(${PROJECT_PATH}/extern/install/CompactNSearch/include)
+include_directories(${PROJECT_PATH}/extern/cub-1.7.4/cub)
 
 add_library(SPlisHSPlasH
 	Common.h

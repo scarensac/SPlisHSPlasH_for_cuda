@@ -1,5 +1,5 @@
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 15
+# Visual Studio 14
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "CMakePredefinedTargets", "CMakePredefinedTargets", "{E28C6069-0B36-3DDA-A443-AE8C1CAAAA67}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "External Dependencies", "External Dependencies", "{6CA0680E-DB18-36F2-AF32-EC2F4DB62EEB}"

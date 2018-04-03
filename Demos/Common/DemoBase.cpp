@@ -913,23 +913,34 @@ void DemoBase::renderFluid()
 		float fluidColor2[4] = { 0.3f, 0.9f, 0.5f, 1.0f };
 		pointShaderBegin(&fluidColor[0]);
 
-		if (m_simulationMethod.model.numActiveParticles() > 0)
+	    if (m_simulationMethod.simulationMethod == SimulationMethods::DFSPH_CUDA)
 		{
-			glEnableVertexAttribArray(0);
-			glVertexAttribPointer(0, 3, GL_DOUBLE, GL_FALSE, 0, &m_simulationMethod.model.getPosition(0, 0));
-			glEnableVertexAttribArray(1);
-			if (m_renderAngularVelocities && (m_simulationMethod.simulation->getVorticityMethod() == VorticityMethods::Micropolar))
-			{
-				glUniform3fv(m_shader.getUniform("color"), 1, fluidColor2);
-				glVertexAttribPointer(1, 3, GL_DOUBLE, GL_FALSE, 0, &((MicropolarModel_Bender2017*)m_simulationMethod.simulation->getVorticityBase())->getAngularVelocity(0)[0]);
-			}
-			else
-				glVertexAttribPointer(1, 3, GL_DOUBLE, GL_FALSE, 0, &m_simulationMethod.model.getVelocity(0, 0));
+			DFSPHCUDA* sim = dynamic_cast<DFSPHCUDA*>(m_simulationMethod.simulation);
+			sim->renderFluid();
+						
+			
 
-			glDrawArrays(GL_POINTS, 0, m_simulationMethod.model.numActiveParticles());
-			glDisableVertexAttribArray(0);
-			glDisableVertexAttribArray(1);
 		}
+		else {
+			if (m_simulationMethod.model.numActiveParticles() > 0)
+			{
+				glEnableVertexAttribArray(0);
+				glVertexAttribPointer(0, 3, GL_DOUBLE, GL_FALSE, 0, &m_simulationMethod.model.getPosition(0, 0));
+				glEnableVertexAttribArray(1);
+				if (m_renderAngularVelocities && (m_simulationMethod.simulation->getVorticityMethod() == VorticityMethods::Micropolar))
+				{
+					glUniform3fv(m_shader.getUniform("color"), 1, fluidColor2);
+					glVertexAttribPointer(1, 3, GL_DOUBLE, GL_FALSE, 0, &((MicropolarModel_Bender2017*)m_simulationMethod.simulation->getVorticityBase())->getAngularVelocity(0)[0]);
+				}
+				else
+					glVertexAttribPointer(1, 3, GL_DOUBLE, GL_FALSE, 0, &m_simulationMethod.model.getVelocity(0, 0));
+
+				glDrawArrays(GL_POINTS, 0, m_simulationMethod.model.numActiveParticles());
+				glDisableVertexAttribArray(0);
+				glDisableVertexAttribArray(1);
+			}
+		}
+
 
 		pointShaderEnd();
 	}

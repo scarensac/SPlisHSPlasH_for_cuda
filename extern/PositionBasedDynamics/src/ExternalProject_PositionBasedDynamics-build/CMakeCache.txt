@@ -79,7 +79,7 @@ CMAKE_EXE_LINKER_FLAGS_RELWITHDEBINFO:STRING=/debug /INCREMENTAL
 CMAKE_INSTALL_PREFIX:PATH=D:/Users/scarensac/Documents/GitHub/SPlisHSPlasH/extern/install/PositionBasedDynamics
 
 //Path to a program.
-CMAKE_LINKER:FILEPATH=C:/Program Files (x86)/Microsoft Visual Studio/2017/Enterprise/VC/Tools/MSVC/14.11.25503/bin/Hostx86/x64/link.exe
+CMAKE_LINKER:FILEPATH=C:/Program Files (x86)/Microsoft Visual Studio 14.0/VC/bin/x86_amd64/link.exe
 
 //Flags used by the linker during the creation of modules.
 CMAKE_MODULE_LINKER_FLAGS:STRING=/machine:x64
@@ -100,7 +100,7 @@ CMAKE_MODULE_LINKER_FLAGS_RELWITHDEBINFO:STRING=/debug /INCREMENTAL
 CMAKE_PROJECT_NAME:STATIC=PositionBasedDynamics
 
 //RC compiler
-CMAKE_RC_COMPILER:FILEPATH=C:/Program Files (x86)/Windows Kits/10/bin/10.0.16299.0/x86/rc.exe
+CMAKE_RC_COMPILER:FILEPATH=C:/Program Files (x86)/Windows Kits/10/bin/x86/rc.exe
 
 //Flags for Windows Resource Compiler.
 CMAKE_RC_FLAGS:STRING=/DWIN32
@@ -251,7 +251,7 @@ CMAKE_EXE_LINKER_FLAGS_RELWITHDEBINFO-ADVANCED:INTERNAL=1
 //Name of external makefile project generator.
 CMAKE_EXTRA_GENERATOR:INTERNAL=
 //Name of generator.
-CMAKE_GENERATOR:INTERNAL=Visual Studio 15 2017 Win64
+CMAKE_GENERATOR:INTERNAL=Visual Studio 14 2015 Win64
 //Name of generator platform.
 CMAKE_GENERATOR_PLATFORM:INTERNAL=
 //Name of generator toolset.

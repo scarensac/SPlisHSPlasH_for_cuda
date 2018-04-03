@@ -18,6 +18,9 @@ namespace SPH
 	#define STOP_TIMING_PRINT \
 	Timing::stopTiming(true);
 
+	#define STOP_TIMING_PRINT_C \
+	Timing::stopTiming(true, true);
+
 	#define STOP_TIMING_AVG \
 	{ \
 	static int timing_timerId = -1; \
@@ -81,7 +84,7 @@ namespace SPH
 			Timing::m_startCounter++;
 		}
 
-		FORCE_INLINE static double stopTiming(bool print = true)
+		FORCE_INLINE static double stopTiming(bool print = true, bool c_print = false)
 		{
 			if (!Timing::m_timingStack.empty())
 			{
@@ -93,7 +96,12 @@ namespace SPH
 				double t = elapsed_seconds.count() * 1000.0;
 
 				if (print)
-					std::cout << "time " << h.name.c_str() << ": " << t << " ms\n" << std::flush;
+					if (!c_print) {
+						std::cout << "time " << h.name.c_str() << ": " << t << " ms\n" << std::flush;
+					}
+					else {
+						fprintf(stderr, "time %s : %f ms\n", h.name.c_str(), t);
+					}
 				return t;
 			}
 			return 0;

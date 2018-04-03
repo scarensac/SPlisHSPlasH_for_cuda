@@ -139,6 +139,9 @@ namespace SPH
 		void setRenderAngularVelocities(bool val) { m_renderAngularVelocities = val; }
 		bool getRenderTemperatures() const { return m_renderTemperatures; }
 		void setRenderTemperatures(bool val) { m_renderTemperatures = val; }
+
+
+
 	};
 }
  
