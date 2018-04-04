@@ -110,19 +110,19 @@ DFSPHCData::DFSPHCData(FluidModel *model) {
 		//initialisation on the GPU
 		allocate_c_array_struct_cuda_managed((*this));
 
-		//init the values
-		reset(model);
-
-
 		//init the rendering
 		cuda_opengl_initFluidRendering(*this);
-
-		std::cout << "reached here" << std::endl;
-		//allocate and init the data set that are gonna be used for the neighbors search
+		
+		//allocate the data set that are gonna be used for the neighbors search
 		neighborsdataSetBoundaries = new NeighborsSearchDataSet(numBoundaryParticles);
+		neighborsdataSetFluid = new NeighborsSearchDataSet(numFluidParticles);
+		
+		//init the values from the model
+		reset(model);
+
+		//init the data set that are gonna be used for the neighbors search
 		neighborsdataSetBoundaries->initData(posBoundary, m_kernel_precomp.getRadius());
 		neighborsdataSetBoundaries->deleteComputationBuffer();
-		neighborsdataSetFluid = new NeighborsSearchDataSet(numFluidParticles);
 		neighborsdataSetFluid->initData(posFluid, m_kernel_precomp.getRadius());
 	}
 	else {

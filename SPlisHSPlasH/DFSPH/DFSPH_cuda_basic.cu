@@ -870,27 +870,6 @@ void cuda_neighborsSearch(SPH::DFSPHCData& data) {
 	
 	cudaError_t cudaStatus;
 
-	/*
-	static int* neighbors_buff;
-	static int* nb_neighbors_buff;
-
-	
-	static bool first_time = true;
-	if (first_time) {
-		first_time = false;
-
-		cudaMallocManaged(&(nb_neighbors_buff), data.numFluidParticles * 2 * sizeof(int));
-		cudaMallocManaged(&(neighbors_buff), data.numFluidParticles * 2 * MAX_NEIGHBOURS * sizeof(int));
-
-		
-		cudaStatus = cudaDeviceSynchronize();
-		if (cudaStatus != cudaSuccess) {
-			fprintf(stderr, "neighbours storage init failed: %d\n", (int)cudaStatus);
-			exit(1598);
-		}
-	}
-	//*/
-
 	//update the positions of the particles in the grid
 	data.neighborsdataSetFluid->initData(data.posFluid, data.m_kernel_precomp.getRadius());
 	
@@ -930,26 +909,7 @@ void cuda_neighborsSearch(SPH::DFSPHCData& data) {
 		time_avg += time;
 		time_count++;
 		printf("Time to generate: %f ms   avg: %f ms \n", time, time_avg/time_count);
-	}
-
-	//gpuErrchk(cudaMemcpy(data.numberOfNeighbourgs, nb_neighbors_buff, data.numFluidParticles * 2 * sizeof(int), cudaMemcpyDeviceToDevice));
-    //gpuErrchk(cudaMemcpy(data.neighbourgs, neighbors_buff, data.numFluidParticles * 2 * MAX_NEIGHBOURS * sizeof(int), cudaMemcpyDeviceToDevice));
-
-
-	/*
-	for (int i = 0; i < data.numFluidParticles; ++i) {
-		if (nb_neighbors_buff[i] != data.getNumberOfNeighbourgs(i)) {
-			fprintf(stderr, "incoherent not the same number of neighbours: %d,  %d,  %d\n", i, nb_neighbors_buff[i], data.getNumberOfNeighbourgs(i));
-			exit(1256);
-		}
-		if (nb_neighbors_buff[i + data.numFluidParticles] != data.getNumberOfNeighbourgs(i, 1)) {
-			fprintf(stderr, "incoherent not the same number of neighbours boundary: %d,  %d,  %d\n", i, nb_neighbors_buff[i + data.numFluidParticles],
-				data.getNumberOfNeighbourgs(i, 1));
-			exit(1256);
-		}
-	}
-	//*/
-	
+	}	
 }
 
 
@@ -958,7 +918,6 @@ void cuda_renderFluid(SPH::DFSPHCData& data) {
 }
 
 #include <GL/glew.h>
-
 #include <cuda_gl_interop.h>
 
 void cuda_opengl_initFluidRendering(SPH::DFSPHCData& data) {
@@ -977,8 +936,6 @@ void cuda_opengl_initFluidRendering(SPH::DFSPHCData& data) {
 	//set it to the attribute
 	glEnableVertexAttribArray(0);
 	glVertexAttribPointer(0, 3, GL_DOUBLE, GL_FALSE, 0, 0);
-	
-	
 
 	glGenBuffers(1, &data.vel_buffer);
 	// selectionne le buffer pour l'initialiser
@@ -1000,58 +957,34 @@ void cuda_opengl_initFluidRendering(SPH::DFSPHCData& data) {
 	gpuErrchk(cudaGraphicsGLRegisterBuffer(&vboRes_pos, data.pos_buffer, cudaGraphicsRegisterFlagsNone));
 	gpuErrchk(cudaGraphicsGLRegisterBuffer(&vboRes_vel, data.vel_buffer, cudaGraphicsRegisterFlagsNone));
 
+	//link the pos and vel buffer to cuda
+	gpuErrchk(cudaGraphicsMapResources(1, &vboRes_pos, 0));
+	gpuErrchk(cudaGraphicsMapResources(1, &vboRes_vel, 0));
+
+	//set the openglbuffer for direct use in cuda
+	Vector3d* vboPtr = NULL;
+	size_t size = 0;
+
+	// pos
+	gpuErrchk(cudaGraphicsResourceGetMappedPointer((void**)&vboPtr, &size, vboRes_pos));//get cuda ptr
+	data.posFluid = vboPtr;
+
+	// vel
+	gpuErrchk(cudaGraphicsResourceGetMappedPointer((void**)&vboPtr, &size, vboRes_vel));//get cuda ptr
+	data.velFluid = vboPtr;
+	
 }
 
 void cuda_opengl_renderFluid(SPH::DFSPHCData& data) {
 	
+	//unlink the pos and vel buffer from cuda
+	gpuErrchk(cudaGraphicsUnmapResources(1, &vboRes_pos, 0));
+	gpuErrchk(cudaGraphicsUnmapResources(1, &vboRes_vel, 0));
 
-	//copy using cuda interop
-	//pos
-	/*
-	gpuErrchk(cudaGraphicsMapResources(1, &vboRes_pos, 0));//link to cuda
-	Vector3d* vboPtr_pos = NULL;
-	size_t size_pos = 0;
-	gpuErrchk(cudaGraphicsResourceGetMappedPointer((void**)&vboPtr_pos, &size_pos, vboRes_pos));//get cuda ptr
-	
-	//fprintf(stderr, "buffer size: %d   //   original size: %d\n", (int)size_pos, data.numFluidParticles * sizeof(Vector3d));
-	//copy the data
-	gpuErrchk(cudaMemcpy(vboPtr_pos, data.posFluid, data.numFluidParticles * sizeof(Vector3d), cudaMemcpyDeviceToDevice));
-
-	
-	gpuErrchk(cudaGraphicsUnmapResources(1, &vboRes_pos, 0));//unlink to cuda
-	//*/
-	
-
-	//copy to cpu to be able to give them to opengl
-	static Vector3d* pos_buff = NULL;
-	static Vector3d* vel_buff = NULL;
-
-	if (pos_buff == NULL) {
-		pos_buff = new Vector3d[data.numFluidParticles];
-		vel_buff = new Vector3d[data.numFluidParticles];
-	}
-
-	gpuErrchk(cudaMemcpy(pos_buff, data.posFluid, data.numFluidParticles * sizeof(Vector3d), cudaMemcpyDeviceToHost));
-	gpuErrchk(cudaMemcpy(vel_buff, data.velFluid, data.numFluidParticles * sizeof(Vector3d), cudaMemcpyDeviceToHost));
-
+	//Actual opengl rendering
 	// link the vao
 	glBindVertexArray(data.vao); 
 
-	//copy the data
-	//*
-	glBindBuffer(GL_ARRAY_BUFFER, data.pos_buffer);
-	glBufferSubData(GL_ARRAY_BUFFER,
-		0,
-		data.numFluidParticles * sizeof(Vector3d),
-		pos_buff);
-		//*/
-	
-	glBindBuffer(GL_ARRAY_BUFFER, data.vel_buffer);
-	glBufferSubData(GL_ARRAY_BUFFER,
-		0,
-		data.numFluidParticles * sizeof(Vector3d),
-		vel_buff);
-	
 	glBindBuffer(GL_ARRAY_BUFFER, 0);
 
 	//show it
@@ -1059,6 +992,11 @@ void cuda_opengl_renderFluid(SPH::DFSPHCData& data) {
 	
 	// unlink the vao
 	glBindVertexArray(0); 
+
+	//link the pos and vel buffer to cuda
+	gpuErrchk(cudaGraphicsMapResources(1, &vboRes_pos, 0));
+	gpuErrchk(cudaGraphicsMapResources(1, &vboRes_vel, 0));
+
 }
 
 
@@ -1083,8 +1021,8 @@ void allocate_c_array_struct_cuda_managed(SPH::DFSPHCData& data, bool minimize_m
 
 	//handle the fluid
 	cudaMalloc(&(data.mass), data.numFluidParticles * sizeof(Real));
-	cudaMalloc(&(data.posFluid), data.numFluidParticles * sizeof(Vector3d));
-	cudaMalloc(&(data.velFluid), data.numFluidParticles * sizeof(Vector3d));
+	//cudaMalloc(&(data.posFluid), data.numFluidParticles * sizeof(Vector3d)); //use opengl buffer with cuda interop
+	//cudaMalloc(&(data.velFluid), data.numFluidParticles * sizeof(Vector3d)); //use opengl buffer with cuda interop
 	cudaMalloc(&(data.accFluid), data.numFluidParticles * sizeof(Vector3d));
 	cudaMalloc(&(data.numberOfNeighbourgs), data.numFluidParticles * 2 * sizeof(int));
 	cudaMalloc(&(data.neighbourgs), data.numFluidParticles * 2 * MAX_NEIGHBOURS * sizeof(int));
@@ -1152,8 +1090,10 @@ void allocate_precomputed_kernel_managed(SPH::PrecomputedCubicKernelPerso& kerne
 		cudaMalloc(&(kernel.m_gradW), (kernel.m_resolution + 1) * sizeof(Real));
 	}
 	else {
-		cudaMallocManaged(&(kernel.m_W), kernel.m_resolution * sizeof(Real));
-		cudaMallocManaged(&(kernel.m_gradW), (kernel.m_resolution + 1) * sizeof(Real));
+		fprintf(stderr, "trying to use managed buffers for the kernels\n");
+		exit(1256);
+		//cudaMallocManaged(&(kernel.m_W), kernel.m_resolution * sizeof(Real));
+		//cudaMallocManaged(&(kernel.m_gradW), (kernel.m_resolution + 1) * sizeof(Real));
 	}
 }
 
