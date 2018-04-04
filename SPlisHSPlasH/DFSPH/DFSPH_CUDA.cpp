@@ -35,16 +35,10 @@ DFSPHCUDA::~DFSPHCUDA(void)
 
 void DFSPHCUDA::step()
 {
-	TimeManager *tm = TimeManager::getCurrent();
-	const Real h = tm->getTimeStepSize();
-
 	m_data.viscosity = m_viscosity->getViscosity();
 
-	performNeighborhoodSearch();
-
-
+	
 	if (true) {
-		m_data.loadDynamicData(m_model, m_simulationData);
 		cuda_neighborsSearch(m_data);
 	
 		//start of the c arrays
@@ -71,10 +65,9 @@ void DFSPHCUDA::step()
 
 		m_data.onSimulationStepEnd();
 		
-		m_data.readDynamicData(m_model, m_simulationData);
-
-
 		// Compute new time	
+
+		TimeManager::getCurrent()->setTimeStepSize(m_data.h);
 		TimeManager::getCurrent()->setTime(TimeManager::getCurrent()->getTime() + m_data.h);
 	}
 
@@ -82,6 +75,8 @@ void DFSPHCUDA::step()
 		//original code
 		TimeManager *tm = TimeManager::getCurrent();
 		const Real h = tm->getTimeStepSize();
+
+		performNeighborhoodSearch();
 
 		const unsigned int numParticles = m_model->numActiveParticles();
 
@@ -815,10 +810,9 @@ void DFSPHCUDA::performNeighborhoodSearch()
 {
 	if (m_counter % 500 == 0)
 	{
-		m_model->performNeighborhoodSearchSort();
-		m_simulationData.performNeighborhoodSearchSort();
-		TimeStep::performNeighborhoodSearchSort();
-		m_data.sortDynamicData(m_model);
+		//m_model->performNeighborhoodSearchSort();
+		//m_simulationData.performNeighborhoodSearchSort();
+		//TimeStep::performNeighborhoodSearchSort();
 	}
 	m_counter++;
 

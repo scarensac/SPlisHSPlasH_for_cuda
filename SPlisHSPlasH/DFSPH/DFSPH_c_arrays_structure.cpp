@@ -69,6 +69,27 @@ void PrecomputedCubicKernelPerso::setRadius(Real val)
 }
 
 
+NeighborsSearchDataSet::NeighborsSearchDataSet(unsigned int numParticles_i) :
+	numParticles(numParticles_i)
+{
+	allocate_neighbors_search_data_set(*this);
+
+}
+
+NeighborsSearchDataSet::~NeighborsSearchDataSet() {
+	release_neighbors_search_data_set(*this, false);
+}
+
+void NeighborsSearchDataSet::initData(Vector3d* pos, Real kernelRadius) {
+	cuda_initNeighborsSearchDataSet(*this, pos, kernelRadius);
+}
+
+
+
+void NeighborsSearchDataSet::deleteComputationBuffer() {
+	release_neighbors_search_data_set(*this, true);
+}
+
 DFSPHCData::DFSPHCData(FluidModel *model) {
 	//just I dont hndle external objects for now
 	if (model->m_particleObjects.size() > 2) {
@@ -92,8 +113,17 @@ DFSPHCData::DFSPHCData(FluidModel *model) {
 		//init the values
 		reset(model);
 
+
 		//init the rendering
 		cuda_opengl_initFluidRendering(*this);
+
+		std::cout << "reached here" << std::endl;
+		//allocate and init the data set that are gonna be used for the neighbors search
+		neighborsdataSetBoundaries = new NeighborsSearchDataSet(numBoundaryParticles);
+		neighborsdataSetBoundaries->initData(posBoundary, m_kernel_precomp.getRadius());
+		neighborsdataSetBoundaries->deleteComputationBuffer();
+		neighborsdataSetFluid = new NeighborsSearchDataSet(numFluidParticles);
+		neighborsdataSetFluid->initData(posFluid, m_kernel_precomp.getRadius());
 	}
 	else {
 		//initialisation on the CPU
@@ -115,13 +145,11 @@ DFSPHCData::DFSPHCData(FluidModel *model) {
 		kappa = new Real[numFluidParticles];
 		kappaV = new Real[numFluidParticles];
 		densityAdv = new Real[numFluidParticles];
+		
+		reset(model);
 	}
 
-	reset(model);
 
-
-	//start of the c arrays
-	//loadDynamicData(model, simulationData);
 
 }
 
@@ -217,7 +245,7 @@ void DFSPHCData::loadDynamicData(FluidModel *model, const SimulationDataDFSPH& d
 		velFluid[i] = vector3rTo3d(model->getVelocity(0, i));
 	}
 	//*/
-	//*
+	/*
 	//copy the data on the inital step
 	static bool first_time = true;
 	if (first_time) {

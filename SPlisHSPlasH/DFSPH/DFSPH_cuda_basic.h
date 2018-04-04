@@ -28,6 +28,9 @@ int cuda_pressureSolve(SPH::DFSPHCData& data, const unsigned int maxIter, const 
 
 //those functions are for the neighbors search
 void cuda_neighborsSearch(SPH::DFSPHCData& data);
+void cuda_initNeighborsSearchDataSet(SPH::NeighborsSearchDataSet& dataSet, Vector3d* pos, Real kernelRadius);
+
+
 
 void cuda_renderFluid(SPH::DFSPHCData& data);
 void cuda_opengl_initFluidRendering(SPH::DFSPHCData& data);
@@ -47,6 +50,9 @@ void reset_c_array_struct_cuda_from_values(SPH::DFSPHCData& data, Vector3d* posB
 void allocate_precomputed_kernel_managed(SPH::PrecomputedCubicKernelPerso& kernel, bool minimize_managed = false);
 void init_precomputed_kernel_from_values(SPH::PrecomputedCubicKernelPerso& kernel, Real* w, Real* grad_W);
 
+
+void allocate_neighbors_search_data_set(SPH::NeighborsSearchDataSet& dataSet);
+void release_neighbors_search_data_set(SPH::NeighborsSearchDataSet& dataSet, bool keep_result_buffers);
 
 
 int test_cuda();

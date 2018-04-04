@@ -155,6 +155,49 @@ namespace SPH
 		}
 	};
 
+	/**
+		This class encapsulate the data needed to realize the neighbor search for one set of 
+		particles
+	*/
+	class NeighborsSearchDataSet {
+	public:
+		unsigned int numParticles;
+		unsigned int* cell_id;
+		unsigned int* cell_id_sorted;
+		unsigned int* local_id;
+		unsigned int* p_id;
+		unsigned int* p_id_sorted;
+		unsigned int* cell_start_end;
+		unsigned int* hist;
+
+		//those 4 variables are used for cub internal computations
+		void *d_temp_storage_pair_sort;
+		size_t temp_storage_bytes_pair_sort;
+		void *d_temp_storage_cumul_hist;
+		size_t temp_storage_bytes_cumul_hist;
+
+		/**
+			allocate the data structure
+		*/
+		NeighborsSearchDataSet(unsigned int numParticles_i);
+		~NeighborsSearchDataSet();
+
+		/**
+			this function realize the computations necessary to initialize:
+				p_id_sorted buffer with the particles index sorted by their cell index
+				cell_start_end with the number of particles at the start and end of each cell
+		*/
+		void initData(Vector3d* pos, Real kernelRadius);
+
+
+		/**
+			Free computation memory. This cna be called for the boundary as
+			keeping the internal computation buffers are only needed at the start
+			since the computation is only done once
+		*/
+		void deleteComputationBuffer();
+	};
+
 
 	class FluidModel;
 	class SimulationDataDFSPH;
@@ -217,6 +260,12 @@ namespace SPH
 		Real invH2_past;
 		Real invH_future;
 		Real invH2_future;
+
+		//data sets for the neighbors search
+		NeighborsSearchDataSet* neighborsdataSetBoundaries;
+		NeighborsSearchDataSet* neighborsdataSetFluid;
+
+
 
 		//variables for vao
 		//Normaly I should use GLuint but including all gl.h only for that ...
