@@ -227,10 +227,10 @@ void DFSPHCArraysAdvanced::pressureSolve()
 		{
 			{
 				//cannot be done before because the timestep just changed when the cfl condition was applied
-				m_data.kappa[i] = max(m_data.kappa[i] * h_ratio2, -0.5);
+				m_data.kappa[i] = MAX_MACRO(m_data.kappa[i] * h_ratio2, -0.5);
 			}
 			{
-				m_simulationData.getKappa(i) = max(m_simulationData.getKappa(i)*invH2, -0.5);
+				m_simulationData.getKappa(i) = MAX_MACRO(m_simulationData.getKappa(i)*invH2, -0.5);
 			}
 			//checkReal("pressureSolve: warm start: early kappa:", m_simulationData.getKappa(i), m_data.kappa[i]);
 
@@ -492,7 +492,7 @@ void DFSPHCArraysAdvanced::pressureSolve()
 			// Update rho_adv and density error
 			//////////////////////////////////////////////////////////////////////////
 			avg_density_err = 0.0;
-			double avg_density_err_orig = 0.0;
+			Real avg_density_err_orig = 0.0;
 #pragma omp for reduction(+:avg_density_err) schedule(static) 
 			for (int i = 0; i < numParticles; i++)
 			{
@@ -562,11 +562,11 @@ void DFSPHCArraysAdvanced::divergenceSolve()
 		for (int i = 0; i < numParticles; i++)
 		{
 			{
-				m_data.kappaV[i] = 0.5*max(m_data.kappaV[i] * h_ratio_to_past, -0.5);
+				m_data.kappaV[i] = 0.5*MAX_MACRO(m_data.kappaV[i] * h_ratio_to_past, -0.5);
 				computeDensityChange(i);
 			}
 			{
-				m_simulationData.getKappaV(i) = 0.5*max(m_simulationData.getKappaV(i)*invH, -0.5);
+				m_simulationData.getKappaV(i) = 0.5*MAX_MACRO(m_simulationData.getKappaV(i)*invH, -0.5);
 				computeDensityChange(i);
 			}
 		}
@@ -956,7 +956,7 @@ void DFSPHCArraysAdvanced::computeDensityAdv(const unsigned int index, const int
 				delta += m_data.boundaryPsi[neighborIndex] * (vi - m_data.velBoundary[neighborIndex]).dot(m_data.gradW(xi - m_data.posBoundary[neighborIndex]));
 			}
 		}
-		m_data.densityAdv[index] = max(m_data.density[index] + h*delta - density0, 0.0);
+		m_data.densityAdv[index] = MAX_MACRO(m_data.density[index] + h*delta - density0, 0.0);
 	}
 	{
 		Real &densityAdv = m_simulationData.getDensityAdv(index);
@@ -1037,7 +1037,7 @@ void DFSPHCArraysAdvanced::computeDensityChange(const unsigned int index)
 			}
 
 			// only correct positive divergence
-			m_data.densityAdv[index] = max(densityAdv, 0.0);
+			m_data.densityAdv[index] = MAX_MACRO(densityAdv, 0.0);
 		}
 
 	}
@@ -1075,7 +1075,7 @@ void DFSPHCArraysAdvanced::computeDensityChange(const unsigned int index)
 		}
 
 		// only correct positive divergence
-		densityAdv = max(densityAdv, 0.0);
+		densityAdv = MAX_MACRO(densityAdv, 0.0);
 
 		// in case of particle deficiency do not perform a divergence solve
 		if (numNeighbors < 20)
@@ -1191,7 +1191,7 @@ void DFSPHCArraysAdvanced::clearAccelerations()
 	}
 }
 
-void DFSPHCArraysAdvanced::updateVelocities(double h)
+void DFSPHCArraysAdvanced::updateVelocities(Real h)
 {
 
 #pragma omp parallel default(shared)
@@ -1213,7 +1213,7 @@ void DFSPHCArraysAdvanced::updateVelocities(double h)
 	}
 }
 
-void DFSPHCArraysAdvanced::updatePositions(double h)
+void DFSPHCArraysAdvanced::updatePositions(Real h)
 {
 #pragma omp parallel default(shared)
 	{
@@ -1350,9 +1350,9 @@ void DFSPHCArraysAdvanced::surfaceTension_Akinci2013()
 }
 
 void DFSPHCArraysAdvanced::checkReal(std::string txt, Real old_v, Real new_v) {
-	double error = std::abs(old_v - new_v);
-	//double trigger = 0;
-	double trigger = std::abs(old_v) * 1E-13;
+	Real error = std::abs(old_v - new_v);
+	//Real trigger = 0;
+	Real trigger = std::abs(old_v) * 1E-13;
 	if (error > trigger) {
 		ostringstream oss;
 		oss << "(Real)" << txt << " old/ new: " << old_v << " / " << new_v <<

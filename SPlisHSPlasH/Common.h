@@ -1,29 +1,15 @@
 #ifndef __Common_h__
 #define __Common_h__
 
+#include "BasicTypes.h"
 #include "Vector.h"
 #include <Eigen/Dense>
 
-#define USE_DOUBLE
-
 #ifdef USE_DOUBLE
-typedef double Real;
-
-#define REAL_MAX DBL_MAX
-#define REAL_MIN DBL_MIN
+#define EINGEN_FLOATING_VECTOR Eigen::VectorXd
 #else
-typedef float Real;
-
-#define REAL_MAX FLT_MAX
-#define REAL_MIN FLT_MIN
+#define EINGEN_FLOATING_VECTOR Eigen::VectorXf
 #endif
-
-#if defined(WIN32) || defined(_WIN32) || defined(WIN64)	   
-#define FORCE_INLINE __forceinline
-#else
-#define FORCE_INLINE __attribute__((always_inline))
-#endif
-
 
 namespace SPH
 {

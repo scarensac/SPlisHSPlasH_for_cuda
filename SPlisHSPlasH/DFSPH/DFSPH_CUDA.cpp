@@ -6,6 +6,8 @@
 #include "SPlisHSPlasH/Utilities/Timing.h"
 #include "DFSPH_cuda_basic.h"
 
+
+
 using namespace SPH;
 using namespace std;
 
@@ -39,6 +41,7 @@ void DFSPHCUDA::step()
 
 	
 	if (true) {
+		//*
 		cuda_neighborsSearch(m_data);
 	
 		//start of the c arrays
@@ -61,7 +64,7 @@ void DFSPHCUDA::step()
 		m_iterations = cuda_pressureSolve(m_data, m_maxIterations, m_maxError);
 
 		cuda_update_pos(m_data);
-		//*/
+		
 
 		m_data.onSimulationStepEnd();
 		
@@ -69,6 +72,7 @@ void DFSPHCUDA::step()
 
 		TimeManager::getCurrent()->setTimeStepSize(m_data.h);
 		TimeManager::getCurrent()->setTime(TimeManager::getCurrent()->getTime() + m_data.h);
+		//*/
 	}
 
 	if (false){
@@ -227,7 +231,7 @@ void DFSPHCUDA::pressureSolve()
 #pragma omp for schedule(static)  
 		for (int i = 0; i < (int)numParticles; i++)
 		{
-			m_simulationData.getKappa(i) = max(m_simulationData.getKappa(i)*invH2, -0.5);
+			m_simulationData.getKappa(i) = MAX_MACRO(m_simulationData.getKappa(i)*invH2, -0.5);
 			//computeDensityAdv(i, numParticles, h, density0);
 		}
 
@@ -486,7 +490,7 @@ void DFSPHCUDA::divergenceSolve()
 #pragma omp for schedule(static)  
 		for (int i = 0; i < numParticles; i++)
 		{
-			m_simulationData.getKappaV(i) = 0.5*max(m_simulationData.getKappaV(i)*invH, -0.5);
+			m_simulationData.getKappaV(i) = 0.5*MAX_MACRO(m_simulationData.getKappaV(i)*invH, -0.5);
 			computeDensityChange(i, h, density0);
 		}
 
@@ -790,7 +794,7 @@ void DFSPHCUDA::computeDensityChange(const unsigned int index, const Real h, con
 	}
 
 	// only correct positive divergence
-	densityAdv = max(densityAdv, 0.0);
+	densityAdv = MAX_MACRO(densityAdv, 0.0);
 
 	// in case of particle deficiency do not perform a divergence solve
 	if (numNeighbors < 20)
@@ -914,9 +918,9 @@ void DFSPHCUDA::surfaceTension_Akinci2013()
 }
 
 void DFSPHCUDA::checkReal(std::string txt, Real old_v, Real new_v) {
-	double error = std::abs(old_v - new_v);
-	//double trigger = 0;
-	double trigger = std::abs(old_v) * 1E-13;
+	Real error = std::abs(old_v - new_v);
+	//Real trigger = 0;
+	Real trigger = std::abs(old_v) * 1E-13;
 	if (error > trigger) {
 		ostringstream oss;
 		oss << "(Real)" << txt << " old/ new: " << old_v << " / " << new_v <<

@@ -2,6 +2,8 @@ cmake_minimum_required(VERSION 3.9)
 
 project(SPlishSPlasH LANGUAGES C CXX CUDA)
 
+## add_definitions(-DUSE_DOUBLE)
+
 set(CMAKE_CUDA_STANDARD 14)
 set(CMAKE_CXX_STANDARD 14)
  

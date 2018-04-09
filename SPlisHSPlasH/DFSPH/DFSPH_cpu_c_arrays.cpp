@@ -282,10 +282,10 @@ void DFSPHCArrays::pressureSolve()
 		for (int i = 0; i < (int)numParticles; i++)
 		{
 			{
-				m_data.kappa[i] = max(m_data.kappa[i] *invH2, -0.5);
+				m_data.kappa[i] = MAX_MACRO(m_data.kappa[i] *invH2, -0.5);
 			}
 			{
-				m_simulationData.getKappa(i) = max(m_simulationData.getKappa(i)*invH2, -0.5);
+				m_simulationData.getKappa(i) = MAX_MACRO(m_simulationData.getKappa(i)*invH2, -0.5);
 			}
 			//checkReal("pressureSolve: warm start: early kappa:", m_simulationData.getKappa(i), m_data.kappa[i]);
 
@@ -619,11 +619,11 @@ void DFSPHCArrays::divergenceSolve()
 		for (int i = 0; i < numParticles; i++)
 		{
 			{
-				m_data.kappaV[i] = 0.5*max(m_data.kappaV[i] *invH, -0.5);
+				m_data.kappaV[i] = 0.5*MAX_MACRO(m_data.kappaV[i] *invH, -0.5);
 				computeDensityChange(i, h, density0);
 			}
 			{
-				m_simulationData.getKappaV(i) = 0.5*max(m_simulationData.getKappaV(i)*invH, -0.5);
+				m_simulationData.getKappaV(i) = 0.5*MAX_MACRO(m_simulationData.getKappaV(i)*invH, -0.5);
 				computeDensityChange(i, h, density0);
 			}
 			checkReal("divergence: warm start: computeDensityChange:", m_simulationData.getDensityAdv(i), m_data.densityAdv[i]);
@@ -1074,7 +1074,7 @@ void DFSPHCArrays::computeDensityChange(const unsigned int index, const Real h, 
 		//*/
 
 		// only correct positive divergence
-		densityAdv = max(densityAdv, 0.0);
+		densityAdv = MAX_MACRO(densityAdv, 0.0);
 
 		// in case of particle deficiency do not perform a divergence solve
 		if (numNeighbors < 20)
@@ -1114,7 +1114,7 @@ void DFSPHCArrays::computeDensityChange(const unsigned int index, const Real h, 
 		}
 
 		// only correct positive divergence
-		densityAdv = max(densityAdv, 0.0);
+		densityAdv = MAX_MACRO(densityAdv, 0.0);
 
 		// in case of particle deficiency do not perform a divergence solve
 		if (numNeighbors < 20)
@@ -1263,7 +1263,7 @@ void DFSPHCArrays::clearAccelerations()
 	}
 }
 
-void DFSPHCArrays::updateVelocities(double h) 
+void DFSPHCArrays::updateVelocities(Real h) 
 {
 	#pragma omp parallel default(shared)
 	{
@@ -1283,7 +1283,7 @@ void DFSPHCArrays::updateVelocities(double h)
 	}
 }
 
-void DFSPHCArrays::updatePositions(double h)
+void DFSPHCArrays::updatePositions(Real h)
 {
 	#pragma omp parallel default(shared)
 	{
@@ -1437,8 +1437,8 @@ void DFSPHCArrays::surfaceTension_Akinci2013()
 }
 
 void DFSPHCArrays::checkReal(std::string txt, Real old_v, Real new_v) {
-	double error = std::abs(old_v - new_v);
-	double trigger = 0.0; std::max(std::abs(old_v) * 1E-20, 0.0);
+	Real error = std::abs(old_v - new_v);
+	Real trigger = 0.0; std::max(std::abs(old_v) * 1E-20, 0.0);
 	if (error > trigger) {
 	//if (old_v!=new_v) {
 		ostringstream oss;

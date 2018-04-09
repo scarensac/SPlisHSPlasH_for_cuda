@@ -52,12 +52,6 @@
     <ClCompile Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\SPlisHSPlasH\IISPH\TimeStepIISPH.cpp">
       <Filter>Source Files\IISPH</Filter>
     </ClCompile>
-    <ClCompile Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\SPlisHSPlasH\DFSPH\DFSPH_cpu_c_arrays.cpp">
-      <Filter>Source Files\DFSPH</Filter>
-    </ClCompile>
-    <ClCompile Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\SPlisHSPlasH\DFSPH\DFSPH_cpu_c_arrays_advanced.cpp">
-      <Filter>Source Files\DFSPH</Filter>
-    </ClCompile>
     <ClCompile Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\SPlisHSPlasH\DFSPH\DFSPH_c_arrays_structure.cpp">
       <Filter>Source Files\DFSPH</Filter>
     </ClCompile>
@@ -132,6 +126,9 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\SPlisHSPlasH\BasicTypes.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
     <ClInclude Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\SPlisHSPlasH\Common.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -195,19 +192,13 @@
     <ClInclude Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\SPlisHSPlasH\IISPH\TimeStepIISPH.h">
       <Filter>Header Files\IISPH</Filter>
     </ClInclude>
-    <ClInclude Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\SPlisHSPlasH\DFSPH\DFSPH_cuda_basic.h">
-      <Filter>Header Files\DFSPH</Filter>
-    </ClInclude>
     <ClInclude Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\SPlisHSPlasH\DFSPH\DFSPH_c_arrays_structure.h">
       <Filter>Header Files\DFSPH</Filter>
     </ClInclude>
-    <ClInclude Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\SPlisHSPlasH\DFSPH\DFSPH_cpu_c_arrays_advanced.h">
+    <ClInclude Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\SPlisHSPlasH\DFSPH\DFSPH_cuda_basic.h">
       <Filter>Header Files\DFSPH</Filter>
     </ClInclude>
     <ClInclude Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\SPlisHSPlasH\DFSPH\DFSPH_CUDA.h">
-      <Filter>Header Files\DFSPH</Filter>
-    </ClInclude>
-    <ClInclude Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\SPlisHSPlasH\DFSPH\DFSPH_cpu_c_arrays.h">
       <Filter>Header Files\DFSPH</Filter>
     </ClInclude>
     <ClInclude Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\SPlisHSPlasH\DFSPH\SimulationDataDFSPH.h">

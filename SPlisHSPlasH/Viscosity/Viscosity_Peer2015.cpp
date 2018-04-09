@@ -51,6 +51,8 @@ Viscosity_Peer2015::~Viscosity_Peer2015(void)
 
 void Viscosity_Peer2015::step()
 {
+
+	/*
 	const int numParticles = (int) m_model->numActiveParticles();
 	const Real viscosity = 1.0 - m_viscosity;
 	const Real density0 = m_model->getDensity0();
@@ -111,15 +113,16 @@ void Viscosity_Peer2015::step()
 	m_solver.setMaxIterations(m_maxIter);
 	m_solver.compute(A);
 
-	Eigen::VectorXd b0(numParticles);
-	Eigen::VectorXd b1(numParticles);
-	Eigen::VectorXd b2(numParticles);
-	Eigen::VectorXd x0(numParticles);
-	Eigen::VectorXd x1(numParticles);
-	Eigen::VectorXd x2(numParticles);
-	Eigen::VectorXd g0(numParticles);
-	Eigen::VectorXd g1(numParticles);
-	Eigen::VectorXd g2(numParticles);
+
+	EINGEN_FLOATING_VECTOR b0(numParticles);
+	EINGEN_FLOATING_VECTOR b1(numParticles);
+	EINGEN_FLOATING_VECTOR b2(numParticles);
+	EINGEN_FLOATING_VECTOR x0(numParticles);
+	EINGEN_FLOATING_VECTOR x1(numParticles);
+	EINGEN_FLOATING_VECTOR x2(numParticles);
+	EINGEN_FLOATING_VECTOR g0(numParticles);
+	EINGEN_FLOATING_VECTOR g1(numParticles);
+	EINGEN_FLOATING_VECTOR g2(numParticles);
 
 	//////////////////////////////////////////////////////////////////////////
 	// Compute RHS
@@ -185,6 +188,8 @@ void Viscosity_Peer2015::step()
 			vi[2] = x2[i];
 		}
 	}
+
+	//*/
 }
 
 

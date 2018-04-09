@@ -41,20 +41,20 @@ set(IISPH_SOURCE_FILES
 	)		
 	
 set(DFSPH_HEADER_FILES
-	DFSPH/DFSPH_cuda_basic.h
 	DFSPH/DFSPH_c_arrays_structure.h
-	DFSPH/DFSPH_cpu_c_arrays_advanced.h
+#	DFSPH/DFSPH_cpu_c_arrays.h
+#	DFSPH/DFSPH_cpu_c_arrays_advanced.h
+	DFSPH/DFSPH_cuda_basic.h
 	DFSPH/DFSPH_CUDA.h
-	DFSPH/DFSPH_cpu_c_arrays.h
 	DFSPH/SimulationDataDFSPH.h
 	DFSPH/TimeStepDFSPH.h
 	)
 	
 set(DFSPH_SOURCE_FILES
-	DFSPH/DFSPH_cuda_basic.cu
-	DFSPH/DFSPH_cpu_c_arrays.cpp
-	DFSPH/DFSPH_cpu_c_arrays_advanced.cpp
 	DFSPH/DFSPH_c_arrays_structure.cpp
+#	DFSPH/DFSPH_cpu_c_arrays.cpp
+#	DFSPH/DFSPH_cpu_c_arrays_advanced.cpp
+	DFSPH/DFSPH_cuda_basic.cu
 	DFSPH/DFSPH_CUDA.cpp
 	DFSPH/SimulationDataDFSPH.cpp
 	DFSPH/TimeStepDFSPH.cpp
@@ -145,8 +145,11 @@ include_directories( ${EIGEN3_INCLUDE_DIR} )
 ############################################################
 include_directories(${PROJECT_PATH}/extern/install/CompactNSearch/include)
 include_directories(${PROJECT_PATH}/extern/cub-1.7.4/cub)
+include_directories(${PROJECT_PATH}/extern/glew/include)
+
 
 add_library(SPlisHSPlasH
+	BasicTypes.h
 	Common.h
 	Vector.h
 	Emitter.cpp

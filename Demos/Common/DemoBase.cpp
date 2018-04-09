@@ -8,8 +8,6 @@
 #include "SPlisHSPlasH/PBF/TimeStepPBF.h"
 #include "SPlisHSPlasH/IISPH/TimeStepIISPH.h"
 #include "SPlisHSPlasH/DFSPH/TimeStepDFSPH.h"
-#include "SPlisHSPlasH/DFSPH/DFSPH_cpu_c_arrays.h"
-#include "SPlisHSPlasH/DFSPH/DFSPH_cpu_c_arrays_advanced.h"
 #include "SPlisHSPlasH/DFSPH/DFSPH_CUDA.h"
 #include "SPlisHSPlasH/PF/TimeStepPF.h"
 #include "Utilities/PartioReaderWriter.h"
@@ -209,7 +207,7 @@ void DemoBase::initParameters()
 	m_parameters.push_back(Parameter(ParameterIDs::Gravitation, "Gravitation", TW_TYPE_DIR3R, " label='Gravitation' group=Simulation", this));
 
 	TwType enumType = TwDefineEnum("SimulationMethodType", NULL, 0);
-	m_parameters.push_back(Parameter(ParameterIDs::SimMethod, "SimulationMethod", enumType, " label='Simulation method' enum='0 {WCSPH}, 1 {PCISPH}, 2 {PBF}, 3 {IISPH}, 4 {DFSPH}, 5 {Projective Fluids} , 6 {DFSPH c arrays}, 7 {DFSPH c arrays advanced}, 8 {DFSPH CUDA}' group=Simulation", this));
+	m_parameters.push_back(Parameter(ParameterIDs::SimMethod, "SimulationMethod", enumType, " label='Simulation method' enum='0 {WCSPH}, 1 {PCISPH}, 2 {PBF}, 3 {IISPH}, 4 {DFSPH}, 5 {Projective Fluids}, 6 {DFSPH CUDA}' group=Simulation", this));
 
 	m_parameters.push_back(Parameter(ParameterIDs::MaxIterations, "MaxIterations", TW_TYPE_UINT32, " label='Max. iterations' group=Simulation ", this));
 	m_parameters.push_back(Parameter(ParameterIDs::MaxError, "MaxError", TW_TYPE_REAL, " label='Max.density error(%)'  min=0.00001 precision=4 group=Simulation ", this));
@@ -278,8 +276,6 @@ void DemoBase::initParameters()
 	}
 
 	if (m_simulationMethod.simulationMethod == SimulationMethods::DFSPH ||
-		m_simulationMethod.simulationMethod == SimulationMethods::DFSPH_C_ARRAY ||
-		m_simulationMethod.simulationMethod == SimulationMethods::DFSPH_C_ARRAY_ADVANCED||
 		m_simulationMethod.simulationMethod == SimulationMethods::DFSPH_CUDA )
 	{
 		m_parameters.push_back(Parameter(ParameterIDs::IterationCountV, "IterationCountV", TW_TYPE_UINT32, " label='Iterations (divergence)' readonly=true group=DFSPH ", this));
@@ -845,8 +841,6 @@ void TW_CALL DemoBase::getParameter(void *value, void *clientData)
 	{
 		if (sm.simulationMethod == SimulationMethods::DFSPH)
 			*(bool *)(value) = ((TimeStepDFSPH*)sm.simulation)->getEnableDivergenceSolver();
-		if (sm.simulationMethod == SimulationMethods::DFSPH_C_ARRAY_ADVANCED)
-			*(bool *)(value) = ((DFSPHCArraysAdvanced*)sm.simulation)->getEnableDivergenceSolver();
 	}
 	else if (p->id == ParameterIDs::CFL_Method)
 	{
@@ -1108,29 +1102,6 @@ void DemoBase::setSimulationMethod(SimulationMethods method)
 				m_simulationMethod.model.updateBoundaryPsi();
 			}
 		}
-		
-		else if (method == SimulationMethods::DFSPH_C_ARRAY)
-		{
-			m_simulationMethod.simulation = new DFSPHCArrays(&m_simulationMethod.model);
-			m_simulationMethod.model.setGradKernel(3);
-			if (m_simulationMethod.model.getKernel() != 3)
-			{
-				m_simulationMethod.model.setKernel(3);
-				m_simulationMethod.model.updateBoundaryPsi();
-			}
-		}
-
-		else if (method == SimulationMethods::DFSPH_C_ARRAY_ADVANCED)
-		{
-			m_simulationMethod.simulation = new DFSPHCArraysAdvanced(&m_simulationMethod.model);
-			m_simulationMethod.model.setGradKernel(3);
-			if (m_simulationMethod.model.getKernel() != 3)
-			{
-				m_simulationMethod.model.setKernel(3);
-				m_simulationMethod.model.updateBoundaryPsi();
-			}
-		}
-		
 		else if (method == SimulationMethods::DFSPH_CUDA)
 		{
 			m_simulationMethod.simulation = new DFSPHCUDA(&m_simulationMethod.model);

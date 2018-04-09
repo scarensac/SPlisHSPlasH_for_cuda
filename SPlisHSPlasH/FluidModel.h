@@ -49,7 +49,7 @@ namespace SPH
 			unsigned int m_gradKernelMethod;
 			Real m_W_zero;
 			Real(*m_kernelFct)(const Vector3r &);
-			Real(*m_kernelFctd)(const double);
+			Real(*m_kernelFctd)(const Real);
 			Vector3r(*m_gradKernelFct)(const Vector3r &r);
 
 			std::vector<ParticleObject*> m_particleObjects;

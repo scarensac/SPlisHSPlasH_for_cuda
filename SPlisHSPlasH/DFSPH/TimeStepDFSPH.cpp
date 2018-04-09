@@ -176,7 +176,7 @@ void TimeStepDFSPH::pressureSolve()
 		#pragma omp for schedule(static)  
 		for (int i = 0; i < (int)numParticles; i++)
 		{
-			m_simulationData.getKappa(i) = max(m_simulationData.getKappa(i)*invH2, -0.5);
+			m_simulationData.getKappa(i) = MAX_MACRO(m_simulationData.getKappa(i)*invH2, -0.5);
 			//computeDensityAdv(i, numParticles, h, density0);
 		}
 
@@ -381,7 +381,7 @@ void TimeStepDFSPH::divergenceSolve()
 		#pragma omp for schedule(static)  
 		for (int i = 0; i < numParticles; i++)
 		{
-			m_simulationData.getKappaV(i) = 0.5*max(m_simulationData.getKappaV(i)*invH, -0.5);
+			m_simulationData.getKappaV(i) = 0.5*MAX_MACRO(m_simulationData.getKappaV(i)*invH, -0.5);
 			computeDensityChange(i, h, density0);
 		}
 
@@ -633,7 +633,7 @@ void TimeStepDFSPH::computeDensityChange(const unsigned int index, const Real h,
 	}
 
 	// only correct positive divergence
-	densityAdv = max(densityAdv, 0.0);
+	densityAdv = MAX_MACRO(densityAdv, 0.0);
 
 	// in case of particle deficiency do not perform a divergence solve
 	if (numNeighbors < 20)

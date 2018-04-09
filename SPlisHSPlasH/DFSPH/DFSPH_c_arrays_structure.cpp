@@ -12,17 +12,17 @@ using namespace std;
 #define USE_WARMSTART
 #define USE_WARMSTART_V
 
-void PrecomputedCubicKernelPerso::setRadius(Real val)
+void PrecomputedCubicKernelPerso::setRadius(RealCuda val)
 {
 	m_resolution = 10000;
 	m_radius = val;
 	m_radius2 = m_radius*m_radius;
-	const Real stepSize = m_radius / (Real)m_resolution;
+	const RealCuda stepSize = m_radius / (RealCuda)m_resolution;
 	m_invStepSize = 1.0 / stepSize;
 
 	if (true) {
-		Real* W_temp = new Real[m_resolution];
-		Real* gradW_temp = new Real[m_resolution + 1];
+		RealCuda* W_temp = new RealCuda[m_resolution];
+		RealCuda* gradW_temp = new RealCuda[m_resolution + 1];
 
 		//init values
 		CubicKernelPerso kernel;
@@ -46,15 +46,15 @@ void PrecomputedCubicKernelPerso::setRadius(Real val)
 		delete[] gradW_temp;
 	}
 	else {
-		m_W = new Real[m_resolution];
-		m_gradW = new Real[m_resolution + 1];
+		m_W = new RealCuda[m_resolution];
+		m_gradW = new RealCuda[m_resolution + 1];
 		
 		//init values
 		CubicKernelPerso kernel;
 		kernel.setRadius(val);
 		for (unsigned int i = 0; i < m_resolution; i++)
 		{
-			const Real posX = stepSize * (Real)i;		// Store kernel values in the middle of an interval
+			const RealCuda posX = stepSize * (RealCuda)i;		// Store kernel values in the middle of an interval
 			m_W[i] = kernel.W(posX);
 			kernel.setRadius(val);
 			if (posX > 1.0e-9)
@@ -80,7 +80,7 @@ NeighborsSearchDataSet::~NeighborsSearchDataSet() {
 	release_neighbors_search_data_set(*this, false);
 }
 
-void NeighborsSearchDataSet::initData(Vector3d* pos, Real kernelRadius) {
+void NeighborsSearchDataSet::initData(Vector3d* pos, RealCuda kernelRadius) {
 	cuda_initNeighborsSearchDataSet(*this, pos, kernelRadius);
 }
 
@@ -129,22 +129,22 @@ DFSPHCData::DFSPHCData(FluidModel *model) {
 		//initialisation on the CPU
 		posBoundary = new Vector3d[numBoundaryParticles];
 		velBoundary = new Vector3d[numBoundaryParticles];
-		boundaryPsi = new Real[numBoundaryParticles];
+		boundaryPsi = new RealCuda[numBoundaryParticles];
 
 
 		//handle the fluid
-		mass = new Real[numFluidParticles];
+		mass = new RealCuda[numFluidParticles];
 		posFluid = new Vector3d[numFluidParticles];
 		velFluid = new Vector3d[numFluidParticles];
 		accFluid = new Vector3d[numFluidParticles];
 		numberOfNeighbourgs = new int[numFluidParticles * 2];
 		neighbourgs = new int[numFluidParticles * 2 * MAX_NEIGHBOURS];
 
-		density = new Real[numFluidParticles];
-		factor = new Real[numFluidParticles];
-		kappa = new Real[numFluidParticles];
-		kappaV = new Real[numFluidParticles];
-		densityAdv = new Real[numFluidParticles];
+		density = new RealCuda[numFluidParticles];
+		factor = new RealCuda[numFluidParticles];
+		kappa = new RealCuda[numFluidParticles];
+		kappaV = new RealCuda[numFluidParticles];
+		densityAdv = new RealCuda[numFluidParticles];
 		
 		reset(model);
 	}
@@ -174,7 +174,7 @@ void DFSPHCData::reset(FluidModel *model) {
 		// I need to transfer the data to c_typed buffers to use in .cu file
 		Vector3d* posBoundary_temp= new Vector3d[numBoundaryParticles];
 		Vector3d* velBoundary_temp = new Vector3d[numBoundaryParticles];
-		Real* boundaryPsi_temp = new Real[numBoundaryParticles];
+		RealCuda* boundaryPsi_temp = new RealCuda[numBoundaryParticles];
 
 		for (int i = 0; i < numBoundaryParticles; ++i) {
 			FluidModel::RigidBodyParticleObject* particleObj = static_cast<FluidModel::RigidBodyParticleObject*>(model->m_particleObjects[1]);
@@ -185,7 +185,7 @@ void DFSPHCData::reset(FluidModel *model) {
 
 		Vector3d* posFluid_temp = new Vector3d[numFluidParticles];
 		Vector3d* velFluid_temp = new Vector3d[numFluidParticles];
-		Real* mass_temp = new Real[numFluidParticles];
+		RealCuda* mass_temp = new RealCuda[numFluidParticles];
 
 		for (int i = 0; i < numFluidParticles; ++i) {
 			posFluid_temp[i] = vector3rTo3d(model->getPosition(0, i));

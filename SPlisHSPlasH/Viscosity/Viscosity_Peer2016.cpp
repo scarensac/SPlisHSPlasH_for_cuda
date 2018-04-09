@@ -115,7 +115,8 @@ void Viscosity_Peer2016::diagonalMatrixElementOmega(const unsigned int i, Real &
 }
 
 void Viscosity_Peer2016::step()
-{
+{	
+	/*
 	const int numParticles = (int) m_model->numActiveParticles();
 	const Real viscosity = 1.0 - m_viscosity;
 	const Real density0 = m_model->getDensity0();
@@ -137,15 +138,15 @@ void Viscosity_Peer2016::step()
 	m_solverOmega.setMaxIterations(m_maxIter);
 	m_solverOmega.compute(A2);
 
-	Eigen::VectorXd b0(numParticles);
-	Eigen::VectorXd b1(numParticles);
-	Eigen::VectorXd b2(numParticles);
-	Eigen::VectorXd x0(numParticles);
-	Eigen::VectorXd x1(numParticles);
-	Eigen::VectorXd x2(numParticles);
-	Eigen::VectorXd g0(numParticles);
-	Eigen::VectorXd g1(numParticles);
-	Eigen::VectorXd g2(numParticles);
+	EINGEN_FLOATING_VECTOR b0(numParticles);
+	EINGEN_FLOATING_VECTOR b1(numParticles);
+	EINGEN_FLOATING_VECTOR b2(numParticles);
+	EINGEN_FLOATING_VECTOR x0(numParticles);
+	EINGEN_FLOATING_VECTOR x1(numParticles);
+	EINGEN_FLOATING_VECTOR x2(numParticles);
+	EINGEN_FLOATING_VECTOR g0(numParticles);
+	EINGEN_FLOATING_VECTOR g1(numParticles);
+	EINGEN_FLOATING_VECTOR g2(numParticles);
 
 
 	#pragma omp parallel default(shared)
@@ -261,6 +262,7 @@ void Viscosity_Peer2016::step()
 		x2 = g2;
 	STOP_TIMING_AVG;
 
+
 	//////////////////////////////////////////////////////////////////////////
 	// Determine new spin tensor and add it to target nabla v
 	//////////////////////////////////////////////////////////////////////////
@@ -344,6 +346,7 @@ void Viscosity_Peer2016::step()
 			vi[2] = x2[i];
 		}
 	}
+	//*/
 }
 
 

@@ -35,14 +35,14 @@ void DragForce_Gissler2017::step()
 	const Real inv_td = 0.5*C_d * mu_l / (rho_l * L*L);
 	const Real td = 1.0 / inv_td;
 	Real omegaSquare = C_k * sigma / (rho_l * L*L*L) - inv_td*inv_td;
-	std::max(omegaSquare, 0.0);
+	MAX_MACRO(omegaSquare, 0.0);
 	const Real omega = sqrt(omegaSquare);
 
 	// Equation (6)
 	Real val = td*td*omegaSquare;
 	val = sqrt(val+1.0) + td*omega;
-	val = std::max(val, -0.5 * pi);
-	val = std::min(val, 0.5 * pi);
+	val = MAX_MACRO(val, -0.5 * pi);
+	val = MIN_MACRO(val, 0.5 * pi);
 	const Real t_max = -2.0 * (atan(val) - pi) / omega;
 
 	// Equation (7)
@@ -76,9 +76,9 @@ void DragForce_Gissler2017::step()
 			v_i_rel_n = v_i_rel_n * (1.0 / vi_rel_norm);
  
 			// Equation (8)
-			const Real y_i_max = std::min(vi_rel_square * y_coeff, 1.0);
+			const Real y_i_max = MIN_MACRO(vi_rel_square * y_coeff, 1.0);
 
-			const Real Re_i = 2.0*std::max((rho_a * vi_rel_norm * L) / mu_a, 0.1);
+			const Real Re_i = 2.0*MAX_MACRO((rho_a * vi_rel_norm * L) / mu_a, 0.1);
 
 			Real C_Di_sphere;
 			if (Re_i <= 1000.0)

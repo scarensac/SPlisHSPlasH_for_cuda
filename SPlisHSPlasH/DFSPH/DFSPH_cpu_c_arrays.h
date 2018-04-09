@@ -46,8 +46,8 @@ namespace SPH
 		void viscosity_XSPH();
 		void surfaceTension_Akinci2013();
 
-		void updateVelocities(double h);
-		void updatePositions(double h);
+		void updateVelocities(Real h);
+		void updatePositions(Real h);
 
 		/** Update time step size by CFL condition.
 		*/
