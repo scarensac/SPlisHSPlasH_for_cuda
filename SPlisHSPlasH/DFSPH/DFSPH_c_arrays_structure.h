@@ -158,6 +158,8 @@ namespace SPH
 		This class encapsulate the data needed to RealCudaize the neighbor search for one set of 
 		particles
 	*/
+	class DFSPHCData;
+
 	class NeighborsSearchDataSet {
 	public:
 		unsigned int numParticles;
@@ -175,6 +177,8 @@ namespace SPH
 		void *d_temp_storage_cumul_hist;
 		size_t temp_storage_bytes_cumul_hist;
 
+		bool internal_buffers_allocated;
+
 		/**
 			allocate the data structure
 		*/
@@ -186,7 +190,7 @@ namespace SPH
 				p_id_sorted buffer with the particles index sorted by their cell index
 				cell_start_end with the number of particles at the start and end of each cell
 		*/
-		void initData(Vector3d* pos, RealCuda kernelRadius);
+		void initData(DFSPHCData* data, bool is_boundaries);
 
 
 		/**
@@ -195,6 +199,9 @@ namespace SPH
 			since the computation is only done once
 		*/
 		void deleteComputationBuffer();
+
+
+		
 	};
 
 
@@ -203,6 +210,16 @@ namespace SPH
 
 	class DFSPHCData {
 	public:
+		class RigidBodyContainer {
+			Vector3d* pos;
+			Vector3d* vel;
+			RealCuda* Psi;
+			int numParticles;
+
+			NeighborsSearchDataSet neighborsDataSet;
+		};
+
+		
 		//I need a kernel without all th static class memebers because it seems they do not work on
 		//the gpu
 		CubicKernelPerso m_kernel;
@@ -282,6 +299,7 @@ namespace SPH
 		void loadDynamicData(FluidModel *model, const SimulationDataDFSPH& data);
 		void readDynamicData(FluidModel *model, SimulationDataDFSPH& data);
 		void sortDynamicData(FluidModel *model);
+		
 
 		void reset(FluidModel *model);
 		inline void updateTimeStep(RealCuda h_fut) {
@@ -308,6 +326,7 @@ namespace SPH
 		FUNCTION inline unsigned int getNumberOfNeighbourgs(int particle_id, int body_id = 0) {
 			return numberOfNeighbourgs[body_id*numFluidParticles + particle_id];
 		}
+
 	};
 }
 

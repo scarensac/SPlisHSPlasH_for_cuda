@@ -131,17 +131,25 @@ void renderBoundary()
 		{
 			shader.begin();
 			glUniform3fv(shader.getUniform("color"), 1, &wallColor[0]);
-			glEnableVertexAttribArray(0);
-			for (int body = simulationMethod.model.numberOfRigidBodyParticleObjects() - 1; body >= 0; body--)
+
+			//if (false)
+			if (base.renderBoundariesDFSPH_CUDA())
 			{
-				if ((renderWalls == 1) || (!scene.boundaryModels[body]->isWall))
-				{
-					FluidModel::RigidBodyParticleObject *rb = simulationMethod.model.getRigidBodyParticleObject(body);
-					glVertexAttribPointer(0, 3, GL_DOUBLE, GL_FALSE, 0, &simulationMethod.model.getPosition(body + 1, 0));
-					glDrawArrays(GL_POINTS, 0, rb->numberOfParticles());
-				}
 			}
-			glDisableVertexAttribArray(0);
+			else {
+				std::cout << "using original" << std::endl;
+				glEnableVertexAttribArray(0);
+				for (int body = simulationMethod.model.numberOfRigidBodyParticleObjects() - 1; body >= 0; body--)
+				{
+					if ((renderWalls == 1) || (!scene.boundaryModels[body]->isWall))
+					{
+						FluidModel::RigidBodyParticleObject *rb = simulationMethod.model.getRigidBodyParticleObject(body);
+						glVertexAttribPointer(0, 3, GL_DOUBLE, GL_FALSE, 0, &simulationMethod.model.getPosition(body + 1, 0));
+						glDrawArrays(GL_POINTS, 0, rb->numberOfParticles());
+					}
+				}
+				glDisableVertexAttribArray(0);
+			}
 			shader.end();
 		}
 		else

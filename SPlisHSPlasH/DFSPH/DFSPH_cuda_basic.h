@@ -28,13 +28,17 @@ int cuda_pressureSolve(SPH::DFSPHCData& data, const unsigned int maxIter, const 
 
 //those functions are for the neighbors search
 void cuda_neighborsSearch(SPH::DFSPHCData& data);
-void cuda_initNeighborsSearchDataSet(SPH::NeighborsSearchDataSet& dataSet, Vector3d* pos, RealCuda kernelRadius);
 
+void cuda_initNeighborsSearchDataSet(SPH::DFSPHCData& data, SPH::NeighborsSearchDataSet& dataSet, bool is_boundaries);
+void cuda_sortData(SPH::DFSPHCData& data, SPH::NeighborsSearchDataSet& neighborsDataSet, bool is_boundaries=false);
 
 
 void cuda_renderFluid(SPH::DFSPHCData& data);
 void cuda_opengl_initFluidRendering(SPH::DFSPHCData& data);
 void cuda_opengl_renderFluid(SPH::DFSPHCData& data);
+
+void cuda_renderBoundaries(SPH::DFSPHCData& data);
+void cuda_opengl_renderBoundaries(SPH::DFSPHCData& data);
 
 
 

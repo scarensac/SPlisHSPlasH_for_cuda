@@ -66,8 +66,9 @@ namespace SPH
 		void checkVector3(std::string txt, Vector3d old_v, Vector3d new_v);
 		inline void checkVector3(std::string txt, Vector3r old_v, Vector3d new_v) { checkVector3(txt, vector3rTo3d(old_v), new_v); }
 		inline void checkVector3(std::string txt, Vector3r old_v, Vector3r new_v) { checkVector3(txt, vector3rTo3d(old_v), vector3rTo3d(new_v)); }
-	
+
 		void renderFluid();
+		void renderBoundaries();
 	};
 }
 

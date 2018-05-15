@@ -1,7 +1,7 @@
 {
 	"Configuration": 
 	{
-		"timeStepSize": 0.001,
+		"timeStepSize": 0.004,
 		"particleRadius": 0.025, 
 		"density0": 1000, 
 		"simulationMethod": 4,
@@ -10,7 +10,7 @@
 		"gravitation": [0,-9.81,0], 
 		"surfaceTension": 0.2,
 		"surfaceTensionMethod": 0,
-		"cflMethod": 1, 
+		"cflMethod": 0, 
 		"cflFactor": 0.5,
 		"cflMaxTimeStepSize": 0.005,
 		"maxIterations": 100,
@@ -38,7 +38,7 @@
 		{
 			"denseMode": 0,
 			"start": [-0.5, 0.0, -0.5],
-			"end": [0.5, 1.0, 0.5],
+			"end": [2, 2, 0.5],
 			"translation": [-1.45, 0.0, 0.0],
 			"scale": [1, 1, 1]
 		}

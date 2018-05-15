@@ -41,10 +41,19 @@ void DFSPHCUDA::step()
 
 	
 	if (true) {
+		static float time_avg = 0;
+		static unsigned int time_count = 0;
+		std::chrono::steady_clock::time_point tab_timepoint[7];
+		std::string tab_name[7] = { "","divergence", "viscosity","cfl","update vel","density","update pos" };
+
+		static std::chrono::steady_clock::time_point end;
+		tab_timepoint[0] = std::chrono::steady_clock::now();
+
 		//*
 		cuda_neighborsSearch(m_data);
 	
-		//start of the c arrays
+		tab_timepoint[1] = std::chrono::steady_clock::now();
+
 
 		if (m_enableDivergenceSolver)
 		{
@@ -55,16 +64,40 @@ void DFSPHCUDA::step()
 			m_iterationsV = 0;
 		}
 
+
+		tab_timepoint[2] = std::chrono::steady_clock::now();
+
+
 		cuda_viscosityXSPH(m_data);
 
-		cuda_CFL(m_data, 0.0001, m_cflFactor, m_cflMaxTimeStepSize);
+
+		tab_timepoint[3] = std::chrono::steady_clock::now();
+
+
+		//cuda_CFL(m_data, 0.0001, m_cflFactor, m_cflMaxTimeStepSize);
+		m_data.updateTimeStep(0.004);
+
+		tab_timepoint[4] = std::chrono::steady_clock::now();
+
 
 		cuda_update_vel(m_data);
 
+
+		tab_timepoint[5] = std::chrono::steady_clock::now();
+
+
 		m_iterations = cuda_pressureSolve(m_data, m_maxIterations, m_maxError);
+
+
+		tab_timepoint[6] = std::chrono::steady_clock::now();
+
 
 		cuda_update_pos(m_data);
 		
+
+		tab_timepoint[7] = std::chrono::steady_clock::now();
+
+
 
 		m_data.onSimulationStepEnd();
 		
@@ -73,6 +106,26 @@ void DFSPHCUDA::step()
 		TimeManager::getCurrent()->setTimeStepSize(m_data.h);
 		TimeManager::getCurrent()->setTime(TimeManager::getCurrent()->getTime() + m_data.h);
 		//*/
+
+
+
+
+
+
+		float time_iter = std::chrono::duration_cast<std::chrono::nanoseconds> (tab_timepoint[7] - tab_timepoint[0]).count() / 1000000.0f;
+		float time_between= std::chrono::duration_cast<std::chrono::nanoseconds> (tab_timepoint[0] - end).count() / 1000000.0f;
+		std::cout << "timestep total: " << time_iter+time_between << "  (" << time_iter <<"  "<<time_between << ")" << std::endl;
+
+		for (int i = 0; i < 7; ++i) {
+			float time = std::chrono::duration_cast<std::chrono::nanoseconds> (tab_timepoint[i+1] - tab_timepoint[i]).count() / 1000000.0f;
+			std::cout << tab_name[i] << "  :" << time << std::endl ;
+
+		}
+
+
+		end = std::chrono::steady_clock::now();
+
+
 	}
 
 	if (false){
@@ -952,6 +1005,10 @@ void DFSPHCUDA::checkVector3(std::string txt, Vector3d old_v, Vector3d new_v) {
 
 void DFSPHCUDA::renderFluid() {
 	cuda_renderFluid(m_data);
+}
+
+void DFSPHCUDA::renderBoundaries() {
+	cuda_renderBoundaries(m_data);
 }
 
 

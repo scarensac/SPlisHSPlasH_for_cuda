@@ -80,8 +80,19 @@ NeighborsSearchDataSet::~NeighborsSearchDataSet() {
 	release_neighbors_search_data_set(*this, false);
 }
 
-void NeighborsSearchDataSet::initData(Vector3d* pos, RealCuda kernelRadius) {
-	cuda_initNeighborsSearchDataSet(*this, pos, kernelRadius);
+void NeighborsSearchDataSet::initData(DFSPHCData* data, bool is_boundaries) {
+	//if the computation memory space was released to free memory space
+	//we need to realocate it
+	if (!internal_buffers_allocated) {
+		//first clear everything even the result buffers
+		release_neighbors_search_data_set(*this, false);
+
+		//and realocate it
+		allocate_neighbors_search_data_set(*this);
+	}
+
+	//do the actual init
+	cuda_initNeighborsSearchDataSet(*data, *this, is_boundaries);
 }
 
 
@@ -120,10 +131,7 @@ DFSPHCData::DFSPHCData(FluidModel *model) {
 		//init the values from the model
 		reset(model);
 
-		//init the data set that are gonna be used for the neighbors search
-		neighborsdataSetBoundaries->initData(posBoundary, m_kernel_precomp.getRadius());
-		neighborsdataSetBoundaries->deleteComputationBuffer();
-		neighborsdataSetFluid->initData(posFluid, m_kernel_precomp.getRadius());
+		
 	}
 	else {
 		//initialisation on the CPU
@@ -202,6 +210,11 @@ void DFSPHCData::reset(FluidModel *model) {
 		delete[] posFluid_temp;
 		delete[] velFluid_temp;
 		delete[] mass_temp;
+
+		//init the data set that are gonna be used for the neighbors search
+		neighborsdataSetBoundaries->initData(this, true);
+		neighborsdataSetBoundaries->deleteComputationBuffer();
+		neighborsdataSetFluid->initData(this, false);
 
 	}
 	else {
@@ -351,3 +364,5 @@ void DFSPHCData::sortDynamicData(FluidModel *model) {
 
 
 }
+
+

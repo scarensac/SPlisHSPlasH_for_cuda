@@ -880,6 +880,22 @@ void TW_CALL DemoBase::getParameter(void *value, void *clientData)
 	}
 }
 
+
+bool DemoBase::renderBoundariesDFSPH_CUDA()
+{
+	bool is_dfsph_cuda = m_simulationMethod.simulationMethod == SimulationMethods::DFSPH_CUDA;
+	if (is_dfsph_cuda)
+	{
+		DFSPHCUDA* sim = dynamic_cast<DFSPHCUDA*>(m_simulationMethod.simulation);
+		sim->renderBoundaries();
+
+	}
+	return is_dfsph_cuda;
+}
+
+
+
+
 void DemoBase::renderFluid()
 {
 	// Draw simulation model

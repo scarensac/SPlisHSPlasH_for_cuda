@@ -152,13 +152,12 @@
     </ResourceCompile>
     <CudaCompile>
       <Defines>_WINDOWS;NDEBUG;_CRT_SECURE_NO_DEPRECATE;SPH_DATA_PATH="../data";CMAKE_INTDIR="Release";%(Defines)</Defines>
-      <AdditionalOptions>%(AdditionalOptions) -Xcompiler="/EHsc -Ob2" --resource-usage</AdditionalOptions>
+      <AdditionalOptions>%(AdditionalOptions) -Xcompiler="/EHsc -Ob2"</AdditionalOptions>
       <CodeGeneration>compute_61,sm_61</CodeGeneration>
       <Include>D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\eigen;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\install\CompactNSearch\include;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\cub-1.7.4\cub;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\glew\include;%(Include)</Include>
       <Optimization>O2</Optimization>
       <Runtime>MD</Runtime>
       <TargetMachinePlatform>64</TargetMachinePlatform>
-      <TypeInfo>true</TypeInfo>
       <Warning>W3</Warning>
     </CudaCompile>
     <Midl>
