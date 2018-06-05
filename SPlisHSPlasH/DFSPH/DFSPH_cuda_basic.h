@@ -45,6 +45,10 @@ void cuda_opengl_renderBoundaries(SPH::DFSPHCData& data);
 
 
 
+void allocate_rigid_body_container_cuda(SPH::RigidBodyContainer& container);
+void load_rigid_body_container_cuda(SPH::RigidBodyContainer& container, Vector3d* pos, Vector3d* vel, RealCuda* psi);
+void read_rigid_body_force_cuda(SPH::RigidBodyContainer& container); 
+void allocate_dynamic_bodies_vector_cuda(SPH::DFSPHCData& data);
 
 
 void allocate_c_array_struct_cuda_managed(SPH::DFSPHCData& data, bool minimize_managed = false);

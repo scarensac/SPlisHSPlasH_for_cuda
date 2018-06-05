@@ -132,7 +132,7 @@ void renderBoundary()
 			shader.begin();
 			glUniform3fv(shader.getUniform("color"), 1, &wallColor[0]);
 
-			//if (false)
+			
 			if (base.renderBoundariesDFSPH_CUDA())
 			{
 			}

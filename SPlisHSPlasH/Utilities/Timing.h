@@ -4,7 +4,7 @@
 #include <iostream>
 #include <stack>
 #include <unordered_map>
-#include "SPlisHSPlasH/Common.h"
+#include "SPlisHSPlasH/BasicTypes.h"
 #include <chrono>
 
 namespace SPH

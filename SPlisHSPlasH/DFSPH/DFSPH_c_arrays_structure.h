@@ -179,6 +179,9 @@ namespace SPH
 
 		bool internal_buffers_allocated;
 
+		//empty contructor to make static arrays possible
+		NeighborsSearchDataSet(){}
+
 		/**
 			allocate the data structure
 		*/
@@ -204,20 +207,53 @@ namespace SPH
 		
 	};
 
+	class RigidBodyContainer {
+	public:
+		Vector3d* pos;
+		Vector3d* vel;
+		RealCuda* psi;
+		int numParticles;
+
+		//the force to be transmitted to the physics engine
+		Vector3d* F;
+
+		//this is a buffer that is used to make the transition between cuda and the cpu physics engine
+		//I need it because to transmit the data to the model I need to convert the values to the
+		//type used in the orinal cpu model...
+		Vector3d* F_cpu;
+
+		NeighborsSearchDataSet* neighborsDataSet;
+
+		//empty contructor to make static arrays possible
+		RigidBodyContainer() {}
+		
+		//actual constructor
+		RigidBodyContainer(int nbParticles);
+		
+
+		//this class is used to be able to transmit the info to the neighbor search kernel
+		//it only contains the necessary arrays
+		class NeighborKernelData {
+		public:
+			Vector3d* pos;
+			unsigned int* p_id_sorted;
+			unsigned int* cell_start_end;
+
+			NeighborKernelData( Vector3d* pos_i,unsigned int* p_id_sorted_i,unsigned int* cell_start_end_i):
+				pos(pos_i),p_id_sorted(p_id_sorted_i),cell_start_end(cell_start_end_i){}
+		};
+
+		NeighborKernelData getNeighborKerneldata() {
+			return NeighborKernelData(pos, neighborsDataSet->p_id_sorted,neighborsDataSet->cell_start_end);
+		}
+	};
 
 	class FluidModel;
 	class SimulationDataDFSPH;
 
 	class DFSPHCData {
 	public:
-		class RigidBodyContainer {
-			Vector3d* pos;
-			Vector3d* vel;
-			RealCuda* Psi;
-			int numParticles;
-
-			NeighborsSearchDataSet neighborsDataSet;
-		};
+		
 
 		
 		//I need a kernel without all th static class memebers because it seems they do not work on
@@ -228,13 +264,13 @@ namespace SPH
 		//the size is 60 because I checked and the max neighbours I reached was 50
 		//so I put 10 more to be sure. In the end those buffers will stay on the GPU memory
 		//so there will be no transfers.
-#define MAX_NEIGHBOURS 60
+#define MAX_NEIGHBOURS 75
 		const Vector3d gravitation = Vector3d(0.0f, -9.81, 0.0f);
 
 		//static size and value all time
-		FUNCTION inline RealCuda W(const Vector3d &r) const { return m_kernel_precomp.W(r); }
-		FUNCTION inline RealCuda W(const RealCuda r) const { return m_kernel_precomp.W(r); }
-		FUNCTION inline Vector3d gradW(const Vector3d &r) { return m_kernel_precomp.gradW(r); }
+		FUNCTION inline RealCuda W(const Vector3d &r) const { return m_kernel.W(r); }
+		FUNCTION inline RealCuda W(const RealCuda r) const { return m_kernel.W(r); }
+		FUNCTION inline Vector3d gradW(const Vector3d &r) { return m_kernel.gradW(r); }
 		RealCuda W_zero;
 		RealCuda density0;
 		RealCuda particleRadius;
@@ -281,7 +317,14 @@ namespace SPH
 		NeighborsSearchDataSet* neighborsdataSetBoundaries;
 		NeighborsSearchDataSet* neighborsdataSetFluid;
 
-
+		//data structure for the dynamic objects
+		//both contains the same data but the first one is create with a new on the cpu
+		//and the second one is created on the gpu 
+		//note: in either case the arrays inside are allocated with cuda and 
+		//		the NeighborsSearchDataSet is allocated on the cpu (but it contains gpu arrays)
+		RigidBodyContainer* vector_dynamic_bodies_data;
+		RigidBodyContainer* vector_dynamic_bodies_data_cuda;
+		int numDynamicBodies;
 
 		//variables for vao
 		//Normaly I should use GLuint but including all gl.h only for that ...
@@ -299,7 +342,10 @@ namespace SPH
 		void loadDynamicData(FluidModel *model, const SimulationDataDFSPH& data);
 		void readDynamicData(FluidModel *model, SimulationDataDFSPH& data);
 		void sortDynamicData(FluidModel *model);
-		
+
+		void loadDynamicObjectsData(FluidModel *model);
+		void readDynamicObjectsData(FluidModel *model);
+
 
 		void reset(FluidModel *model);
 		inline void updateTimeStep(RealCuda h_fut) {
@@ -319,12 +365,15 @@ namespace SPH
 			invH2 = invH2_future;
 		}
 
-		FUNCTION inline unsigned int getNeighbour(int particle_id, int neighbour_id, int body_id = 0) {
-			return neighbourgs[body_id*numFluidParticles*MAX_NEIGHBOURS + particle_id * MAX_NEIGHBOURS + neighbour_id];
+
+		FUNCTION inline int* getNeighboursPtr(int particle_id) {
+			//	return neighbourgs + body_id*numFluidParticles*MAX_NEIGHBOURS + particle_id*MAX_NEIGHBOURS;
+			return neighbourgs + particle_id*MAX_NEIGHBOURS;
 		}
 
 		FUNCTION inline unsigned int getNumberOfNeighbourgs(int particle_id, int body_id = 0) {
-			return numberOfNeighbourgs[body_id*numFluidParticles + particle_id];
+			//return numberOfNeighbourgs[body_id*numFluidParticles + particle_id]; 
+			return numberOfNeighbourgs[particle_id*3+body_id];
 		}
 
 	};

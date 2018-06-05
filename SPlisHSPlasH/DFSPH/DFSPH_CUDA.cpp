@@ -37,22 +37,34 @@ DFSPHCUDA::~DFSPHCUDA(void)
 
 void DFSPHCUDA::step()
 {
+
+	static int count_steps = 0;
+
 	m_data.viscosity = m_viscosity->getViscosity();
 
 	
 	if (true) {
+
+
 		static float time_avg = 0;
 		static unsigned int time_count = 0;
-		std::chrono::steady_clock::time_point tab_timepoint[7];
-		std::string tab_name[7] = { "","divergence", "viscosity","cfl","update vel","density","update pos" };
+#define NB_TIME_POINTS 8
+		std::chrono::steady_clock::time_point tab_timepoint[NB_TIME_POINTS+1];
+		std::string tab_name[NB_TIME_POINTS] = { "read dynamic bodies data", "neighbors","divergence", "viscosity","cfl","update vel","density","update pos" };
+		static float tab_avg[NB_TIME_POINTS] = { 0 };
+		int current_timepoint = 0;
 
 		static std::chrono::steady_clock::time_point end;
-		tab_timepoint[0] = std::chrono::steady_clock::now();
+		tab_timepoint[current_timepoint++] = std::chrono::steady_clock::now();
 
+		m_data.loadDynamicObjectsData(m_model);
+
+
+		tab_timepoint[current_timepoint++] = std::chrono::steady_clock::now();
 		//*
 		cuda_neighborsSearch(m_data);
 	
-		tab_timepoint[1] = std::chrono::steady_clock::now();
+		tab_timepoint[current_timepoint++] = std::chrono::steady_clock::now();
 
 
 		if (m_enableDivergenceSolver)
@@ -65,40 +77,42 @@ void DFSPHCUDA::step()
 		}
 
 
-		tab_timepoint[2] = std::chrono::steady_clock::now();
+		tab_timepoint[current_timepoint++] = std::chrono::steady_clock::now();
 
 
 		cuda_viscosityXSPH(m_data);
 
 
-		tab_timepoint[3] = std::chrono::steady_clock::now();
+		tab_timepoint[current_timepoint++] = std::chrono::steady_clock::now();
 
 
 		//cuda_CFL(m_data, 0.0001, m_cflFactor, m_cflMaxTimeStepSize);
-		m_data.updateTimeStep(0.004);
+		const Real new_time_step = TimeManager::getCurrent()->getTimeStepSize();
+		m_data.updateTimeStep(new_time_step);
 
-		tab_timepoint[4] = std::chrono::steady_clock::now();
+		tab_timepoint[current_timepoint++] = std::chrono::steady_clock::now();
 
 
 		cuda_update_vel(m_data);
 
 
-		tab_timepoint[5] = std::chrono::steady_clock::now();
+		tab_timepoint[current_timepoint++] = std::chrono::steady_clock::now();
 
 
 		m_iterations = cuda_pressureSolve(m_data, m_maxIterations, m_maxError);
 
 
-		tab_timepoint[6] = std::chrono::steady_clock::now();
+		tab_timepoint[current_timepoint++] = std::chrono::steady_clock::now();
 
 
 		cuda_update_pos(m_data);
 		
 
-		tab_timepoint[7] = std::chrono::steady_clock::now();
+		tab_timepoint[current_timepoint++] = std::chrono::steady_clock::now();
 
 
 
+		m_data.readDynamicObjectsData(m_model);
 		m_data.onSimulationStepEnd();
 		
 		// Compute new time	
@@ -108,17 +122,29 @@ void DFSPHCUDA::step()
 		//*/
 
 
+		if ((current_timepoint-1) != NB_TIME_POINTS) {
+			std::cout << "the number of time points does not correspond: "<< current_timepoint<<std::endl;
+			exit(325);
+		}
 
 
 
-
-		float time_iter = std::chrono::duration_cast<std::chrono::nanoseconds> (tab_timepoint[7] - tab_timepoint[0]).count() / 1000000.0f;
+		float time_iter = std::chrono::duration_cast<std::chrono::nanoseconds> (tab_timepoint[NB_TIME_POINTS] - tab_timepoint[0]).count() / 1000000.0f;
 		float time_between= std::chrono::duration_cast<std::chrono::nanoseconds> (tab_timepoint[0] - end).count() / 1000000.0f;
-		std::cout << "timestep total: " << time_iter+time_between << "  (" << time_iter <<"  "<<time_between << ")" << std::endl;
+		static float total_time = 0;
+		total_time += time_iter;
 
-		for (int i = 0; i < 7; ++i) {
+		std::cout << "timestep total: " << total_time << "   this step: " << time_iter + time_between << "  (" << time_iter << "  " << time_between << ")" << std::endl;
+		std::cout << "solver iteration  density: " << m_iterations << "   divergence : " << m_iterationsV << std::endl;
+
+
+
+
+
+		for (int i = 0; i < NB_TIME_POINTS; ++i) {
 			float time = std::chrono::duration_cast<std::chrono::nanoseconds> (tab_timepoint[i+1] - tab_timepoint[i]).count() / 1000000.0f;
-			std::cout << tab_name[i] << "  :" << time << std::endl ;
+			tab_avg[i] += time;
+			std::cout << tab_name[i] << "  :"<< (tab_avg[i]/(count_steps+1))<< "  ("<<time <<")"<< std::endl ;
 
 		}
 
@@ -193,8 +219,7 @@ void DFSPHCUDA::step()
 
 	
 
-	static int count = 0;
-	std::cout << "step finished: " <<count++ << std::endl;
+	std::cout << "step finished: " << count_steps++ << std::endl;
 }
 
 void DFSPHCUDA::computeDFSPHFactor()

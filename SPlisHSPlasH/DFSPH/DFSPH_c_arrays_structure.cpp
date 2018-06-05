@@ -95,19 +95,26 @@ void NeighborsSearchDataSet::initData(DFSPHCData* data, bool is_boundaries) {
 	cuda_initNeighborsSearchDataSet(*data, *this, is_boundaries);
 }
 
-
-
 void NeighborsSearchDataSet::deleteComputationBuffer() {
 	release_neighbors_search_data_set(*this, true);
 }
 
-DFSPHCData::DFSPHCData(FluidModel *model) {
-	//just I dont hndle external objects for now
-	if (model->m_particleObjects.size() > 2) {
-		exit(2568);
-	}
+RigidBodyContainer::RigidBodyContainer(int nbParticles)
+{
+	numParticles = nbParticles;
 
-	//m_kernel.setRadius(model->m_supportRadius);
+	//initialisation on the GPU
+	allocate_rigid_body_container_cuda((*this));
+
+	F_cpu = new Vector3d[numParticles];
+	
+	neighborsDataSet = new NeighborsSearchDataSet(numParticles);
+
+}
+
+DFSPHCData::DFSPHCData(FluidModel *model) {
+
+	m_kernel.setRadius(model->m_supportRadius);
 	//W_zero = m_kernel.W_zero();
 	m_kernel_precomp.setRadius(model->m_supportRadius);
 	W_zero = m_kernel_precomp.W_zero();
@@ -128,9 +135,19 @@ DFSPHCData::DFSPHCData(FluidModel *model) {
 		neighborsdataSetBoundaries = new NeighborsSearchDataSet(numBoundaryParticles);
 		neighborsdataSetFluid = new NeighborsSearchDataSet(numFluidParticles);
 		
+		//allocate the data for the dynamic bodies
+		numDynamicBodies = static_cast<int>(model->m_particleObjects.size() - 2);
+		vector_dynamic_bodies_data = new RigidBodyContainer[numDynamicBodies];
+		for (int i = 2; i < model->m_particleObjects.size(); ++i) {
+			vector_dynamic_bodies_data[i-2]= RigidBodyContainer(model->m_particleObjects[i]->numberOfParticles());
+		}
+
+		allocate_dynamic_bodies_vector_cuda(*this);
+
+
 		//init the values from the model
 		reset(model);
-
+		
 		
 	}
 	else {
@@ -215,6 +232,10 @@ void DFSPHCData::reset(FluidModel *model) {
 		neighborsdataSetBoundaries->initData(this, true);
 		neighborsdataSetBoundaries->deleteComputationBuffer();
 		neighborsdataSetFluid->initData(this, false);
+
+
+		//now initiate the data for the dynamic bodies the same way we did it for the boundaries
+		readDynamicObjectsData(model);
 
 	}
 	else {
@@ -365,4 +386,44 @@ void DFSPHCData::sortDynamicData(FluidModel *model) {
 
 }
 
+
+void DFSPHCData::loadDynamicObjectsData(FluidModel *model) {
+	//now initiate the data for the dynamic bodies the same way we did it for the boundaries
+	// I need to transfer the data to c_typed buffers to use in .cu file
+	for (int id = 2; id < model->m_particleObjects.size(); ++id) {
+		FluidModel::RigidBodyParticleObject* particleObj = static_cast<FluidModel::RigidBodyParticleObject*>(model->m_particleObjects[id]);
+		RigidBodyContainer& body = vector_dynamic_bodies_data[id - 2];
+
+		Vector3d* pos_temp = new Vector3d[body.numParticles];
+		Vector3d* vel_temp = new Vector3d[body.numParticles];
+		RealCuda* psi_temp = new RealCuda[body.numParticles];
+
+		for (int i = 0; i < body.numParticles; ++i) {
+			pos_temp[i] = vector3rTo3d(particleObj->m_x[i]);
+			vel_temp[i] = vector3rTo3d(particleObj->m_v[i]);
+			psi_temp[i] = particleObj->m_boundaryPsi[i];
+		}
+
+		load_rigid_body_container_cuda(body,pos_temp, vel_temp, psi_temp);
+
+		delete[] pos_temp;
+		delete[] vel_temp;
+		delete[] psi_temp;
+	}
+}
+
+void DFSPHCData::readDynamicObjectsData(FluidModel *model) {
+	//now initiate the data for the dynamic bodies the same way we did it for the boundaries
+	// I need to transfer the data to c_typed buffers to use in .cu file
+	for (int id = 2; id < model->m_particleObjects.size(); ++id) {
+		RigidBodyContainer& body = vector_dynamic_bodies_data[id - 2];
+
+		//convert gpu data to cpu
+		read_rigid_body_force_cuda(body);
+
+		for (int i = 0; i < body.numParticles; ++i) {
+			model->getForce(id, i) = vector3dTo3r(body.F_cpu[i]);
+		}
+	}
+}
 
