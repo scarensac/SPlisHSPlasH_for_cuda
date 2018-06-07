@@ -13,7 +13,7 @@ D:/Users/scarensac/Documents/GitHub/SPlisHSPlasH/extern/install/PositionBasedDyn
 D:/Users/scarensac/Documents/GitHub/SPlisHSPlasH/extern/install/PositionBasedDynamics/include/Demos/Visualization/Selection.h
 D:/Users/scarensac/Documents/GitHub/SPlisHSPlasH/extern/install/PositionBasedDynamics/include/Demos/Visualization/Shader.h
 D:/Users/scarensac/Documents/GitHub/SPlisHSPlasH/extern/install/PositionBasedDynamics/include/Demos/Visualization/Visualization.h
-D:/Users/scarensac/Documents/GitHub/SPlisHSPlasH/extern/install/PositionBasedDynamics/lib/Simulation_d.lib
+D:/Users/scarensac/Documents/GitHub/SPlisHSPlasH/extern/install/PositionBasedDynamics/lib/Simulation.lib
 D:/Users/scarensac/Documents/GitHub/SPlisHSPlasH/extern/install/PositionBasedDynamics/include/Demos/Simulation/./AABB.h
 D:/Users/scarensac/Documents/GitHub/SPlisHSPlasH/extern/install/PositionBasedDynamics/include/Demos/Simulation/./BoundingSphere.h
 D:/Users/scarensac/Documents/GitHub/SPlisHSPlasH/extern/install/PositionBasedDynamics/include/Demos/Simulation/./BoundingSphereHierarchy.h
@@ -33,7 +33,7 @@ D:/Users/scarensac/Documents/GitHub/SPlisHSPlasH/extern/install/PositionBasedDyn
 D:/Users/scarensac/Documents/GitHub/SPlisHSPlasH/extern/install/PositionBasedDynamics/include/Demos/Simulation/./TimeManager.h
 D:/Users/scarensac/Documents/GitHub/SPlisHSPlasH/extern/install/PositionBasedDynamics/include/Demos/Simulation/./TimeStepController.h
 D:/Users/scarensac/Documents/GitHub/SPlisHSPlasH/extern/install/PositionBasedDynamics/include/Demos/Simulation/./TriangleModel.h
-D:/Users/scarensac/Documents/GitHub/SPlisHSPlasH/extern/install/PositionBasedDynamics/lib/Utils_d.lib
+D:/Users/scarensac/Documents/GitHub/SPlisHSPlasH/extern/install/PositionBasedDynamics/lib/Utils.lib
 D:/Users/scarensac/Documents/GitHub/SPlisHSPlasH/extern/install/PositionBasedDynamics/include/Demos/Utils/./Config.h
 D:/Users/scarensac/Documents/GitHub/SPlisHSPlasH/extern/install/PositionBasedDynamics/include/Demos/Utils/./Hashmap.h
 D:/Users/scarensac/Documents/GitHub/SPlisHSPlasH/extern/install/PositionBasedDynamics/include/Demos/Utils/./IndexedFaceMesh.h
@@ -45,7 +45,7 @@ D:/Users/scarensac/Documents/GitHub/SPlisHSPlasH/extern/install/PositionBasedDyn
 D:/Users/scarensac/Documents/GitHub/SPlisHSPlasH/extern/install/PositionBasedDynamics/include/Demos/Utils/./Timing.h
 D:/Users/scarensac/Documents/GitHub/SPlisHSPlasH/extern/install/PositionBasedDynamics/include/Demos/Utils/./Utilities.h
 D:/Users/scarensac/Documents/GitHub/SPlisHSPlasH/extern/install/PositionBasedDynamics/include/Demos/Utils/./VolumeIntegration.h
-D:/Users/scarensac/Documents/GitHub/SPlisHSPlasH/extern/install/PositionBasedDynamics/lib/PositionBasedDynamics_d.lib
+D:/Users/scarensac/Documents/GitHub/SPlisHSPlasH/extern/install/PositionBasedDynamics/lib/PositionBasedDynamics.lib
 D:/Users/scarensac/Documents/GitHub/SPlisHSPlasH/extern/install/PositionBasedDynamics/include/PositionBasedDynamics/./MathFunctions.h
 D:/Users/scarensac/Documents/GitHub/SPlisHSPlasH/extern/install/PositionBasedDynamics/include/PositionBasedDynamics/./PositionBasedDynamics.h
 D:/Users/scarensac/Documents/GitHub/SPlisHSPlasH/extern/install/PositionBasedDynamics/include/PositionBasedDynamics/./PositionBasedElasticRods.h

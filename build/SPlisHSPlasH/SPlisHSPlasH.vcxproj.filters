@@ -280,6 +280,39 @@
     <CustomBuild Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\SPlisHSPlasH\CMakeLists.txt" />
   </ItemGroup>
   <ItemGroup>
+    <Filter Include="Header Files\WCSPH">
+      <UniqueIdentifier>{496A78FE-7A53-3768-B2C3-FD2BF0038634}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\PCISPH">
+      <UniqueIdentifier>{B401BEE7-2FA4-32AC-A6B6-AACD35AB8EEB}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\PBF">
+      <UniqueIdentifier>{2906B40F-E489-35FD-9512-600D8CC9E51F}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\IISPH">
+      <UniqueIdentifier>{39614DB4-B73A-34E5-BC1F-CA7423586AC7}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\DFSPH">
+      <UniqueIdentifier>{4F44802A-650D-36AC-9975-7A249FB335FE}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\PF">
+      <UniqueIdentifier>{8E4AB458-AF0E-30B2-96AF-A4C00D9E53AC}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\Viscosity">
+      <UniqueIdentifier>{5F085D3C-3313-356B-AF8A-128EBB1848CC}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\SurfaceTension">
+      <UniqueIdentifier>{56C84ECB-C9B6-3261-847E-E56953A1D698}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\Vorticity">
+      <UniqueIdentifier>{A92AD151-43CA-33A6-90C8-4ED8D1FC9D8A}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\Drag">
+      <UniqueIdentifier>{445CC82D-A78F-30C7-A878-182878972C11}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\Utils">
+      <UniqueIdentifier>{CE3694FE-644E-3C0E-839D-70E032BB2A96}</UniqueIdentifier>
+    </Filter>
     <Filter Include="Source Files">
       <UniqueIdentifier>{856C601E-746E-3F9A-A835-24553F07107F}</UniqueIdentifier>
     </Filter>
@@ -318,39 +351,6 @@
     </Filter>
     <Filter Include="Source Files\Utils">
       <UniqueIdentifier>{280F3B42-64FC-3B56-AB9D-6B512BA8D9ED}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Header Files\WCSPH">
-      <UniqueIdentifier>{496A78FE-7A53-3768-B2C3-FD2BF0038634}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Header Files\PCISPH">
-      <UniqueIdentifier>{B401BEE7-2FA4-32AC-A6B6-AACD35AB8EEB}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Header Files\PBF">
-      <UniqueIdentifier>{2906B40F-E489-35FD-9512-600D8CC9E51F}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Header Files\IISPH">
-      <UniqueIdentifier>{39614DB4-B73A-34E5-BC1F-CA7423586AC7}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Header Files\DFSPH">
-      <UniqueIdentifier>{4F44802A-650D-36AC-9975-7A249FB335FE}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Header Files\PF">
-      <UniqueIdentifier>{8E4AB458-AF0E-30B2-96AF-A4C00D9E53AC}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Header Files\Viscosity">
-      <UniqueIdentifier>{5F085D3C-3313-356B-AF8A-128EBB1848CC}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Header Files\SurfaceTension">
-      <UniqueIdentifier>{56C84ECB-C9B6-3261-847E-E56953A1D698}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Header Files\Vorticity">
-      <UniqueIdentifier>{A92AD151-43CA-33A6-90C8-4ED8D1FC9D8A}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Header Files\Drag">
-      <UniqueIdentifier>{445CC82D-A78F-30C7-A878-182878972C11}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Header Files\Utils">
-      <UniqueIdentifier>{CE3694FE-644E-3C0E-839D-70E032BB2A96}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
 </Project>

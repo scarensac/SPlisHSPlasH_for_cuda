@@ -33,17 +33,17 @@
 		{
 			"id": 1,
 			"geometryFile": "../models/UnitBox.obj",
-			"translation": [0,4,0],
+			"translation": [1.5,4,0.5],
 			"rotationAxis": [1, 0, 0],
 			"rotationAngle": 0,
-			"scale": [3.1, 8, 1.6],
+			"scale": [3, 8, 1],
 			"color": [0.1, 0.4, 0.6, 1.0], 
 			"isDynamic": false,
 			"isWall": true,
 			"restitution" : 0.6,
 			"friction" : 0.0,
 			"collisionObjectType": 2,
-			"collisionObjectScale": [3.1, 8, 1.6],	
+			"collisionObjectScale": [3, 8, 1],	
 			"invertSDF": true
 		},
 		{
@@ -51,7 +51,7 @@
 			"geometryFile": "../models/sphere.obj",
 			"isDynamic": 1, 
 			"density": 200, 
-			"translation": [0.1,2.0,0],
+			"translation": [1.5,3.0,0.5],
 			"rotationAxis": [1, 0, 0],
 			"rotationAngle": 0.0,
 			"scale": [0.2, 0.2, 0.2],
@@ -67,7 +67,7 @@
 			"geometryFile": "../models/cylinder.obj",
 			"isDynamic": 1, 
 			"density": 700, 
-			"translation": [-0.2, 3, 0],
+			"translation": [1.5, 4.0, 0.5],
 			"rotationAxis": [1, 1, 1],
 			"rotationAngle": 0.5,
 			"scale": [0.1, 0.5, 0.1],
@@ -82,7 +82,7 @@
 			"geometryFile": "../models/torus.obj",
 			"isDynamic": 1, 
 			"density": 100, 
-			"translation": [0.4,1.0,0.0],
+			"translation": [2,2.0,0.5],
 			"rotationAxis": [0, 0, 1],
 			"rotationAngle": 1.0,
 			"scale": [0.2, 0.2, 0.2],
@@ -96,9 +96,9 @@
 	"FluidBlocks": [
 		{
 			"denseMode": 0,
-			"start": [-0.75, 0.0, -0.75],
-			"end": [0.75, 1.5, 0.75],
-			"translation": [-0.75, 0.0, 0.0],
+			"start": [0, 0.0, 0],
+			"end": [2, 1.5, 1],
+			"translation": [0, 0.0, 0.0],
 			"scale": [1,1,1]
 		}
 	]	
