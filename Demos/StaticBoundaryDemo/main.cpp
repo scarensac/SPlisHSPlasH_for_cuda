@@ -133,10 +133,11 @@ void renderBoundary()
 			glUniform3fv(shader.getUniform("color"), 1, &wallColor[0]);
 
 			
-			if (base.renderBoundariesDFSPH_CUDA())
-			{
+			if (base.isDFSPH()) {
+				base.renderBoundariesDFSPH_CUDA(renderWalls == 1);
 			}
-			else {
+			else 
+			{
 				std::cout << "using original" << std::endl;
 				glEnableVertexAttribArray(0);
 				for (int body = simulationMethod.model.numberOfRigidBodyParticleObjects() - 1; body >= 0; body--)

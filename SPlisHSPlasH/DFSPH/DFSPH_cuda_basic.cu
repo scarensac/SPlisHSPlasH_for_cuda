@@ -73,8 +73,8 @@ __device__ unsigned int compute_morton_magic_numbers(unsigned int x, unsigned in
 
 
 //those two variables are the identifiers that  link the ongle buffers to cuda
-cudaGraphicsResource_t vboRes_pos;
-cudaGraphicsResource_t vboRes_vel;
+//cudaGraphicsResource_t vboRes_pos;
+//cudaGraphicsResource_t vboRes_vel;
 
 //easy function to check errors
 #define gpuErrchk(ans) { gpuAssert((ans), __FILE__, __LINE__); }
@@ -1078,7 +1078,7 @@ __global__ void DFSPH_setVector3dBufferToZero_kernel(Vector3d* buff, unsigned in
 __global__ void DFSPH_neighborsSearch_kernel(unsigned int numFluidParticles, RealCuda radius,
 	Vector3d* posFluid, Vector3d* posBoundary, int* neighbors_buff, int* nb_neighbors_buff,
 	unsigned int* p_id_sorted, unsigned int* cell_start_end, unsigned int* p_id_sorted_b, unsigned int* cell_start_end_b,
-	SPH::RigidBodyContainer::NeighborKernelData* vect_dynamic_bodies, int nb_dynamic_bodies) {
+	SPH::RigidBodyContainer* vect_dynamic_bodies, int nb_dynamic_bodies) {
 
 	int i = blockIdx.x * blockDim.x + threadIdx.x;
 	if (i >= numFluidParticles) { return; }
@@ -1242,7 +1242,7 @@ __global__ void DFSPH_neighborsSearch_kernel(unsigned int numFluidParticles, Rea
 	}
 	if (vect_dynamic_bodies != NULL) {
 		for (int id_body = 0; id_body < nb_dynamic_bodies; ++id_body) {
-			const SPH::RigidBodyContainer::NeighborKernelData& body = vect_dynamic_bodies[id_body];
+			const SPH::RigidBodyContainer& body = vect_dynamic_bodies[id_body];
 			for (int k = -1; k < 2; ++k) {
 				for (int m = -1; m < 2; ++m) {
 					//for (int l = -1; l < 2; ++l) {// I don't need to iter on x since the 3cells are successives: large gains
@@ -1252,16 +1252,14 @@ __global__ void DFSPH_neighborsSearch_kernel(unsigned int numFluidParticles, Rea
 					unsigned int cur_cell_id = COMPUTE_CELL_INDEX(x, y + m, z + k);
 					unsigned int end;
 					//for the boundaries particles
-					end = body.cell_start_end[cur_cell_id + successive_cells_count];
-					for (unsigned int cur_particle = body.cell_start_end[cur_cell_id]; cur_particle < end; ++cur_particle) {
-						unsigned int j = body.p_id_sorted[cur_particle];
+					end = body.neighborsDataSet->cell_start_end[cur_cell_id + successive_cells_count];
+					for (unsigned int cur_particle = body.neighborsDataSet->cell_start_end[cur_cell_id]; cur_particle < end; ++cur_particle) {
+						unsigned int j = body.neighborsDataSet->p_id_sorted[cur_particle];
 						if ((pos - body.pos[j]).squaredNorm() < radius_sq) {
 							*cur_neighbor_ptr++ = WRITTE_DYNAMIC_BODIES_PARTICLES_INDEX(id_body, j);
 							nb_neighbors_dynamic_objects++;
 						}
 					}
-					//*/
-					//}
 				}
 			}
 		}
@@ -1572,15 +1570,6 @@ void cuda_neighborsSearch(SPH::DFSPHCData& data) {
 
 		std::chrono::steady_clock::time_point begin = std::chrono::steady_clock::now();
 
-		SPH::RigidBodyContainer::NeighborKernelData* vect_dynamic_bodies = NULL;
-		if (data.numDynamicBodies > 0) {
-			cudaMallocManaged(&(vect_dynamic_bodies), data.numDynamicBodies * sizeof(SPH::RigidBodyContainer::NeighborKernelData));
-
-			for (int i = 0; i < data.numDynamicBodies; ++i) {
-				vect_dynamic_bodies[i] = data.vector_dynamic_bodies_data[i].getNeighborKerneldata();
-			}
-		}
-
 		//cuda way
 		int numBlocks = (data.numFluidParticles + BLOCKSIZE - 1) / BLOCKSIZE;
 
@@ -1592,7 +1581,7 @@ void cuda_neighborsSearch(SPH::DFSPHCData& data) {
 			data.neighborsdataSetFluid->cell_start_end,
 			data.neighborsdataSetBoundaries->p_id_sorted,
 			data.neighborsdataSetBoundaries->cell_start_end,
-			vect_dynamic_bodies, data.numDynamicBodies);
+			data.vector_dynamic_bodies_data_cuda, data.numDynamicBodies);
 
 
 
@@ -1601,8 +1590,6 @@ void cuda_neighborsSearch(SPH::DFSPHCData& data) {
 			std::cerr << "cuda neighbors search failed: " << (int)cudaStatus << std::endl;
 			exit(1598);
 		}
-
-		cudaFree(vect_dynamic_bodies);
 
 		std::chrono::steady_clock::time_point end = std::chrono::steady_clock::now();
 		time = std::chrono::duration_cast<std::chrono::nanoseconds> (end - begin).count() / 1000000.0f;
@@ -1725,42 +1712,52 @@ void cuda_initNeighborsSearchDataSet(SPH::DFSPHCData& data, SPH::NeighborsSearch
 
 
 void cuda_renderFluid(SPH::DFSPHCData& data) {
-	cuda_opengl_renderFluid(data);
+	cuda_opengl_renderParticleSet(*data.renderingDataFluid,data.numFluidParticles);
 }
 
 
 
-void cuda_renderBoundaries(SPH::DFSPHCData& data) {
-	cuda_opengl_renderBoundaries(data);
+void cuda_renderBoundaries(SPH::DFSPHCData& data, bool renderWalls) {
+	if (renderWalls) {
+		cuda_opengl_renderParticleSet(*data.renderingDataBoundaries, data.numBoundaryParticles);
+	}
+
+	for (int i = 0; i < data.numDynamicBodies; ++i) {
+		std::cout << "test" << i << std::endl;
+		SPH::RigidBodyContainer& body= data.vector_dynamic_bodies_data[i];
+		cuda_opengl_renderParticleSet(*body.renderingData, body.numParticles);
+	}
 }
 
-
-#include <GL/glew.h>
-#include <cuda_gl_interop.h>
-
-void cuda_opengl_initFluidRendering(SPH::DFSPHCData& data) {
-	glGenVertexArrays(1, &data.vao); // Créer le VAO
-	glBindVertexArray(data.vao); // Lier le VAO pour l'utiliser
+/*
+THE NEXT FUNCTIONS ARE FOR THE RENDERING
+*/
 
 
-	glGenBuffers(1, &data.pos_buffer);
+void cuda_opengl_initParticleRendering(ParticleSetRenderingData& renderingData, unsigned int numParticles,
+	Vector3d** pos, Vector3d** vel) {
+	glGenVertexArrays(1, &renderingData.vaoFluid); // Créer le VAO
+	glBindVertexArray(renderingData.vaoFluid); // Lier le VAO pour l'utiliser
+
+
+	glGenBuffers(1, &renderingData.pos_buffer);
 	// selectionne le buffer pour l'initialiser
-	glBindBuffer(GL_ARRAY_BUFFER, data.pos_buffer);
+	glBindBuffer(GL_ARRAY_BUFFER, renderingData.pos_buffer);
 	// dimensionne le buffer actif sur array_buffer, l'alloue et l'initialise avec les positions des sommets de l'objet
 	glBufferData(GL_ARRAY_BUFFER,
-		/* length */	data.numFluidParticles * sizeof(Vector3d),
+		/* length */	numParticles * sizeof(Vector3d),
 		/* data */      NULL,
 		/* usage */     GL_DYNAMIC_DRAW);
 	//set it to the attribute
 	glEnableVertexAttribArray(0);
 	glVertexAttribPointer(0, 3, GL_FORMAT, GL_FALSE, 0, 0);
 
-	glGenBuffers(1, &data.vel_buffer);
+	glGenBuffers(1, &renderingData.vel_buffer);
 	// selectionne le buffer pour l'initialiser
-	glBindBuffer(GL_ARRAY_BUFFER, data.vel_buffer);
+	glBindBuffer(GL_ARRAY_BUFFER, renderingData.vel_buffer);
 	// dimensionne le buffer actif sur array_buffer, l'alloue et l'initialise avec les positions des sommets de l'objet
 	glBufferData(GL_ARRAY_BUFFER,
-		/* length */	data.numFluidParticles * sizeof(Vector3d),
+		/* length */	numParticles * sizeof(Vector3d),
 		/* data */      NULL,
 		/* usage */     GL_DYNAMIC_DRAW);
 	//set it to the attribute
@@ -1772,77 +1769,50 @@ void cuda_opengl_initFluidRendering(SPH::DFSPHCData& data) {
 	glBindBuffer(GL_ARRAY_BUFFER, 0);
 
 	// Registration with CUDA.
-	gpuErrchk(cudaGraphicsGLRegisterBuffer(&vboRes_pos, data.pos_buffer, cudaGraphicsRegisterFlagsNone));
-	gpuErrchk(cudaGraphicsGLRegisterBuffer(&vboRes_vel, data.vel_buffer, cudaGraphicsRegisterFlagsNone));
+	gpuErrchk(cudaGraphicsGLRegisterBuffer(&renderingData.pos, renderingData.pos_buffer, cudaGraphicsRegisterFlagsNone));
+	gpuErrchk(cudaGraphicsGLRegisterBuffer(&renderingData.vel, renderingData.vel_buffer, cudaGraphicsRegisterFlagsNone));
 
 	//link the pos and vel buffer to cuda
-	gpuErrchk(cudaGraphicsMapResources(1, &vboRes_pos, 0));
-	gpuErrchk(cudaGraphicsMapResources(1, &vboRes_vel, 0));
+	gpuErrchk(cudaGraphicsMapResources(1, &renderingData.pos, 0));
+	gpuErrchk(cudaGraphicsMapResources(1, &renderingData.vel, 0));
 
 	//set the openglbuffer for direct use in cuda
 	Vector3d* vboPtr = NULL;
 	size_t size = 0;
 
 	// pos
-	gpuErrchk(cudaGraphicsResourceGetMappedPointer((void**)&vboPtr, &size, vboRes_pos));//get cuda ptr
-	data.posFluid = vboPtr;
+	gpuErrchk(cudaGraphicsResourceGetMappedPointer((void**)&vboPtr, &size, renderingData.pos));//get cuda ptr
+	*pos = vboPtr;
 
 	// vel
-	gpuErrchk(cudaGraphicsResourceGetMappedPointer((void**)&vboPtr, &size, vboRes_vel));//get cuda ptr
-	data.velFluid = vboPtr;
+	gpuErrchk(cudaGraphicsResourceGetMappedPointer((void**)&vboPtr, &size, renderingData.vel));//get cuda ptr
+	*vel = vboPtr;
 
 }
 
-void cuda_opengl_renderFluid(SPH::DFSPHCData& data) {
+void cuda_opengl_renderParticleSet(ParticleSetRenderingData& renderingData, unsigned int numParticles) {
 
 	//unlink the pos and vel buffer from cuda
-	gpuErrchk(cudaGraphicsUnmapResources(1, &vboRes_pos, 0));
-	gpuErrchk(cudaGraphicsUnmapResources(1, &vboRes_vel, 0));
+	gpuErrchk(cudaGraphicsUnmapResources(1, &(renderingData.pos), 0));
+	gpuErrchk(cudaGraphicsUnmapResources(1, &(renderingData.vel), 0));
 
 	//Actual opengl rendering
 	// link the vao
-	glBindVertexArray(data.vao);
+	glBindVertexArray(renderingData.vaoFluid);
 
 	glBindBuffer(GL_ARRAY_BUFFER, 0);
 
 	//show it
-	glDrawArrays(GL_POINTS, 0, data.numFluidParticles);
+	glDrawArrays(GL_POINTS, 0, numParticles);
 
 	// unlink the vao
 	glBindVertexArray(0);
 
 	//link the pos and vel buffer to cuda
-	gpuErrchk(cudaGraphicsMapResources(1, &vboRes_pos, 0));
-	gpuErrchk(cudaGraphicsMapResources(1, &vboRes_vel, 0));
+	gpuErrchk(cudaGraphicsMapResources(1, &renderingData.pos, 0));
+	gpuErrchk(cudaGraphicsMapResources(1, &renderingData.vel, 0));
 
 }
-
-
-void cuda_opengl_renderBoundaries(SPH::DFSPHCData& data) {
-
-	static Vector3d* buff = NULL;
-	static bool first_time = true;
-
-	if (first_time) {
-		first_time = false;
-		buff = new Vector3d[data.numBoundaryParticles];
-	}
-
-
-	gpuErrchk(cudaMemcpy(buff, data.posBoundary, data.numBoundaryParticles * sizeof(Vector3d), cudaMemcpyDeviceToHost));
-
-	glEnableVertexAttribArray(0);
-
-	glVertexAttribPointer(0, 3, GL_FORMAT, GL_FALSE, 0, data.posBoundary);
-	glDrawArrays(GL_POINTS, 0, data.numBoundaryParticles);
-
-	glDisableVertexAttribArray(0);
-
-}
-
-
-
-
 
 
 
@@ -1853,11 +1823,36 @@ void cuda_opengl_renderBoundaries(SPH::DFSPHCData& data) {
 THE NEXT FUNCTIONS ARE FOR THE MEMORY ALLOCATION
 */
 
+
+void allocate_UnifiedParticleSet_cuda(SPH::UnifiedParticleSet& container) {
+	/*
+	cudaMalloc(&(data.mass), data.numFluidParticles * sizeof(RealCuda));
+	//cudaMalloc(&(data.posFluid), data.numFluidParticles * sizeof(Vector3d)); //use opengl buffer with cuda interop
+	//cudaMalloc(&(data.velFluid), data.numFluidParticles * sizeof(Vector3d)); //use opengl buffer with cuda interop
+	cudaMalloc(&(data.accFluid), data.numFluidParticles * sizeof(Vector3d));
+	cudaMallocManaged(&(data.numberOfNeighbourgs), data.numFluidParticles * 3 * sizeof(int));
+	cudaMalloc(&(data.neighbourgs), data.numFluidParticles * MAX_NEIGHBOURS * sizeof(int));
+
+	cudaMalloc(&(data.density), data.numFluidParticles * sizeof(RealCuda));
+	cudaMalloc(&(data.factor), data.numFluidParticles * sizeof(RealCuda));
+	cudaMalloc(&(data.kappa), data.numFluidParticles * sizeof(RealCuda));
+	cudaMalloc(&(data.kappaV), data.numFluidParticles * sizeof(RealCuda));
+	cudaMalloc(&(data.densityAdv), data.numFluidParticles * sizeof(RealCuda));
+	//*/
+}
+
+void load_UnifiedParticleSet_cuda(SPH::UnifiedParticleSet& container, Vector3d* pos, Vector3d* vel, RealCuda* mass) {
+
+}
+void allocate_and_copy_UnifiedParticleSet_vector_cuda(SPH::DFSPHCData& data) {
+
+}
+
 void allocate_rigid_body_container_cuda(SPH::RigidBodyContainer& container) {
 	fprintf(stderr, "start of reset values gpu: \n");
 
-	cudaMallocManaged(&(container.pos), container.numParticles * sizeof(Vector3d));
-	cudaMalloc(&(container.vel), container.numParticles * sizeof(Vector3d));
+	//cudaMalloc(&(container.pos), container.numParticles * sizeof(Vector3d));
+	//cudaMalloc(&(container.vel), container.numParticles * sizeof(Vector3d));
 	cudaMalloc(&(container.psi), container.numParticles * sizeof(RealCuda));
 	cudaMalloc(&(container.F), container.numParticles * sizeof(Vector3d));
 
@@ -1888,17 +1883,43 @@ void read_rigid_body_force_cuda(SPH::RigidBodyContainer& container) {
 
 void allocate_dynamic_bodies_vector_cuda(SPH::DFSPHCData& data) {
 
+
+
+	//before to do anythng we need to make a copy of the data structure since
+	//we will have to change the neighborsdataset from the cpu to the gpu
+	//*
+	SPH::RigidBodyContainer* temp;
+	temp = new SPH::RigidBodyContainer[data.numDynamicBodies];
+	std::copy(data.vector_dynamic_bodies_data, data.vector_dynamic_bodies_data + data.numDynamicBodies, temp);
+	//memcpy(&temp, &(),  * sizeof(SPH::RigidBodyContainer));
+
+	for (int i = 0; i < data.numDynamicBodies; ++i) {
+		SPH::RigidBodyContainer& body = temp[i];
+		std::cout << "test:" << i << std::endl;
+		gpuErrchk(cudaMalloc(&(body.neighborsDataSet), sizeof(SPH::NeighborsSearchDataSet)));
+
+		gpuErrchk(cudaMemcpy(body.neighborsDataSet, data.vector_dynamic_bodies_data[i].neighborsDataSet,
+			sizeof(SPH::NeighborsSearchDataSet), cudaMemcpyHostToDevice));
+
+	}
+	//*/
+
 	gpuErrchk(cudaMalloc(&(data.vector_dynamic_bodies_data_cuda), data.numDynamicBodies * sizeof(SPH::RigidBodyContainer)));
 
-	gpuErrchk(cudaMemcpy(data.vector_dynamic_bodies_data_cuda, data.vector_dynamic_bodies_data,
+	gpuErrchk(cudaMemcpy(data.vector_dynamic_bodies_data_cuda, temp,
 		data.numDynamicBodies * sizeof(SPH::RigidBodyContainer), cudaMemcpyHostToDevice));
+	
+	std::cout << "it actualy did it" << std::endl;
+	std::cout << "reacched here" << std::endl;
+
+
 }
 
 
 void allocate_c_array_struct_cuda_managed(SPH::DFSPHCData& data, bool minimize_managed) {
 
-	cudaMallocManaged(&(data.posBoundary), data.numBoundaryParticles * sizeof(Vector3d));
-	cudaMalloc(&(data.velBoundary), data.numBoundaryParticles * sizeof(Vector3d));
+	//cudaMalloc(&(data.posBoundary), data.numBoundaryParticles * sizeof(Vector3d));//use opengl buffer with cuda interop
+	//cudaMalloc(&(data.velBoundary), data.numBoundaryParticles * sizeof(Vector3d));//use opengl buffer with cuda interop
 	cudaMalloc(&(data.boundaryPsi), data.numBoundaryParticles * sizeof(RealCuda));
 
 

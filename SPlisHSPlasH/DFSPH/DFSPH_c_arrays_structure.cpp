@@ -103,6 +103,10 @@ RigidBodyContainer::RigidBodyContainer(int nbParticles)
 {
 	numParticles = nbParticles;
 
+
+	renderingData = new ParticleSetRenderingData();
+	cuda_opengl_initParticleRendering(*renderingData, numParticles, &pos, &vel);
+
 	//initialisation on the GPU
 	allocate_rigid_body_container_cuda((*this));
 
@@ -110,6 +114,45 @@ RigidBodyContainer::RigidBodyContainer(int nbParticles)
 	
 	neighborsDataSet = new NeighborsSearchDataSet(numParticles);
 
+}
+
+UnifiedParticleSet::UnifiedParticleSet() {
+	numParticles=0;
+	has_factor_computation = false;
+	is_dynamic_object = false;
+	velocity_impacted_by_fluid_solver = false;
+	
+	mass = NULL;
+	density = NULL;
+	pos = NULL;
+	vel = NULL;
+	neighborsDataSet = NULL;
+	factor = NULL;
+	densityAdv = NULL;
+	numberOfNeighbourgs = NULL;
+	neighbourgs = NULL;
+	acc = NULL;
+	kappa = NULL;
+	kappaV = NULL;
+	F = NULL;
+	F_cpu = NULL;
+	renderingDataFluid=NULL;
+}
+
+UnifiedParticleSet::UnifiedParticleSet(int nbParticles, bool has_factor_computation_i, bool is_dynamic_object_i,
+	bool velocity_impacted_by_fluid_solver_i) 
+	: UnifiedParticleSet()
+{
+	numParticles = nbParticles;
+	has_factor_computation = has_factor_computation_i;
+	is_dynamic_object = is_dynamic_object_i;
+	velocity_impacted_by_fluid_solver = velocity_impacted_by_fluid_solver_i;
+
+	//initialisation on the GPU
+	allocate_UnifiedParticleSet_cuda((*this));
+
+
+	neighborsDataSet = new NeighborsSearchDataSet(numParticles);
 }
 
 DFSPHCData::DFSPHCData(FluidModel *model) {
@@ -129,7 +172,11 @@ DFSPHCData::DFSPHCData(FluidModel *model) {
 		allocate_c_array_struct_cuda_managed((*this));
 
 		//init the rendering
-		cuda_opengl_initFluidRendering(*this);
+		renderingDataFluid = new ParticleSetRenderingData();
+		cuda_opengl_initParticleRendering(*renderingDataFluid, numFluidParticles, &posFluid, &velFluid);
+
+		renderingDataBoundaries = new ParticleSetRenderingData();
+		cuda_opengl_initParticleRendering(*renderingDataBoundaries, numBoundaryParticles, &posBoundary, &velBoundary);
 		
 		//allocate the data set that are gonna be used for the neighbors search
 		neighborsdataSetBoundaries = new NeighborsSearchDataSet(numBoundaryParticles);

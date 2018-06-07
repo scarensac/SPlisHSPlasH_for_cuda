@@ -98,7 +98,8 @@ namespace SPH
 		void cleanup();
 
 		void renderFluid();
-		bool renderBoundariesDFSPH_CUDA();
+		void renderBoundariesDFSPH_CUDA(bool renderWalls);
+		bool isDFSPH();
 
 		unsigned int getNumberOfStepsPerRenderUpdate() const { return m_numberOfStepsPerRenderUpdate; }
 		void setNumberOfStepsPerRenderUpdate(unsigned int val) { m_numberOfStepsPerRenderUpdate = val; }

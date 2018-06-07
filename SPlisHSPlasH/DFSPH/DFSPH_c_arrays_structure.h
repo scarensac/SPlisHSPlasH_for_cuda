@@ -9,6 +9,8 @@
 
 #include "SPlisHSPlasH\Vector.h"
 
+class ParticleSetRenderingData;
+
 namespace SPH
 {
 	//this is an eigen less cubic kernel
@@ -222,7 +224,12 @@ namespace SPH
 		//type used in the orinal cpu model...
 		Vector3d* F_cpu;
 
+
+		// I need to be able to acces to the elements inside both on the cpu and gpu
 		NeighborsSearchDataSet* neighborsDataSet;
+
+
+		ParticleSetRenderingData* renderingData;
 
 		//empty contructor to make static arrays possible
 		RigidBodyContainer() {}
@@ -245,6 +252,69 @@ namespace SPH
 
 		NeighborKernelData getNeighborKerneldata() {
 			return NeighborKernelData(pos, neighborsDataSet->p_id_sorted,neighborsDataSet->cell_start_end);
+		}
+	};
+
+	class UnifiedParticleSet {
+	public://static size and values when pacticle count constant
+		int numParticles;
+		bool has_factor_computation;
+		bool is_dynamic_object;
+		bool velocity_impacted_by_fluid_solver;
+
+		//for all particles
+		RealCuda* mass;
+		RealCuda* density;
+		Vector3d* pos;
+		Vector3d* vel;
+
+		NeighborsSearchDataSet* neighborsDataSet;
+
+		//for particles with factor computation
+		RealCuda* factor;
+		RealCuda* densityAdv;
+		int* numberOfNeighbourgs;
+		int* neighbourgs;
+
+		//for particles whose velocity is controlled by the fluid solver
+		Vector3d* acc;
+		RealCuda* kappa;
+		RealCuda* kappaV;
+
+		//for dynamic object particles
+		//the force to be transmitted to the physics engine
+		Vector3d* F;
+
+		//this is a buffer that is used to make the transition between cuda and the cpu physics engine
+		//I need it because to transmit the data to the model I need to convert the values to the
+		//type used in the orinal cpu model...
+		Vector3d* F_cpu;
+
+		//data for the rendering
+		ParticleSetRenderingData* renderingDataFluid;
+
+		//base contructor (set every array to null and the nb of particles to 0
+		UnifiedParticleSet();
+
+		//actual constructor
+		UnifiedParticleSet(int nbParticles, bool has_factor_computation_i, bool is_dynamic_object_i, 
+			bool velocity_impacted_by_fluid_solver_i);
+
+
+		//this class is used to be able to transmit the info to the neighbor search kernel
+		//it only contains the necessary arrays
+		class NeighborKernelData {
+		public:
+			Vector3d* pos;
+			unsigned int* p_id_sorted;
+			unsigned int* cell_start_end;
+
+			NeighborKernelData(Vector3d* pos_i, unsigned int* p_id_sorted_i, unsigned int* cell_start_end_i) :
+				pos(pos_i), p_id_sorted(p_id_sorted_i), cell_start_end(cell_start_end_i) {}
+		};
+
+		NeighborKernelData getNeighborKerneldata() {
+			return NeighborKernelData(pos, neighborsDataSet->p_id_sorted, neighborsDataSet->cell_start_end);
 		}
 	};
 
@@ -294,7 +364,7 @@ namespace SPH
 		int* neighbourgs;
 		RealCuda* factor;
 
-		//the V one is for the warm start
+		//the V one is for the divergence
 		RealCuda* kappa;
 		RealCuda* kappaV;
 		//for the terative solvers
@@ -317,20 +387,19 @@ namespace SPH
 		NeighborsSearchDataSet* neighborsdataSetBoundaries;
 		NeighborsSearchDataSet* neighborsdataSetFluid;
 
+	
+
 		//data structure for the dynamic objects
 		//both contains the same data but the first one is create with a new on the cpu
 		//and the second one is created on the gpu 
-		//note: in either case the arrays inside are allocated with cuda and 
-		//		the NeighborsSearchDataSet is allocated on the cpu (but it contains gpu arrays)
+		//note: in either case the arrays inside are allocated with cuda
 		RigidBodyContainer* vector_dynamic_bodies_data;
 		RigidBodyContainer* vector_dynamic_bodies_data_cuda;
 		int numDynamicBodies;
 
-		//variables for vao
-		//Normaly I should use GLuint but including all gl.h only for that ...
-		unsigned int vao;
-		unsigned int pos_buffer;
-		unsigned int vel_buffer;
+		//variables for the rendering (pointer to opengl and cuda interop)
+		ParticleSetRenderingData* renderingDataFluid;
+		ParticleSetRenderingData* renderingDataBoundaries;
 
 
 		unsigned int vao_float;

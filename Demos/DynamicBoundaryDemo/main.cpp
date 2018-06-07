@@ -154,11 +154,10 @@ void renderBoundary()
 			shader.begin();
 			glUniform3fv(shader.getUniform("color"), 1, &wallColor[0]);
 
-			bool cpu_render = true;
-			if (renderWalls == 1) {
-				cpu_render = !base.renderBoundariesDFSPH_CUDA();
-			}
-			if (cpu_render){
+
+			if (base.isDFSPH()) {
+				base.renderBoundariesDFSPH_CUDA(renderWalls == 1);
+			}else{
 				glEnableVertexAttribArray(0);
 				for (int body = simulationMethod.model.numberOfRigidBodyParticleObjects() - 1; body >= 0; body--)
 				{

@@ -1,6 +1,19 @@
 #ifndef DFSPH_CUDA
 #define DFSPH_CUDA
 
+#include <GL/glew.h>
+#include <cuda_gl_interop.h>
+
+class ParticleSetRenderingData {
+public:
+	cudaGraphicsResource_t pos;
+	cudaGraphicsResource_t vel;
+
+	GLuint vaoFluid;
+	GLuint vaoBoundaries;
+	GLuint pos_buffer;
+	GLuint vel_buffer;
+};
 
 #include "SPlisHSPlasH\Vector.h"
 #include "DFSPH_c_arrays_structure.h"
@@ -34,15 +47,18 @@ void cuda_sortData(SPH::DFSPHCData& data, SPH::NeighborsSearchDataSet& neighbors
 
 
 void cuda_renderFluid(SPH::DFSPHCData& data);
-void cuda_opengl_initFluidRendering(SPH::DFSPHCData& data);
-void cuda_opengl_renderFluid(SPH::DFSPHCData& data);
+void cuda_opengl_initParticleRendering(ParticleSetRenderingData& renderingData, unsigned int numParticles,
+	Vector3d** pos, Vector3d** vel);
+void cuda_opengl_renderParticleSet(ParticleSetRenderingData& renderingData, unsigned int numParticles);
 
-void cuda_renderBoundaries(SPH::DFSPHCData& data);
-void cuda_opengl_renderBoundaries(SPH::DFSPHCData& data);
-
-
+void cuda_renderBoundaries(SPH::DFSPHCData& data, bool renderWalls);
 
 
+
+
+void allocate_UnifiedParticleSet_cuda(SPH::UnifiedParticleSet& container);
+void load_UnifiedParticleSet_cuda(SPH::UnifiedParticleSet& container, Vector3d* pos, Vector3d* vel, RealCuda* mass);
+void allocate_and_copy_UnifiedParticleSet_vector_cuda(SPH::DFSPHCData& data);
 
 
 void allocate_rigid_body_container_cuda(SPH::RigidBodyContainer& container);

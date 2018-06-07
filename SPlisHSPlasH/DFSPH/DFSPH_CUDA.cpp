@@ -1032,8 +1032,8 @@ void DFSPHCUDA::renderFluid() {
 	cuda_renderFluid(m_data);
 }
 
-void DFSPHCUDA::renderBoundaries() {
-	cuda_renderBoundaries(m_data);
+void DFSPHCUDA::renderBoundaries(bool renderWalls) {
+	cuda_renderBoundaries(m_data, renderWalls);
 }
 
 
