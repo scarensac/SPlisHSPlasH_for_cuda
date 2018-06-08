@@ -160,8 +160,8 @@ __device__ void computeDensityChange(SPH::DFSPHCData& m_data, const unsigned int
 		{
 			const unsigned int identifier = *neighbors_ptr++;
 			READ_DYNAMIC_BODIES_PARTICLES_INDEX(identifier, bodyIndex, neighborIndex);
-			SPH::RigidBodyContainer& body = m_data.vector_dynamic_bodies_data_cuda[bodyIndex];
-			densityAdv += body.psi[neighborIndex] * (vi - body.vel[neighborIndex]).dot(m_data.gradW(xi - body.pos[neighborIndex]));
+			SPH::UnifiedParticleSet& body = m_data.vector_dynamic_bodies_data_cuda[bodyIndex];
+			densityAdv += body.mass[neighborIndex] * (vi - body.vel[neighborIndex]).dot(m_data.gradW(xi - body.pos[neighborIndex]));
 		}
 
 
@@ -228,14 +228,16 @@ template <bool warm_start> __device__ void divergenceSolveParticle(SPH::DFSPHCDa
 		{
 			const unsigned int identifier = *neighbors_ptr++;
 			READ_DYNAMIC_BODIES_PARTICLES_INDEX(identifier, bodyIndex, neighborIndex);
-			SPH::RigidBodyContainer& body = m_data.vector_dynamic_bodies_data_cuda[bodyIndex];
-			///TODO fuse those lines
-			const Vector3d delta = ki * body.psi[neighborIndex] * m_data.gradW(xi - body.pos[neighborIndex]);
+			SPH::UnifiedParticleSet& body = m_data.vector_dynamic_bodies_data_cuda[bodyIndex];
+			
+			Vector3d delta = ki * body.mass[neighborIndex] * m_data.gradW(xi - body.pos[neighborIndex]);
 			v_i += delta;// ki already contains inverse density
 
-						 ///TODO reactivate this for objects see theoriginal sign to see the the actual sign
-						 //we apply the force to the body particle (no invH since it has been fatorized at the end)
-			body.F[neighborIndex] -= m_data.mass[i] * delta;
+			//we apply the force to the body particle (no invH since it has been fatorized at the end)
+			delta *= -m_data.mass[i];
+			atomicAdd(&(body.F[neighborIndex].x), delta.x);
+			atomicAdd(&(body.F[neighborIndex].y), delta.y);
+			atomicAdd(&(body.F[neighborIndex].z), delta.z);
 		}
 
 	}
@@ -279,8 +281,8 @@ __device__ void computeDensityAdv(SPH::DFSPHCData& m_data, const unsigned int in
 	{
 		const unsigned int identifier = *neighbors_ptr++;
 		READ_DYNAMIC_BODIES_PARTICLES_INDEX(identifier, bodyIndex, neighborIndex);
-		SPH::RigidBodyContainer& body = m_data.vector_dynamic_bodies_data_cuda[bodyIndex];
-		delta += body.psi[neighborIndex] * (vi - body.vel[neighborIndex]).dot(m_data.gradW(xi - body.pos[neighborIndex]));
+		SPH::UnifiedParticleSet& body = m_data.vector_dynamic_bodies_data_cuda[bodyIndex];
+		delta += body.mass[neighborIndex] * (vi - body.vel[neighborIndex]).dot(m_data.gradW(xi - body.pos[neighborIndex]));
 	}
 
 
@@ -291,7 +293,7 @@ __device__ void computeDensityAdv(SPH::DFSPHCData& m_data, const unsigned int in
 
 __device__ void computeDensityAdv(const unsigned int index, Vector3d* posFluid, Vector3d* velFluid, int* neighbourgs, int * numberOfNeighbourgs,
 	RealCuda* mass, SPH::PrecomputedCubicKernelPerso m_kernel_precomp, RealCuda* boundaryPsi, Vector3d* posBoundary, Vector3d* velBoundary,
-	SPH::RigidBodyContainer* vector_dynamic_bodies_data_cuda, RealCuda* densityAdv, RealCuda* density, RealCuda h_future, RealCuda density0) {
+	SPH::UnifiedParticleSet* vector_dynamic_bodies_data_cuda, RealCuda* densityAdv, RealCuda* density, RealCuda h_future, RealCuda density0) {
 	const Vector3d xi = posFluid[index];
 	const Vector3d vi = velFluid[index];
 	RealCuda delta = 0;
@@ -325,8 +327,8 @@ __device__ void computeDensityAdv(const unsigned int index, Vector3d* posFluid, 
 	{
 		const unsigned int identifier = *neighbors_ptr++;
 		READ_DYNAMIC_BODIES_PARTICLES_INDEX(identifier, bodyIndex, neighborIndex);
-		SPH::RigidBodyContainer& body = vector_dynamic_bodies_data_cuda[bodyIndex];
-		delta += body.psi[neighborIndex] * (vi - body.vel[neighborIndex]).dot(m_kernel_precomp.gradW(xi - body.pos[neighborIndex]));
+		SPH::UnifiedParticleSet& body = vector_dynamic_bodies_data_cuda[bodyIndex];
+		delta += body.mass[neighborIndex] * (vi - body.vel[neighborIndex]).dot(m_kernel_precomp.gradW(xi - body.pos[neighborIndex]));
 	}
 
 
@@ -390,14 +392,16 @@ template <bool warm_start> __device__ void pressureSolveParticle(SPH::DFSPHCData
 		{
 			const unsigned int identifier = *neighbors_ptr++;
 			READ_DYNAMIC_BODIES_PARTICLES_INDEX(identifier, bodyIndex, neighborIndex);
-			SPH::RigidBodyContainer& body = m_data.vector_dynamic_bodies_data_cuda[bodyIndex];
-			const Vector3d delta = ki * body.psi[neighborIndex] * m_data.gradW(xi - body.pos[neighborIndex]);
+			SPH::UnifiedParticleSet& body = m_data.vector_dynamic_bodies_data_cuda[bodyIndex];
+			Vector3d delta = ki * body.mass[neighborIndex] * m_data.gradW(xi - body.pos[neighborIndex]);
 
 			v_i += delta;// ki already contains inverse density
 
-						 ///TODO reactivate the external forces check the original formula to be sure of the sign
-						 //we apply the force to the body particle (no invH since it has been fatorized at the end)
-			body.F[neighborIndex] -= m_data.mass[i] * delta;
+			//we apply the force to the body particle (no invH since it has been fatorized at the end)
+			delta *= -m_data.mass[i];
+			atomicAdd(&(body.F[neighborIndex].x), delta.x);
+			atomicAdd(&(body.F[neighborIndex].y), delta.y);
+			atomicAdd(&(body.F[neighborIndex].z), delta.z);
 		}
 	}
 
@@ -511,10 +515,10 @@ __global__ void DFSPH_divergence_init_kernel(SPH::DFSPHCData m_data) {
 			{
 				const unsigned int identifier = *neighbors_ptr++;
 				READ_DYNAMIC_BODIES_PARTICLES_INDEX(identifier, bodyIndex, neighborIndex);
-				SPH::RigidBodyContainer& body = m_data.vector_dynamic_bodies_data_cuda[bodyIndex];
+				SPH::UnifiedParticleSet& body = m_data.vector_dynamic_bodies_data_cuda[bodyIndex];
 				const Vector3d &xj = body.pos[neighborIndex];
-				density += body.psi[neighborIndex] * m_data.W(xi - xj);
-				const Vector3d grad_p_j = body.psi[neighborIndex] * m_data.gradW(xi - xj);
+				density += body.mass[neighborIndex] * m_data.W(xi - xj);
+				const Vector3d grad_p_j = body.mass[neighborIndex] * m_data.gradW(xi - xj);
 				sum_grad_p_k += grad_p_j.squaredNorm();
 				grad_p_i += grad_p_j;
 			}
@@ -838,7 +842,7 @@ __global__ void DFSPH_pressure_loop_end_kernel(SPH::DFSPHCData m_data, RealCuda*
 //*
 __global__ void DFSPH_pressure_loop_end_kernel(int numFluidParticles, Vector3d* posFluid, Vector3d* velFluid, int* neighbourgs, int * numberOfNeighbourgs,
 	RealCuda* mass, SPH::PrecomputedCubicKernelPerso m_kernel_precomp, RealCuda* boundaryPsi, Vector3d* posBoundary, Vector3d* velBoundary,
-	SPH::RigidBodyContainer* vector_dynamic_bodies_data_cuda, RealCuda* densityAdv, RealCuda* density, RealCuda h_future, RealCuda density0) {
+	SPH::UnifiedParticleSet* vector_dynamic_bodies_data_cuda, RealCuda* densityAdv, RealCuda* density, RealCuda h_future, RealCuda density0) {
 	int i = blockIdx.x * blockDim.x + threadIdx.x;
 	if (i >= numFluidParticles) { return; }
 
@@ -1078,7 +1082,7 @@ __global__ void DFSPH_setVector3dBufferToZero_kernel(Vector3d* buff, unsigned in
 __global__ void DFSPH_neighborsSearch_kernel(unsigned int numFluidParticles, RealCuda radius,
 	Vector3d* posFluid, Vector3d* posBoundary, int* neighbors_buff, int* nb_neighbors_buff,
 	unsigned int* p_id_sorted, unsigned int* cell_start_end, unsigned int* p_id_sorted_b, unsigned int* cell_start_end_b,
-	SPH::RigidBodyContainer* vect_dynamic_bodies, int nb_dynamic_bodies) {
+	SPH::UnifiedParticleSet* vect_dynamic_bodies, int nb_dynamic_bodies) {
 
 	int i = blockIdx.x * blockDim.x + threadIdx.x;
 	if (i >= numFluidParticles) { return; }
@@ -1157,7 +1161,7 @@ __global__ void DFSPH_neighborsSearch_kernel(unsigned int numFluidParticles, Rea
 
 	if (vect_dynamic_bodies != NULL) {
 		for (int id_body = 0; id_body < nb_dynamic_bodies; ++id_body) {
-			const SPH::RigidBodyContainer::NeighborKernelData& body = vect_dynamic_bodies[id_body];
+			const SPH::UnifiedParticleSet::NeighborKernelData& body = vect_dynamic_bodies[id_body];
 			for (int k = -1; k < 2; ++k) {
 				for (int m = -1; m < 2; ++m) {
 					for (int l = -1; l < 2; ++l) {// I don't need to iter on x since the 3cells are successives: large gains
@@ -1242,7 +1246,7 @@ __global__ void DFSPH_neighborsSearch_kernel(unsigned int numFluidParticles, Rea
 	}
 	if (vect_dynamic_bodies != NULL) {
 		for (int id_body = 0; id_body < nb_dynamic_bodies; ++id_body) {
-			const SPH::RigidBodyContainer& body = vect_dynamic_bodies[id_body];
+			const SPH::UnifiedParticleSet& body = vect_dynamic_bodies[id_body];
 			for (int k = -1; k < 2; ++k) {
 				for (int m = -1; m < 2; ++m) {
 					//for (int l = -1; l < 2; ++l) {// I don't need to iter on x since the 3cells are successives: large gains
@@ -1509,7 +1513,7 @@ void cuda_neighborsSearch(SPH::DFSPHCData& data) {
 		//first let's generate the cell start end for the dynamic bodies
 		{
 			for (int i = 0; i < data.numDynamicBodies; ++i) {
-				SPH::RigidBodyContainer& body = data.vector_dynamic_bodies_data[i];
+				SPH::UnifiedParticleSet& body = data.vector_dynamic_bodies_data[i];
 
 				SPH::NeighborsSearchDataSet* dataSet = body.neighborsDataSet;
 				cuda_neighborsSearchInternal_sortParticlesId(body.pos, data.m_kernel_precomp.getRadius(), dataSet->numParticles,
@@ -1723,8 +1727,8 @@ void cuda_renderBoundaries(SPH::DFSPHCData& data, bool renderWalls) {
 	}
 
 	for (int i = 0; i < data.numDynamicBodies; ++i) {
-		std::cout << "test" << i << std::endl;
-		SPH::RigidBodyContainer& body= data.vector_dynamic_bodies_data[i];
+		std::cout<<"test"<<i<<std::endl;
+		SPH::UnifiedParticleSet& body= data.vector_dynamic_bodies_data[i];
 		cuda_opengl_renderParticleSet(*body.renderingData, body.numParticles);
 	}
 }
@@ -1825,94 +1829,71 @@ THE NEXT FUNCTIONS ARE FOR THE MEMORY ALLOCATION
 
 
 void allocate_UnifiedParticleSet_cuda(SPH::UnifiedParticleSet& container) {
-	/*
-	cudaMalloc(&(data.mass), data.numFluidParticles * sizeof(RealCuda));
-	//cudaMalloc(&(data.posFluid), data.numFluidParticles * sizeof(Vector3d)); //use opengl buffer with cuda interop
-	//cudaMalloc(&(data.velFluid), data.numFluidParticles * sizeof(Vector3d)); //use opengl buffer with cuda interop
-	cudaMalloc(&(data.accFluid), data.numFluidParticles * sizeof(Vector3d));
-	cudaMallocManaged(&(data.numberOfNeighbourgs), data.numFluidParticles * 3 * sizeof(int));
-	cudaMalloc(&(data.neighbourgs), data.numFluidParticles * MAX_NEIGHBOURS * sizeof(int));
 
-	cudaMalloc(&(data.density), data.numFluidParticles * sizeof(RealCuda));
-	cudaMalloc(&(data.factor), data.numFluidParticles * sizeof(RealCuda));
-	cudaMalloc(&(data.kappa), data.numFluidParticles * sizeof(RealCuda));
-	cudaMalloc(&(data.kappaV), data.numFluidParticles * sizeof(RealCuda));
-	cudaMalloc(&(data.densityAdv), data.numFluidParticles * sizeof(RealCuda));
-	//*/
+	//cudaMalloc(&(container.pos), container.numParticles * sizeof(Vector3d)); //use opengl buffer with cuda interop
+	//cudaMalloc(&(container.vel), container.numParticles * sizeof(Vector3d)); //use opengl buffer with cuda interop
+	cudaMalloc(&(container.mass), container.numParticles * sizeof(RealCuda));
+
+
+	if (container.has_factor_computation) {
+		cudaMallocManaged(&(container.numberOfNeighbourgs), container.numParticles * 3 * sizeof(int));
+		cudaMalloc(&(container.neighbourgs), container.numParticles * MAX_NEIGHBOURS * sizeof(int));
+
+		cudaMalloc(&(container.density), container.numParticles * sizeof(RealCuda));
+		cudaMalloc(&(container.factor), container.numParticles * sizeof(RealCuda));
+		cudaMalloc(&(container.densityAdv), container.numParticles * sizeof(RealCuda));
+		
+		if (container.velocity_impacted_by_fluid_solver) {
+			cudaMalloc(&(container.acc), container.numParticles * sizeof(Vector3d));
+			cudaMalloc(&(container.kappa), container.numParticles * sizeof(RealCuda));
+			cudaMalloc(&(container.kappaV), container.numParticles * sizeof(RealCuda));
+		}
+	}
+
+	if (container.is_dynamic_object) {
+		cudaMalloc(&(container.F), container.numParticles * sizeof(Vector3d));
+	}
+
 }
 
 void load_UnifiedParticleSet_cuda(SPH::UnifiedParticleSet& container, Vector3d* pos, Vector3d* vel, RealCuda* mass) {
-
-}
-void allocate_and_copy_UnifiedParticleSet_vector_cuda(SPH::DFSPHCData& data) {
-
-}
-
-void allocate_rigid_body_container_cuda(SPH::RigidBodyContainer& container) {
-	fprintf(stderr, "start of reset values gpu: \n");
-
-	//cudaMalloc(&(container.pos), container.numParticles * sizeof(Vector3d));
-	//cudaMalloc(&(container.vel), container.numParticles * sizeof(Vector3d));
-	cudaMalloc(&(container.psi), container.numParticles * sizeof(RealCuda));
-	cudaMalloc(&(container.F), container.numParticles * sizeof(Vector3d));
-
-	/*
-	int identifier = 356 + (15 << 0x10);
-	int neighborIndex = identifier & 0xFFFF;
-	int bodyIndex = (identifier & ~0xFFFF) >> 0x10;
-	fprintf(stderr, "test computations: %d // %d // %d \n", identifier, neighborIndex, bodyIndex);
-	//*/
-}
-
-
-void load_rigid_body_container_cuda(SPH::RigidBodyContainer& container, Vector3d* pos, Vector3d* vel, RealCuda* psi) {
-
 	gpuErrchk(cudaMemcpy(container.pos, pos, container.numParticles * sizeof(Vector3d), cudaMemcpyHostToDevice));
 	gpuErrchk(cudaMemcpy(container.vel, vel, container.numParticles * sizeof(Vector3d), cudaMemcpyHostToDevice));
-	gpuErrchk(cudaMemcpy(container.psi, psi, container.numParticles * sizeof(RealCuda), cudaMemcpyHostToDevice));
+	gpuErrchk(cudaMemcpy(container.mass, mass, container.numParticles * sizeof(RealCuda), cudaMemcpyHostToDevice));
 
-	int numBlocks = (container.numParticles + BLOCKSIZE - 1) / BLOCKSIZE;
-	DFSPH_setVector3dBufferToZero_kernel << <numBlocks, BLOCKSIZE >> > (container.F, container.numParticles);
-
+	if (container.is_dynamic_object) {
+		int numBlocks = (container.numParticles + BLOCKSIZE - 1) / BLOCKSIZE;
+		DFSPH_setVector3dBufferToZero_kernel << <numBlocks, BLOCKSIZE >> > (container.F, container.numParticles);
+	}
 }
 
-void read_rigid_body_force_cuda(SPH::RigidBodyContainer& container) {
-	gpuErrchk(cudaMemcpy(container.F_cpu, container.F, container.numParticles * sizeof(Vector3d), cudaMemcpyDeviceToHost));
+void read_rigid_body_force_cuda(SPH::UnifiedParticleSet& container) {
+	if (container.is_dynamic_object) {
+		gpuErrchk(cudaMemcpy(container.F_cpu, container.F, container.numParticles * sizeof(Vector3d), cudaMemcpyDeviceToHost));
+	}
 }
 
-
-void allocate_dynamic_bodies_vector_cuda(SPH::DFSPHCData& data) {
-
-
-
+void allocate_and_copy_UnifiedParticleSet_vector_cuda(SPH::UnifiedParticleSet** out_vector, SPH::UnifiedParticleSet* in_vector, int numSets) {
 	//before to do anythng we need to make a copy of the data structure since
 	//we will have to change the neighborsdataset from the cpu to the gpu
 	//*
-	SPH::RigidBodyContainer* temp;
-	temp = new SPH::RigidBodyContainer[data.numDynamicBodies];
-	std::copy(data.vector_dynamic_bodies_data, data.vector_dynamic_bodies_data + data.numDynamicBodies, temp);
-	//memcpy(&temp, &(),  * sizeof(SPH::RigidBodyContainer));
-
-	for (int i = 0; i < data.numDynamicBodies; ++i) {
-		SPH::RigidBodyContainer& body = temp[i];
-		std::cout << "test:" << i << std::endl;
+	SPH::UnifiedParticleSet* temp;
+	temp = new SPH::UnifiedParticleSet[numSets];
+	std::copy(in_vector, in_vector + numSets, temp);
+	
+	for (int i = 0; i < numSets; ++i) {
+		SPH::UnifiedParticleSet& body = temp[i];
 		gpuErrchk(cudaMalloc(&(body.neighborsDataSet), sizeof(SPH::NeighborsSearchDataSet)));
 
-		gpuErrchk(cudaMemcpy(body.neighborsDataSet, data.vector_dynamic_bodies_data[i].neighborsDataSet,
+		gpuErrchk(cudaMemcpy(body.neighborsDataSet, in_vector[i].neighborsDataSet,
 			sizeof(SPH::NeighborsSearchDataSet), cudaMemcpyHostToDevice));
 
 	}
 	//*/
 
-	gpuErrchk(cudaMalloc(&(data.vector_dynamic_bodies_data_cuda), data.numDynamicBodies * sizeof(SPH::RigidBodyContainer)));
+	gpuErrchk(cudaMalloc(out_vector, numSets * sizeof(SPH::UnifiedParticleSet)));
 
-	gpuErrchk(cudaMemcpy(data.vector_dynamic_bodies_data_cuda, temp,
-		data.numDynamicBodies * sizeof(SPH::RigidBodyContainer), cudaMemcpyHostToDevice));
-	
-	std::cout << "it actualy did it" << std::endl;
-	std::cout << "reacched here" << std::endl;
-
-
+	gpuErrchk(cudaMemcpy(*out_vector, temp,	numSets * sizeof(SPH::UnifiedParticleSet), cudaMemcpyHostToDevice));
 }
 
 

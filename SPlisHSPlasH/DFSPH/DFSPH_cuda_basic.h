@@ -58,13 +58,8 @@ void cuda_renderBoundaries(SPH::DFSPHCData& data, bool renderWalls);
 
 void allocate_UnifiedParticleSet_cuda(SPH::UnifiedParticleSet& container);
 void load_UnifiedParticleSet_cuda(SPH::UnifiedParticleSet& container, Vector3d* pos, Vector3d* vel, RealCuda* mass);
-void allocate_and_copy_UnifiedParticleSet_vector_cuda(SPH::DFSPHCData& data);
-
-
-void allocate_rigid_body_container_cuda(SPH::RigidBodyContainer& container);
-void load_rigid_body_container_cuda(SPH::RigidBodyContainer& container, Vector3d* pos, Vector3d* vel, RealCuda* psi);
-void read_rigid_body_force_cuda(SPH::RigidBodyContainer& container); 
-void allocate_dynamic_bodies_vector_cuda(SPH::DFSPHCData& data);
+void read_rigid_body_force_cuda(SPH::UnifiedParticleSet& container);
+void allocate_and_copy_UnifiedParticleSet_vector_cuda(SPH::UnifiedParticleSet** out_vector, SPH::UnifiedParticleSet* in_vector, int numSets);
 
 
 void allocate_c_array_struct_cuda_managed(SPH::DFSPHCData& data, bool minimize_managed = false);

@@ -99,23 +99,6 @@ void NeighborsSearchDataSet::deleteComputationBuffer() {
 	release_neighbors_search_data_set(*this, true);
 }
 
-RigidBodyContainer::RigidBodyContainer(int nbParticles)
-{
-	numParticles = nbParticles;
-
-
-	renderingData = new ParticleSetRenderingData();
-	cuda_opengl_initParticleRendering(*renderingData, numParticles, &pos, &vel);
-
-	//initialisation on the GPU
-	allocate_rigid_body_container_cuda((*this));
-
-	F_cpu = new Vector3d[numParticles];
-	
-	neighborsDataSet = new NeighborsSearchDataSet(numParticles);
-
-}
-
 UnifiedParticleSet::UnifiedParticleSet() {
 	numParticles=0;
 	has_factor_computation = false;
@@ -136,23 +119,39 @@ UnifiedParticleSet::UnifiedParticleSet() {
 	kappaV = NULL;
 	F = NULL;
 	F_cpu = NULL;
-	renderingDataFluid=NULL;
+	renderingData=NULL;
 }
 
-UnifiedParticleSet::UnifiedParticleSet(int nbParticles, bool has_factor_computation_i, bool is_dynamic_object_i,
-	bool velocity_impacted_by_fluid_solver_i) 
+UnifiedParticleSet::UnifiedParticleSet(int nbParticles, bool has_factor_computation_i, bool velocity_impacted_by_fluid_solver_i,
+	bool is_dynamic_object_i)
 	: UnifiedParticleSet()
 {
 	numParticles = nbParticles;
 	has_factor_computation = has_factor_computation_i;
-	is_dynamic_object = is_dynamic_object_i;
 	velocity_impacted_by_fluid_solver = velocity_impacted_by_fluid_solver_i;
+	is_dynamic_object = is_dynamic_object_i;
+
+
+	//init the rendering data
+	renderingData = new ParticleSetRenderingData();
+	cuda_opengl_initParticleRendering(*renderingData, numParticles, &pos, &vel);
 
 	//initialisation on the GPU
 	allocate_UnifiedParticleSet_cuda((*this));
 
 
 	neighborsDataSet = new NeighborsSearchDataSet(numParticles);
+}
+
+void UnifiedParticleSet::transferForcesToCPU() {
+	if (is_dynamic_object) {
+		//init the buffer if it's NULL
+		if (F_cpu == NULL) {
+			F_cpu = new Vector3d[numParticles];
+		}
+
+		read_rigid_body_force_cuda(*this);
+	}
 }
 
 DFSPHCData::DFSPHCData(FluidModel *model) {
@@ -184,12 +183,12 @@ DFSPHCData::DFSPHCData(FluidModel *model) {
 		
 		//allocate the data for the dynamic bodies
 		numDynamicBodies = static_cast<int>(model->m_particleObjects.size() - 2);
-		vector_dynamic_bodies_data = new RigidBodyContainer[numDynamicBodies];
+		vector_dynamic_bodies_data = new UnifiedParticleSet[numDynamicBodies];
 		for (int i = 2; i < model->m_particleObjects.size(); ++i) {
-			vector_dynamic_bodies_data[i-2]= RigidBodyContainer(model->m_particleObjects[i]->numberOfParticles());
+			vector_dynamic_bodies_data[i-2]= UnifiedParticleSet(model->m_particleObjects[i]->numberOfParticles(),false,false,true);
 		}
 
-		allocate_dynamic_bodies_vector_cuda(*this);
+		allocate_and_copy_UnifiedParticleSet_vector_cuda(&vector_dynamic_bodies_data_cuda, vector_dynamic_bodies_data, numDynamicBodies);
 
 
 		//init the values from the model
@@ -439,7 +438,7 @@ void DFSPHCData::loadDynamicObjectsData(FluidModel *model) {
 	// I need to transfer the data to c_typed buffers to use in .cu file
 	for (int id = 2; id < model->m_particleObjects.size(); ++id) {
 		FluidModel::RigidBodyParticleObject* particleObj = static_cast<FluidModel::RigidBodyParticleObject*>(model->m_particleObjects[id]);
-		RigidBodyContainer& body = vector_dynamic_bodies_data[id - 2];
+		UnifiedParticleSet& body = vector_dynamic_bodies_data[id - 2];
 
 		Vector3d* pos_temp = new Vector3d[body.numParticles];
 		Vector3d* vel_temp = new Vector3d[body.numParticles];
@@ -451,7 +450,7 @@ void DFSPHCData::loadDynamicObjectsData(FluidModel *model) {
 			psi_temp[i] = particleObj->m_boundaryPsi[i];
 		}
 
-		load_rigid_body_container_cuda(body,pos_temp, vel_temp, psi_temp);
+		load_UnifiedParticleSet_cuda(body,pos_temp, vel_temp, psi_temp);
 
 		delete[] pos_temp;
 		delete[] vel_temp;
@@ -463,10 +462,11 @@ void DFSPHCData::readDynamicObjectsData(FluidModel *model) {
 	//now initiate the data for the dynamic bodies the same way we did it for the boundaries
 	// I need to transfer the data to c_typed buffers to use in .cu file
 	for (int id = 2; id < model->m_particleObjects.size(); ++id) {
-		RigidBodyContainer& body = vector_dynamic_bodies_data[id - 2];
+		UnifiedParticleSet& body = vector_dynamic_bodies_data[id - 2];
 
 		//convert gpu data to cpu
-		read_rigid_body_force_cuda(body);
+		body.transferForcesToCPU();
+		//read_rigid_body_force_cuda(body);
 
 		for (int i = 0; i < body.numParticles; ++i) {
 			model->getForce(id, i) = vector3dTo3r(body.F_cpu[i]);
