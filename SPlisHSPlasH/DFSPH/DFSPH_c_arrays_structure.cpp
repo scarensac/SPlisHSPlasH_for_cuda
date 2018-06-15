@@ -80,7 +80,9 @@ NeighborsSearchDataSet::~NeighborsSearchDataSet() {
 	release_neighbors_search_data_set(*this, false);
 }
 
-void NeighborsSearchDataSet::initData(DFSPHCData* data, bool is_boundaries) {
+
+
+void NeighborsSearchDataSet::initData(UnifiedParticleSet* particleSet, RealCuda kernel_radius, bool sort_data) {
 	//if the computation memory space was released to free memory space
 	//we need to realocate it
 	if (!internal_buffers_allocated) {
@@ -92,7 +94,7 @@ void NeighborsSearchDataSet::initData(DFSPHCData* data, bool is_boundaries) {
 	}
 
 	//do the actual init
-	cuda_initNeighborsSearchDataSet(*data, *this, is_boundaries);
+	cuda_initNeighborsSearchDataSet(*particleSet,*this, kernel_radius, sort_data);
 }
 
 void NeighborsSearchDataSet::deleteComputationBuffer() {
@@ -154,6 +156,44 @@ void UnifiedParticleSet::transferForcesToCPU() {
 	}
 }
 
+void UnifiedParticleSet::initNeighborsSearchData(RealCuda kernel_radius, bool sort_data, bool delete_computation_data) {
+	neighborsDataSet->initData(this, kernel_radius, sort_data);
+
+	if (delete_computation_data) {
+		neighborsDataSet->deleteComputationBuffer();
+	}
+}
+
+template<class T>
+void UnifiedParticleSet::reset(T* particleObj) {
+	Vector3d* pos_temp = new Vector3d[numParticles];
+	Vector3d* vel_temp = new Vector3d[numParticles];
+	RealCuda* mass_temp = new RealCuda[numParticles];
+
+	if (dynamic_cast<FluidModel::RigidBodyParticleObject*>(particleObj) != NULL) {
+		FluidModel::RigidBodyParticleObject* obj = reinterpret_cast<FluidModel::RigidBodyParticleObject*>(particleObj);
+		for (int i = 0; i < numParticles; ++i) {
+			pos_temp[i] = vector3rTo3d(obj->m_x[i]);
+			vel_temp[i] = vector3rTo3d(obj->m_v[i]);
+			mass_temp[i] = obj->m_boundaryPsi[i];
+		}
+	}
+	else {
+		FluidModel *model = reinterpret_cast<FluidModel*>(particleObj);
+		for (int i = 0; i < numParticles; ++i) {
+			pos_temp[i] = vector3rTo3d(model->getPosition(0, i));
+			vel_temp[i] = vector3rTo3d(model->getVelocity(0, i));
+			mass_temp[i] = model->getMass(i);
+		}
+	}
+
+	load_UnifiedParticleSet_cuda(*this, pos_temp, vel_temp, mass_temp);
+
+	delete[] pos_temp;
+	delete[] vel_temp;
+	delete[] mass_temp;
+}
+
 DFSPHCData::DFSPHCData(FluidModel *model) {
 
 	m_kernel.setRadius(model->m_supportRadius);
@@ -163,24 +203,19 @@ DFSPHCData::DFSPHCData(FluidModel *model) {
 
 	particleRadius = model->getParticleRadius();
 
-	numBoundaryParticles = model->m_particleObjects[1]->numberOfParticles();
 	numFluidParticles = model->numActiveParticles();
 
 	if (true) {
-		//initialisation on the GPU
-		allocate_c_array_struct_cuda_managed((*this));
+		//unified particles for the boundaries
+		boundaries_data = new UnifiedParticleSet[1];
+		boundaries_data[0]= UnifiedParticleSet(model->m_particleObjects[1]->numberOfParticles(), false, false, false);
+		allocate_and_copy_UnifiedParticleSet_vector_cuda(&boundaries_data_cuda, boundaries_data, 1);
 
-		//init the rendering
-		renderingDataFluid = new ParticleSetRenderingData();
-		cuda_opengl_initParticleRendering(*renderingDataFluid, numFluidParticles, &posFluid, &velFluid);
+		//unified particles for the fluid
+		fluid_data = new UnifiedParticleSet[1];
+		fluid_data[0] = UnifiedParticleSet(model->numActiveParticles(), true, true, false);
+		allocate_and_copy_UnifiedParticleSet_vector_cuda(&fluid_data_cuda, fluid_data, 1);
 
-		renderingDataBoundaries = new ParticleSetRenderingData();
-		cuda_opengl_initParticleRendering(*renderingDataBoundaries, numBoundaryParticles, &posBoundary, &velBoundary);
-		
-		//allocate the data set that are gonna be used for the neighbors search
-		neighborsdataSetBoundaries = new NeighborsSearchDataSet(numBoundaryParticles);
-		neighborsdataSetFluid = new NeighborsSearchDataSet(numFluidParticles);
-		
 		//allocate the data for the dynamic bodies
 		numDynamicBodies = static_cast<int>(model->m_particleObjects.size() - 2);
 		vector_dynamic_bodies_data = new UnifiedParticleSet[numDynamicBodies];
@@ -196,29 +231,6 @@ DFSPHCData::DFSPHCData(FluidModel *model) {
 		
 		
 	}
-	else {
-		//initialisation on the CPU
-		posBoundary = new Vector3d[numBoundaryParticles];
-		velBoundary = new Vector3d[numBoundaryParticles];
-		boundaryPsi = new RealCuda[numBoundaryParticles];
-
-
-		//handle the fluid
-		mass = new RealCuda[numFluidParticles];
-		posFluid = new Vector3d[numFluidParticles];
-		velFluid = new Vector3d[numFluidParticles];
-		accFluid = new Vector3d[numFluidParticles];
-		numberOfNeighbourgs = new int[numFluidParticles * 2];
-		neighbourgs = new int[numFluidParticles * 2 * MAX_NEIGHBOURS];
-
-		density = new RealCuda[numFluidParticles];
-		factor = new RealCuda[numFluidParticles];
-		kappa = new RealCuda[numFluidParticles];
-		kappaV = new RealCuda[numFluidParticles];
-		densityAdv = new RealCuda[numFluidParticles];
-		
-		reset(model);
-	}
 
 
 
@@ -229,7 +241,7 @@ void DFSPHCData::reset(FluidModel *model) {
 		std::cout << "DFSPHCData::reset: fml the nbr of fluid particles has been modified" << std::endl;
 		exit(3469);
 	}
-	if (numBoundaryParticles != model->m_particleObjects[1]->numberOfParticles()) {
+	if (boundaries_data->numParticles != model->m_particleObjects[1]->numberOfParticles()) {
 		std::cout << "DFSPHCData::reset: fml the nbr of boundaries particles has been modified" << std::endl;
 		exit(9657);
 	}
@@ -242,71 +254,20 @@ void DFSPHCData::reset(FluidModel *model) {
 	density0 = model->getDensity0();
 
 	if (true) {
-		// I need to transfer the data to c_typed buffers to use in .cu file
-		Vector3d* posBoundary_temp= new Vector3d[numBoundaryParticles];
-		Vector3d* velBoundary_temp = new Vector3d[numBoundaryParticles];
-		RealCuda* boundaryPsi_temp = new RealCuda[numBoundaryParticles];
-
-		for (int i = 0; i < numBoundaryParticles; ++i) {
-			FluidModel::RigidBodyParticleObject* particleObj = static_cast<FluidModel::RigidBodyParticleObject*>(model->m_particleObjects[1]);
-			posBoundary_temp[i] = vector3rTo3d(particleObj->m_x[i]);
-			velBoundary_temp[i] = vector3rTo3d(particleObj->m_v[i]);
-			boundaryPsi_temp[i] = particleObj->m_boundaryPsi[i];
-		}
-
-		Vector3d* posFluid_temp = new Vector3d[numFluidParticles];
-		Vector3d* velFluid_temp = new Vector3d[numFluidParticles];
-		RealCuda* mass_temp = new RealCuda[numFluidParticles];
-
-		for (int i = 0; i < numFluidParticles; ++i) {
-			posFluid_temp[i] = vector3rTo3d(model->getPosition(0, i));
-			velFluid_temp[i] = vector3rTo3d(model->getVelocity(0, i));
-			mass_temp[i] = model->getMass(i);
-		}
-
-		reset_c_array_struct_cuda_from_values(*this, posBoundary_temp, velBoundary_temp, boundaryPsi_temp,
-			posFluid_temp, velFluid_temp, mass_temp);
-
-		delete[] posBoundary_temp;
-		delete[] velBoundary_temp;
-		delete[] boundaryPsi_temp;
-		delete[] posFluid_temp;
-		delete[] velFluid_temp;
-		delete[] mass_temp;
-
-		//init the data set that are gonna be used for the neighbors search
-		neighborsdataSetBoundaries->initData(this, true);
-		neighborsdataSetBoundaries->deleteComputationBuffer();
-		neighborsdataSetFluid->initData(this, false);
-
-
-		//now initiate the data for the dynamic bodies the same way we did it for the boundaries
-		readDynamicObjectsData(model);
-
-	}
-	else {
+		//load the data for the fluid
+		fluid_data->reset<FluidModel>(model);
+		//init the boundaries neighbor searchs
+		fluid_data->initNeighborsSearchData(this->m_kernel_precomp.getRadius(), true, false);
 		
-
-		for (int i = 0; i < numBoundaryParticles; ++i) {
-			FluidModel::RigidBodyParticleObject* particleObj = static_cast<FluidModel::RigidBodyParticleObject*>(model->m_particleObjects[1]);
-			posBoundary[i] = vector3rTo3d(particleObj->m_x[i]);
-			velBoundary[i] = vector3rTo3d(particleObj->m_v[i]);
-			boundaryPsi[i] = particleObj->m_boundaryPsi[i];
-		}
-
-		for (int i = 0; i < numFluidParticles; ++i) {
-			posFluid[i] = vector3rTo3d(model->getPosition(0, i));
-			velFluid[i] = vector3rTo3d(model->getVelocity(0, i));
-			mass[i] = model->getMass(i);
-
-			//clear the internal kappa and  kappa v
-			kappa[i] = 0.0;
-			kappaV[i] = 0.0;
-		}
-
+		//load the data for the boundaries
+		FluidModel::RigidBodyParticleObject* particleObj = static_cast<FluidModel::RigidBodyParticleObject*>(model->m_particleObjects[1]);
+		boundaries_data->reset<FluidModel::RigidBodyParticleObject>(particleObj);
+		//init the boundaries neighbor searchs
+		boundaries_data->initNeighborsSearchData(this->m_kernel_precomp.getRadius(), true, true);
+		
+		//now initiate the data for the dynamic bodies 
+		loadDynamicObjectsData(model);
 	}
-
-
 
 }
 
@@ -339,7 +300,7 @@ void DFSPHCData::loadDynamicData(FluidModel *model, const SimulationDataDFSPH& d
 
 	//*/
 
-
+	/*
 	//load the neighbours
 	for (int i = 0; i < (int)numFluidParticles; ++i)
 	{
@@ -377,7 +338,7 @@ void DFSPHCData::loadDynamicData(FluidModel *model, const SimulationDataDFSPH& d
 			std::cout << "crossed the max neighbour: " << numberOfNeighbourgs[i] << std::endl;
 		}
 	}
-
+	//*/
 	/*
 	//effectively the maximum is around 50 for each side
 	//so I'll put static buffers of 60
@@ -406,32 +367,34 @@ void DFSPHCData::readDynamicData(FluidModel *model, SimulationDataDFSPH& data) {
 
 	//density and acc are not conserved between timesteps so no need to copy them
 	for (int i = 0; i < numFluidParticles; ++i) {
-		model->getPosition(0, i) = vector3dTo3r(posFluid[i]);
-		model->getVelocity(0, i) = vector3dTo3r(velFluid[i]);
+		model->getPosition(0, i) = vector3dTo3r(fluid_data->pos[i]);
+		model->getVelocity(0, i) = vector3dTo3r(fluid_data->vel[i]);
 		
 	}
 }
 
-void DFSPHCData::sortDynamicData(FluidModel *model) {
 
-	if (model->numActiveParticles() != numFluidParticles) {
-		exit(1569);
+
+
+template<typename T>
+void DFSPHCData::loadObjectData(UnifiedParticleSet& body, T* particleObj) {
+
+	Vector3d* pos_temp = new Vector3d[body.numParticles];
+	Vector3d* vel_temp = new Vector3d[body.numParticles];
+	RealCuda* psi_temp = new RealCuda[body.numParticles];
+
+	for (int i = 0; i < body.numParticles; ++i) {
+		pos_temp[i] = vector3rTo3d(particleObj->m_x[i]);
+		vel_temp[i] = vector3rTo3d(particleObj->m_v[i]);
+		psi_temp[i] = particleObj->m_boundaryPsi[i];
 	}
 
-	//*
-	const unsigned int numPart = model->numActiveParticles();
-	if (numPart == 0)
-		return;
+	load_UnifiedParticleSet_cuda(body, pos_temp, vel_temp, psi_temp);
 
-	auto const& d = model->getNeighborhoodSearch()->point_set(0);
-	d.sort_field(&posFluid[0]);
-	d.sort_field(&velFluid[0]);
-	d.sort_field(&kappa[0]);
-	d.sort_field(&kappaV[0]);
-
-
+	delete[] pos_temp;
+	delete[] vel_temp;
+	delete[] psi_temp;
 }
-
 
 void DFSPHCData::loadDynamicObjectsData(FluidModel *model) {
 	//now initiate the data for the dynamic bodies the same way we did it for the boundaries
@@ -440,21 +403,10 @@ void DFSPHCData::loadDynamicObjectsData(FluidModel *model) {
 		FluidModel::RigidBodyParticleObject* particleObj = static_cast<FluidModel::RigidBodyParticleObject*>(model->m_particleObjects[id]);
 		UnifiedParticleSet& body = vector_dynamic_bodies_data[id - 2];
 
-		Vector3d* pos_temp = new Vector3d[body.numParticles];
-		Vector3d* vel_temp = new Vector3d[body.numParticles];
-		RealCuda* psi_temp = new RealCuda[body.numParticles];
+		loadObjectData<FluidModel::RigidBodyParticleObject>(body, particleObj);
 
-		for (int i = 0; i < body.numParticles; ++i) {
-			pos_temp[i] = vector3rTo3d(particleObj->m_x[i]);
-			vel_temp[i] = vector3rTo3d(particleObj->m_v[i]);
-			psi_temp[i] = particleObj->m_boundaryPsi[i];
-		}
-
-		load_UnifiedParticleSet_cuda(body,pos_temp, vel_temp, psi_temp);
-
-		delete[] pos_temp;
-		delete[] vel_temp;
-		delete[] psi_temp;
+		///the reason I don't do the neighbor search here is that I would not be able to use it
+		///to sort the data since I copy them at every time step (so it would be useless)
 	}
 }
 
@@ -466,7 +418,6 @@ void DFSPHCData::readDynamicObjectsData(FluidModel *model) {
 
 		//convert gpu data to cpu
 		body.transferForcesToCPU();
-		//read_rigid_body_force_cuda(body);
 
 		for (int i = 0; i < body.numParticles; ++i) {
 			model->getForce(id, i) = vector3dTo3r(body.F_cpu[i]);

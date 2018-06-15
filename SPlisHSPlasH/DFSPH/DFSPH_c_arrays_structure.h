@@ -161,6 +161,7 @@ namespace SPH
 		particles
 	*/
 	class DFSPHCData;
+	class UnifiedParticleSet;
 
 	class NeighborsSearchDataSet {
 	public:
@@ -190,13 +191,13 @@ namespace SPH
 		NeighborsSearchDataSet(unsigned int numParticles_i);
 		~NeighborsSearchDataSet();
 
+	
 		/**
 			this function RealCudaize the computations necessary to initialize:
 				p_id_sorted buffer with the particles index sorted by their cell index
 				cell_start_end with the number of particles at the start and end of each cell
 		*/
-		void initData(DFSPHCData* data, bool is_boundaries);
-
+		void initData(UnifiedParticleSet* particleSet, RealCuda kernel_radius, bool sort_data);
 
 		/**
 			Free computation memory. This cna be called for the boundary as
@@ -210,7 +211,15 @@ namespace SPH
 	};
 
 	class UnifiedParticleSet {
-	public://static size and values when pacticle count constant
+	public:
+
+
+		//the size is 75 because I checked and the max neighbours I reached was 58
+		//so I put some more to be sure. In the end those buffers will stay on the GPU memory
+		//so there will be no transfers.
+#define MAX_NEIGHBOURS 75
+
+
 		int numParticles;
 		bool has_factor_computation;
 		bool is_dynamic_object;
@@ -258,6 +267,25 @@ namespace SPH
 		//only do smth for the dynamic bodies
 		void transferForcesToCPU();
 
+		//this does the necessary calls to be able to run the neighbors search later
+		void initNeighborsSearchData(RealCuda kernel_radius, bool sort_data, bool delete_computation_data=false);
+
+		//reset the data
+		//also clear the computation buffers 
+		template<class T>
+		void reset(T* particleObj);
+
+
+		FUNCTION inline int* getNeighboursPtr(int particle_id) {
+			//	return neighbourgs + body_id*numFluidParticles*MAX_NEIGHBOURS + particle_id*MAX_NEIGHBOURS;
+			return neighbourgs + particle_id*MAX_NEIGHBOURS;
+		}
+
+		FUNCTION inline unsigned int getNumberOfNeighbourgs(int particle_id, int body_id = 0) {
+			//return numberOfNeighbourgs[body_id*numFluidParticles + particle_id]; 
+			return numberOfNeighbourgs[particle_id * 3 + body_id];
+		}
+
 	};
 
 
@@ -274,10 +302,6 @@ namespace SPH
 		CubicKernelPerso m_kernel;
 		PrecomputedCubicKernelPerso m_kernel_precomp;
 
-		//the size is 60 because I checked and the max neighbours I reached was 50
-		//so I put 10 more to be sure. In the end those buffers will stay on the GPU memory
-		//so there will be no transfers.
-#define MAX_NEIGHBOURS 75
 		const Vector3d gravitation = Vector3d(0.0f, -9.81, 0.0f);
 
 		//static size and value all time
@@ -288,30 +312,7 @@ namespace SPH
 		RealCuda density0;
 		RealCuda particleRadius;
 		RealCuda viscosity;
-
-		//for boundaries everything should be completely static here
-		Vector3d* posBoundary;
-		Vector3d* velBoundary;
-		RealCuda* boundaryPsi;
-		int numBoundaryParticles;
-
-		//static size and values when pacticle count constant
-		RealCuda* mass;
-
-		//static size but value dynamic
-		RealCuda* density;
-		Vector3d* posFluid;
-		Vector3d* velFluid;
-		Vector3d* accFluid;
-		int* numberOfNeighbourgs;
-		int* neighbourgs;
-		RealCuda* factor;
-
-		//the V one is for the divergence
-		RealCuda* kappa;
-		RealCuda* kappaV;
-		//for the terative solvers
-		RealCuda* densityAdv;
+		
 
 		int numFluidParticles;
 		RealCuda h;
@@ -326,11 +327,16 @@ namespace SPH
 		RealCuda invH_future;
 		RealCuda invH2_future;
 
-		//data sets for the neighbors search
-		NeighborsSearchDataSet* neighborsdataSetBoundaries;
-		NeighborsSearchDataSet* neighborsdataSetFluid;
-
 	
+
+		//boundaries particles
+		UnifiedParticleSet* fluid_data;
+		UnifiedParticleSet* fluid_data_cuda;
+
+		//boundaries particles
+		UnifiedParticleSet* boundaries_data;
+		UnifiedParticleSet* boundaries_data_cuda;
+
 
 		//data structure for the dynamic objects
 		//both contains the same data but the first one is create with a new on the cpu
@@ -340,21 +346,14 @@ namespace SPH
 		UnifiedParticleSet* vector_dynamic_bodies_data_cuda;
 		int numDynamicBodies;
 
-		//variables for the rendering (pointer to opengl and cuda interop)
-		ParticleSetRenderingData* renderingDataFluid;
-		ParticleSetRenderingData* renderingDataBoundaries;
-
-
-		unsigned int vao_float;
-		unsigned int pos_buffer_float;
-		unsigned int vel_buffer_float;
 
 		DFSPHCData(FluidModel *model);
 
 		void loadDynamicData(FluidModel *model, const SimulationDataDFSPH& data);
 		void readDynamicData(FluidModel *model, SimulationDataDFSPH& data);
-		void sortDynamicData(FluidModel *model);
 
+		template<typename T>
+		void loadObjectData(UnifiedParticleSet& body, T* particleObj);
 		void loadDynamicObjectsData(FluidModel *model);
 		void readDynamicObjectsData(FluidModel *model);
 
@@ -378,15 +377,7 @@ namespace SPH
 		}
 
 
-		FUNCTION inline int* getNeighboursPtr(int particle_id) {
-			//	return neighbourgs + body_id*numFluidParticles*MAX_NEIGHBOURS + particle_id*MAX_NEIGHBOURS;
-			return neighbourgs + particle_id*MAX_NEIGHBOURS;
-		}
-
-		FUNCTION inline unsigned int getNumberOfNeighbourgs(int particle_id, int body_id = 0) {
-			//return numberOfNeighbourgs[body_id*numFluidParticles + particle_id]; 
-			return numberOfNeighbourgs[particle_id*3+body_id];
-		}
+		
 
 	};
 }

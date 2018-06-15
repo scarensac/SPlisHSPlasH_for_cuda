@@ -42,8 +42,13 @@ int cuda_pressureSolve(SPH::DFSPHCData& data, const unsigned int maxIter, const 
 //those functions are for the neighbors search
 void cuda_neighborsSearch(SPH::DFSPHCData& data);
 
-void cuda_initNeighborsSearchDataSet(SPH::DFSPHCData& data, SPH::NeighborsSearchDataSet& dataSet, bool is_boundaries);
-void cuda_sortData(SPH::DFSPHCData& data, SPH::NeighborsSearchDataSet& neighborsDataSet, bool is_boundaries=false);
+
+void cuda_initNeighborsSearchDataSet(SPH::UnifiedParticleSet& particleSet, SPH::NeighborsSearchDataSet& dataSet, 
+	RealCuda kernel_radius, bool sortBuffers=false);
+
+void cuda_sortData(SPH::UnifiedParticleSet& particleSet, SPH::NeighborsSearchDataSet& neighborsDataSet);
+
+
 
 
 void cuda_renderFluid(SPH::DFSPHCData& data);
@@ -61,10 +66,6 @@ void load_UnifiedParticleSet_cuda(SPH::UnifiedParticleSet& container, Vector3d* 
 void read_rigid_body_force_cuda(SPH::UnifiedParticleSet& container);
 void allocate_and_copy_UnifiedParticleSet_vector_cuda(SPH::UnifiedParticleSet** out_vector, SPH::UnifiedParticleSet* in_vector, int numSets);
 
-
-void allocate_c_array_struct_cuda_managed(SPH::DFSPHCData& data, bool minimize_managed = false);
-void reset_c_array_struct_cuda_from_values(SPH::DFSPHCData& data, Vector3d* posBoundary, Vector3d* velBoundary,
-	RealCuda* boundaryPsi, Vector3d* posFluid, Vector3d* velFluid, RealCuda* mass);
 
 void allocate_precomputed_kernel_managed(SPH::PrecomputedCubicKernelPerso& kernel, bool minimize_managed = false);
 void init_precomputed_kernel_from_values(SPH::PrecomputedCubicKernelPerso& kernel, RealCuda* w, RealCuda* grad_W);
