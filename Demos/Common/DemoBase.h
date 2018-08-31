@@ -68,6 +68,7 @@ namespace SPH
 		std::vector<Parameter> m_parameters;
 		int m_renderWalls;
 		bool m_doPause;
+		bool m_doRbPause;
 		Real m_pauseAt;
 		bool m_enablePartioExport;
 		unsigned int m_framesPerSecond;
@@ -122,7 +123,9 @@ namespace SPH
 		int getRenderWalls() const { return m_renderWalls; }
 		void setRenderWalls(int val) { m_renderWalls = val; }
 		bool getPause() const { return m_doPause; }
+		bool getRbPause() const { return m_doRbPause; }
 		void setPause(bool val) { m_doPause = val; }
+		void setRbPause(bool val) { m_doRbPause = val; }
 		std::vector<unsigned int>& getSelectedParticles() { return m_selectedParticles; }
 		bool getUseParticleCaching() const { return m_useParticleCaching; }
 		void setUseParticleCaching(bool val) { m_useParticleCaching = val; }

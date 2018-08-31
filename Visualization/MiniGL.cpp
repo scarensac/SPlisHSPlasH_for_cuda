@@ -700,8 +700,11 @@ void MiniGL::idle ()
 
 void MiniGL::keyboard (unsigned char k, int x, int y)
 {
+
 	if (TwEventKeyboardGLUT(k, x, y))  // send event to AntTweakBar
 		return;
+
+
 
 	if (k == 27)
 	{
@@ -730,8 +733,10 @@ void MiniGL::keyboard (unsigned char k, int x, int y)
 	{
 		for (int i=0; i < numberOfKeyFunc; i++)
 		{
-			if (k == key[i])
+			if (k == key[i]) {
 				keyfunc [i] ();
+
+			}
 		}
 	}
 	glutPostRedisplay ();

@@ -25,7 +25,7 @@ DFSPHCUDA::DFSPHCUDA(FluidModel *model) :
 	m_enableDivergenceSolver = true;
 
 
-
+	is_dynamic_bodies_paused = false;
 
 
 }
@@ -111,7 +111,7 @@ void DFSPHCUDA::step()
 		tab_timepoint[current_timepoint++] = std::chrono::steady_clock::now();
 
 
-
+		
 		m_data.readDynamicObjectsData(m_model);
 		m_data.onSimulationStepEnd();
 		
@@ -1037,3 +1037,22 @@ void DFSPHCUDA::renderBoundaries(bool renderWalls) {
 }
 
 
+void DFSPHCUDA::handleDynamicBodiesPause(bool pause) {
+	if (pause) {
+		//if we are toggleing the pause we need to store the velocities and set the one used for the computations to zero
+		for (int id = 2; id < m_model->m_particleObjects.size(); ++id) {
+			FluidModel::RigidBodyParticleObject* particleObj = static_cast<FluidModel::RigidBodyParticleObject*>(m_model->m_particleObjects[id]);
+
+			for (int i = 0; i < particleObj->m_v.size(); ++i) {
+				particleObj->m_v[i] = Vector3r(0,0,0);
+			}
+		}
+	}
+
+
+	FluidModel::RigidBodyParticleObject* particleObjtemp = static_cast<FluidModel::RigidBodyParticleObject*>(m_model->m_particleObjects[2]);
+	std::cout << "vel_check: " << particleObjtemp->m_v[0].x() << "  " << particleObjtemp->m_v[0].y() << "  " << particleObjtemp->m_v[0].z() << std::endl;
+	
+
+	is_dynamic_bodies_paused = pause;
+}

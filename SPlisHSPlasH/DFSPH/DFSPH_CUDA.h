@@ -69,6 +69,9 @@ namespace SPH
 
 		void renderFluid();
 		void renderBoundaries(bool renderWalls);
+
+		bool is_dynamic_bodies_paused;
+		void handleDynamicBodiesPause(bool pause);
 	};
 }
 

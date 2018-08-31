@@ -13,6 +13,7 @@
 #include "PositionBasedDynamicsWrapper/PBDWrapper.h"
 #include "Demos/Common/DemoBase.h"
 #include "Utilities/FileSystem.h"
+#include "SPlisHSPlasH/DFSPH/DFSPH_CUDA.h"
 
 // Enable memory leak detection
 #ifdef _DEBUG
@@ -105,17 +106,26 @@ void timeStep ()
 	// Simulation code
 	for (unsigned int i = 0; i < base.getNumberOfStepsPerRenderUpdate(); i++)
 	{
+		if (base.getSimulationMethod().simulationMethod == DemoBase::SimulationMethods::DFSPH_CUDA) {
+			DFSPHCUDA* sim = dynamic_cast<DFSPHCUDA*>(base.getSimulationMethod().simulation);
+			sim->handleDynamicBodiesPause(base.getRbPause());
+		}
+		
+
 		START_TIMING("SimStep");
 		base.getSimulationMethod().simulation->step();
 		STOP_TIMING_AVG;
 
-		updateBoundaryForces();
-
+		if (!base.getRbPause()) {
+			updateBoundaryForces();
+		}
 		//////////////////////////////////////////////////////////////////////////
 		// PBD
 		//////////////////////////////////////////////////////////////////////////
 		START_TIMING("SimStep - PBD");
-		pbdWrapper.timeStep();
+		if (!base.getRbPause()) {
+			pbdWrapper.timeStep();
+		}
 		STOP_TIMING_AVG;
 
 		updateBoundaryParticles(false);

@@ -77,19 +77,34 @@
 			"collisionObjectType": 3,
 			"collisionObjectScale": [0.1, 0.5, 0.1]
 		},
-		{
-			"id": 4,
-			"geometryFile": "../models/torus.obj",
+    {
+      "id": 4,
+      "geometryFile": "../models/torus.obj",
+      "isDynamic": 1,
+      "density": 100,
+      "translation": [ 2, 2.0, 0.5 ],
+      "rotationAxis": [ 0, 0, 1 ],
+      "rotationAngle": 1.0,
+      "scale": [ 0.2, 0.2, 0.2 ],
+      "restitution": 0.6,
+      "friction": 0.2,
+      "color": [ 0.5, 0.2, 0.6, 1.0 ],
+      "collisionObjectType": 4,
+      "collisionObjectScale": [ 0.2, 0.1, 0.2 ]
+    },
+    {
+			"id": 5,
+			"geometryFile": "../models/cube.obj",
 			"isDynamic": 1, 
 			"density": 100, 
-			"translation": [2,2.0,0.5],
+			"translation": [1,2.0,0.5],
 			"rotationAxis": [0, 0, 1],
 			"rotationAngle": 1.0,
-			"scale": [0.2, 0.2, 0.2],
+			"scale": [0.5, 0.2, 0.3],
 			"restitution" : 0.6,
 			"friction" : 0.2,
-			"color": [0.5, 0.2, 0.6, 1.0], 
-			"collisionObjectType": 4,
+			"color": [0.0, 0.2, 0.6, 1.0], 
+			"collisionObjectType": 2,
 			"collisionObjectScale": [0.2, 0.1, 0.2]	
 		}
 	],
