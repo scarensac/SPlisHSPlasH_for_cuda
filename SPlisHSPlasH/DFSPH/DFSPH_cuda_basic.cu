@@ -118,7 +118,7 @@ FUNCTION inline unsigned int getNumberOfNeighbourgs(int* numberOfNeighbourgs, in
 	return numberOfNeighbourgs[particle_id * 3 + body_id];
 }
 
-__device__ void computeDensityChange(SPH::DFSPHCData& m_data, const unsigned int index) {
+__device__ void computeDensityChange(const SPH::DFSPHCData& m_data, const unsigned int index) {
 	unsigned int numNeighbors = m_data.fluid_data_cuda->getNumberOfNeighbourgs(index);
 	// in case of particle deficiency do not perform a divergence solve
 	if (numNeighbors < 20) {
@@ -140,7 +140,7 @@ __device__ void computeDensityChange(SPH::DFSPHCData& m_data, const unsigned int
 		int* neighbors_ptr = m_data.fluid_data_cuda->getNeighboursPtr(index);
 		int* end_ptr = neighbors_ptr + m_data.fluid_data_cuda->getNumberOfNeighbourgs(index);
 		{
-			SPH::UnifiedParticleSet& body = *(m_data.fluid_data_cuda);
+			const SPH::UnifiedParticleSet& body = *(m_data.fluid_data_cuda);
 			while (neighbors_ptr != end_ptr)
 			{
 				const unsigned int neighborIndex = *neighbors_ptr++;
@@ -151,7 +151,7 @@ __device__ void computeDensityChange(SPH::DFSPHCData& m_data, const unsigned int
 		// Boundary
 		//////////////////////////////////////////////////////////////////////////
 		{
-			SPH::UnifiedParticleSet& body = *(m_data.boundaries_data_cuda);
+			const SPH::UnifiedParticleSet& body = *(m_data.boundaries_data_cuda);
 			end_ptr += m_data.fluid_data_cuda->getNumberOfNeighbourgs(index, 1);
 			while (neighbors_ptr != end_ptr)
 			{
@@ -167,7 +167,7 @@ __device__ void computeDensityChange(SPH::DFSPHCData& m_data, const unsigned int
 		while (neighbors_ptr != end_ptr)
 		{
 			READ_DYNAMIC_BODIES_PARTICLES_INDEX(neighbors_ptr, bodyIndex, neighborIndex);
-			SPH::UnifiedParticleSet& body = m_data.vector_dynamic_bodies_data_cuda[bodyIndex];
+			const SPH::UnifiedParticleSet& body = m_data.vector_dynamic_bodies_data_cuda[bodyIndex];
 			densityAdv += body.mass[neighborIndex] * (vi - body.vel[neighborIndex]).dot(m_data.gradW(xi - body.pos[neighborIndex]));
 		}
 
@@ -1108,6 +1108,7 @@ __global__ void DFSPH_neighborsSearch_kernel(unsigned int numFluidParticles, Rea
 	int i = blockIdx.x * blockDim.x + threadIdx.x;
 	if (i >= numFluidParticles) { return; }
 
+
 	RealCuda radius_sq = radius;
 	Vector3d pos = fluid_data->pos[i];
 	Vector3d pos_cell = (pos / radius_sq) + 50; //on that line the radius is not yet squared
@@ -1156,11 +1157,10 @@ __global__ void DFSPH_neighborsSearch_kernel(unsigned int numFluidParticles, Rea
 	
 	//fluid
 	ITER_CELLS_FOR_BODY(*fluid_data, if (i != j) {*cur_neighbor_ptr++ = j;	nb_neighbors_fluid++;})
-	 
+
 	//boundaries
 	ITER_CELLS_FOR_BODY(*boundaries_data, *cur_neighbor_ptr++ = j; nb_neighbors_boundary++; )
 
-	
 	if (vect_dynamic_bodies != NULL) {
 		for (int id_body = 0; id_body < nb_dynamic_bodies; ++id_body) {
 			ITER_CELLS_FOR_BODY(vect_dynamic_bodies[id_body], 
@@ -1363,6 +1363,44 @@ void cuda_sortData(SPH::UnifiedParticleSet& particleSet, SPH::NeighborsSearchDat
 }
 
 
+//this is the bases for all kernels based function
+//I also use that kernel to reset the force
+
+__global__ void DFSPH_updateDynamicObjectParticles_kernel(int numParticles, Vector3d* pos, Vector3d* vel, Vector3d* pos0,
+	Vector3d position, Vector3d velocity, Quaternion q, Vector3d angular_vel, Vector3d* F) {
+	int i = blockIdx.x * blockDim.x + threadIdx.x;
+	if (i >= numParticles) { return; }
+
+	//reset the force
+	F[i] = Vector3d(0, 0, 0);
+
+	//update location and velocity
+	pos[i] = q.rotate(pos0[i]) + position;
+	vel[i] = angular_vel.cross(pos[i] - position) + velocity;
+
+}
+
+void update_dynamicObject_UnifiedParticleSet_cuda(SPH::UnifiedParticleSet& particle_set, 
+	Vector3d position, Vector3d velocity, Quaternion q, Vector3d angular_vel) {
+	if (particle_set.is_dynamic_object) {
+		int numBlocks = (particle_set.numParticles + BLOCKSIZE - 1) / BLOCKSIZE;
+
+		
+		//update the particle location and velocity
+		DFSPH_updateDynamicObjectParticles_kernel << <numBlocks, BLOCKSIZE >> > (particle_set.numParticles,
+			particle_set.pos, particle_set.vel, particle_set.pos0, position, velocity, q, angular_vel, particle_set.F);
+
+		//also we can use that time to reset the force buffer
+		//directly done in the other kernel
+		//DFSPH_setVector3dBufferToZero_kernel << <numBlocks, BLOCKSIZE >> > (container.F, container.numParticles);
+
+		cudaError_t cudaStatus = cudaDeviceSynchronize();
+		if (cudaStatus != cudaSuccess) {
+			fprintf(stderr, "update_dynamicObject_UnifiedParticleSet_cuda failed: %d\n", (int)cudaStatus);
+			exit(1369);
+		}
+	}
+}
 
 
 void cuda_neighborsSearch(SPH::DFSPHCData& data) {
@@ -1535,8 +1573,8 @@ THE NEXT FUNCTIONS ARE FOR THE RENDERING
 
 void cuda_opengl_initParticleRendering(ParticleSetRenderingData& renderingData, unsigned int numParticles,
 	Vector3d** pos, Vector3d** vel) {
-	glGenVertexArrays(1, &renderingData.vaoFluid); // Créer le VAO
-	glBindVertexArray(renderingData.vaoFluid); // Lier le VAO pour l'utiliser
+	glGenVertexArrays(1, &renderingData.vao); // Créer le VAO
+	glBindVertexArray(renderingData.vao); // Lier le VAO pour l'utiliser
 
 
 	glGenBuffers(1, &renderingData.pos_buffer);
@@ -1589,6 +1627,17 @@ void cuda_opengl_initParticleRendering(ParticleSetRenderingData& renderingData, 
 
 }
 
+void cuda_opengl_releaseParticleRendering(ParticleSetRenderingData& renderingData) {
+	//unlink the pos and vel buffer from cuda
+	gpuErrchk(cudaGraphicsUnmapResources(1, &(renderingData.pos), 0));
+	gpuErrchk(cudaGraphicsUnmapResources(1, &(renderingData.vel), 0));
+
+	//delete the opengl buffers
+	glDeleteBuffers(1, &renderingData.vel_buffer);
+	glDeleteBuffers(1, &renderingData.pos_buffer);
+	glDeleteVertexArrays(1, &renderingData.vao);
+}
+
 void cuda_opengl_renderParticleSet(ParticleSetRenderingData& renderingData, unsigned int numParticles) {
 
 	//unlink the pos and vel buffer from cuda
@@ -1597,7 +1646,7 @@ void cuda_opengl_renderParticleSet(ParticleSetRenderingData& renderingData, unsi
 
 	//Actual opengl rendering
 	// link the vao
-	glBindVertexArray(renderingData.vaoFluid);
+	glBindVertexArray(renderingData.vao);
 
 	glBindBuffer(GL_ARRAY_BUFFER, 0);
 
@@ -1648,10 +1697,42 @@ void allocate_UnifiedParticleSet_cuda(SPH::UnifiedParticleSet& container) {
 	}
 
 	if (container.is_dynamic_object) {
+		cudaMalloc(&(container.pos0), container.numParticles * sizeof(Vector3d));
 		cudaMalloc(&(container.F), container.numParticles * sizeof(Vector3d));
 	}
 
 }
+
+void release_UnifiedParticleSet_cuda(SPH::UnifiedParticleSet& container) {
+
+	//cudaMalloc(&(container.pos), container.numParticles * sizeof(Vector3d)); //use opengl buffer with cuda interop
+	//cudaMalloc(&(container.vel), container.numParticles * sizeof(Vector3d)); //use opengl buffer with cuda interop
+	cudaFree(container.mass); container.mass = NULL;
+
+
+	if (container.has_factor_computation) {
+		//*
+		cudaFree(container.numberOfNeighbourgs); container.numberOfNeighbourgs = NULL;
+		cudaFree(container.neighbourgs); container.neighbourgs = NULL;
+
+		cudaFree(container.density); container.density = NULL;
+		cudaFree(container.factor); container.factor = NULL;
+		cudaFree(container.densityAdv); container.densityAdv = NULL;
+
+		if (container.velocity_impacted_by_fluid_solver) {
+			cudaFree(container.acc); container.acc = NULL;
+			cudaFree(container.kappa); container.kappa = NULL;
+			cudaFree(container.kappaV); container.kappaV = NULL;
+		}
+		//*/
+	}
+
+	if (container.is_dynamic_object) {
+		cudaFree(container.F); container.F = NULL;
+	}
+
+}
+
 
 void load_UnifiedParticleSet_cuda(SPH::UnifiedParticleSet& container, Vector3d* pos, Vector3d* vel, RealCuda* mass) {
 	gpuErrchk(cudaMemcpy(container.pos, pos, container.numParticles * sizeof(Vector3d), cudaMemcpyHostToDevice));
@@ -1660,6 +1741,7 @@ void load_UnifiedParticleSet_cuda(SPH::UnifiedParticleSet& container, Vector3d* 
 
 	if (container.is_dynamic_object) {
 		int numBlocks = (container.numParticles + BLOCKSIZE - 1) / BLOCKSIZE;
+		gpuErrchk(cudaMemcpy(container.pos0, pos, container.numParticles * sizeof(Vector3d), cudaMemcpyHostToDevice));
 		DFSPH_setVector3dBufferToZero_kernel << <numBlocks, BLOCKSIZE >> > (container.F, container.numParticles);
 	}
 
@@ -1670,6 +1752,13 @@ void load_UnifiedParticleSet_cuda(SPH::UnifiedParticleSet& container, Vector3d* 
 			gpuErrchk(cudaMemset(container.kappaV, 0, container.numParticles * sizeof(RealCuda)));
 		}
 	}
+
+}
+
+void read_UnifiedParticleSet_cuda(SPH::UnifiedParticleSet& container, Vector3d* pos, Vector3d* vel, RealCuda* mass) {
+	gpuErrchk(cudaMemcpy(pos, container.pos, container.numParticles * sizeof(Vector3d), cudaMemcpyDeviceToHost));
+	gpuErrchk(cudaMemcpy(vel, container.vel, container.numParticles * sizeof(Vector3d), cudaMemcpyDeviceToHost));
+	gpuErrchk(cudaMemcpy(mass, container.mass,  container.numParticles * sizeof(RealCuda), cudaMemcpyDeviceToHost));
 
 }
 
@@ -1686,9 +1775,15 @@ void allocate_and_copy_UnifiedParticleSet_vector_cuda(SPH::UnifiedParticleSet** 
 	SPH::UnifiedParticleSet* temp;
 	temp = new SPH::UnifiedParticleSet[numSets];
 	std::copy(in_vector, in_vector + numSets, temp);
-	
+
 	for (int i = 0; i < numSets; ++i) {
 		SPH::UnifiedParticleSet& body = temp[i];
+		
+		//we need to toggle the flag that prevent the destructor from beeing called on release
+		//since it's the cpu version that clear the memory buffers that are common to the two structures
+		body.releaseDataOnDestruction = false;
+
+		//duplicate the neighbor dataset to the cpu
 		gpuErrchk(cudaMalloc(&(body.neighborsDataSet), sizeof(SPH::NeighborsSearchDataSet)));
 
 		gpuErrchk(cudaMemcpy(body.neighborsDataSet, in_vector[i].neighborsDataSet,
@@ -1699,7 +1794,56 @@ void allocate_and_copy_UnifiedParticleSet_vector_cuda(SPH::UnifiedParticleSet** 
 
 	gpuErrchk(cudaMalloc(out_vector, numSets * sizeof(SPH::UnifiedParticleSet)));
 
-	gpuErrchk(cudaMemcpy(*out_vector, temp,	numSets * sizeof(SPH::UnifiedParticleSet), cudaMemcpyHostToDevice));
+	gpuErrchk(cudaMemcpy(*out_vector, temp, numSets * sizeof(SPH::UnifiedParticleSet), cudaMemcpyHostToDevice));
+
+	
+	delete[] temp;
+}
+
+
+void update_neighborsSearchBuffers_UnifiedParticleSet_vector_cuda(SPH::UnifiedParticleSet** out_vector, SPH::UnifiedParticleSet* in_vector, int numSets) {
+	SPH::UnifiedParticleSet* temp;
+	temp = new SPH::UnifiedParticleSet[numSets];
+
+	gpuErrchk(cudaMemcpy(temp, *out_vector, numSets * sizeof(SPH::UnifiedParticleSet), cudaMemcpyDeviceToHost));
+
+	for (int i = 0; i < numSets; ++i) {
+		SPH::UnifiedParticleSet& body = temp[i];
+
+		//we need to toggle the flag that prevent the destructor from beeing called on release
+		//since it's the cpu version that clear the memory buffers that are common to the two structures
+		body.releaseDataOnDestruction = false;
+
+		//update the neighbor dataset to the cpu
+		gpuErrchk(cudaMemcpy(body.neighborsDataSet, in_vector[i].neighborsDataSet,
+			sizeof(SPH::NeighborsSearchDataSet), cudaMemcpyHostToDevice));
+
+	}
+
+	gpuErrchk(cudaMemcpy(*out_vector, temp, numSets * sizeof(SPH::UnifiedParticleSet), cudaMemcpyHostToDevice));
+
+
+	delete[] temp;
+}
+
+
+
+void release_UnifiedParticleSet_vector_cuda(SPH::UnifiedParticleSet** vector, int numSets) {
+	//to be able to release the internal buffer I need firt to copy everything back to the cpu
+	//then release the internal buffers
+	//then release the UnifiedParticleSet
+	//*
+	SPH::UnifiedParticleSet* temp;
+	temp = new SPH::UnifiedParticleSet[numSets];
+
+
+	gpuErrchk(cudaMemcpy(temp, *vector, numSets * sizeof(SPH::UnifiedParticleSet), cudaMemcpyDeviceToHost));
+
+	for (int i = 0; i < numSets; ++i) {
+		cudaFree(temp[i].neighborsDataSet); temp[i].neighborsDataSet = NULL;
+	}
+
+	cudaFree(*vector); *vector = NULL;
 }
 
 
@@ -1753,8 +1897,6 @@ void allocate_neighbors_search_data_set(SPH::NeighborsSearchDataSet& dataSet) {
 	cudaMallocManaged(&(dataSet.cell_id_sorted), dataSet.numParticles * sizeof(unsigned int));
 	cudaMallocManaged(&(dataSet.local_id), dataSet.numParticles * sizeof(unsigned int));
 	cudaMallocManaged(&(dataSet.p_id), dataSet.numParticles * sizeof(unsigned int));
-	cudaMallocManaged(&(dataSet.p_id_sorted), dataSet.numParticles * sizeof(unsigned int));
-	cudaMallocManaged(&(dataSet.cell_start_end), (CELL_COUNT + 1) * sizeof(unsigned int));
 	cudaMallocManaged(&(dataSet.hist), (CELL_COUNT + 1) * sizeof(unsigned int));
 
 	//init variables for cub calls
@@ -1762,6 +1904,11 @@ void allocate_neighbors_search_data_set(SPH::NeighborsSearchDataSet& dataSet) {
 	dataSet.temp_storage_bytes_pair_sort = 0;
 	dataSet.d_temp_storage_cumul_hist = NULL;
 	dataSet.temp_storage_bytes_cumul_hist = 0;
+	
+	cudaMallocManaged(&(dataSet.p_id_sorted), dataSet.numParticles * sizeof(unsigned int));
+	cudaMallocManaged(&(dataSet.cell_start_end), (CELL_COUNT + 1) * sizeof(unsigned int));
+	
+
 
 	//reset the particle id
 	int numBlocks = (dataSet.numParticles + BLOCKSIZE - 1) / BLOCKSIZE;

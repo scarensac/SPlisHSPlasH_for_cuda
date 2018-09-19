@@ -9,8 +9,7 @@ public:
 	cudaGraphicsResource_t pos;
 	cudaGraphicsResource_t vel;
 
-	GLuint vaoFluid;
-	GLuint vaoBoundaries;
+	GLuint vao;
 	GLuint pos_buffer;
 	GLuint vel_buffer;
 };
@@ -41,30 +40,37 @@ int cuda_pressureSolve(SPH::DFSPHCData& data, const unsigned int maxIter, const 
 
 //those functions are for the neighbors search
 void cuda_neighborsSearch(SPH::DFSPHCData& data);
-
-
 void cuda_initNeighborsSearchDataSet(SPH::UnifiedParticleSet& particleSet, SPH::NeighborsSearchDataSet& dataSet, 
 	RealCuda kernel_radius, bool sortBuffers=false);
-
 void cuda_sortData(SPH::UnifiedParticleSet& particleSet, SPH::NeighborsSearchDataSet& neighborsDataSet);
 
+//this function is used to update the location of the dynamic bodies articles
+void update_dynamicObject_UnifiedParticleSet_cuda(SPH::UnifiedParticleSet& particle_set, 
+	Vector3d position, Vector3d velocity, Quaternion q, Vector3d angular_vel);
 
 
+//RENDERING
 
-void cuda_renderFluid(SPH::DFSPHCData& data);
 void cuda_opengl_initParticleRendering(ParticleSetRenderingData& renderingData, unsigned int numParticles,
 	Vector3d** pos, Vector3d** vel);
-void cuda_opengl_renderParticleSet(ParticleSetRenderingData& renderingData, unsigned int numParticles);
+void cuda_opengl_releaseParticleRendering(ParticleSetRenderingData& renderingData);
 
+void cuda_opengl_renderParticleSet(ParticleSetRenderingData& renderingData, unsigned int numParticles);
+void cuda_renderFluid(SPH::DFSPHCData& data);
 void cuda_renderBoundaries(SPH::DFSPHCData& data, bool renderWalls);
 
 
-
+//MEMORY ALLOCATION AND TRANSFER
 
 void allocate_UnifiedParticleSet_cuda(SPH::UnifiedParticleSet& container);
+void release_UnifiedParticleSet_cuda(SPH::UnifiedParticleSet& container);
 void load_UnifiedParticleSet_cuda(SPH::UnifiedParticleSet& container, Vector3d* pos, Vector3d* vel, RealCuda* mass);
+void read_UnifiedParticleSet_cuda(SPH::UnifiedParticleSet& container, Vector3d* pos, Vector3d* vel, RealCuda* mass);
 void read_rigid_body_force_cuda(SPH::UnifiedParticleSet& container);
 void allocate_and_copy_UnifiedParticleSet_vector_cuda(SPH::UnifiedParticleSet** out_vector, SPH::UnifiedParticleSet* in_vector, int numSets);
+void update_neighborsSearchBuffers_UnifiedParticleSet_vector_cuda(SPH::UnifiedParticleSet** out_vector, SPH::UnifiedParticleSet* in_vector, int numSets);
+//this function is the one that must be called when releasing the unified particles that are fully cuda allocated
+void release_UnifiedParticleSet_vector_cuda(SPH::UnifiedParticleSet** vector, int numSets);
 
 
 void allocate_precomputed_kernel_managed(SPH::PrecomputedCubicKernelPerso& kernel, bool minimize_managed = false);
@@ -73,6 +79,8 @@ void init_precomputed_kernel_from_values(SPH::PrecomputedCubicKernelPerso& kerne
 
 void allocate_neighbors_search_data_set(SPH::NeighborsSearchDataSet& dataSet);
 void release_neighbors_search_data_set(SPH::NeighborsSearchDataSet& dataSet, bool keep_result_buffers);
+
+
 
 
 int test_cuda();

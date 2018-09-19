@@ -59,7 +59,9 @@ public:
 	FUNCTION inline T norm() const { return std::sqrt(squaredNorm()); }
 
 	template<typename T2>
-	FUNCTION inline T dot(const Vector3<T2> &o) { return x * o.x + y * o.y + z * o.z; }
+	FUNCTION inline T dot(const Vector3<T2> &o) const { return x * o.x + y * o.y + z * o.z; }
+	template<typename T2>
+	FUNCTION inline Vector3 cross(const Vector3<T2> &o) const { return Vector3(y * o.z - z * o.y, z * o.x - x * o.z, x * o.y - y * o.x); }
 
 	inline T avg() { return (x + y + z) / 3.0; }
 	inline Vector3& toAbs() { if (x < 0)x *= -1; if (y < 0)y *= -1; if (z < 0)z *= -1; return *this; }

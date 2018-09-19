@@ -100,17 +100,27 @@ void timeStep ()
 	if ((base.getPauseAt() > 0.0) && (base.getPauseAt() < TimeManager::getCurrent()->getTime()))
 		base.setPause(true);
 
+	if (base.getSimulationMethod().simulationMethod == DemoBase::SimulationMethods::DFSPH_CUDA) {
+		DFSPHCUDA* sim = dynamic_cast<DFSPHCUDA*>(base.getSimulationMethod().simulation);
+		sim->handleDynamicBodiesPause(base.getRbPause());
+
+		//save th simulation state if asked
+		sim->handleSimulationSave(base.getSaveLiquid(), true, false, false);
+		//I'll handle the save as token so I need to consume them
+		base.setSaveLiquid(false);
+
+		//load the simulation state if asked
+		sim->handleSimulationLoad(base.getLoadLiquid(), false, false, false);
+		//I'll handle the save as token so I need to consume them
+		base.setLoadLiquid(false);
+	}
+
 	if (base.getPause())
 		return;
 
 	// Simulation code
 	for (unsigned int i = 0; i < base.getNumberOfStepsPerRenderUpdate(); i++)
 	{
-		if (base.getSimulationMethod().simulationMethod == DemoBase::SimulationMethods::DFSPH_CUDA) {
-			DFSPHCUDA* sim = dynamic_cast<DFSPHCUDA*>(base.getSimulationMethod().simulation);
-			sim->handleDynamicBodiesPause(base.getRbPause());
-		}
-		
 
 		START_TIMING("SimStep");
 		base.getSimulationMethod().simulation->step();
@@ -118,17 +128,16 @@ void timeStep ()
 
 		if (!base.getRbPause()) {
 			updateBoundaryForces();
-		}
+		
 		//////////////////////////////////////////////////////////////////////////
 		// PBD
 		//////////////////////////////////////////////////////////////////////////
-		START_TIMING("SimStep - PBD");
-		if (!base.getRbPause()) {
+			START_TIMING("SimStep - PBD");
 			pbdWrapper.timeStep();
-		}
-		STOP_TIMING_AVG;
+			STOP_TIMING_AVG;
 
-		updateBoundaryParticles(false);
+			updateBoundaryParticles(false);
+		}
 
 		if (base.getEnablePartioExport())
 		{

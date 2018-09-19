@@ -78,6 +78,8 @@ namespace SPH
 		Vector3r m_oldMousePos;
 		std::vector<unsigned int> m_selectedParticles;
 		SimulationMethodChangedFct m_simulationMethodChangedFct;
+		bool m_saveLiquid; 
+		bool m_loadLiquid;
 
 		void initShaders();
 		void initParameters();
@@ -123,9 +125,14 @@ namespace SPH
 		int getRenderWalls() const { return m_renderWalls; }
 		void setRenderWalls(int val) { m_renderWalls = val; }
 		bool getPause() const { return m_doPause; }
-		bool getRbPause() const { return m_doRbPause; }
 		void setPause(bool val) { m_doPause = val; }
+		bool getRbPause() const { return m_doRbPause; }
 		void setRbPause(bool val) { m_doRbPause = val; }
+		bool getSaveLiquid() const { return m_saveLiquid; }
+		void setSaveLiquid(bool val) { m_saveLiquid = val; }
+		bool getLoadLiquid() const { return m_loadLiquid; }
+		void setLoadLiquid(bool val) { m_loadLiquid = val; }
+
 		std::vector<unsigned int>& getSelectedParticles() { return m_selectedParticles; }
 		bool getUseParticleCaching() const { return m_useParticleCaching; }
 		void setUseParticleCaching(bool val) { m_useParticleCaching = val; }

@@ -31,7 +31,9 @@ DemoBase::DemoBase()
 	m_sceneFile = "";
 	m_renderWalls = 4;
 	m_doPause = true;
-	m_doRbPause = false;
+	m_doRbPause = true;
+	m_saveLiquid = false;
+	m_loadLiquid = false;
 	m_pauseAt = -1.0;
 	m_useParticleCaching = true;
 	m_enablePartioExport = false;
@@ -190,6 +192,8 @@ void DemoBase::initParameters()
 	MiniGL::initTweakBarParameters();
 	TwAddVarRW(MiniGL::getTweakBar(), "Pause", TW_TYPE_BOOLCPP, &m_doPause, " label='Pause' group=Simulation key=SPACE ");
 	TwAddVarRW(MiniGL::getTweakBar(), "PauseRB", TW_TYPE_BOOLCPP, &m_doRbPause, " label='Pause rigid bodies' group=Simulation key=k ");
+	TwAddVarRW(MiniGL::getTweakBar(), "SaveLiquid", TW_TYPE_BOOLCPP, &m_saveLiquid, " label='save liquid positions' group=Simulation key=n ");
+	TwAddVarRW(MiniGL::getTweakBar(), "LoadLiquid", TW_TYPE_BOOLCPP, &m_loadLiquid, " label='load liquid positions' group=Simulation key=v ");
 	TwAddVarRW(MiniGL::getTweakBar(), "PauseAt", TW_TYPE_REAL, &m_pauseAt, " label='Pause simulation at' step=0.001 precision=4 group=Simulation ");
 	TwAddVarRW(MiniGL::getTweakBar(), "numberOfStepsPerRenderUpdate", TW_TYPE_UINT32, &m_numberOfStepsPerRenderUpdate, " label='# time steps / update' min=1 group=Simulation ");
 	TwAddVarRW(MiniGL::getTweakBar(), "renderMaxVelocity", TW_TYPE_REAL, &m_renderMaxVelocity, " label='Max. velocity (shader)' min=0.00001 group=Simulation ");

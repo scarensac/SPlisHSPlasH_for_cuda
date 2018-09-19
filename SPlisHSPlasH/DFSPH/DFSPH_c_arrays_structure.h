@@ -2,12 +2,14 @@
 #define __DFSPHCArraysStructure_h__
 
 #include "SPlisHSPlasH\BasicTypes.h"
+#include <string>
 
 #ifndef M_PI
 #define M_PI       3.14159265358979323846   // pi
 #endif
 
 #include "SPlisHSPlasH\Vector.h"
+#include "SPlisHSPlasH\Quaternion.h"
 
 class ParticleSetRenderingData;
 
@@ -218,6 +220,11 @@ namespace SPH
 		//so I put some more to be sure. In the end those buffers will stay on the GPU memory
 		//so there will be no transfers.
 #define MAX_NEIGHBOURS 75
+		//this allow the control of the destructor call
+		//especially it was create to be able to use temp variable sot copy to cuda
+		//but I also need it for the initialisation because doing a=b(params) call the destructur at the end of the line ...
+		//so by default the destructor is not activated and I activate it only bafter the data has been fulle initialised
+		bool releaseDataOnDestruction;
 
 
 		int numParticles;
@@ -245,6 +252,8 @@ namespace SPH
 		RealCuda* kappaV;
 
 		//for dynamic object particles
+		//the original particle position
+		Vector3d* pos0;
 		//the force to be transmitted to the physics engine
 		Vector3d* F;
 
@@ -263,6 +272,16 @@ namespace SPH
 		UnifiedParticleSet(int nbParticles, bool has_factor_computation_i, bool velocity_impacted_by_fluid_solver_i,
 			bool is_dynamic_object_i);
 
+		//destructor
+		~UnifiedParticleSet();
+
+
+		//update particles position from rb position and orientation
+		//only do smth for the dynamic bodies
+		template<class T>
+		void updateDynamicBodiesParticles(T* particleObj);
+		void updateDynamicBodiesParticles(Vector3d position, Vector3d velocity, Quaternion q, Vector3d angular_vel);
+
 		//tranfer the forces to the cpu buffer
 		//only do smth for the dynamic bodies
 		void transferForcesToCPU();
@@ -274,6 +293,11 @@ namespace SPH
 		//also clear the computation buffers 
 		template<class T>
 		void reset(T* particleObj);
+		void reset(std::ifstream& file_data, bool velocities_in_file, bool load_velocities);
+
+		//reset the data using the data in the file given as parameter
+		//also clear the computation buffers 
+		void load_from_file(std::string file_path);
 
 
 		FUNCTION inline int* getNeighboursPtr(int particle_id) {
@@ -295,7 +319,7 @@ namespace SPH
 	class DFSPHCData {
 	public:
 		
-
+		bool destructor_activated;
 		
 		//I need a kernel without all th static class memebers because it seems they do not work on
 		//the gpu
@@ -307,7 +331,7 @@ namespace SPH
 		//static size and value all time
 		FUNCTION inline RealCuda W(const Vector3d &r) const { return m_kernel.W(r); }
 		FUNCTION inline RealCuda W(const RealCuda r) const { return m_kernel.W(r); }
-		FUNCTION inline Vector3d gradW(const Vector3d &r) { return m_kernel.gradW(r); }
+		FUNCTION inline Vector3d gradW(const Vector3d &r) const { return m_kernel.gradW(r); }
 		RealCuda W_zero;
 		RealCuda density0;
 		RealCuda particleRadius;
@@ -348,17 +372,16 @@ namespace SPH
 
 
 		DFSPHCData(FluidModel *model);
-
-		void loadDynamicData(FluidModel *model, const SimulationDataDFSPH& data);
+		~DFSPHCData();
+		
 		void readDynamicData(FluidModel *model, SimulationDataDFSPH& data);
 
-		template<typename T>
-		void loadObjectData(UnifiedParticleSet& body, T* particleObj);
 		void loadDynamicObjectsData(FluidModel *model);
 		void readDynamicObjectsData(FluidModel *model);
 
 
 		void reset(FluidModel *model);
+
 		inline void updateTimeStep(RealCuda h_fut) {
 			h_future = h_fut;
 			invH_future = 1.0 / h_future;
@@ -377,8 +400,10 @@ namespace SPH
 		}
 
 
-		
+		void write_fluid_to_file(bool save_velocities);
+		void read_fluid_from_file(bool load_velocities);
 
+		void clear_fluid_data();
 	};
 }
 

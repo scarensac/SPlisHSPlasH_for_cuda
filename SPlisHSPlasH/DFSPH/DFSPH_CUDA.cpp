@@ -44,6 +44,7 @@ void DFSPHCUDA::step()
 
 	
 	if (true) {
+		m_data.destructor_activated = false;
 
 
 		static float time_avg = 0;
@@ -151,6 +152,7 @@ void DFSPHCUDA::step()
 
 		end = std::chrono::steady_clock::now();
 
+		m_data.destructor_activated = true;
 
 	}
 
@@ -1049,10 +1051,24 @@ void DFSPHCUDA::handleDynamicBodiesPause(bool pause) {
 		}
 	}
 
-
+	/*
 	FluidModel::RigidBodyParticleObject* particleObjtemp = static_cast<FluidModel::RigidBodyParticleObject*>(m_model->m_particleObjects[2]);
 	std::cout << "vel_check: " << particleObjtemp->m_v[0].x() << "  " << particleObjtemp->m_v[0].y() << "  " << particleObjtemp->m_v[0].z() << std::endl;
-	
+	//*/
 
 	is_dynamic_bodies_paused = pause;
+}
+
+
+
+void DFSPHCUDA::handleSimulationSave(bool save_liquid, bool save_liquid_velocities, bool save_solids, bool save_solids_velocities) {
+	if (save_liquid) {
+		m_data.write_fluid_to_file(save_liquid_velocities);
+	}
+}
+
+void DFSPHCUDA::handleSimulationLoad(bool load_liquid, bool load_liquid_velocities, bool load_solids, bool load_solids_velocities) {
+	if (load_liquid) {
+		m_data.read_fluid_from_file(load_liquid_velocities);
+	}
 }

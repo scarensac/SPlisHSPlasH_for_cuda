@@ -44,6 +44,14 @@ namespace SPH
 
 	FORCE_INLINE Vector3d vector3rTo3d(Vector3r v) { return Vector3d(v[0], v[1], v[2]); }
 	FORCE_INLINE Vector3r vector3dTo3r(Vector3d v) { return Vector3r(v.x, v.y, v.z); }
+	//note the output have to be allocated before the call to the function
+	FORCE_INLINE void Matrix3rToArray(Matrix3r input, RealCuda* output) { 
+		for (int i = 0; i < 3; ++i) {
+			for (int j = 0; j < 3; ++j) {
+				output[i*3+j]=input(i, j);
+			}
+		}
+	}
 
 #if EIGEN_ALIGN
 	#define SPH_MAKE_ALIGNED_OPERATOR_NEW EIGEN_MAKE_ALIGNED_OPERATOR_NEW
