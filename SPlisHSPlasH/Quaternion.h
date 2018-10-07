@@ -19,9 +19,13 @@ public:
 	FUNCTION Quaternion() { v=Vector3d(0,0,0); s = 0; }
 	FUNCTION Quaternion(RealCuda x, RealCuda y, RealCuda z, RealCuda w) { v.x = x; v.y = y; v.z = z; s = w; }
 	FUNCTION Quaternion(Vector3d v_i, RealCuda w) { v = v_i; s = w; }
+	//init from array without check
+	template<typename T2>
+	FUNCTION Quaternion(T2 val[]) { v.x = val[0]; v.y = val[1]; v.z = val[2]; s = val[3]; }
 	
 	//this constructor create a queaternion from an euler matrix
-	FUNCTION Quaternion(RealCuda* m) { 
+	FUNCTION void fromEulerMatrix(RealCuda* m) {
+
 		double tr = m[0] + m[4] + m[8];
 
 		if (tr > 0) {

@@ -105,14 +105,18 @@ void timeStep ()
 		sim->handleDynamicBodiesPause(base.getRbPause());
 
 		//save th simulation state if asked
-		sim->handleSimulationSave(base.getSaveLiquid(), true, false, false);
+		sim->handleSimulationSave(base.getSaveLiquid()|| base.getSaveSimulation(), base.getSaveSimulation(), base.getSaveSimulation());
 		//I'll handle the save as token so I need to consume them
 		base.setSaveLiquid(false);
+		base.setSaveSimulation(false);
+
+
 
 		//load the simulation state if asked
-		sim->handleSimulationLoad(base.getLoadLiquid(), false, false, false);
+		sim->handleSimulationLoad(base.getLoadLiquid() || base.getLoadSimulation(), false, base.getLoadSimulation(), false, base.getLoadSimulation(), false);
 		//I'll handle the save as token so I need to consume them
 		base.setLoadLiquid(false);
+		base.setLoadSimulation(false);
 	}
 
 	if (base.getPause())
@@ -127,16 +131,27 @@ void timeStep ()
 		STOP_TIMING_AVG;
 
 		if (!base.getRbPause()) {
-			updateBoundaryForces();
-		
-		//////////////////////////////////////////////////////////////////////////
-		// PBD
-		//////////////////////////////////////////////////////////////////////////
-			START_TIMING("SimStep - PBD");
-			pbdWrapper.timeStep();
-			STOP_TIMING_AVG;
+			bool use_external_rb_engine = false;
+			if ((use_external_rb_engine)&& (base.getSimulationMethod().simulationMethod == DemoBase::SimulationMethods::DFSPH_CUDA)) {
+				DFSPHCUDA* sim = dynamic_cast<DFSPHCUDA*>(base.getSimulationMethod().simulation);
+				//send the information to the physics engine
+				sim->updateRigidBodiesStateToFile();
 
-			updateBoundaryParticles(false);
+				//read the information back (there is a wait in this function)
+				sim->updateRigidBodiesStatefromFile();
+			}
+			else {
+				updateBoundaryForces();
+		
+			//////////////////////////////////////////////////////////////////////////
+			// PBD
+			//////////////////////////////////////////////////////////////////////////
+				START_TIMING("SimStep - PBD");
+				pbdWrapper.timeStep();
+				STOP_TIMING_AVG;
+
+				updateBoundaryParticles(false);
+			}
 		}
 
 		if (base.getEnablePartioExport())

@@ -3,6 +3,7 @@
 
 #include "SPlisHSPlasH\BasicTypes.h"
 #include <string>
+#include <vector>
 
 #ifndef M_PI
 #define M_PI       3.14159265358979323846   // pi
@@ -158,6 +159,14 @@ namespace SPH
 		}
 	};
 
+	class DynamicBody {
+	public:
+		Vector3d position;
+		Vector3d velocity;
+		Quaternion q;
+		Vector3d angular_vel;
+	};
+
 	/**
 		This class encapsulate the data needed to RealCudaize the neighbor search for one set of 
 		particles
@@ -229,8 +238,8 @@ namespace SPH
 
 		int numParticles;
 		bool has_factor_computation;
-		bool is_dynamic_object;
 		bool velocity_impacted_by_fluid_solver;
+		bool is_dynamic_object;
 
 		//for all particles
 		RealCuda* mass;
@@ -260,20 +269,28 @@ namespace SPH
 		//this is a buffer that is used to make the transition between cuda and the cpu physics engine
 		//I need it because to transmit the data to the model I need to convert the values to the
 		//type used in the orinal cpu model...
+		DynamicBody* rigidBody_cpu;
 		Vector3d* F_cpu;
 
 		//data for the rendering
 		ParticleSetRenderingData* renderingData;
 
+		//pointer for the gpu storage (that should be a copy of this item but allocated on the gpu)
+		UnifiedParticleSet* gpu_ptr;
+
 		//base contructor (set every array to null and the nb of particles to 0
 		UnifiedParticleSet();
+		void init();
 
 		//actual constructor
 		UnifiedParticleSet(int nbParticles, bool has_factor_computation_i, bool velocity_impacted_by_fluid_solver_i,
 			bool is_dynamic_object_i);
+		void init(int nbParticles, bool has_factor_computation_i, bool velocity_impacted_by_fluid_solver_i,
+			bool is_dynamic_object_i);
 
 		//destructor
 		~UnifiedParticleSet();
+		void clear();
 
 
 		//update particles position from rb position and orientation
@@ -281,6 +298,7 @@ namespace SPH
 		template<class T>
 		void updateDynamicBodiesParticles(T* particleObj);
 		void updateDynamicBodiesParticles(Vector3d position, Vector3d velocity, Quaternion q, Vector3d angular_vel);
+		void updateDynamicBodiesParticles();
 
 		//tranfer the forces to the cpu buffer
 		//only do smth for the dynamic bodies
@@ -293,12 +311,15 @@ namespace SPH
 		//also clear the computation buffers 
 		template<class T>
 		void reset(T* particleObj);
-		void reset(std::ifstream& file_data, bool velocities_in_file, bool load_velocities);
+		void reset(Vector3d* pos_temp, Vector3d* vel_temp, RealCuda* mass_temp);
 
-		//reset the data using the data in the file given as parameter
-		//also clear the computation buffers 
-		void load_from_file(std::string file_path);
+		//store a unified dataset to a file
+		void write_to_file(std::string file_path);
+		//load a unified dataset from a file
+		void load_from_file(std::string file_path, bool load_velocities);
 
+		//store the forces to a file in case of a dynamic body
+		void write_forces_to_file(std::string file_path);
 
 		FUNCTION inline int* getNeighboursPtr(int particle_id) {
 			//	return neighbourgs + body_id*numFluidParticles*MAX_NEIGHBOURS + particle_id*MAX_NEIGHBOURS;
@@ -338,7 +359,6 @@ namespace SPH
 		RealCuda viscosity;
 		
 
-		int numFluidParticles;
 		RealCuda h;
 		RealCuda h_future;
 		RealCuda h_past;
@@ -351,7 +371,6 @@ namespace SPH
 		RealCuda invH_future;
 		RealCuda invH2_future;
 
-	
 
 		//boundaries particles
 		UnifiedParticleSet* fluid_data;
@@ -371,6 +390,7 @@ namespace SPH
 		int numDynamicBodies;
 
 
+		DFSPHCData();
 		DFSPHCData(FluidModel *model);
 		~DFSPHCData();
 		
@@ -378,7 +398,6 @@ namespace SPH
 
 		void loadDynamicObjectsData(FluidModel *model);
 		void readDynamicObjectsData(FluidModel *model);
-
 
 		void reset(FluidModel *model);
 
@@ -400,10 +419,22 @@ namespace SPH
 		}
 
 
-		void write_fluid_to_file(bool save_velocities);
+		void write_fluid_to_file();
 		void read_fluid_from_file(bool load_velocities);
+		void write_boundaries_to_file();
+		void read_boundaries_from_file(bool load_velocities);
+		void write_solids_to_file();
+		void read_solids_from_file(bool load_velocities);
 
 		void clear_fluid_data();
+		void clear_boundaries_data();
+		void clear_solids_data();
+
+
+		void update_solids_to_file();
+		void update_solids_from_file();
+		
+		void update_solids(std::vector<DynamicBody> vect_new_info);
 	};
 }
 

@@ -17,6 +17,9 @@ public:
 
 	FUNCTION Vector3(T a, T b, T c) { x = a; y = b; z = c; }
 	FUNCTION Vector3(T val) { x = val; y = val; z = val; }
+	//init from array without check
+	template<typename T2>
+	FUNCTION Vector3(T2 val[]) { x = val[0]; y = val[1]; z = val[2]; }
 
 	template<typename T2>
 	FUNCTION Vector3(const Vector3<T2>& v) { x = v.x; y = v.y; z = v.z; }

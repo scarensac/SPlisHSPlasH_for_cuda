@@ -72,8 +72,14 @@ namespace SPH
 
 		bool is_dynamic_bodies_paused;
 		void handleDynamicBodiesPause(bool pause);
-		void handleSimulationSave(bool save_liquid, bool save_liquid_velocities, bool save_solids, bool save_solids_velocities);
-		void handleSimulationLoad(bool load_liquid, bool load_liquid_velocities, bool load_solids, bool load_solids_velocities);
+		void handleSimulationSave(bool save_liquid, bool save_solids, bool save_boundaries);
+		void handleSimulationLoad(bool load_liquid, bool load_liquid_velocities, bool load_solids, bool load_solids_velocities,
+			bool load_boundaries, bool load_boundaries_velocities);
+
+		void updateRigidBodiesStatefromFile();
+		void updateRigidBodiesStateToFile();
+
+		void updateRigidBodies(std::vector<DynamicBody> vect_new_info);
 	};
 }
 

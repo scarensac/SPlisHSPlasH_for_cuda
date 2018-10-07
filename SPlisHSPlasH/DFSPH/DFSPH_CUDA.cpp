@@ -27,7 +27,6 @@ DFSPHCUDA::DFSPHCUDA(FluidModel *model) :
 
 	is_dynamic_bodies_paused = false;
 
-
 }
 
 DFSPHCUDA::~DFSPHCUDA(void)
@@ -41,7 +40,6 @@ void DFSPHCUDA::step()
 	static int count_steps = 0;
 
 	m_data.viscosity = m_viscosity->getViscosity();
-
 	
 	if (true) {
 		m_data.destructor_activated = false;
@@ -983,7 +981,6 @@ void DFSPHCUDA::computeNonPressureForces()
 
 void DFSPHCUDA::viscosity_XSPH()
 {
-	const unsigned int numParticles = m_data.numFluidParticles;
 
 	const Real h = m_data.h;
 	const Real invH = (1.0 / h);
@@ -1061,14 +1058,46 @@ void DFSPHCUDA::handleDynamicBodiesPause(bool pause) {
 
 
 
-void DFSPHCUDA::handleSimulationSave(bool save_liquid, bool save_liquid_velocities, bool save_solids, bool save_solids_velocities) {
+void DFSPHCUDA::handleSimulationSave(bool save_liquid, bool save_solids, bool save_boundaries) {
 	if (save_liquid) {
-		m_data.write_fluid_to_file(save_liquid_velocities);
+		m_data.write_fluid_to_file();
+	}
+
+	if (save_boundaries) {
+		m_data.write_boundaries_to_file();
+	}
+
+	if (save_solids) {
+		m_data.write_solids_to_file();
 	}
 }
 
-void DFSPHCUDA::handleSimulationLoad(bool load_liquid, bool load_liquid_velocities, bool load_solids, bool load_solids_velocities) {
+void DFSPHCUDA::handleSimulationLoad(bool load_liquid, bool load_liquid_velocities, bool load_solids, bool load_solids_velocities, 
+	bool load_boundaries, bool load_boundaries_velocities) {
 	if (load_liquid) {
 		m_data.read_fluid_from_file(load_liquid_velocities);
 	}
+
+	if (load_boundaries) {
+		m_data.read_boundaries_from_file(load_boundaries_velocities);
+	}
+
+	if (load_solids) {
+		m_data.read_solids_from_file(load_solids_velocities);
+	}
+
+}
+
+
+
+void DFSPHCUDA::updateRigidBodiesStatefromFile() {
+	m_data.update_solids_from_file();
+}
+
+void DFSPHCUDA::updateRigidBodiesStateToFile() {
+	m_data.update_solids_to_file();
+}
+
+void DFSPHCUDA::updateRigidBodies(std::vector<DynamicBody> vect_new_info) {
+	m_data.update_solids(vect_new_info);
 }

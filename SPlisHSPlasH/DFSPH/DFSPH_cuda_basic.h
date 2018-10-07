@@ -45,8 +45,7 @@ void cuda_initNeighborsSearchDataSet(SPH::UnifiedParticleSet& particleSet, SPH::
 void cuda_sortData(SPH::UnifiedParticleSet& particleSet, SPH::NeighborsSearchDataSet& neighborsDataSet);
 
 //this function is used to update the location of the dynamic bodies articles
-void update_dynamicObject_UnifiedParticleSet_cuda(SPH::UnifiedParticleSet& particle_set, 
-	Vector3d position, Vector3d velocity, Quaternion q, Vector3d angular_vel);
+void update_dynamicObject_UnifiedParticleSet_cuda(SPH::UnifiedParticleSet& particle_set);
 
 
 //RENDERING
@@ -65,7 +64,7 @@ void cuda_renderBoundaries(SPH::DFSPHCData& data, bool renderWalls);
 void allocate_UnifiedParticleSet_cuda(SPH::UnifiedParticleSet& container);
 void release_UnifiedParticleSet_cuda(SPH::UnifiedParticleSet& container);
 void load_UnifiedParticleSet_cuda(SPH::UnifiedParticleSet& container, Vector3d* pos, Vector3d* vel, RealCuda* mass);
-void read_UnifiedParticleSet_cuda(SPH::UnifiedParticleSet& container, Vector3d* pos, Vector3d* vel, RealCuda* mass);
+void read_UnifiedParticleSet_cuda(SPH::UnifiedParticleSet& container, Vector3d* pos, Vector3d* vel, RealCuda* mass, Vector3d* pos0=NULL);
 void read_rigid_body_force_cuda(SPH::UnifiedParticleSet& container);
 void allocate_and_copy_UnifiedParticleSet_vector_cuda(SPH::UnifiedParticleSet** out_vector, SPH::UnifiedParticleSet* in_vector, int numSets);
 void update_neighborsSearchBuffers_UnifiedParticleSet_vector_cuda(SPH::UnifiedParticleSet** out_vector, SPH::UnifiedParticleSet* in_vector, int numSets);
