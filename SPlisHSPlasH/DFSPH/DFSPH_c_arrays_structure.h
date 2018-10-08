@@ -223,6 +223,7 @@ namespace SPH
 
 
 		
+		
 	};
 
 	class UnifiedParticleSet {
@@ -245,6 +246,10 @@ namespace SPH
 		bool has_factor_computation;
 		bool velocity_impacted_by_fluid_solver;
 		bool is_dynamic_object;
+
+		//for fluid particles only
+		RealCuda m_V;//volume
+		RealCuda density0;
 
 		//for all particles
 		RealCuda* mass;
@@ -341,6 +346,9 @@ namespace SPH
 			//return numberOfNeighbourgs[body_id*numFluidParticles + particle_id]; 
 			return numberOfNeighbourgs[particle_id * 3 + body_id];
 		}
+
+
+		void add_particles(std::vector<Vector3d> pos, std::vector<Vector3d> vel);
 
 	};
 

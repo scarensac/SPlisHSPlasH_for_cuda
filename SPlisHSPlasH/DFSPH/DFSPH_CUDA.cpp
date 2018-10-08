@@ -27,6 +27,7 @@ DFSPHCUDA::DFSPHCUDA(FluidModel *model) :
 
 	is_dynamic_bodies_paused = false;
 
+
 }
 
 DFSPHCUDA::~DFSPHCUDA(void)
@@ -44,6 +45,16 @@ void DFSPHCUDA::step()
 	if (true) {
 		m_data.destructor_activated = false;
 
+		/*
+		if (count_steps == 0) {
+			std::vector<Vector3d> additional_pos;
+			std::vector<Vector3d> additional_vel;
+
+			additional_pos.push_back(Vector3d(0.5, 2, 0.5));
+			additional_vel.push_back(Vector3d(0, 0, 0));
+			m_data.fluid_data->add_particles(additional_pos, additional_vel);
+		}
+		//*/
 
 		static float time_avg = 0;
 		static unsigned int time_count = 0;
@@ -886,6 +897,13 @@ void DFSPHCUDA::reset()
 	m_counter = 0;
 	m_iterationsV = 0;
 	m_data.reset(m_model);
+
+	std::vector<Vector3d> additional_pos;
+	std::vector<Vector3d> additional_vel;
+
+	additional_pos.push_back(Vector3d(0.5, 2, 0.5));
+	additional_vel.push_back(Vector3d(0, 1, 0));
+	m_data.fluid_data->add_particles(additional_pos, additional_vel);
 }
 
 void DFSPHCUDA::performNeighborhoodSearch()

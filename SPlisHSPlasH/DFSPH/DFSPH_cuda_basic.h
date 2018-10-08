@@ -71,6 +71,7 @@ void update_neighborsSearchBuffers_UnifiedParticleSet_vector_cuda(SPH::UnifiedPa
 //this function is the one that must be called when releasing the unified particles that are fully cuda allocated
 void release_UnifiedParticleSet_vector_cuda(SPH::UnifiedParticleSet** vector, int numSets);
 void release_cudaPtr_cuda(void** ptr);
+void add_particles_cuda(SPH::UnifiedParticleSet& container, int num_additional_particles, const Vector3d* pos, const Vector3d* vel);
 
 
 void allocate_precomputed_kernel_managed(SPH::PrecomputedCubicKernelPerso& kernel, bool minimize_managed = false);

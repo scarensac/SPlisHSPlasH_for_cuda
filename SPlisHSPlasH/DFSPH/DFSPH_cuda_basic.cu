@@ -1508,7 +1508,7 @@ void cuda_neighborsSearch(SPH::DFSPHCData& data) {
 			static int step_count = 0;
 			step_count++;
 
-			data.fluid_data->initNeighborsSearchData(data.m_kernel_precomp.getRadius(), (step_count%25)==0);
+			data.fluid_data->initNeighborsSearchData(data.m_kernel_precomp.getRadius(), (step_count%2500)==0);
 
 
 			cudaStatus = cudaDeviceSynchronize();
@@ -1977,6 +1977,58 @@ void release_UnifiedParticleSet_vector_cuda(SPH::UnifiedParticleSet** vector, in
 
 void release_cudaPtr_cuda(void** ptr) {
 	cudaFree(*ptr); *ptr = NULL;
+}
+
+
+template<class T> __global__ void cuda_setBufferToValue_kernel(T* buff, T value, unsigned int buff_size) {
+	int i = blockIdx.x * blockDim.x + threadIdx.x;
+	if (i >= buff_size) { return; }
+
+	buff[i] = value;
+}
+
+__global__ void cuda_updateParticleCount_kernel(SPH::UnifiedParticleSet* container, unsigned int numParticles) {
+	//that kernel wil only ever use one thread so I sould noteven need that
+	int i = blockIdx.x * blockDim.x + threadIdx.x;
+	if (i >= 1) { return; }
+
+	container->numParticles = numParticles;
+	container->neighborsDataSet->numParticles = numParticles;
+}
+
+
+
+void add_particles_cuda(SPH::UnifiedParticleSet& container, int num_additional_particles, const Vector3d* pos, const Vector3d* vel) {
+	//can't use memeset for the mass so I have to make a kernel for the set
+	int numBlocks = (num_additional_particles + BLOCKSIZE - 1) / BLOCKSIZE;
+	cuda_setBufferToValue_kernel<RealCuda> << <numBlocks, BLOCKSIZE >> > (container.mass,
+		container.m_V*container.density0, container.numParticles+num_additional_particles);
+
+
+
+	gpuErrchk(cudaMemcpy(container.pos + container.numParticles, pos, num_additional_particles * sizeof(Vector3d), cudaMemcpyHostToDevice));
+	gpuErrchk(cudaMemcpy(container.vel + container.numParticles, vel, num_additional_particles * sizeof(Vector3d), cudaMemcpyHostToDevice));
+
+	
+	gpuErrchk(cudaMemset(container.kappa + container.numParticles, 0, num_additional_particles * sizeof(RealCuda)));
+	gpuErrchk(cudaMemset(container.kappaV + container.numParticles, 0, num_additional_particles * sizeof(RealCuda)));
+	
+	
+	container.numParticles += num_additional_particles;
+	container.neighborsDataSet->numParticles = container.numParticles;
+
+	//And now I need to update the particle count in the gpu structures
+	//the easiest way is to use a kernel with just one thread used
+	//the other way would be to copy the data back to the cpu then update the value before sending it back to the cpu
+	cuda_updateParticleCount_kernel << <1, 1 >> > (container.gpu_ptr, container.numParticles);
+	
+	cudaError_t cudaStatus = cudaDeviceSynchronize();
+	if (cudaStatus != cudaSuccess) {
+		std::cerr << "add_particles_cuda failed: " << (int)cudaStatus << std::endl;
+		exit(1598);
+	}
+
+
 }
 
 

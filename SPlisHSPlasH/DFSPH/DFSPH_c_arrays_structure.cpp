@@ -307,6 +307,10 @@ void UnifiedParticleSet::reset(T* particleObj) {
 	}
 	else {
 		FluidModel *model = reinterpret_cast<FluidModel*>(particleObj);
+		
+		density0= model->getDensity0();
+		m_V= model->getMass(0) /density0;
+		
 		for (int i = 0; i < numParticles; ++i) {
 			pos_temp[i] = vector3rTo3d(model->getPosition(0, i));
 			vel_temp[i] = vector3rTo3d(model->getVelocity(0, i));
@@ -485,6 +489,17 @@ void UnifiedParticleSet::write_forces_to_file(std::string file_path) {
 	else {
 		std::cout << "failed to open file: " << file_path << "   reason: " << std::strerror(errno) << std::endl;
 	}
+}
+
+
+void UnifiedParticleSet::add_particles(std::vector<Vector3d> pos, std::vector<Vector3d> vel) {
+	if (numParticles + pos.size() > numParticlesMax) {
+		std::cout << "UnifiedParticleSet::add_particles  exceeded the allocated space." << std::endl;
+		return;
+	}
+
+	add_particles_cuda(*this, (int)pos.size(), pos.data(), vel.data());
+
 }
 
 DFSPHCData::DFSPHCData() {
