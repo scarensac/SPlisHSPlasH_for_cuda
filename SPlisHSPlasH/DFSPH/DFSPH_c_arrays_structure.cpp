@@ -546,7 +546,7 @@ DFSPHCData::DFSPHCData(FluidModel *model): DFSPHCData()
 	if (true) {
 		//unified particles for the boundaries
 		boundaries_data = new UnifiedParticleSet[1];
-		boundaries_data[0] = UnifiedParticleSet(model->m_particleObjects[1]->numberOfParticles(), false, false, false);
+		boundaries_data[0] = UnifiedParticleSet(model->m_particleObjects[1]->numberOfParticles(), true, true, false);
 		boundaries_data[0].releaseDataOnDestruction = true;
 		allocate_and_copy_UnifiedParticleSet_vector_cuda(&boundaries_data_cuda, boundaries_data, 1);
 
@@ -626,7 +626,7 @@ void DFSPHCData::reset(FluidModel *model) {
 		FluidModel::RigidBodyParticleObject* particleObj = static_cast<FluidModel::RigidBodyParticleObject*>(model->m_particleObjects[1]);
 		boundaries_data->reset<FluidModel::RigidBodyParticleObject>(particleObj);
 		//init the boundaries neighbor searchs
-		boundaries_data->initNeighborsSearchData(this->m_kernel_precomp.getRadius(), true, true);
+		boundaries_data->initNeighborsSearchData(this->m_kernel_precomp.getRadius(), true, false);
 		//I need to update the ptrs on the cuda version because for the boudaries I clear the intermediary buffer to fre some memory
 		update_neighborsSearchBuffers_UnifiedParticleSet_vector_cuda(&boundaries_data_cuda, boundaries_data, 1);
 		

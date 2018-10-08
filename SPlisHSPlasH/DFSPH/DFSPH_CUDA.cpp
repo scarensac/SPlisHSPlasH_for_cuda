@@ -898,12 +898,14 @@ void DFSPHCUDA::reset()
 	m_iterationsV = 0;
 	m_data.reset(m_model);
 
+	/*
 	std::vector<Vector3d> additional_pos;
 	std::vector<Vector3d> additional_vel;
 
 	additional_pos.push_back(Vector3d(0.5, 2, 0.5));
 	additional_vel.push_back(Vector3d(0, 1, 0));
 	m_data.fluid_data->add_particles(additional_pos, additional_vel);
+	//*/
 }
 
 void DFSPHCUDA::performNeighborhoodSearch()
