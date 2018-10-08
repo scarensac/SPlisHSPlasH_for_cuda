@@ -77,8 +77,8 @@ void PrecomputedCubicKernelPerso::setRadius(RealCuda val)
 }
 
 
-NeighborsSearchDataSet::NeighborsSearchDataSet(unsigned int numParticles_i) :
-	numParticles(numParticles_i)
+NeighborsSearchDataSet::NeighborsSearchDataSet(unsigned int numParticles_i, unsigned int numParticlesMax_i) :
+	numParticles(numParticles_i),numParticlesMax(numParticlesMax_i)
 {
 	allocate_neighbors_search_data_set(*this);
 
@@ -117,6 +117,7 @@ void UnifiedParticleSet::init() {
 	releaseDataOnDestruction = false;
 
 	numParticles = 0;
+	numParticlesMax = 0;
 	has_factor_computation = false;
 	is_dynamic_object = false;
 	velocity_impacted_by_fluid_solver = false;
@@ -139,6 +140,8 @@ void UnifiedParticleSet::init() {
 	rigidBody_cpu = NULL;
 	renderingData = NULL;
 	gpu_ptr = NULL;
+	d_temp_storage = NULL;
+	temp_storage_bytes = 0;
 }
 
 UnifiedParticleSet::UnifiedParticleSet(int nbParticles, bool has_factor_computation_i, bool velocity_impacted_by_fluid_solver_i,
@@ -156,18 +159,24 @@ void UnifiedParticleSet::init(int nbParticles, bool has_factor_computation_i, bo
 
 	//now use the actual parameters
 	numParticles = nbParticles;
+	numParticlesMax = numParticles;
 	has_factor_computation = has_factor_computation_i;
 	velocity_impacted_by_fluid_solver = velocity_impacted_by_fluid_solver_i;
 	is_dynamic_object = is_dynamic_object_i;
+	
+	//if I have a fluid them I allocate more than the actual nbtr of particles so I can use more in the future
+	if (!is_dynamic_object) {
+		numParticlesMax *= 1.3;
+	}
 
 
 	//init the rendering data
 	renderingData = new ParticleSetRenderingData();
-	cuda_opengl_initParticleRendering(*renderingData, numParticles, &pos, &vel);
+	cuda_opengl_initParticleRendering(*renderingData, numParticlesMax, &pos, &vel);
 
 
 	//allocate the neighbor structure
-	neighborsDataSet = new NeighborsSearchDataSet(numParticles);
+	neighborsDataSet = new NeighborsSearchDataSet(numParticles, numParticlesMax);
 
 	//allocate the structure containing the rigidBody information
 	if (is_dynamic_object) {
@@ -209,6 +218,7 @@ void UnifiedParticleSet::clear() {
 		cuda_opengl_releaseParticleRendering(*renderingData);
 		delete renderingData; renderingData = NULL;
 	}
+
 }
 
 void UnifiedParticleSet::transferForcesToCPU() {

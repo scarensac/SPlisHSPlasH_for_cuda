@@ -638,7 +638,7 @@ __global__ void DFSPH_divergence_loop_end_kernel(SPH::DFSPHCData m_data, SPH::Un
 
 RealCuda cuda_divergence_loop_end(SPH::DFSPHCData& data) {
 	int numBlocks = (data.fluid_data[0].numParticles + BLOCKSIZE - 1) / BLOCKSIZE;
-	RealCuda* avg_density_err = NULL;
+	static RealCuda* avg_density_err = NULL;
 	if (avg_density_err == NULL) {
 		cudaMalloc(&(avg_density_err), sizeof(RealCuda));
 	}
@@ -650,16 +650,10 @@ RealCuda cuda_divergence_loop_end(SPH::DFSPHCData& data) {
 		fprintf(stderr, "cuda_divergence_loop_end failed: %d\n", (int)cudaStatus);
 		exit(1598);
 	}
-	static void     *d_temp_storage = NULL;
-	static size_t   temp_storage_bytes = 0;
 
-	if (d_temp_storage == NULL) {
-		cub::DeviceReduce::Sum(d_temp_storage, temp_storage_bytes, data.fluid_data->densityAdv, avg_density_err, data.fluid_data[0].numParticles);
-		// Allocate temporary storage
-		cudaMalloc(&d_temp_storage, temp_storage_bytes);
-	}
+	
 	// Run sum-reduction
-	cub::DeviceReduce::Sum(d_temp_storage, temp_storage_bytes, data.fluid_data->densityAdv, avg_density_err, data.fluid_data[0].numParticles);
+	cub::DeviceReduce::Sum(data.fluid_data->d_temp_storage, data.fluid_data->temp_storage_bytes, data.fluid_data->densityAdv, avg_density_err, data.fluid_data[0].numParticles);
 
 	RealCuda result = 0;
 	gpuErrchk(cudaMemcpy(&result, avg_density_err, sizeof(RealCuda), cudaMemcpyDeviceToHost));
@@ -954,16 +948,9 @@ RealCuda cuda_pressure_loop_end(SPH::DFSPHCData& data) {
 	}
 
 	std::chrono::steady_clock::time_point p1 = std::chrono::steady_clock::now();
-	static void     *d_temp_storage = NULL;
-	static size_t   temp_storage_bytes = 0;
 
-	if (d_temp_storage == NULL) {
-		cub::DeviceReduce::Sum(d_temp_storage, temp_storage_bytes, data.fluid_data->densityAdv, avg_density_err, data.fluid_data[0].numParticles);
-		// Allocate temporary storage
-		cudaMalloc(&d_temp_storage, temp_storage_bytes);
-	}
 	// Run sum-reduction
-	cub::DeviceReduce::Sum(d_temp_storage, temp_storage_bytes, data.fluid_data->densityAdv, avg_density_err, data.fluid_data[0].numParticles);
+	cub::DeviceReduce::Sum(data.fluid_data->d_temp_storage, data.fluid_data->temp_storage_bytes, data.fluid_data->densityAdv, avg_density_err, data.fluid_data[0].numParticles);
 
 
 	RealCuda result = 0;
@@ -1339,16 +1326,6 @@ void cuda_neighborsSearchInternal_sortParticlesId(Vector3d* pos, RealCuda kernel
 	}
 
 	//do the actual sort
-	//first Determine temporary device storage requirements
-	if ((*d_temp_storage_pair_sort) == NULL) {
-		temp_storage_bytes_pair_sort = 0;
-		cub::DeviceRadixSort::SortPairs(*d_temp_storage_pair_sort, temp_storage_bytes_pair_sort,
-			cell_id, cell_id_sorted, p_id, p_id_sorted, numParticles);
-		// Allocate temporary storage
-		cudaMalloc(d_temp_storage_pair_sort, temp_storage_bytes_pair_sort);
-
-	}
-
 	// Run sorting operation
 	cub::DeviceRadixSort::SortPairs(*d_temp_storage_pair_sort, temp_storage_bytes_pair_sort,
 		cell_id, cell_id_sorted, p_id, p_id_sorted, numParticles);
@@ -1391,14 +1368,6 @@ void cuda_neighborsSearchInternal_computeCellStartEnd(int numParticles, unsigned
 
 	//transformour histogram to a cumulative histogram to have  the start and end of each cell
 	//note: the exlusive sum make so that each cell will contains it's start value
-
-	if ((*d_temp_storage_cumul_hist) == NULL) {
-		temp_storage_bytes_cumul_hist = 0;
-		//get the necessary size
-		cub::DeviceScan::ExclusiveSum(*d_temp_storage_cumul_hist, temp_storage_bytes_cumul_hist, hist, cell_start_end, (CELL_COUNT + 1));
-		// Allocate temporary storage
-		cudaMalloc(d_temp_storage_cumul_hist, temp_storage_bytes_cumul_hist);
-	}
 	// Run exclusive prefix sum
 	cub::DeviceScan::ExclusiveSum(*d_temp_storage_cumul_hist, temp_storage_bytes_cumul_hist, hist, cell_start_end, (CELL_COUNT + 1));
 
@@ -1428,10 +1397,8 @@ void cuda_sortData(SPH::UnifiedParticleSet& particleSet, SPH::NeighborsSearchDat
 	int numBlocks = (numParticles + BLOCKSIZE - 1) / BLOCKSIZE;
 	unsigned int *p_id_sorted = neighborsDataSet.p_id_sorted;
 
-	Vector3d* intermediate_buffer_v3d = NULL;
-	cudaMallocManaged(&(intermediate_buffer_v3d), numParticles * sizeof(Vector3d));
-	RealCuda* intermediate_buffer_real = NULL;
-	cudaMalloc(&(intermediate_buffer_real), numParticles * sizeof(RealCuda));
+	Vector3d* intermediate_buffer_v3d = neighborsDataSet.intermediate_buffer_v3d;
+	RealCuda* intermediate_buffer_real = neighborsDataSet.intermediate_buffer_real;
 
 	//pos
 	DFSPH_sortFromIndex_kernel<Vector3d> << <numBlocks, BLOCKSIZE >> > (particleSet.pos, intermediate_buffer_v3d, p_id_sorted, numParticles);
@@ -1460,9 +1427,6 @@ void cuda_sortData(SPH::UnifiedParticleSet& particleSet, SPH::NeighborsSearchDat
 		gpuErrchk(cudaMemcpy(particleSet.kappaV, intermediate_buffer_real, numParticles * sizeof(RealCuda), cudaMemcpyDeviceToDevice));
 	}
 
-
-	cudaFree(intermediate_buffer_v3d); intermediate_buffer_v3d = NULL;
-	cudaFree(intermediate_buffer_real); intermediate_buffer_real = NULL;
 
 
 	//now that everything is sorted we can set each particle index to itself
@@ -1794,29 +1758,43 @@ void allocate_UnifiedParticleSet_cuda(SPH::UnifiedParticleSet& container) {
 
 	//cudaMalloc(&(container.pos), container.numParticles * sizeof(Vector3d)); //use opengl buffer with cuda interop
 	//cudaMalloc(&(container.vel), container.numParticles * sizeof(Vector3d)); //use opengl buffer with cuda interop
-	cudaMalloc(&(container.mass), container.numParticles * sizeof(RealCuda));
+	cudaMalloc(&(container.mass), container.numParticlesMax * sizeof(RealCuda));
 
 
 	if (container.has_factor_computation) {
 		//*
-		cudaMallocManaged(&(container.numberOfNeighbourgs), container.numParticles * 3 * sizeof(int));
-		cudaMalloc(&(container.neighbourgs), container.numParticles * MAX_NEIGHBOURS * sizeof(int));
+		cudaMallocManaged(&(container.numberOfNeighbourgs), container.numParticlesMax * 3 * sizeof(int));
+		cudaMalloc(&(container.neighbourgs), container.numParticlesMax * MAX_NEIGHBOURS * sizeof(int));
 
-		cudaMalloc(&(container.density), container.numParticles * sizeof(RealCuda));
-		cudaMalloc(&(container.factor), container.numParticles * sizeof(RealCuda));
-		cudaMalloc(&(container.densityAdv), container.numParticles * sizeof(RealCuda));
+		cudaMalloc(&(container.density), container.numParticlesMax * sizeof(RealCuda));
+		cudaMalloc(&(container.factor), container.numParticlesMax * sizeof(RealCuda));
+		cudaMalloc(&(container.densityAdv), container.numParticlesMax * sizeof(RealCuda));
 		
 		if (container.velocity_impacted_by_fluid_solver) {
-			cudaMalloc(&(container.acc), container.numParticles * sizeof(Vector3d));
-			cudaMalloc(&(container.kappa), container.numParticles * sizeof(RealCuda));
-			cudaMalloc(&(container.kappaV), container.numParticles * sizeof(RealCuda));
+			cudaMalloc(&(container.acc), container.numParticlesMax * sizeof(Vector3d));
+			cudaMalloc(&(container.kappa), container.numParticlesMax * sizeof(RealCuda));
+			cudaMalloc(&(container.kappaV), container.numParticlesMax * sizeof(RealCuda));
+			
+			//I need the allocate the memory cub need to compute the reduction
+			//I need the avg pointer because cub require it (but i'll clear after the cub call)
+			RealCuda* avg_density_err = NULL;
+			cudaMalloc(&(avg_density_err), sizeof(RealCuda));
+		
+
+			cub::DeviceReduce::Sum(container.d_temp_storage, container.temp_storage_bytes,
+				container.densityAdv, avg_density_err, container.numParticlesMax);
+			// Allocate temporary storage
+			cudaMalloc(&(container.d_temp_storage), container.temp_storage_bytes);
+		
+			cudaFree(avg_density_err);
 		}
 		//*/
+
 	}
 
 	if (container.is_dynamic_object) {
-		cudaMalloc(&(container.pos0), container.numParticles * sizeof(Vector3d));
-		cudaMalloc(&(container.F), container.numParticles * sizeof(Vector3d));
+		cudaMalloc(&(container.pos0), container.numParticlesMax * sizeof(Vector3d));
+		cudaMalloc(&(container.F), container.numParticlesMax * sizeof(Vector3d));
 	}
 }
 
@@ -1840,8 +1818,12 @@ void release_UnifiedParticleSet_cuda(SPH::UnifiedParticleSet& container) {
 			cudaFree(container.acc); container.acc = NULL;
 			cudaFree(container.kappa); container.kappa = NULL;
 			cudaFree(container.kappaV); container.kappaV = NULL;
+
+			cudaFree(container.d_temp_storage); container.d_temp_storage = NULL;
+			container.temp_storage_bytes = 0;
 		}
 		//*/
+
 	}
 
 	if (container.is_dynamic_object) {
@@ -1993,6 +1975,11 @@ void release_UnifiedParticleSet_vector_cuda(SPH::UnifiedParticleSet** vector, in
 
 
 
+void release_cudaPtr_cuda(void** ptr) {
+	cudaFree(*ptr); *ptr = NULL;
+}
+
+
 void allocate_precomputed_kernel_managed(SPH::PrecomputedCubicKernelPerso& kernel, bool minimize_managed) {
 
 	if (minimize_managed) {
@@ -2038,21 +2025,29 @@ void init_precomputed_kernel_from_values(SPH::PrecomputedCubicKernelPerso& kerne
 void allocate_neighbors_search_data_set(SPH::NeighborsSearchDataSet& dataSet) {
 
 	//allocatethe mme for fluid particles
-	cudaMallocManaged(&(dataSet.cell_id), dataSet.numParticles * sizeof(unsigned int));
-	cudaMallocManaged(&(dataSet.cell_id_sorted), dataSet.numParticles * sizeof(unsigned int));
-	cudaMallocManaged(&(dataSet.local_id), dataSet.numParticles * sizeof(unsigned int));
-	cudaMallocManaged(&(dataSet.p_id), dataSet.numParticles * sizeof(unsigned int));
+	cudaMallocManaged(&(dataSet.cell_id), dataSet.numParticlesMax * sizeof(unsigned int));
+	cudaMallocManaged(&(dataSet.cell_id_sorted), dataSet.numParticlesMax * sizeof(unsigned int));
+	cudaMallocManaged(&(dataSet.local_id), dataSet.numParticlesMax * sizeof(unsigned int));
+	cudaMallocManaged(&(dataSet.p_id), dataSet.numParticlesMax * sizeof(unsigned int));
 	cudaMallocManaged(&(dataSet.hist), (CELL_COUNT + 1) * sizeof(unsigned int));
 
 	//init variables for cub calls
-	dataSet.d_temp_storage_pair_sort = NULL;
 	dataSet.temp_storage_bytes_pair_sort = 0;
-	dataSet.d_temp_storage_cumul_hist = NULL;
+	cub::DeviceRadixSort::SortPairs(dataSet.d_temp_storage_pair_sort, dataSet.temp_storage_bytes_pair_sort,
+		dataSet.cell_id, dataSet.cell_id_sorted, dataSet.p_id, dataSet.p_id_sorted, dataSet.numParticlesMax);
+	cudaMalloc(&(dataSet.d_temp_storage_pair_sort), dataSet.temp_storage_bytes_pair_sort);
+
 	dataSet.temp_storage_bytes_cumul_hist = 0;
+	cub::DeviceScan::ExclusiveSum(dataSet.d_temp_storage_cumul_hist, dataSet.temp_storage_bytes_cumul_hist, 
+		dataSet.hist, dataSet.cell_start_end, (CELL_COUNT + 1));
+	cudaMalloc(&(dataSet.d_temp_storage_cumul_hist), dataSet.temp_storage_bytes_cumul_hist);
 	
-	cudaMallocManaged(&(dataSet.p_id_sorted), dataSet.numParticles * sizeof(unsigned int));
+
+	cudaMallocManaged(&(dataSet.p_id_sorted), dataSet.numParticlesMax * sizeof(unsigned int));
 	cudaMallocManaged(&(dataSet.cell_start_end), (CELL_COUNT + 1) * sizeof(unsigned int));
 	
+	cudaMalloc(&(dataSet.intermediate_buffer_v3d), dataSet.numParticlesMax * sizeof(Vector3d));
+	cudaMalloc(&(dataSet.intermediate_buffer_real), dataSet.numParticlesMax * sizeof(RealCuda));
 
 
 	//reset the particle id
@@ -2079,12 +2074,14 @@ void release_neighbors_search_data_set(SPH::NeighborsSearchDataSet& dataSet, boo
 	cudaFree(dataSet.hist); dataSet.hist = NULL;
 
 	//init variables for cub calls
-	cudaFree(dataSet.d_temp_storage_pair_sort);
-	dataSet.d_temp_storage_pair_sort = NULL;
+	cudaFree(dataSet.d_temp_storage_pair_sort); dataSet.d_temp_storage_pair_sort = NULL;
 	dataSet.temp_storage_bytes_pair_sort = 0;
-	cudaFree(dataSet.d_temp_storage_cumul_hist);
-	dataSet.d_temp_storage_cumul_hist = NULL;
+	cudaFree(dataSet.d_temp_storage_cumul_hist); dataSet.d_temp_storage_cumul_hist = NULL;
 	dataSet.temp_storage_bytes_cumul_hist = 0;
+
+
+	cudaFree(dataSet.intermediate_buffer_v3d); dataSet.intermediate_buffer_v3d = NULL;
+	cudaFree(dataSet.intermediate_buffer_real); dataSet.intermediate_buffer_real = NULL;
 
 	dataSet.internal_buffers_allocated = false;
 

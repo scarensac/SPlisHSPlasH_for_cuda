@@ -177,6 +177,7 @@ namespace SPH
 	class NeighborsSearchDataSet {
 	public:
 		unsigned int numParticles;
+		unsigned int numParticlesMax;
 		unsigned int* cell_id;
 		unsigned int* cell_id_sorted;
 		unsigned int* local_id;
@@ -193,13 +194,16 @@ namespace SPH
 
 		bool internal_buffers_allocated;
 
+		Vector3d* intermediate_buffer_v3d ;
+		RealCuda* intermediate_buffer_real;
+
 		//empty contructor to make static arrays possible
 		NeighborsSearchDataSet(){}
 
 		/**
 			allocate the data structure
 		*/
-		NeighborsSearchDataSet(unsigned int numParticles_i);
+		NeighborsSearchDataSet(unsigned int numParticles_i, unsigned int numParticlesMax_i);
 		~NeighborsSearchDataSet();
 
 	
@@ -237,6 +241,7 @@ namespace SPH
 
 
 		int numParticles;
+		int numParticlesMax;
 		bool has_factor_computation;
 		bool velocity_impacted_by_fluid_solver;
 		bool is_dynamic_object;
@@ -277,6 +282,12 @@ namespace SPH
 
 		//pointer for the gpu storage (that should be a copy of this item but allocated on the gpu)
 		UnifiedParticleSet* gpu_ptr;
+
+		//those two variables are here for cub computationso that they are only allocated once (or when the number
+		//of particles change). There are used when computeing the avg at the end of the pressure and div loops
+		void     *d_temp_storage;
+		size_t   temp_storage_bytes;
+
 
 		//base contructor (set every array to null and the nb of particles to 0
 		UnifiedParticleSet();
