@@ -117,6 +117,11 @@ void timeStep ()
 		//I'll handle the save as token so I need to consume them
 		base.setLoadLiquid(false);
 		base.setLoadSimulation(false);
+
+		if (base.getZeroVelocities()) {
+			sim->zeroFluidVelocities();
+		}
+		base.setZeroVelocities(false);
 	}
 
 	if (base.getPause())

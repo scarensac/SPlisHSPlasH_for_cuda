@@ -82,6 +82,13 @@ namespace SPH
 		bool m_loadLiquid;
 		bool m_saveSimulation;
 		bool m_loadSimulation;
+		bool m_zeroVelocities;
+
+		bool m_moveForwardX;
+		bool m_moveBackwardX;
+		bool m_moveForwardZ;
+		bool m_moveBackwardZ;
+
 
 		void initShaders();
 		void initParameters();
@@ -138,7 +145,11 @@ namespace SPH
 		void setSaveSimulation(bool val) { m_saveSimulation = val; }
 		bool getLoadSimulation() const { return m_loadSimulation; }
 		void setLoadSimulation(bool val) { m_loadSimulation = val; }
-
+		bool getZeroVelocities() const { return m_zeroVelocities; }
+		void setZeroVelocities(bool val) { m_zeroVelocities = val; }
+		Vector3r getSimulationMovement() { return Vector3r((int)m_moveForwardX - (int)m_moveBackwardX, 0, (int)m_moveForwardZ - (int)m_moveBackwardZ); }
+		void resetSimulationMovement() { m_moveForwardX = false; m_moveBackwardX = false; m_moveForwardZ = false; m_moveBackwardZ = false;}
+		
 		std::vector<unsigned int>& getSelectedParticles() { return m_selectedParticles; }
 		bool getUseParticleCaching() const { return m_useParticleCaching; }
 		void setUseParticleCaching(bool val) { m_useParticleCaching = val; }

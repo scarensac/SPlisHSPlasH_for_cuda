@@ -47,7 +47,7 @@ void SceneLoader::readScene(const char *fileName, Scene &scene)
 		scene.pauseAt = -1.0;
 		readValue(config["pauseAt"], scene.pauseAt);
 
-		scene.numberOfStepsPerRenderUpdate = 8;
+		scene.numberOfStepsPerRenderUpdate = 1;
 		readValue(config["numberOfStepsPerRenderUpdate"], scene.numberOfStepsPerRenderUpdate);
 
 		scene.renderMaxVelocity = 25.0;

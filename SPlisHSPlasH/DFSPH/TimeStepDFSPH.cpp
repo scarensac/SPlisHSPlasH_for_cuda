@@ -32,6 +32,9 @@ void TimeStepDFSPH::step()
 	TimeManager *tm = TimeManager::getCurrent ();
 	const Real h = tm->getTimeStepSize();
 
+	static int count_steps = 0;
+	 std::chrono::steady_clock::time_point start = std::chrono::steady_clock::now();
+
 	const unsigned int numParticles = m_model->numActiveParticles();
 
 	performNeighborhoodSearch();
@@ -87,6 +90,15 @@ void TimeStepDFSPH::step()
 
 	// Compute new time	
 	tm->setTime (tm->getTime () + h);
+
+
+	 std::chrono::steady_clock::time_point end = std::chrono::steady_clock::now();
+	 float time_iter = std::chrono::duration_cast<std::chrono::nanoseconds> (end - start).count() / 1000000.0f;
+	 static float total_time = 0;
+	 total_time += time_iter;
+
+	 std::cout << "step finished: " << total_time/ (count_steps) << "  (" << time_iter << ")  " << count_steps++ << std::endl;
+
 }
 
 void TimeStepDFSPH::computeDFSPHFactor()

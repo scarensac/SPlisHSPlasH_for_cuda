@@ -54,7 +54,9 @@ namespace SPH
 				}
 				else
 				{
-					res = m_k * (2.0*pow(1.0 - q, 3));
+					const RealCuda factor = 1.0 - q;
+					//res = m_k * (2.0*pow(1.0 - q, 3));
+					res = m_k * (2.0*factor*factor*factor);
 				}
 			}
 			return res;
@@ -198,7 +200,7 @@ namespace SPH
 		RealCuda* intermediate_buffer_real;
 
 		//empty contructor to make static arrays possible
-		NeighborsSearchDataSet(){}
+		NeighborsSearchDataSet();
 
 		/**
 			allocate the data structure
@@ -347,8 +349,11 @@ namespace SPH
 			return numberOfNeighbourgs[particle_id * 3 + body_id];
 		}
 
+		void update_active_particle_number(unsigned int val);
 
 		void add_particles(std::vector<Vector3d> pos, std::vector<Vector3d> vel);
+
+		void zeroVelocities();
 
 	};
 
@@ -372,6 +377,7 @@ namespace SPH
 		FUNCTION inline RealCuda W(const Vector3d &r) const { return m_kernel.W(r); }
 		FUNCTION inline RealCuda W(const RealCuda r) const { return m_kernel.W(r); }
 		FUNCTION inline Vector3d gradW(const Vector3d &r) const { return m_kernel.gradW(r); }
+		FUNCTION inline RealCuda getKernelRadius()  { return m_kernel.getRadius(); }
 		RealCuda W_zero;
 		RealCuda density0;
 		RealCuda particleRadius;
@@ -408,6 +414,12 @@ namespace SPH
 		UnifiedParticleSet* vector_dynamic_bodies_data_cuda;
 		int numDynamicBodies;
 
+		bool damp_borders;
+		int damp_borders_steps_count;
+		Vector3d* bmin;
+		Vector3d* bmax;
+		Vector3d* damp_planes;
+		int damp_planes_count;
 
 		DFSPHCData();
 		DFSPHCData(FluidModel *model);
@@ -454,6 +466,8 @@ namespace SPH
 		void update_solids_from_file();
 		
 		void update_solids(std::vector<DynamicBody> vect_new_info);
+
+		void zeroFluidVelocities();
 	};
 }
 

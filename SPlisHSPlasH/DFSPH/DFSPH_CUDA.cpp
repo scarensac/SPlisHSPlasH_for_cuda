@@ -5,6 +5,7 @@
 #include <iostream>
 #include "SPlisHSPlasH/Utilities/Timing.h"
 #include "DFSPH_cuda_basic.h"
+#include <fstream>
 
 
 
@@ -144,20 +145,51 @@ void DFSPHCUDA::step()
 		static float total_time = 0;
 		total_time += time_iter;
 
-		std::cout << "timestep total: " << total_time << "   this step: " << time_iter + time_between << "  (" << time_iter << "  " << time_between << ")" << std::endl;
-		std::cout << "solver iteration  density: " << m_iterations << "   divergence : " << m_iterationsV << std::endl;
+
+		static float iter_pressure_avg = 0;
+		static float iter_divergence_avg = 0;
+		iter_pressure_avg += m_iterations;
+	    iter_divergence_avg += m_iterationsV;
+		std::cout << "timestep total: " << total_time / (count_steps + 1) << "   this step: " << time_iter + time_between << "  (" << time_iter << "  " << time_between << ")" << std::endl;
+		std::cout << "solver iteration avg (current step) density: " <<  iter_pressure_avg / (count_steps + 1) << " ( " << m_iterations << " )   divergence : " <<
+			iter_divergence_avg / (count_steps + 1) << " ( " << m_iterationsV << " )   divergence : " << std::endl;
 
 
-
+		if (false){
+			std::string filename = "timmings_detailled.csv";
+			if (count_steps == 0) {
+				std::remove(filename.c_str());
+			}
+			ofstream myfile;
+			myfile.open(filename, std::ios_base::app);
+			if (myfile.is_open()) {
+				myfile << total_time / (count_steps + 1) << ", " << m_iterations << ", " << m_iterationsV << std::endl;;
+				myfile.close();
+			}
+			else {
+				std::cout << "failed to open file: " << filename << "   reason: " << std::strerror(errno) << std::endl;
+			}
+		}
 
 
 		for (int i = 0; i < NB_TIME_POINTS; ++i) {
 			float time = std::chrono::duration_cast<std::chrono::nanoseconds> (tab_timepoint[i+1] - tab_timepoint[i]).count() / 1000000.0f;
 			tab_avg[i] += time;
 			std::cout << tab_name[i] << "  :"<< (tab_avg[i]/(count_steps+1))<< "  ("<<time <<")"<< std::endl ;
-
+			
+			
 		}
 
+		if (count_steps > 1500) {
+			count_steps = 0;
+			total_time = 0;
+			iter_pressure_avg = 0;
+			iter_divergence_avg = 0;
+
+			for (int i = 0; i < NB_TIME_POINTS; ++i) {
+				tab_avg[i] = 0;
+			}
+		}
 
 		end = std::chrono::steady_clock::now();
 
@@ -229,8 +261,8 @@ void DFSPHCUDA::step()
 
 
 	
-
-	std::cout << "step finished: " << count_steps++ << std::endl;
+	static int true_count_steps = 0;
+	std::cout << "step finished: " << true_count_steps++<<"  "<< count_steps++ << std::endl;
 }
 
 void DFSPHCUDA::computeDFSPHFactor()
@@ -1109,6 +1141,11 @@ void DFSPHCUDA::handleSimulationLoad(bool load_liquid, bool load_liquid_velociti
 }
 
 
+void DFSPHCUDA::handleSimulationMovement(Vector3d movement) {
+	if (movement.norm() > 0.5) {
+		move_simulation_cuda(m_data, Vector3d(1, 0, 0));
+	}
+}
 
 void DFSPHCUDA::updateRigidBodiesStatefromFile() {
 	m_data.update_solids_from_file();
@@ -1120,4 +1157,9 @@ void DFSPHCUDA::updateRigidBodiesStateToFile() {
 
 void DFSPHCUDA::updateRigidBodies(std::vector<DynamicBody> vect_new_info) {
 	m_data.update_solids(vect_new_info);
+}
+
+
+void DFSPHCUDA::zeroFluidVelocities() {
+	m_data.zeroFluidVelocities();
 }

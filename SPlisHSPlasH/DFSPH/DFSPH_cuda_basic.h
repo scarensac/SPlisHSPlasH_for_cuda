@@ -42,12 +42,17 @@ int cuda_pressureSolve(SPH::DFSPHCData& data, const unsigned int maxIter, const 
 void cuda_neighborsSearch(SPH::DFSPHCData& data);
 void cuda_initNeighborsSearchDataSet(SPH::UnifiedParticleSet& particleSet, SPH::NeighborsSearchDataSet& dataSet, 
 	RealCuda kernel_radius, bool sortBuffers=false);
-void cuda_sortData(SPH::UnifiedParticleSet& particleSet, SPH::NeighborsSearchDataSet& neighborsDataSet);
+void cuda_sortData(SPH::UnifiedParticleSet& particleSet, unsigned int * sort_id);
+void cuda_shuffleData(SPH::UnifiedParticleSet& particleSet);
 
 //this function is used to update the location of the dynamic bodies articles
+//this function allow to move the simulation location by moving the boundaires particles and adapting the fluid
+//the particles associated with rigid objects are untouched
 void update_dynamicObject_UnifiedParticleSet_cuda(SPH::UnifiedParticleSet& particle_set);
 
+void move_simulation_cuda(SPH::DFSPHCData& data, Vector3d movement);
 
+void add_border_to_damp_planes_cuda(SPH::DFSPHCData& data);
 //RENDERING
 
 void cuda_opengl_initParticleRendering(ParticleSetRenderingData& renderingData, unsigned int numParticles,
@@ -61,6 +66,7 @@ void cuda_renderBoundaries(SPH::DFSPHCData& data, bool renderWalls);
 
 //MEMORY ALLOCATION AND TRANSFER
 
+void allocate_DFSPHCData_base_cuda(SPH::DFSPHCData& data);
 void allocate_UnifiedParticleSet_cuda(SPH::UnifiedParticleSet& container);
 void release_UnifiedParticleSet_cuda(SPH::UnifiedParticleSet& container);
 void load_UnifiedParticleSet_cuda(SPH::UnifiedParticleSet& container, Vector3d* pos, Vector3d* vel, RealCuda* mass);
@@ -71,7 +77,11 @@ void update_neighborsSearchBuffers_UnifiedParticleSet_vector_cuda(SPH::UnifiedPa
 //this function is the one that must be called when releasing the unified particles that are fully cuda allocated
 void release_UnifiedParticleSet_vector_cuda(SPH::UnifiedParticleSet** vector, int numSets);
 void release_cudaPtr_cuda(void** ptr);
+void update_active_particle_number_cuda(SPH::UnifiedParticleSet& container);
 void add_particles_cuda(SPH::UnifiedParticleSet& container, int num_additional_particles, const Vector3d* pos, const Vector3d* vel);
+template<class T> void set_buffer_to_value(T* buff, T val, int size);
+template void set_buffer_to_value<Vector3d>(Vector3d* buff, Vector3d val, int size);
+template void set_buffer_to_value<int>(int* buff, int val, int size);
 
 
 void allocate_precomputed_kernel_managed(SPH::PrecomputedCubicKernelPerso& kernel, bool minimize_managed = false);

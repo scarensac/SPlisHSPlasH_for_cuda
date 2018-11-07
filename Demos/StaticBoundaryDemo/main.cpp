@@ -13,6 +13,7 @@
 #include "Demos/Common/DemoBase.h"
 #include "Utilities/FileSystem.h"
 #include <fstream>
+#include "SPlisHSPlasH/DFSPH/DFSPH_CUDA.h"
 
 // Enable memory leak detection
 #ifdef _DEBUG
@@ -83,6 +84,35 @@ void timeStep ()
 {
 	if ((base.getPauseAt() > 0.0) && (base.getPauseAt() < TimeManager::getCurrent()->getTime()))
 		base.setPause(true);
+
+	if (base.getSimulationMethod().simulationMethod == DemoBase::SimulationMethods::DFSPH_CUDA) {
+		DFSPHCUDA* sim = dynamic_cast<DFSPHCUDA*>(base.getSimulationMethod().simulation);
+		sim->handleDynamicBodiesPause(base.getRbPause());
+
+		//save th simulation state if asked
+		sim->handleSimulationSave(base.getSaveLiquid() || base.getSaveSimulation(), base.getSaveSimulation(), base.getSaveSimulation());
+		//I'll handle the save as token so I need to consume them
+		base.setSaveLiquid(false);
+		base.setSaveSimulation(false);
+
+
+
+		//load the simulation state if asked
+		sim->handleSimulationLoad(base.getLoadLiquid() || base.getLoadSimulation(), false, base.getLoadSimulation(), false, base.getLoadSimulation(), false);
+		//I'll handle the save as token so I need to consume them
+		base.setLoadLiquid(false);
+		base.setLoadSimulation(false);
+
+
+		sim->handleSimulationMovement(vector3rTo3d(base.getSimulationMovement()));
+		base.resetSimulationMovement();
+
+		if (base.getZeroVelocities()) {
+			sim->zeroFluidVelocities();
+		}
+		base.setZeroVelocities(false);
+	}
+
 
 	if (base.getPause())
 		return;

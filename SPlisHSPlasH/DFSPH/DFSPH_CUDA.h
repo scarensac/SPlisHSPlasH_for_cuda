@@ -76,10 +76,14 @@ namespace SPH
 		void handleSimulationLoad(bool load_liquid, bool load_liquid_velocities, bool load_solids, bool load_solids_velocities,
 			bool load_boundaries, bool load_boundaries_velocities);
 
+		void handleSimulationMovement(Vector3d movement);
+
 		void updateRigidBodiesStatefromFile();
 		void updateRigidBodiesStateToFile();
 
 		void updateRigidBodies(std::vector<DynamicBody> vect_new_info);
+
+		void zeroFluidVelocities();
 	};
 }
 
