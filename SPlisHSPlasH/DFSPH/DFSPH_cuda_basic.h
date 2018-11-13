@@ -17,6 +17,8 @@ public:
 #include "SPlisHSPlasH\Vector.h"
 #include "DFSPH_c_arrays_structure.h"
 
+using namespace SPH;
+
 void cuda_divergence_warmstart_init(SPH::DFSPHCData& data);
 template<bool warmstart> void cuda_divergence_compute(SPH::DFSPHCData& data);
 void cuda_divergence_init(SPH::DFSPHCData& data);//also compute densities and factors

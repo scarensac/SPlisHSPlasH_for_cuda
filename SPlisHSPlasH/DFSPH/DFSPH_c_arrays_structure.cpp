@@ -3,7 +3,6 @@
 #include "SPlisHSPlasH/SPHKernels.h"
 #include "SimulationDataDFSPH.h"
 #include <iostream>
-#include "SPlisHSPlasH/Utilities/Timing.h"
 #include "DFSPH_cuda_basic.h"
 #include <fstream>
 #include <stdio.h>

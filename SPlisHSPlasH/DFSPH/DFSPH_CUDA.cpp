@@ -1,7 +1,6 @@
 #include "DFSPH_CUDA.h"
 #include "SPlisHSPlasH/TimeManager.h"
 #include "SPlisHSPlasH/SPHKernels.h"
-#include "SimulationDataDFSPH.h"
 #include <iostream>
 #include "SPlisHSPlasH/Utilities/Timing.h"
 #include "DFSPH_cuda_basic.h"
@@ -42,6 +41,7 @@ void DFSPHCUDA::step()
 	static int count_steps = 0;
 
 	m_data.viscosity = m_viscosity->getViscosity();
+
 	
 	if (true) {
 		m_data.destructor_activated = false;

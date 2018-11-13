@@ -2,8 +2,8 @@
 #define __Common_h__
 
 #include "BasicTypes.h"
-#include "Vector.h"
 #include <Eigen/Dense>
+#include "Vector.h"
 
 #ifdef USE_DOUBLE
 #define EINGEN_FLOATING_VECTOR Eigen::VectorXd
