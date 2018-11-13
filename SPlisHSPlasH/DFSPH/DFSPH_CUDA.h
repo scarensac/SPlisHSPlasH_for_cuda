@@ -78,6 +78,8 @@ namespace SPH
 
 		void handleSimulationMovement(Vector3d movement);
 
+		void handleFLuidLevelControl(RealCuda level);
+
 		void updateRigidBodiesStatefromFile();
 		void updateRigidBodiesStateToFile();
 

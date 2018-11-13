@@ -977,3 +977,10 @@ void DFSPHCData::update_solids(std::vector<DynamicBody> vect_new_info) {
 void DFSPHCData::zeroFluidVelocities() {
 	fluid_data[0].zeroVelocities();
 }
+
+
+void DFSPHCData::handleFLuidLevelControl(RealCuda level) {
+	if (level > 0) {
+		control_fluid_height_cuda(*this,level);
+	}
+}

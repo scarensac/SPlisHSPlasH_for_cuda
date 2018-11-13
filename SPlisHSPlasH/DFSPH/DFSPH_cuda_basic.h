@@ -53,6 +53,10 @@ void update_dynamicObject_UnifiedParticleSet_cuda(SPH::UnifiedParticleSet& parti
 void move_simulation_cuda(SPH::DFSPHCData& data, Vector3d movement);
 
 void add_border_to_damp_planes_cuda(SPH::DFSPHCData& data);
+
+void control_fluid_height_cuda(SPH::DFSPHCData& data, RealCuda target_height);
+
+
 //RENDERING
 
 void cuda_opengl_initParticleRendering(ParticleSetRenderingData& renderingData, unsigned int numParticles,

@@ -84,11 +84,15 @@ namespace SPH
 		bool m_loadSimulation;
 		bool m_zeroVelocities;
 
+		//for the simulation area motion
 		bool m_moveForwardX;
 		bool m_moveBackwardX;
 		bool m_moveForwardZ;
 		bool m_moveBackwardZ;
 
+		//for the control of the fluid level
+		bool m_adaptFluidLevel;
+		Real m_targetFluidLevel;
 
 		void initShaders();
 		void initParameters();
@@ -149,7 +153,9 @@ namespace SPH
 		void setZeroVelocities(bool val) { m_zeroVelocities = val; }
 		Vector3r getSimulationMovement() { return Vector3r((int)m_moveForwardX - (int)m_moveBackwardX, 0, (int)m_moveForwardZ - (int)m_moveBackwardZ); }
 		void resetSimulationMovement() { m_moveForwardX = false; m_moveBackwardX = false; m_moveForwardZ = false; m_moveBackwardZ = false;}
-		
+		Real getFLuidLevelTarget() { return (m_adaptFluidLevel) ? m_targetFluidLevel : -1.0f; }
+		void setFluidLevelControl(bool val) { m_adaptFluidLevel = val; }
+
 		std::vector<unsigned int>& getSelectedParticles() { return m_selectedParticles; }
 		bool getUseParticleCaching() const { return m_useParticleCaching; }
 		void setUseParticleCaching(bool val) { m_useParticleCaching = val; }

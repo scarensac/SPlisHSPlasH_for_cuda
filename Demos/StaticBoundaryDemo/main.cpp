@@ -103,10 +103,18 @@ void timeStep ()
 		base.setLoadLiquid(false);
 		base.setLoadSimulation(false);
 
+		//ontrol the fluid height if required
+		sim->handleFLuidLevelControl(base.getFLuidLevelTarget());
+		//ok this is a problem... because when the sim is posed I only need to do it once but if it is not I need to do it countinuously
+		//I'll need to handle it with some bool in the fluid class
+		base.setFluidLevelControl(false);
 
+		//move the simulation area
+		//carefull this means the neighbo searh result (cell_stat_end) doesn't mean anything after
 		sim->handleSimulationMovement(vector3rTo3d(base.getSimulationMovement()));
 		base.resetSimulationMovement();
 
+		//used if setting the fluid vel to zero is usefull
 		if (base.getZeroVelocities()) {
 			sim->zeroFluidVelocities();
 		}

@@ -47,6 +47,9 @@ DemoBase::DemoBase()
 	m_moveBackwardX = false;
 	m_moveForwardZ = false;
 	m_moveBackwardZ = false;
+
+	m_adaptFluidLevel=false;
+	m_targetFluidLevel=1.0;
 }
 
 DemoBase::~DemoBase()
@@ -205,10 +208,12 @@ void DemoBase::initParameters()
 	TwAddVarRW(MiniGL::getTweakBar(), "SaveSimulation", TW_TYPE_BOOLCPP, &m_saveSimulation, " label='save simulation state' group=Simulation key=b ");
 	TwAddVarRW(MiniGL::getTweakBar(), "LoadSimulation", TW_TYPE_BOOLCPP, &m_loadSimulation, " label='load simulation state' group=Simulation key=c ");
 	TwAddVarRW(MiniGL::getTweakBar(), "zeroVelocities", TW_TYPE_BOOLCPP, &m_zeroVelocities, " label='set fluid velocities to zero' group=Simulation key=m ");
-	TwAddVarRW(MiniGL::getTweakBar(), "moveBackwardX", TW_TYPE_BOOLCPP, &m_moveBackwardX, " label='save simulation state' group=Simulation key=y ");
-	TwAddVarRW(MiniGL::getTweakBar(), "moveFowardX", TW_TYPE_BOOLCPP, &m_moveForwardX, " label='load liquid positions' group=Simulation key=u");
-	TwAddVarRW(MiniGL::getTweakBar(), "moveBackwardZ", TW_TYPE_BOOLCPP, &m_moveBackwardZ, " label='set fluid velocities to zero' group=Simulation key=h ");
-	TwAddVarRW(MiniGL::getTweakBar(), "moveFowardZ", TW_TYPE_BOOLCPP, &m_moveForwardZ, " label='load simulation state' group=Simulation key=j ");
+	TwAddVarRW(MiniGL::getTweakBar(), "moveBackwardX", TW_TYPE_BOOLCPP, &m_moveBackwardX, " label='moveBackwardX' group=Simulation key=y ");
+	TwAddVarRW(MiniGL::getTweakBar(), "moveFowardX", TW_TYPE_BOOLCPP, &m_moveForwardX, " label='moveFowardX' group=Simulation key=u");
+	TwAddVarRW(MiniGL::getTweakBar(), "moveBackwardZ", TW_TYPE_BOOLCPP, &m_moveBackwardZ, " label='moveBackwardZ' group=Simulation key=h ");
+	TwAddVarRW(MiniGL::getTweakBar(), "moveFowardZ", TW_TYPE_BOOLCPP, &m_moveForwardZ, " label='moveFowardZ' group=Simulation key=j ");
+	TwAddVarRW(MiniGL::getTweakBar(), "AdaptFluidLevel", TW_TYPE_BOOLCPP, &m_adaptFluidLevel, " label='AdaptLiquidLevel' group=Simulation key=p ");
+	TwAddVarRW(MiniGL::getTweakBar(), "TargetFluidLevel", TW_TYPE_REAL, &m_targetFluidLevel, " label='TargetFluidLevel' step=0.05 precision=3 group=Simulation ");
 	TwAddVarRW(MiniGL::getTweakBar(), "PauseAt", TW_TYPE_REAL, &m_pauseAt, " label='Pause simulation at' step=0.001 precision=4 group=Simulation ");
 	TwAddVarRW(MiniGL::getTweakBar(), "numberOfStepsPerRenderUpdate", TW_TYPE_UINT32, &m_numberOfStepsPerRenderUpdate, " label='# time steps / update' min=1 group=Simulation ");
 	TwAddVarRW(MiniGL::getTweakBar(), "renderMaxVelocity", TW_TYPE_REAL, &m_renderMaxVelocity, " label='Max. velocity (shader)' min=0.00001 group=Simulation ");

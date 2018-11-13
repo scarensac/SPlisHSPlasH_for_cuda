@@ -9,6 +9,8 @@
 #include <iostream>
 #include <thread>
 
+//#define SHOW_MESSAGES_IN_CUDA_FUNCTIONS
+
 #define BLOCKSIZE 256
 #define m_eps 1.0e-5
 #define CELL_ROW_LENGTH 256
@@ -154,12 +156,33 @@ FUNCTION inline unsigned int getNumberOfNeighbourgs(int* numberOfNeighbourgs, in
 	return numberOfNeighbourgs[particle_id * 3 + body_id];
 }
 
-__global__ void get_min_max_pos_kernel(SPH::UnifiedParticleSet* particleSet, Vector3d* min, Vector3d *max) {
+__global__ void get_min_max_pos_kernel(SPH::UnifiedParticleSet* particleSet, Vector3d* min_o, Vector3d *max_o, RealCuda particle_radius) {
 	int i = blockIdx.x * blockDim.x + threadIdx.x;
 	if (i >= 1) { return; }
 
-	*min = particleSet->pos[0];
-	*max = particleSet->pos[particleSet->numParticles - 1];
+	//the problem I have is that there wont be a particle in the exact corner
+	//I I'll iter on some particles to be sure to reach smth near the corner
+	Vector3d min = particleSet->pos[0];
+	Vector3d max = particleSet->pos[particleSet->numParticles - 1];
+
+	for (int k = 0; k < 10; ++k) {
+		Vector3d p_min = particleSet->pos[k];
+		Vector3d p_max = particleSet->pos[particleSet->numParticles - (1+k)];
+
+		if (min.x > p_min.x) { min.x = p_min.x; }
+		if (min.y > p_min.y) { min.y = p_min.y; }
+		if (min.z > p_min.z) { min.z = p_min.z; }
+
+		if (max.x < p_max.x) { max.x = p_max.x; }
+		if (max.y < p_max.y) { max.y = p_max.y; }
+		if (max.z < p_max.z) { max.z = p_max.z; }
+	}
+
+	min += 2*particle_radius;
+	max -= 2*particle_radius;
+
+	*min_o = min;
+	*max_o = max;
 }
 
 __device__ void computeDensityChange(const SPH::DFSPHCData& m_data, SPH::UnifiedParticleSet* particleSet, const unsigned int index) {
@@ -1062,13 +1085,13 @@ __global__ void DFSPH_update_pos_kernel(SPH::DFSPHCData data, SPH::UnifiedPartic
 			particleSet->vel[i] *= max_vel_sq / cur_vel_sq;
 		}//*/
 
-		RealCuda affected_distance_sq= data.particleRadius*4;
+		RealCuda affected_distance_sq= data.particleRadius*6;
 		affected_distance_sq *= affected_distance_sq;
 
 		for (int k = 0; k < data.damp_planes_count; ++k) {
 			Vector3d plane = data.damp_planes[k];
-			if ((particleSet->pos[i] * plane / plane.norm() - plane).squaredNorm() < affected_distance_sq) {
-				RealCuda max_vel_sq = (data.particleRadius / 50.0f) / data.h;
+			if ((particleSet->pos[i] * plane.abs() / plane.norm() - plane).squaredNorm() < affected_distance_sq) {
+				RealCuda max_vel_sq = (data.particleRadius / 15.0f) / data.h;
 				max_vel_sq *= max_vel_sq;
 				RealCuda cur_vel_sq = particleSet->vel[i].squaredNorm();
 				if (cur_vel_sq> max_vel_sq)
@@ -1270,8 +1293,8 @@ __global__ void DFSPH_computeGridIdx_kernel(Vector3d* in, unsigned int* out, Rea
 		//that +10 prevent having any negative index by positioning the bounding area of the particles 
 		//incide the area  described by our cells
 		Vector3d pos = (in[i] / kernel_radius) + 50;
-		out[i] = COMPUTE_CELL_INDEX((int)pos.x, (int)pos.y, (int)pos.z);
-		//	(int)pos.x + ((int)pos.y)*CELL_ROW_LENGTH + ((int)pos.z)*grid_size*grid_size;
+		pos.toFloor();
+		out[i] = COMPUTE_CELL_INDEX(pos.x, pos.y, pos.z);
 	}
 }
 
@@ -1307,9 +1330,10 @@ __global__ void DFSPH_neighborsSearch_kernel(SPH::DFSPHCData data, SPH::UnifiedP
 	RealCuda radius_sq = data.m_kernel_precomp.getRadius();
 	Vector3d pos = particleSet->pos[i];
 	Vector3d pos_cell = (pos / radius_sq) + 50; //on that line the radius is not yet squared
-	int x = (int)pos_cell.x;
-	int y = (int)pos_cell.y;
-	int z = (int)pos_cell.z;
+	pos_cell.toFloor();
+	int x = pos_cell.x;
+	int y = pos_cell.y;
+	int z = pos_cell.z;
 	radius_sq *= radius_sq;
 
 	unsigned int nb_neighbors_fluid = 0;
@@ -1764,136 +1788,273 @@ __global__ void apply_delta_to_buffer_kernel(Vector3d* buffer, Vector3d delta, c
 	buffer[i] += delta;
 }
 
-__global__ void apply_delta_to_buffer_kernel(SPH::UnifiedParticleSet* particleSet, Vector3d delta, Vector3d layer_offset, Vector3d* min_i, Vector3d *max_i, RealCuda kernel_radius) {
-	int i = blockIdx.x * blockDim.x + threadIdx.x;
-	if (i >= particleSet->numParticles) { return; }
 
-	Vector3d min = *min_i;
-	Vector3d max = *max_i;
 
-	Vector3d layer_id_min = (min / kernel_radius) + 50 + layer_offset;
-	layer_id_min.toFloor();
-	Vector3d layer_id_max = (max / kernel_radius) + 50 - layer_offset;
-	layer_id_max.toFloor();
 
-	Vector3d pos = (particleSet->pos[i] / kernel_radius) + 50;
-	pos.toFloor();
 
-	if ((pos.x < layer_id_min.x || pos.x > layer_id_max.x)&&(particleSet->neighborsDataSet->cell_id[i] != 25000000)) {
-
-		particleSet->pos[i] += delta;
-	}
-	else {
-		//here i may need to rmv the particles that are too clase to the planes
-		//but I was not able to find the good condition even for the borders ofthe fluid...
-	}
-}
-
-__global__ void remove_particle_layer_kernel(SPH::UnifiedParticleSet* particleSet, Vector3d layer_offset, unsigned int layer_count, Vector3d* min, Vector3d *max,
+__global__ void remove_particle_layer_kernel(SPH::UnifiedParticleSet* particleSet, Vector3d movement, Vector3d* min, Vector3d *max,
 	RealCuda kernel_radius, int* count_moved_particles, int* count_possible_particles) {
 	int i = blockIdx.x * blockDim.x + threadIdx.x;
 	if (i >= particleSet->numParticles) { return; }
 
-	//find the layer number
-	Vector3d layer_id = (*min / kernel_radius) + 50 + layer_offset;
-	layer_id.toFloor();
+	Vector3d source_id = *min;
+	Vector3d target_id = *max;
 
-	Vector3d target_id = (*max / kernel_radius) + 50 - layer_offset;
+	if (movement.abs() != movement) {
+		source_id = *max;
+		target_id = *min;
+	}
+
+
+	Vector3d motion_axis = (movement / movement.norm()).abs();
+
+	//compute the source and target cell row, we only keep the component in the direction of the motion
+	source_id = (source_id / kernel_radius) + 50 ;
+	source_id.toFloor();
+	source_id *= motion_axis;
+
+	target_id = (target_id / kernel_radius) + 50;
 	target_id.toFloor();
+	target_id *= motion_axis;
 
-	//this is outside of the grid so I'm sure that when sorting
-	//the particles I want to rmv are at the end : 25 000 000
+	//compute the elll row for the particle and only keep the  component in the direction of the motion
 	Vector3d pos = (particleSet->pos[i] / kernel_radius) + 50;
 	pos.toFloor();
+	pos *= motion_axis;
 
-	particleSet->neighborsDataSet->cell_id[i] = COMPUTE_CELL_INDEX((int)pos.x, (int)pos.y, (int)pos.z);
+	//I'll tag the particles that need to be moved with 25000000
+	particleSet->neighborsDataSet->cell_id[i] = 0;
 
-	if (pos.x == layer_id.x) {
-		//if ((pos*layer_offset / layer_offset.norm()).squaredNorm() == layer_id.squaredNorm()) {
-		particleSet->pos[i].x += ((target_id.x + 1) - layer_id.x)*kernel_radius/2.0f;
-		particleSet->pos[i].y += 1.0f;
+	if (pos == (source_id+movement)) {
+		//I'll also move the paticles away
+		particleSet->pos[i].y += -2.0f;
+		particleSet->pos[i] += movement * 5;
 		particleSet->neighborsDataSet->cell_id[i] = 25000000;
 		atomicAdd(count_moved_particles, 1);
 
 	}
 	else {
+		//find the particles that we will need as destination position
+		if (pos == (target_id - movement)) {
+			int id = atomicAdd(count_possible_particles, 1);
+			particleSet->neighborsDataSet->p_id_sorted[id] = i;
+		}
 
-		if (pos.x == (target_id.x+1) || (pos.x + 1) == (target_id.x+1)) {
-
-			Vector3d pos_2 = ((particleSet->pos[i]+ kernel_radius/2.0f) / kernel_radius) + 50;
-			pos_2.toFloor();
-		
-			if (pos_2.x == (target_id.x + 1)) {
-				int id=atomicAdd(count_possible_particles, 1); 
-				particleSet->neighborsDataSet->p_id_sorted[id]= i;
-			}
+		//move the particles that are on the border
+		if (pos == target_id || pos == source_id) {
+			particleSet->pos[i] += movement*kernel_radius;
 		}
 	}
 }
 
-__global__ void adapt_inserted_particles_position_kernel(SPH::UnifiedParticleSet* particleSet, int* count_moved_particles, int* count_possible_particles, RealCuda kernel_radius) {
+__global__ void adapt_inserted_particles_position_kernel(SPH::UnifiedParticleSet* particleSet, int* count_moved_particles, int* count_possible_particles, 
+		Vector3d mov_pos, Vector3d plane_for_remaining) {
 	int i = blockIdx.x * blockDim.x + threadIdx.x;
 	if (i >= particleSet->numParticles) { return; }
 
 	if (particleSet->neighborsDataSet->cell_id[i] == 25000000) {
 		int id = atomicAdd(count_moved_particles, 1);
 		if (id < (*count_possible_particles)) {
-			Vector3d new_pos = particleSet->pos[particleSet->neighborsDataSet->p_id_sorted[id]];
-			new_pos.x += kernel_radius / 2.0f;
-			particleSet->pos[i] = new_pos ;
+			int ref_particle_id = particleSet->neighborsDataSet->p_id_sorted[id];
+			particleSet->pos[i] = particleSet->pos[ref_particle_id] + mov_pos;
+			particleSet->vel[i] = particleSet->vel[ref_particle_id];
+			particleSet->kappa[i] = particleSet->kappa[ref_particle_id];
+			particleSet->kappaV[i] = particleSet->kappaV[ref_particle_id];
+
+			particleSet->neighborsDataSet->cell_id[i] = 0;
+		}
+		else {
+			particleSet->pos[i] = plane_for_remaining;
 		}
 	}
 	
 }
 
-__global__ void translate_borderline_particles_kernel(SPH::DFSPHCData data, SPH::UnifiedParticleSet* particleSet) {
+__global__ void find_column_max_height_kernel(SPH::UnifiedParticleSet* particleSet, RealCuda* column_max_height) {
+	int i = blockIdx.x * blockDim.x + threadIdx.x;
+	if (i >= CELL_ROW_LENGTH*CELL_ROW_LENGTH) { return; }
+	 
+	int z = i / CELL_ROW_LENGTH;
+	int x = i - z*CELL_ROW_LENGTH;
+
+	RealCuda max_height = -2;
+
+	for (int y = CELL_ROW_LENGTH - 1; y >= 0; --y) {
+		int cell_id=COMPUTE_CELL_INDEX(x, y, z);
+		if (particleSet->neighborsDataSet->cell_start_end[cell_id + 1] != particleSet->neighborsDataSet->cell_start_end[cell_id]) {
+			unsigned int end = particleSet->neighborsDataSet->cell_start_end[cell_id + 1];
+			for (unsigned int cur_particle = particleSet->neighborsDataSet->cell_start_end[cell_id]; cur_particle < end; ++cur_particle) {
+				unsigned int j = particleSet->neighborsDataSet->p_id_sorted[cur_particle];
+				if (particleSet->pos[j].y > max_height) {
+					max_height = particleSet->pos[j].y;
+				}
+			}
+			break;
+		}
+	}
+
+	column_max_height[i] = max_height;
+
+}
+
+__global__ void translate_borderline_particles_kernel(SPH::DFSPHCData data, SPH::UnifiedParticleSet* particleSet, RealCuda* column_max_height,
+		int* moved_particles_min_plane, int* moved_particles_max_plane, Vector3d movement) {
 	int i = blockIdx.x * blockDim.x + threadIdx.x;
 	if (i >= particleSet->numParticles) { return; }
 
-
-	RealCuda affected_distance_sq = data.particleRadius/4.0f ;
+	RealCuda affected_distance_sq = data.particleRadius / 8.0f;
 	affected_distance_sq *= affected_distance_sq;
 
-	for (int k = 0; k < data.damp_planes_count; ++k) {
+
+
+	//compute tsome constants
+	Vector3d min=*data.bmin;
+	Vector3d max=*data.bmax;
+#define max_row 10
+	RealCuda p_distance = data.particleRadius * 2;
+	Vector3d plane_unit = data.damp_planes[0].abs() / data.damp_planes[0].norm();
+	Vector3d plane_unit_perp = (Vector3d(1, 0, 1) - plane_unit);
+	//I need to know the width I have
+	Vector3d width = (max) - (min);
+	//and only kee the component oriented perpendicular with the plane
+	width = width * plane_unit_perp;
+	int max_count_width = width.norm() / p_distance;
+	//idk why but with that computation it's missing one particle so I'll add it
+	max_count_width ++;
+
+
+	//just basic one that move the particle above for testing putposes
+	/*
+	for (int k = 0; k < 2; ++k) {
 		Vector3d plane = data.damp_planes[k];
-		if ((particleSet->pos[i] * plane / plane.norm() - plane).squaredNorm() < affected_distance_sq) {
+		if ((particleSet->pos[i] * plane_unit - plane).squaredNorm() < affected_distance_sq) {
 			particleSet->pos[i].y += 2.0f;
 			break;
+		}
+	}//*/
+	//return;
+
+	//so I know I onlyhave 2 damp planes the first one being the one near the min
+	for (int k = 0; k < 2; ++k) {
+
+		Vector3d plane = data.damp_planes[k];
+		if ((particleSet->pos[i] * plane_unit - plane).squaredNorm() < affected_distance_sq) {
+
+			//get a unique id to compute the position
+			//int id = atomicAdd((k==0)?count_moved_particles: count_possible_particles, 1);
+			int id = atomicAdd((k==0)? moved_particles_min_plane : moved_particles_max_plane, 1);
+
+			//and compute the particle position
+			int row_count = id / max_count_width;
+			int level_count = row_count / max_row;
+
+			Vector3d pos_local = Vector3d(0, 0, 0);
+			pos_local.y += level_count*(p_distance*0.80);
+			//the 1 or -1 at the end is because the second iter start at the max and it need to go reverse
+			pos_local += (plane_unit*p_distance*(row_count - level_count*max_row) + plane_unit_perp*p_distance*(id - row_count*max_count_width))*((k == 0) ? 1 : -1);
+			//just a simple interleave on y
+			if (level_count & 1 != 0) {
+				pos_local += (Vector3d(1,0,1)*(p_distance / 2.0f))*((k == 0) ? 1 : -1);
+			}
+
+			//now I need to find the first possible position
+			//it depends if we are close to the min of to the max
+			Vector3d pos_f = (k == 0) ? min : max;
+
+			//and for the height we need to find the column
+			Vector3d pos_temp = (pos_f + pos_local);
+
+			//now the problem is that the column id wontains the height befoore any particle movement;
+			//so from the id I have here I need to know the corresponding id before any particle movement
+			//the easiest way is to notivce that anything before the first plane and after the secodn plane have been moved
+			//anything else is still the same
+			if (plane_unit.dot(pos_temp) < plane_unit.dot(data.damp_planes[0]) || plane_unit.dot(pos_temp) > plane_unit.dot(data.damp_planes[1])) {
+				pos_temp -= (movement*data.getKernelRadius());
+			}
+
+			pos_temp= pos_temp / data.getKernelRadius() + 50;
+			pos_temp.toFloor();
+
+			//read the actual height
+			int column_id = pos_temp.x + pos_temp.z*CELL_ROW_LENGTH;
+			pos_f.y =  column_max_height[column_id] + p_distance;
+
+
+			pos_f += pos_local;
+
+
+			particleSet->pos[i] = pos_f;
+			particleSet->vel[i] = Vector3d(0,0,0);
+			particleSet->kappa[i] = 0;
+			particleSet->kappaV[i] = 0;
+
 		}
 	}
 }
 
 
 void move_simulation_cuda(SPH::DFSPHCData& data, Vector3d movement) {
-	//compute the movement on the position and cell idx
-	Vector3d mov_pos;
+	data.damp_planes_count = 0;
+	//compute the movement on the position and the axis
+	Vector3d mov_pos = movement*data.getKernelRadius();
+	Vector3d mov_axis = (movement.abs()) / movement.norm();
 
-	mov_pos = movement*data.getKernelRadius();
-
-	Vector3d* min = data.bmin;
-	Vector3d* max = data.bmax;
-	get_min_max_pos_kernel << <1, 1 >> > (data.boundaries_data->gpu_ptr, min, max);
+	//we store the min and max before the movement of the solid particles
+	get_min_max_pos_kernel << <1, 1 >> > (data.boundaries_data->gpu_ptr, data.bmin, data.bmax, data.particleRadius);
 	gpuErrchk(cudaDeviceSynchronize());
 
-	//std::cout << "test min_max: " << min->x << " " << min->y << " " << min->z << " " << max->x << " " << max->y << " " << max->z << std::endl;
+#ifdef SHOW_MESSAGES_IN_CUDA_FUNCTIONS
+	std::cout << "test min_max: " << data.bmin->x << " " << data.bmin->y << " " << data.bmin->z << " " << data.bmax->x << " " << data.bmax->y << " " << data.bmax->z << std::endl;
+#endif
 	//move the boundaries
 	//we need to move the positions
 	SPH::UnifiedParticleSet* particleSet = data.boundaries_data;
 	{
+		std::chrono::steady_clock::time_point start = std::chrono::steady_clock::now();
+
+		
 		unsigned int numParticles = particleSet->numParticles;
 		int numBlocks = (numParticles + BLOCKSIZE - 1) / BLOCKSIZE;
 
+		//move the particles
 		apply_delta_to_buffer_kernel<< <numBlocks, BLOCKSIZE >> > (particleSet->pos, mov_pos, numParticles);
 		gpuErrchk(cudaDeviceSynchronize());
-	}
+		
+		//and we need ot updatethe neighbor structure
+		//I'll take the easy way and just rerun the neighbor computation 
+		//there shoudl eb a faster way but it will be enougth for now
+		particleSet->initNeighborsSearchData(data.getKernelRadius(), false);
 
-	//the neighbors structure needs to be updated
-	//technically with a lienar index I can simply do a translation but for now I'll just redo the computation
-	particleSet->initNeighborsSearchData(data.getKernelRadius(), false);
+#ifdef SHOW_MESSAGES_IN_CUDA_FUNCTIONS
+		std::chrono::steady_clock::time_point end = std::chrono::steady_clock::now();
+		float time = std::chrono::duration_cast<std::chrono::nanoseconds> (end - start).count() / 1000000.0f;
+		std::cout << "time to move solid particles simu: " << time << " ms" << std::endl;
+#endif
+	}
 
 	//and now the fluid
 	particleSet = data.fluid_data;
 	{
+		//I'll need the information of whih cell contains which particles
+		particleSet->initNeighborsSearchData(data.getKernelRadius(), false);
+		
+
+		std::chrono::steady_clock::time_point start = std::chrono::steady_clock::now();
+
+		//first I need the highest particle for each cell
+		static RealCuda* column_max_height = NULL;
+		if (column_max_height == NULL) {
+			cudaMallocManaged(&(column_max_height), CELL_ROW_LENGTH*CELL_ROW_LENGTH * sizeof(RealCuda));
+		}
+		{
+			int numBlocks = (CELL_ROW_LENGTH*CELL_ROW_LENGTH + BLOCKSIZE - 1) / BLOCKSIZE;
+			find_column_max_height_kernel << <numBlocks, BLOCKSIZE >> > (particleSet->gpu_ptr, column_max_height);
+			gpuErrchk(cudaDeviceSynchronize());
+		}
+
+
+
+
 		//for the fluid I don't want to "move"the fluid, I have to rmv some particles and 
 		//add others to change the simulation area of the fluid
 		//the particles that I'll remove are the ones in the second layer when a linear index is used
@@ -1905,7 +2066,6 @@ void move_simulation_cuda(SPH::DFSPHCData& data, Vector3d movement) {
 		//sort the particles but that id followed by lowering the particle number
 		static int* count_rmv_particles = NULL;
 		static int* count_possible_particles = NULL;
-		int new_num_particles = 0;
 		if (count_rmv_particles == NULL) {
 			cudaMallocManaged(&(count_rmv_particles), sizeof(int));
 			cudaMallocManaged(&(count_possible_particles), sizeof(int));
@@ -1913,129 +2073,411 @@ void move_simulation_cuda(SPH::DFSPHCData& data, Vector3d movement) {
 		gpuErrchk(cudaMemset(count_rmv_particles, 0, sizeof(int)));
 		gpuErrchk(cudaMemset(count_possible_particles, 0, sizeof(int)));
 
-		remove_particle_layer_kernel << <numBlocks, BLOCKSIZE >> > (particleSet->gpu_ptr, movement, 1, min, max, data.getKernelRadius(),
+		//this flag tjhe particles that need tobe moved and store the index of the particles that are in the target row
+		//also apply the movement to the border rows
+		remove_particle_layer_kernel << <numBlocks, BLOCKSIZE >> > (particleSet->gpu_ptr, movement, data.bmin, data.bmax, data.getKernelRadius(),
 			count_rmv_particles, count_possible_particles);
 		gpuErrchk(cudaDeviceSynchronize());
 
-		std::cout << "count particle delta: (moved particles, possible particles)" << *count_rmv_particles <<"  "<< *count_possible_particles<< std::endl;
+		//std::cout << "count particle delta: (moved particles, possible particles)" << *count_rmv_particles <<"  "<< *count_possible_particles<< std::endl;
+		std::chrono::steady_clock::time_point tp1 = std::chrono::steady_clock::now();
+
+		//compute the positions of the 2 planes where there is a junction
+		//the first of the two planes need to be the source one
+		//calc the postion of the jonction planes
+		//we updata the min max so that it now considers the new borders
+		get_min_max_pos_kernel << <1, 1 >> > (data.boundaries_data->gpu_ptr, data.bmin, data.bmax, data.particleRadius);
+		gpuErrchk(cudaDeviceSynchronize());
+#ifdef SHOW_MESSAGES_IN_CUDA_FUNCTIONS
+		std::cout << "test min_max_2: " << data.bmin->x << " " << data.bmin->y << " " << data.bmin->z << " " << data.bmax->x << " " << data.bmax->y << " " << data.bmax->z << std::endl;
+#endif
+
+		//min plane
+		RealCuda min_plane_precision = data.particleRadius / 1000;
+		Vector3d plane = (*data.bmin)*mov_axis;
+		plane /= data.getKernelRadius();
+		plane.toFloor();
+		plane += (movement.abs() == movement)?movement:(movement.abs()*2);
+		plane *= data.getKernelRadius();
+		//we need to prevent going to close to 0,0,0
+		if (plane.norm() < min_plane_precision) {
+			plane = mov_axis*min_plane_precision;
+		}
+		data.damp_planes[data.damp_planes_count++] = plane;
+
+		//max plane 
+		plane = (*data.bmax)*mov_axis;
+		plane /= data.getKernelRadius();
+		plane.toFloor();
+		plane -= (movement.abs() == movement)?movement:0;
+		plane *= data.getKernelRadius();
+		//we need to prevent going to close to 0,0,0
+		if (plane.norm() < min_plane_precision) {
+			plane = mov_axis*min_plane_precision;
+		}
+		data.damp_planes[data.damp_planes_count++] = plane;
+
+		//reorder the two if the movmeent is negative
+		if (movement.abs() != movement) {
+			 plane= data.damp_planes[data.damp_planes_count - 1];
+		}
+
+		//now modify the position of the particles that need to be moved in the new layers
+		//if there are more particle that neeed to be moved than available positions
+		//I'll put the additional particles in the junction plance on the side where particles have been removed
 		gpuErrchk(cudaMemset(count_rmv_particles, 0, sizeof(int)));
-
-		adapt_inserted_particles_position_kernel << <numBlocks, BLOCKSIZE >> > (particleSet->gpu_ptr, count_rmv_particles, count_possible_particles, data.getKernelRadius());
+		adapt_inserted_particles_position_kernel << <numBlocks, BLOCKSIZE >> > (particleSet->gpu_ptr, count_rmv_particles, count_possible_particles,
+			mov_pos, plane);
 		gpuErrchk(cudaDeviceSynchronize());
 
-		if (false){
 
-			cub::DeviceRadixSort::SortPairs(particleSet->neighborsDataSet->d_temp_storage_pair_sort, particleSet->neighborsDataSet->temp_storage_bytes_pair_sort,
-				particleSet->neighborsDataSet->cell_id, particleSet->neighborsDataSet->cell_id_sorted,
-				particleSet->neighborsDataSet->p_id, particleSet->neighborsDataSet->p_id_sorted, numParticles);
-			gpuErrchk(cudaDeviceSynchronize());
+		std::chrono::steady_clock::time_point tp2 = std::chrono::steady_clock::now();
 
-			cuda_sortData(*particleSet, particleSet->neighborsDataSet->p_id_sorted);
-			gpuErrchk(cudaDeviceSynchronize());
 
-		
-			gpuErrchk(cudaMemcpy(&new_num_particles, count_rmv_particles, sizeof(int), cudaMemcpyDeviceToHost));
-			new_num_particles *= -1;
-			gpuErrchk(cudaMemset(count_rmv_particles, 0, sizeof(int)));
-			std::cout << "test: " << new_num_particles << std::endl;
 
-			new_num_particles += numParticles;
-		
 
-			particleSet->update_active_particle_number(new_num_particles);
 
-			std::cout << "new number of particles: " << particleSet->numParticles << std::endl;
+		//trigger the damping mechanism
+		data.damp_borders = true;
+		data.damp_borders_steps_count = 25;
 
-		}
-		
-		apply_delta_to_buffer_kernel<< <numBlocks, BLOCKSIZE >> > (particleSet->gpu_ptr, mov_pos, movement, min, max, data.getKernelRadius());
+		add_border_to_damp_planes_cuda(data);
+
+
+		//transate the particles that are too close to the jonction planes
+		gpuErrchk(cudaMemset(count_rmv_particles, 0, sizeof(int)));
+		gpuErrchk(cudaMemset(count_possible_particles, 0, sizeof(int)));
+		data.destructor_activated = false;
+		translate_borderline_particles_kernel << <numBlocks, BLOCKSIZE >> > (data, particleSet->gpu_ptr, column_max_height,
+			count_rmv_particles, count_possible_particles, movement);
 		gpuErrchk(cudaDeviceSynchronize());
-
-		if (true)
-		{
-			data.damp_borders = true;
-			data.damp_borders_steps_count = 25;
-			data.damp_planes_count = 0;
-
-			//calc the postion of the jonction planes
-			{
-				//min plane
-				Vector3d plane = (*min)*mov_pos / mov_pos.norm() + mov_pos + mov_pos*data.getKernelRadius() / mov_pos.norm();
-				plane /= data.getKernelRadius();
-				plane.toFloor();
-				plane *= data.getKernelRadius();
-
-				data.damp_planes[data.damp_planes_count++] = plane;
-			}
+		data.destructor_activated = true;
+		
+#ifdef SHOW_MESSAGES_IN_CUDA_FUNCTIONS
+		std::chrono::steady_clock::time_point end = std::chrono::steady_clock::now();
+		float time = std::chrono::duration_cast<std::chrono::nanoseconds> (tp1 - start).count() / 1000000.0f;
+		float time_1 = std::chrono::duration_cast<std::chrono::nanoseconds> (tp2 - tp1).count() / 1000000.0f;
+		float time_2 = std::chrono::duration_cast<std::chrono::nanoseconds> (end - tp2).count() / 1000000.0f;
+		std::cout << "time to move fluid simu: " << time + time_1 + time_2 << " ms  (" << time << "  " << time_1 << "  " << time_2 << ")" << std::endl;
+#endif
 
 
-			bool advanced_inserted_particles_positions = true;
-			if (advanced_inserted_particles_positions) {
-				{
-					//max plane 1
-					Vector3d plane = (*max)*mov_pos / mov_pos.norm() + mov_pos;
-					plane /= data.getKernelRadius();
-					plane.toFloor();
-					plane *= data.getKernelRadius();
-					plane -= mov_pos*data.getKernelRadius() / 2.0f / mov_pos.norm();
-
-					data.damp_planes[data.damp_planes_count++] = plane;
-				}
-			}
-			else {
-				{
-					//max plane 1
-					Vector3d plane = (*max)*mov_pos / mov_pos.norm() + mov_pos;
-					plane /= data.getKernelRadius();
-					plane.toFloor();
-					plane *= data.getKernelRadius();
-
-					data.damp_planes[data.damp_planes_count++] = plane;
-				}
-
-				{
-					//max plane 2
-					Vector3d plane = (*max)*mov_pos / mov_pos.norm() + mov_pos - mov_pos*data.getKernelRadius() / mov_pos.norm();
-					plane /= data.getKernelRadius();
-					plane.toFloor();
-					plane *= data.getKernelRadius();
-
-					data.damp_planes[data.damp_planes_count++] = plane;
-				}
-			}
-			
-
-			//transate the particles that are too close to the jonction planes
-			if (true) {
-				data.destructor_activated = false;
-				translate_borderline_particles_kernel << <numBlocks, BLOCKSIZE >> > (data, particleSet->gpu_ptr);
-				gpuErrchk(cudaDeviceSynchronize());
-				data.destructor_activated = true;
-			}
-			
-			add_border_to_damp_planes_cuda(data);
-		}
+		
 	}
 
-	//the neighbors structure needs to be updated
-	//technically with a lienar index I can simply do a translation but for now I'll just redo the computation
-	particleSet->initNeighborsSearchData(data.getKernelRadius(), false);
 
 }
 
 void add_border_to_damp_planes_cuda(SPH::DFSPHCData& data) {
 
-	get_min_max_pos_kernel << <1, 1 >> > (data.boundaries_data->gpu_ptr, data.bmin, data.bmax);
+	get_min_max_pos_kernel << <1, 1 >> > (data.boundaries_data->gpu_ptr, data.bmin, data.bmax, data.particleRadius);
 	gpuErrchk(cudaDeviceSynchronize());
 
-	data.damp_planes[data.damp_planes_count+0] = Vector3d(data.bmin->x, 0, 0);
-	data.damp_planes[data.damp_planes_count+1] = Vector3d(data.bmax->x, 0, 0);
-	data.damp_planes[data.damp_planes_count+2] = Vector3d(0, 0, data.bmin->z);
-	data.damp_planes[data.damp_planes_count+3] = Vector3d(0, 0, data.bmax->z);
+
+	RealCuda min_plane_precision = data.particleRadius / 1000;
+	data.damp_planes[data.damp_planes_count + 0] = Vector3d((abs(data.bmin->x) > min_plane_precision) ? data.bmin->x : min_plane_precision, 0, 0);
+	data.damp_planes[data.damp_planes_count + 1] = Vector3d((abs(data.bmax->x) > min_plane_precision) ? data.bmax->x : min_plane_precision, 0, 0);
+	data.damp_planes[data.damp_planes_count + 2] = Vector3d(0, 0, (abs(data.bmin->z) > min_plane_precision) ? data.bmin->z : min_plane_precision);
+	data.damp_planes[data.damp_planes_count + 3] = Vector3d(0, 0, (abs(data.bmax->z) > min_plane_precision) ? data.bmax->z : min_plane_precision);
 	data.damp_planes_count += 4;
 
 }
 
+//the logic will be I'll get the 5 highest particles and then keep the median
+//this mean the actual height willbbe slightly higher but it's a good tradeoff
+//the problem with this method is that it can't handle realy low valumes of fluid...
+///TODO find a better way ... maybe just keeping the highest is fine since I'll take the median of every columns anyway ...
+__global__ void find_splashless_column_max_height_kernel(SPH::UnifiedParticleSet* particleSet, RealCuda* column_max_height) {
+	int i = blockIdx.x * blockDim.x + threadIdx.x;
+	if (i >= CELL_ROW_LENGTH*CELL_ROW_LENGTH) { return; }
+
+	int z = i / CELL_ROW_LENGTH;
+	int x = i - z*CELL_ROW_LENGTH;
+
+	//this array store the highest heights for the column
+	//later values are higher
+	RealCuda max_height[5] = { -2, -2, -2, -2, -2 };
+	int count_actual_values = 0;
+
+	for (int y = CELL_ROW_LENGTH - 1; y >= 0; --y) {
+		int cell_id = COMPUTE_CELL_INDEX(x, y, z);
+		if (particleSet->neighborsDataSet->cell_start_end[cell_id + 1] != particleSet->neighborsDataSet->cell_start_end[cell_id]) {
+			unsigned int end = particleSet->neighborsDataSet->cell_start_end[cell_id + 1];
+			for (unsigned int cur_particle = particleSet->neighborsDataSet->cell_start_end[cell_id]; cur_particle < end; ++cur_particle) {
+				unsigned int j = particleSet->neighborsDataSet->p_id_sorted[cur_particle];
+				count_actual_values++;
+				RealCuda cur_height = particleSet->pos[j].y;
+				int is_superior = -1;
+				//so I need to find the right cell of the max array
+				//the boolean will indicate the id of the last cell for which the new height was superior
+				for (int k = 0; k < 5; ++k) {
+					if (cur_height> max_height[k]) {
+						is_superior = k;
+					}
+				}
+				if (is_superior > -1) {
+					//Now I need to propagate the values in the array to make place for the new one
+					for (int k = 0; k < is_superior; ++k) {
+						max_height[k] = max_height[k+1];
+					}
+					max_height[is_superior] = cur_height;
+				}
+			}
+			break;
+		}
+	}
+
+	//and we keep the median value only if there are enougth particles in the column (so that the result is relatively correct)
+	column_max_height[i] = (count_actual_values>4)?max_height[2]:-2;
+
+}
+
+__global__ void tag_particles_above_limit_hight_kernel(SPH::UnifiedParticleSet* particleSet, RealCuda target_height, int* count_flagged_particles) {
+	int i = blockIdx.x * blockDim.x + threadIdx.x;
+	if (i >= particleSet->numParticles) { return; }
+
+	//put the particles that will be removed at the end
+	if (particleSet->pos[i].y > target_height) {
+		particleSet->neighborsDataSet->cell_id[i] = 30000000;
+		atomicAdd(count_flagged_particles, 1);
+	}
+}
+
+__global__ void place_additional_particles_right_above_kernel(SPH::DFSPHCData data, SPH::UnifiedParticleSet* particleSet, RealCuda* column_max_height,
+		int count_new_particles, int border_range, int* count_created_particles) {
+	int id = blockIdx.x * blockDim.x + threadIdx.x;
+	if (id >= count_new_particles) { return; }
+
+	Vector3d min = *data.bmin;
+	Vector3d max = *data.bmax;
+	RealCuda p_distance = data.particleRadius * 2;
+	//I need to know the width I have
+	Vector3d width = (max)-(min);
+	width.toAbs();
+	Vector3d max_count_width = width / p_distance;
+	max_count_width.toFloor();
+	//idk why but with that computation it's missing one particle so I'll add it
+	max_count_width+=1;
+	
+
+
+	//and compute the particle position
+	int row_count = id / max_count_width.x;
+	int level_count = row_count / max_count_width.z;
+
+	Vector3d pos_local = Vector3d(0, 0, 0);
+	pos_local.y += level_count*(p_distance*0.80);
+	pos_local.x += (id - row_count*max_count_width.x)*p_distance;
+	pos_local.z += (row_count - level_count*max_count_width.z)*p_distance;
+	//just a simple interleave on y
+	if (level_count & 1 != 0) {
+		pos_local += Vector3d(1, 0, 1)*(p_distance / 2.0f);
+	}
+
+	//now I need to find the first possible position
+	//it depends if we are close to the min of to the max
+	Vector3d pos_f = min;
+	
+	//and for the height we need to find the column
+	Vector3d pos_temp = (pos_f + pos_local);
+	pos_temp = pos_temp / data.getKernelRadius() + 50;
+	pos_temp.toFloor();
+
+	//now if required check if the particle is near enougth from the border
+	int effective_id = 0;
+	if (border_range > 0) {
+		min = min / data.getKernelRadius() + 50 + border_range;
+		min.toFloor();
+		max = max / data.getKernelRadius() + 50 - border_range;
+		max.toFloor();
+		//
+		if (!(pos_temp.x<min.x || pos_temp.z<min.z || pos_temp.x>max.x || pos_temp.z>max.z)) {
+			return;
+		}
+		effective_id=atomicAdd(count_created_particles, 1);
+	}
+	else {
+		effective_id = id;
+	}
+
+
+	//read the actual height
+	int column_id = pos_temp.x + pos_temp.z*CELL_ROW_LENGTH;
+	pos_f.y = column_max_height[column_id] + p_distance;
+	
+	pos_f += pos_local;
+
+	int global_id = effective_id + particleSet->numParticles;
+	particleSet->pos[global_id] = pos_f;
+	particleSet->vel[global_id] = Vector3d(0, 0, 0);
+	particleSet->kappa[global_id] = 0;
+	particleSet->kappaV[global_id] = 0;
+}
+
+
+void control_fluid_height_cuda(SPH::DFSPHCData& data, RealCuda target_height) {
+#ifdef SHOW_MESSAGES_IN_CUDA_FUNCTIONS
+	std::cout << "start fluid level control" << std::endl;
+#endif 
+
+	SPH::UnifiedParticleSet* particleSet = data.fluid_data;
+
+
+	//we will need the neighbors data to know where the particles are
+	particleSet->initNeighborsSearchData(data.getKernelRadius(), false);
+	
+
+
+	//so first i need to kow the fluid height
+	//the main problem is that I don't want to consider splash particles
+	//so I need a special kernel for that
+	//first I need the highest particle for each cell
+	static RealCuda* column_max_height = NULL;
+	if (column_max_height == NULL) {
+		cudaMallocManaged(&(column_max_height), CELL_ROW_LENGTH*CELL_ROW_LENGTH * sizeof(RealCuda));
+	}
+	{
+		int numBlocks = (CELL_ROW_LENGTH*CELL_ROW_LENGTH + BLOCKSIZE - 1) / BLOCKSIZE;
+		//find_column_max_height_kernel << <numBlocks, BLOCKSIZE >> > (particleSet->gpu_ptr, column_max_height);
+		find_splashless_column_max_height_kernel << <numBlocks, BLOCKSIZE >> > (particleSet->gpu_ptr, column_max_height);
+		gpuErrchk(cudaDeviceSynchronize());
+	}
+
+	//now I keep the avg of all the cells containing enought particles
+	//technicaly i'd prefer the median but it would require way more computations
+	//also doing it on the gpu would be better but F it for now
+	RealCuda global_height = 0;
+	int count_existing_columns = 0;
+	for (int i = 0; i < CELL_ROW_LENGTH*CELL_ROW_LENGTH; ++i) {
+		if (column_max_height[i] > 0) {
+			global_height += column_max_height[i];
+			count_existing_columns++;
+		}
+	}
+
+	global_height /= count_existing_columns;
+#ifdef SHOW_MESSAGES_IN_CUDA_FUNCTIONS
+	std::cout << "global height detected: " << global_height << "  over column count " << count_existing_columns << std::endl;
+#endif 
+
+	//I'll take an error margin of 5 cm for now
+	if (abs(global_height - target_height) < 0.05) {
+		return;
+	}
+
+	//now we have 2 possible cases
+	//either not enougth particles, or too many
+
+	if (global_height > target_height) {
+		//so we have to many particles
+		//to rmv them, I'll flag the particles above the limit 
+		static int* tagged_particles_count = NULL;
+		if (tagged_particles_count == NULL) {
+			cudaMallocManaged(&(tagged_particles_count),sizeof(int));
+		}
+		*tagged_particles_count = 0;
+
+		unsigned int numParticles = particleSet->numParticles;
+		int numBlocks = (numParticles + BLOCKSIZE - 1) / BLOCKSIZE; 
+
+		//tag the particles and count them
+		tag_particles_above_limit_hight_kernel << <numBlocks, BLOCKSIZE >> > (particleSet->gpu_ptr, target_height, tagged_particles_count);
+		gpuErrchk(cudaDeviceSynchronize());
+
+		//now use the same process as when creating the neighbors structure to put the particles to be removed at the end 
+		cub::DeviceRadixSort::SortPairs(particleSet->neighborsDataSet->d_temp_storage_pair_sort, particleSet->neighborsDataSet->temp_storage_bytes_pair_sort,
+			particleSet->neighborsDataSet->cell_id, particleSet->neighborsDataSet->cell_id_sorted,
+			particleSet->neighborsDataSet->p_id, particleSet->neighborsDataSet->p_id_sorted, particleSet->numParticles);
+		gpuErrchk(cudaDeviceSynchronize());
+		cuda_sortData(*particleSet, particleSet->neighborsDataSet->p_id_sorted);
+		gpuErrchk(cudaDeviceSynchronize());
+
+		//and now you can update the number of particles
+		int new_num_particles = particleSet->numParticles - *tagged_particles_count;
+		particleSet->update_active_particle_number(new_num_particles);
+#ifdef SHOW_MESSAGES_IN_CUDA_FUNCTIONS
+		std::cout << "new number of particles: " << particleSet->numParticles << std::endl;
+#endif
+
+	}
+	else {
+		//here we are missing fluid particles
+		//Ahahahah... ok there is no way in hell I have a correct solution for that ...
+		//but let's build smth
+		//so let's supose that there are no objects near the borders of the fluid
+		//and I'll add the particles there sright above the existing particles
+
+		//so first I need to have the min max and the max height for each column (the actual one even taking the plash into consideration
+		get_min_max_pos_kernel << <1, 1 >> > (data.boundaries_data->gpu_ptr, data.bmin, data.bmax, data.particleRadius);
+		gpuErrchk(cudaDeviceSynchronize());
+
+		{
+			int numBlocks = (CELL_ROW_LENGTH*CELL_ROW_LENGTH + BLOCKSIZE - 1) / BLOCKSIZE;
+			find_column_max_height_kernel << <numBlocks, BLOCKSIZE >> > (particleSet->gpu_ptr, column_max_height);
+			gpuErrchk(cudaDeviceSynchronize());
+		}
+
+
+
+		//so now add particles near the border (let's say in the 2 column near the fluid border
+		//untill you reach the desired liquid level there
+		//note, if there are no rigid bodies in the simulation I can add the fluid particles everywhere
+		
+		//count the number of new particles
+		Vector3d min = *data.bmin;
+		Vector3d max = *data.bmax;
+		RealCuda p_distance = data.particleRadius * 2;
+		//I need to know the width I have
+		Vector3d width = (max)-(min);
+		Vector3d max_count_width = width / p_distance;
+
+		//the 0.8 is because the particles will be interleaved and slightly compresses to be closer to a fluid at rest
+		max_count_width.y=(target_height - global_height) / (p_distance);
+		max_count_width.toFloor();
+		//idk why but with that computation it's missing one particle so I'll add it
+		max_count_width += 1;
+
+
+		int count_new_particles = max_count_width.x*max_count_width.y*max_count_width.z;
+
+
+		//check that we don't go over the maximum number of particles ...
+		if ((particleSet->numParticles + count_new_particles) > particleSet->numParticlesMax) {
+			count_new_particles = particleSet->numParticlesMax - particleSet->numParticles;
+		}
+#ifdef SHOW_MESSAGES_IN_CUDA_FUNCTIONS
+			std::cout << "num particles to be added: " << count_new_particles << std::endl;
+#endif
+
+
+		int numBlocks= (count_new_particles + BLOCKSIZE - 1) / BLOCKSIZE;
+		data.destructor_activated = false;
+		int border_range = 2;
+
+		static int* count_created_particles = NULL;
+		if (count_created_particles == NULL) {
+			cudaMallocManaged(&(count_created_particles), sizeof(int));
+		}
+		*count_created_particles = 0;
+		place_additional_particles_right_above_kernel << <numBlocks, BLOCKSIZE >> > (data, particleSet->gpu_ptr, column_max_height, 
+				count_new_particles, border_range, (border_range>0) ? count_created_particles : NULL);
+		
+
+		//and place the particles in the simulation
+		gpuErrchk(cudaDeviceSynchronize());
+		data.destructor_activated = true;
+
+		//and now you can update the number of particles
+		int new_num_particles = particleSet->numParticles + ((border_range>0)? (*count_created_particles) :count_new_particles);
+		particleSet->update_active_particle_number(new_num_particles);
+#ifdef SHOW_MESSAGES_IN_CUDA_FUNCTIONS
+		std::cout << "new number of particles: " << particleSet->numParticles << std::endl;
+#endif
+	}
+
+
+	
+}
 
 void cuda_neighborsSearch(SPH::DFSPHCData& data) {
 

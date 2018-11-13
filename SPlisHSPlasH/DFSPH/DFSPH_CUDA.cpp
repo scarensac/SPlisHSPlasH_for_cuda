@@ -1143,7 +1143,15 @@ void DFSPHCUDA::handleSimulationLoad(bool load_liquid, bool load_liquid_velociti
 
 void DFSPHCUDA::handleSimulationMovement(Vector3d movement) {
 	if (movement.norm() > 0.5) {
-		move_simulation_cuda(m_data, Vector3d(1, 0, 0));
+
+		move_simulation_cuda(m_data, movement);
+	}
+}
+
+
+void DFSPHCUDA::handleFLuidLevelControl(RealCuda level) {
+	if (level > 0) {
+		m_data.handleFLuidLevelControl(level);
 	}
 }
 

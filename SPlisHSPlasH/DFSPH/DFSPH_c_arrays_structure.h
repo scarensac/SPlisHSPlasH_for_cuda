@@ -468,6 +468,7 @@ namespace SPH
 		void update_solids(std::vector<DynamicBody> vect_new_info);
 
 		void zeroFluidVelocities();
+		void handleFLuidLevelControl(RealCuda level);
 	};
 }
 
