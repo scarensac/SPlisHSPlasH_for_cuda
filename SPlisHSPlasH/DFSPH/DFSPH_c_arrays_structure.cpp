@@ -1,7 +1,10 @@
 #include "DFSPH_c_arrays_structure.h"
+
+#ifdef SPLISHSPLASH_FRAMEWORK
 #include "SPlisHSPlasH/TimeManager.h"
-#include "SPlisHSPlasH/SPHKernels.h"
 #include "SimulationDataDFSPH.h"
+#endif //SPLISHSPLASH_FRAMEWORK
+#include "SPlisHSPlasH/SPHKernels.h"
 #include <iostream>
 #include "DFSPH_cuda_basic.h"
 #include <fstream>
@@ -10,6 +13,7 @@
 #include <cstring>
 #include <chrono>
 #include <thread>
+#include <sstream>
 
 using namespace SPH;
 using namespace std;
@@ -582,17 +586,23 @@ DFSPHCData::DFSPHCData(FluidModel *model): DFSPHCData()
 
 	destructor_activated = true;
 
-	m_kernel.setRadius(model->m_supportRadius);
-	//W_zero = m_kernel.W_zero();
-	m_kernel_precomp.setRadius(model->m_supportRadius);
+#ifdef SPLISHSPLASH_FRAMEWORK
+    particleRadius = model->getParticleRadius();
+    m_kernel.setRadius(model->m_supportRadius);
+    m_kernel_precomp.setRadius(model->m_supportRadius);
+#else
+    particleRadius = 0.025;
+    m_kernel.setRadius(particleRadius*4);
+    m_kernel_precomp.setRadius(particleRadius*4);
+#endif //SPLISHSPLASH_FRAMEWORK
+    //W_zero = m_kernel.W_zero();
 	W_zero = m_kernel_precomp.W_zero();
 
-	std::cout << "support radius: " << model->m_supportRadius << std::endl;
+    std::cout << "support radius: " << m_kernel.getRadius() << std::endl;
 
-	particleRadius = model->getParticleRadius();
 
-	
-	if (true) {
+#ifdef SPLISHSPLASH_FRAMEWORK
+    if (model!=NULL) {
 		//unified particles for the boundaries
 		boundaries_data = new UnifiedParticleSet[1];
 		boundaries_data[0] = UnifiedParticleSet(model->m_particleObjects[1]->numberOfParticles(), false, false, false);
@@ -621,6 +631,10 @@ DFSPHCData::DFSPHCData(FluidModel *model): DFSPHCData()
 		reset(model);
 
 	}
+
+#else
+    //in that cas ewe need to do a load from file but it will be handled late anyway
+#endif //SPLISHSPLASH_FRAMEWORK
 }
 
 DFSPHCData::~DFSPHCData() {
@@ -646,7 +660,7 @@ DFSPHCData::~DFSPHCData() {
 
 void DFSPHCData::reset(FluidModel *model) {
 
-
+#ifdef SPLISHSPLASH_FRAMEWORK
 	if (fluid_data->numParticles != model->numActiveParticles()) {
 		std::cout << "DFSPHCData::reset: fml the nbr of fluid particles has been modified" << std::endl;
 		exit(3469);
@@ -657,46 +671,54 @@ void DFSPHCData::reset(FluidModel *model) {
 	}
 	
 	h = TimeManager::getCurrent()->getTimeStepSize();
+    density0 = model->getDensity0();
+#else
+    h = 0.001;
+    density0 = 1000;
+#endif //SPLISHSPLASH_FRAMEWORK
+
 	h_future = h;
 	h_past = h;
 	h_ratio_to_past = 1.0;
 
-	density0 = model->getDensity0();
 
-	if (true) {
-		//load the data for the fluid
-		fluid_data->reset<FluidModel>(model);
-		//init the boundaries neighbor searchs
-		fluid_data->initNeighborsSearchData(this->m_kernel_precomp.getRadius(), true, false);
-		
+#ifdef SPLISHSPLASH_FRAMEWORK
+    //load the data for the fluid
+    fluid_data->reset<FluidModel>(model);
+    //init the boundaries neighbor searchs
+    fluid_data->initNeighborsSearchData(this->m_kernel_precomp.getRadius(), true, false);
 
-		
-		//load the data for the boundaries
-		FluidModel::RigidBodyParticleObject* particleObj = static_cast<FluidModel::RigidBodyParticleObject*>(model->m_particleObjects[1]);
-		boundaries_data->reset<FluidModel::RigidBodyParticleObject>(particleObj);
-		//init the boundaries neighbor searchs
-		boundaries_data->initNeighborsSearchData(this->m_kernel_precomp.getRadius(), true, false);
-		//I need to update the ptrs on the cuda version because for the boudaries I clear the intermediary buffer to fre some memory
-		update_neighborsSearchBuffers_UnifiedParticleSet_vector_cuda(&boundaries_data_cuda, boundaries_data, 1);
-		
-		//now initiate the data for the dynamic bodies the same way we did it for the boundaries
-		// I need to transfer the data to c_typed buffers to use in .cu file
-		for (int id = 2; id < model->m_particleObjects.size(); ++id) {
-			FluidModel::RigidBodyParticleObject* particleObjDynamic = static_cast<FluidModel::RigidBodyParticleObject*>(model->m_particleObjects[id]);
-			UnifiedParticleSet& body = vector_dynamic_bodies_data[id - 2];
 
-			body.reset<FluidModel::RigidBodyParticleObject>(particleObjDynamic);
 
-			///the reason I don't do the neighbor search here is that I would not be able to use it
-			///to sort the data since I copy them at every time step (so it would be useless)
-		}
-	}
+    //load the data for the boundaries
+    FluidModel::RigidBodyParticleObject* particleObj = static_cast<FluidModel::RigidBodyParticleObject*>(model->m_particleObjects[1]);
+    boundaries_data->reset<FluidModel::RigidBodyParticleObject>(particleObj);
+    //init the boundaries neighbor searchs
+    boundaries_data->initNeighborsSearchData(this->m_kernel_precomp.getRadius(), true, false);
+    //I need to update the ptrs on the cuda version because for the boudaries I clear the intermediary buffer to fre some memory
+    update_neighborsSearchBuffers_UnifiedParticleSet_vector_cuda(&boundaries_data_cuda, boundaries_data, 1);
+
+    //now initiate the data for the dynamic bodies the same way we did it for the boundaries
+    // I need to transfer the data to c_typed buffers to use in .cu file
+    for (int id = 2; id < model->m_particleObjects.size(); ++id) {
+        FluidModel::RigidBodyParticleObject* particleObjDynamic = static_cast<FluidModel::RigidBodyParticleObject*>(model->m_particleObjects[id]);
+        UnifiedParticleSet& body = vector_dynamic_bodies_data[id - 2];
+
+        body.reset<FluidModel::RigidBodyParticleObject>(particleObjDynamic);
+
+        ///the reason I don't do the neighbor search here is that I would not be able to use it
+        ///to sort the data since I copy them at every time step (so it would be useless)
+    }
+
+#endif //SPLISHSPLASH_FRAMEWORK
 
 }
 
 
 void DFSPHCData::readDynamicData(FluidModel *model, SimulationDataDFSPH& data) {
 
+
+#ifdef SPLISHSPLASH_FRAMEWORK
 	if (model->numActiveParticles() != fluid_data->numParticles) {
 		exit(1569);
 	}
@@ -707,11 +729,18 @@ void DFSPHCData::readDynamicData(FluidModel *model, SimulationDataDFSPH& data) {
 		model->getVelocity(0, i) = vector3dTo3r(fluid_data->vel[i]);
 		
 	}
+#else
+    throw("DFSPHCData::readDynamicDatamust not be used outside of the SPLISHSPLASH framework");
+#endif //SPLISHSPLASH_FRAMEWORK
+
 }
 
 
 
 void DFSPHCData::loadDynamicObjectsData(FluidModel *model) {
+
+
+#ifdef SPLISHSPLASH_FRAMEWORK
 	//now initiate the data for the dynamic bodies the same way we did it for the boundaries
 	// I need to transfer the data to c_typed buffers to use in .cu file
 	for (int id = 2; id < model->m_particleObjects.size(); ++id) {
@@ -724,9 +753,18 @@ void DFSPHCData::loadDynamicObjectsData(FluidModel *model) {
 		///the reason I don't do the neighbor search here is that I would not be able to use it
 		///to sort the data since I copy them at every time step (so it would be useless)
 	}
+#else
+    //for anything outside of the splishsplash framework I'll supose the dynamic bodies data have been updated before
+    for (int i=0;i<numDynamicBodies;++i){
+        UnifiedParticleSet& body =vector_dynamic_bodies_data[i];
+        body.updateDynamicBodiesParticles();
+    }
+#endif //SPLISHSPLASH_FRAMEWORK
 }
 
 void DFSPHCData::readDynamicObjectsData(FluidModel *model) {
+
+#ifdef SPLISHSPLASH_FRAMEWORK
 	//now initiate the data for the dynamic bodies the same way we did it for the boundaries
 	// I need to transfer the data to c_typed buffers to use in .cu file
 	for (int id = 2; id < model->m_particleObjects.size(); ++id) {
@@ -739,6 +777,9 @@ void DFSPHCData::readDynamicObjectsData(FluidModel *model) {
 			model->getForce(id, i) = vector3dTo3r(body.F_cpu[i]);
 		}
 	}
+#else
+    throw("DFSPHCData::readDynamicObjectsData must not be used outside of the SPLISHSPLASH framework");
+#endif //SPLISHSPLASH_FRAMEWORK
 }
 
 
@@ -982,4 +1023,14 @@ void DFSPHCData::handleFLuidLevelControl(RealCuda level) {
 	if (level > 0) {
 		control_fluid_height_cuda(*this,level);
 	}
+}
+
+void DFSPHCData::getFluidImpactOnDynamicBodies(std::vector<SPH::Vector3d>& sph_forces, std::vector<SPH::Vector3d>& sph_moments){
+    for (int i = 0; i < numDynamicBodies; ++i) {
+        Vector3d force, moment;
+        compute_fluid_impact_on_dynamic_body_cuda(vector_dynamic_bodies_data[i],force,moment);
+        sph_forces.push_back(force);
+        sph_moments.push_back(moment);
+    }
+
 }

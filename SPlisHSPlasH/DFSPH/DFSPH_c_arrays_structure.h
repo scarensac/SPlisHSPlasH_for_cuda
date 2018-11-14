@@ -276,7 +276,8 @@ namespace SPH
 		//the original particle position
 		Vector3d* pos0;
 		//the force to be transmitted to the physics engine
-		Vector3d* F;
+        DynamicBody* rigidBody;
+        Vector3d* F;
 
 		//this is a buffer that is used to make the transition between cuda and the cpu physics engine
 		//I need it because to transmit the data to the model I need to convert the values to the
@@ -427,7 +428,7 @@ namespace SPH
 		
 		void readDynamicData(FluidModel *model, SimulationDataDFSPH& data);
 
-		void loadDynamicObjectsData(FluidModel *model);
+        void loadDynamicObjectsData(FluidModel *model=NULL);
 		void readDynamicObjectsData(FluidModel *model);
 
 		void reset(FluidModel *model);
@@ -449,6 +450,7 @@ namespace SPH
 			invH2 = invH2_future;
 		}
 
+        inline RealCuda get_current_timestep(){return h;}
 
 		void write_fluid_to_file();
 		void read_fluid_from_file(bool load_velocities);
@@ -464,11 +466,14 @@ namespace SPH
 
 		void update_solids_to_file();
 		void update_solids_from_file();
-		
+
 		void update_solids(std::vector<DynamicBody> vect_new_info);
 
 		void zeroFluidVelocities();
 		void handleFLuidLevelControl(RealCuda level);
+
+        void getFluidImpactOnDynamicBodies(std::vector<SPH::Vector3d>& sph_forces, std::vector<SPH::Vector3d>& sph_moments);
+
 	};
 }
 

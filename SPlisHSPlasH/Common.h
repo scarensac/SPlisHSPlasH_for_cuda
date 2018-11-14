@@ -1,15 +1,21 @@
 #ifndef __Common_h__
 #define __Common_h__
 
+
 #include "BasicTypes.h"
-#include <Eigen/Dense>
 #include "Vector.h"
+#include <string>
+
+
+#ifdef SPLISHSPLASH_FRAMEWORK
+#include <Eigen/Dense>
 
 #ifdef USE_DOUBLE
 #define EINGEN_FLOATING_VECTOR Eigen::VectorXd
 #else
 #define EINGEN_FLOATING_VECTOR Eigen::VectorXf
 #endif
+
 
 namespace SPH
 {
@@ -106,5 +112,15 @@ namespace SPH
 
 
 }
+#else
+namespace SPH
+{
+    using Vector3r = Vector3d;
+
+    FORCE_INLINE Vector3d vector3rTo3d(Vector3r v) { return v; }
+    FORCE_INLINE Vector3r vector3dTo3r(Vector3d v) { return v; }
+
+}
+#endif //SPLISHSPLASH_FRAMEWORK
 
 #endif
