@@ -94,18 +94,27 @@ namespace SPH
 		FUNCTION inline Vector3 abs() { return Vector3((x > 0) ? x : -x, (y > 0) ? y : -y, (z > 0) ? z : -z); }
 		FUNCTION inline Vector3& toAbs() { if (x < 0)x *= -1; if (y < 0)y *= -1; if (z < 0)z *= -1; return *this; }
 
+        //those two function are in fact just a to max, it would be better to not use them
 		FUNCTION inline Vector3& clampTo(const T val) { if (x < val)x = val; if (y < val)y = val; if (z < val)z = val; return *this; }
-
 		template<typename T2>
 		FUNCTION inline Vector3& clampTo(const Vector3<T2> &o) { if (x < o.x)x = o.x; if (y < o.y)y = o.y; if (z < o.z)z = o.z; return *this; }
 
 
 
-		FUNCTION inline Vector3& toFloor() { x = (int)x - (x < 0); y = (int)y - (y < 0); z = (int)z - (z < 0); return *this; }
+        FUNCTION inline Vector3& toFloor() { x = (int)x - ((((int)x)!=x)?(x < 0):0); y = (int)y - ((((int)y)!=y)?(y < 0):0);
+                                             z = (int)z - ((((int)z)!=z)?(z < 0):0); return *this; }
+
+        template<typename T2>
+        FUNCTION inline Vector3& toMin(const Vector3<T2> &o) { if (x > o.x)x = o.x; if (y > o.y)y = o.y; if (z > o.z)z = o.z; return *this; }
+
+        template<typename T2>
+        FUNCTION inline Vector3& toMax(const Vector3<T2> &o) { if (x < o.x)x = o.x; if (y < o.y)y = o.y; if (z < o.z)z = o.z; return *this; }
+
 
 	};
 
-	using Vector3d = Vector3<RealCuda>;
+    using Vector3d = Vector3<RealCuda>;
+    using Vector3i = Vector3<int>;
 }
 
 

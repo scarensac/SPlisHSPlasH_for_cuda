@@ -24,7 +24,7 @@ template<bool warmstart> void cuda_divergence_compute(SPH::DFSPHCData& data);
 void cuda_divergence_init(SPH::DFSPHCData& data);//also compute densities and factors
 RealCuda cuda_divergence_loop_end(SPH::DFSPHCData& data);//reinit the densityadv and calc the error
 
-void cuda_viscosityXSPH(SPH::DFSPHCData& data);
+void cuda_externalForces(SPH::DFSPHCData& data);
 
 void cuda_CFL(SPH::DFSPHCData& data, const RealCuda minTimeStepSize, RealCuda m_cflFactor, RealCuda m_cflMaxTimeStepSize);
 
@@ -42,8 +42,9 @@ int cuda_pressureSolve(SPH::DFSPHCData& data, const unsigned int maxIter, const 
 
 //those functions are for the neighbors search
 void cuda_neighborsSearch(SPH::DFSPHCData& data);
-void cuda_initNeighborsSearchDataSet(SPH::UnifiedParticleSet& particleSet, SPH::NeighborsSearchDataSet& dataSet, 
-	RealCuda kernel_radius, bool sortBuffers=false);
+void cuda_initNeighborsSearchDataSet(SPH::UnifiedParticleSet& particleSet, SPH::NeighborsSearchDataSet& dataSet,
+    DFSPHCData &data, bool sortBuffers=false);
+void cuda_initNeighborsSearchDataSetGroupedDynamicBodies(SPH::DFSPHCData& data);
 void cuda_sortData(SPH::UnifiedParticleSet& particleSet, unsigned int * sort_id);
 void cuda_shuffleData(SPH::UnifiedParticleSet& particleSet);
 
@@ -58,6 +59,9 @@ void add_border_to_damp_planes_cuda(SPH::DFSPHCData& data);
 
 void control_fluid_height_cuda(SPH::DFSPHCData& data, RealCuda target_height);
 
+Vector3d get_simulation_center_cuda(SPH::DFSPHCData& data);
+
+void compute_UnifiedParticleSet_particles_mass_cuda(SPH::DFSPHCData& data, SPH::UnifiedParticleSet& container);
 
 //RENDERING
 
@@ -79,7 +83,9 @@ void load_UnifiedParticleSet_cuda(SPH::UnifiedParticleSet& container, Vector3d* 
 void read_UnifiedParticleSet_cuda(SPH::UnifiedParticleSet& container, Vector3d* pos, Vector3d* vel, RealCuda* mass, Vector3d* pos0=NULL);
 void read_rigid_body_force_cuda(SPH::UnifiedParticleSet& container);
 void compute_fluid_impact_on_dynamic_body_cuda(SPH::UnifiedParticleSet& container, Vector3d& force, Vector3d& moment);
+void compute_fluid_Boyancy_on_dynamic_body_cuda(SPH::UnifiedParticleSet& container, Vector3d& force, Vector3d& pt_appli);
 void allocate_and_copy_UnifiedParticleSet_vector_cuda(SPH::UnifiedParticleSet** out_vector, SPH::UnifiedParticleSet* in_vector, int numSets);
+void allocate_grouped_neighbors_struct_cuda(SPH::DFSPHCData& data);
 void update_neighborsSearchBuffers_UnifiedParticleSet_vector_cuda(SPH::UnifiedParticleSet** out_vector, SPH::UnifiedParticleSet* in_vector, int numSets);
 //this function is the one that must be called when releasing the unified particles that are fully cuda allocated
 void release_UnifiedParticleSet_vector_cuda(SPH::UnifiedParticleSet** vector, int numSets);
@@ -99,8 +105,14 @@ void allocate_neighbors_search_data_set(SPH::NeighborsSearchDataSet& dataSet);
 void release_neighbors_search_data_set(SPH::NeighborsSearchDataSet& dataSet, bool keep_result_buffers);
 
 
+//MATH FUNCTIONS (should be moved)
+FUNCTION inline float gpu_pow(float val, float exp){return powf(val,exp);}
 
 
+
+//BASIC TEST SECTION
+
+void compare_vector3_struct_speed();
 int test_cuda();
 
 

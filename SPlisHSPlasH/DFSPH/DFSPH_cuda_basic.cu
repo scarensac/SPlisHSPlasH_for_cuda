@@ -122,7 +122,7 @@ inline void gpuAssert(cudaError_t code, const char *file, int line, bool abort =
 {
     if (code != cudaSuccess)
     {
-        fprintf(stderr, "GPUassert: %s %s %d\n", cudaGetErrorString(code), file, line);
+        fprintf(stderr, "GPUassert: error %d: %s %s %d\n", (int)code, cudaGetErrorString(code), file, line);
         if (abort) exit(code);
     }
 }
@@ -732,12 +732,14 @@ RealCuda cuda_divergence_loop_end(SPH::DFSPHCData& data) {
     return result;
 }
 
+// also prepare the normals for the adhesion force
 __global__ void DFSPH_viscosityXSPH_kernel(SPH::DFSPHCData m_data, SPH::UnifiedParticleSet* particleSet) {
     int i = blockIdx.x * blockDim.x + threadIdx.x;
     if (i >= particleSet->numParticles) { return; }
 
     //I set the gravitation directly here to lover the number of kernels
     Vector3d ai = Vector3d(0, 0, 0);
+    Vector3d ni = Vector3d(0, 0, 0);
     const Vector3d &xi = particleSet->pos[i];
     const Vector3d &vi = particleSet->vel[i];
 
@@ -746,16 +748,113 @@ __global__ void DFSPH_viscosityXSPH_kernel(SPH::DFSPHCData m_data, SPH::UnifiedP
     //////////////////////////////////////////////////////////////////////////
     ITER_NEIGHBORS_INIT(i);
 
+    //*
     ITER_NEIGHBORS_FLUID(
                 i,
-                ai -= m_data.invH * m_data.viscosity * (body.mass[neighborIndex] / body.density[neighborIndex]) *
-            (vi - body.vel[neighborIndex]) * m_data.W(xi - body.pos[neighborIndex]);
-            )
+                Vector3d xixj=xi - body.pos[neighborIndex];
+            RealCuda mass_div_density=body.mass[neighborIndex] / body.density[neighborIndex];
+    ai -= m_data.invH * m_data.viscosity * (mass_div_density) * (vi - body.vel[neighborIndex]) * m_data.W(xixj);
+    ni += mass_div_density * m_data.gradW(xixj);
+    )
+//*/
+    /*
+            //viscosity only
+            ITER_NEIGHBORS_FLUID(
+                        i,
+                        ai -= m_data.invH * m_data.viscosity * (body.mass[neighborIndex] / body.density[neighborIndex]) *
+                    (vi - body.vel[neighborIndex]) * m_data.W(xi - body.pos[neighborIndex]);
 
-            particleSet->acc[i] = m_data.gravitation + ai;
+                    )//*/
+
+    particleSet->acc[i] = m_data.gravitation + ai;
+
+    //*
+    //I'm gona use the vector3D used for the agglomerated neigbor search to store the normals
+    ni *= m_data.getKernelRadius();
+    m_data.posBufferGroupedDynamicBodies[i]=ni;
+    //*/
 }
 
-void cuda_viscosityXSPH(SPH::DFSPHCData& data) {
+
+__global__ void DFSPH_applySurfaceAkinci2013SurfaceTension_kernel(SPH::DFSPHCData m_data, SPH::UnifiedParticleSet* particleSet) {
+    int i = blockIdx.x * blockDim.x + threadIdx.x;
+    if (i >= particleSet->numParticles) { return; }
+
+    //for more lisability of the code
+    Vector3d* normals=m_data.posBufferGroupedDynamicBodies;
+    RealCuda supportRadius=m_data.getKernelRadius();
+    RealCuda k = m_data.getSurfaceTension();
+    RealCuda density0=m_data.density0;
+
+    //I set the gravitation directly here to lover the number of kernels
+    Vector3d ai = Vector3d(0, 0, 0);
+    Vector3d ni = normals[i];
+    RealCuda rhoi = particleSet->density[i];
+    const Vector3d &xi = particleSet->pos[i];
+
+    ITER_NEIGHBORS_INIT(i);
+
+    //////////////////////////////////////////////////////////////////////////
+    // Fluid
+    //////////////////////////////////////////////////////////////////////////
+
+    ITER_NEIGHBORS_FLUID(
+                i,
+                RealCuda K_ij = 2.0*density0 / (rhoi + body.density[neighborIndex]);
+
+                Vector3d accel=Vector3d(0,0,0);
+
+
+                // Cohesion force
+                Vector3d xixj = xi - body.pos[neighborIndex];
+                const Real length2 = xixj.squaredNorm();
+                if (length2 > 1.0e-9)
+                {
+                    xixj = ((Real) 1.0 / sqrt(length2)) * xixj;
+                    accel -= k * body.mass[neighborIndex] * xixj * m_data.WCohesion(xixj);
+                }
+
+                // Curvature
+                accel -= k * supportRadius* (ni - normals[neighborIndex]);
+
+                ai += K_ij * accel;
+                //*/
+            );
+    //////////////////////////////////////////////////////////////////////////
+    // Boundary
+    //////////////////////////////////////////////////////////////////////////
+    ITER_NEIGHBORS_BOUNDARIES(
+                i,
+                // adhesion force
+                Vector3d xixj = (xi - body.pos[neighborIndex]);
+                const Real length2 = xixj.squaredNorm();
+                if (length2 > 1.0e-9)
+                {
+                    xixj = ((Real) 1.0 / sqrt(length2)) * xixj;
+                    ai -= k * body.mass[neighborIndex] * xixj * m_data.WAdhesion(xixj);
+                }
+            );
+
+    //////////////////////////////////////////////////////////////////////////
+    // Dynamic Bodies
+    //////////////////////////////////////////////////////////////////////////
+    ITER_NEIGHBORS_SOLIDS(
+                i,
+                // adhesion force
+                Vector3d xixj = (xi - body.pos[neighborIndex]);
+                const Real length2 = xixj.squaredNorm();
+                if (length2 > 1.0e-9)
+                {
+                    xixj = ((Real) 1.0 / sqrt(length2)) * xixj;
+                    ai -= k * body.mass[neighborIndex] * xixj * m_data.WAdhesion(xixj);
+                }
+            );
+
+                particleSet->acc[i]+=ai;
+}
+
+
+void cuda_externalForces(SPH::DFSPHCData& data) {
     int numBlocks = (data.fluid_data[0].numParticles + BLOCKSIZE - 1) / BLOCKSIZE;
     DFSPH_viscosityXSPH_kernel << <numBlocks, BLOCKSIZE >> > (data, data.fluid_data[0].gpu_ptr);
 
@@ -764,6 +863,11 @@ void cuda_viscosityXSPH(SPH::DFSPHCData& data) {
         fprintf(stderr, "cuda_viscosityXSPH failed: %d\n", (int)cudaStatus);
         exit(1598);
     }
+
+    //end the computations for the surface tension
+
+    DFSPH_applySurfaceAkinci2013SurfaceTension_kernel<< <numBlocks, BLOCKSIZE >> > (data, data.fluid_data[0].gpu_ptr);
+    gpuErrchk(cudaDeviceSynchronize());
 }
 
 __global__ void DFSPH_CFL_kernel(SPH::DFSPHCData m_data, SPH::UnifiedParticleSet particleSet, RealCuda* maxVel) {
@@ -1077,7 +1181,7 @@ __global__ void DFSPH_update_pos_kernel(SPH::DFSPHCData data, SPH::UnifiedPartic
 
     if (data.damp_borders) {
         /*
-        RealCuda max_vel_sq = (data.particleRadius / 50.0f) / data.h;
+        RealCuda max_vel_sq = (data.particleRadius / 2.0f) / data.h;
         max_vel_sq *= max_vel_sq;
         RealCuda cur_vel_sq = particleSet->vel[i].squaredNorm();
         if (cur_vel_sq> max_vel_sq)
@@ -1091,7 +1195,7 @@ __global__ void DFSPH_update_pos_kernel(SPH::DFSPHCData data, SPH::UnifiedPartic
         for (int k = 0; k < data.damp_planes_count; ++k) {
             Vector3d plane = data.damp_planes[k];
             if ((particleSet->pos[i] * plane.abs() / plane.norm() - plane).squaredNorm() < affected_distance_sq) {
-                RealCuda max_vel_sq = (data.particleRadius / 15.0f) / data.h;
+                RealCuda max_vel_sq = (data.particleRadius / 25.0f) / data.h;
                 max_vel_sq *= max_vel_sq;
                 RealCuda cur_vel_sq = particleSet->vel[i].squaredNorm();
                 if (cur_vel_sq> max_vel_sq)
@@ -1278,7 +1382,8 @@ int cuda_pressureSolve(SPH::DFSPHCData& m_data, const unsigned int m_maxIteratio
 
 
 template<unsigned int grid_size, bool z_curve>
-__global__ void DFSPH_computeGridIdx_kernel(Vector3d* in, unsigned int* out, RealCuda kernel_radius, unsigned int num_particles) {
+__global__ void DFSPH_computeGridIdx_kernel(Vector3d* in, unsigned int* out, RealCuda kernel_radius, unsigned int num_particles,
+                                            Vector3i gridOffset) {
 
     int i = blockIdx.x * blockDim.x + threadIdx.x;
     if (i >= num_particles) { return; }
@@ -1287,12 +1392,8 @@ __global__ void DFSPH_computeGridIdx_kernel(Vector3d* in, unsigned int* out, Rea
 
     }
     else {
-        //the +50 is an offset so that I don't use the border of the grid
-        //it allosw me to be sure that I won't have particles outside of the grid
-        //the main thing is that their domain has negative position values
-        //that +10 prevent having any negative index by positioning the bounding area of the particles
-        //incide the area  described by our cells
-        Vector3d pos = (in[i] / kernel_radius) + 50;
+        //the offset is used to be able to use a small grid bu placing the simulation correctly inside it
+        Vector3d pos = (in[i] / kernel_radius) + gridOffset;
         pos.toFloor();
         out[i] = COMPUTE_CELL_INDEX(pos.x, pos.y, pos.z);
     }
@@ -1329,7 +1430,7 @@ __global__ void DFSPH_neighborsSearch_kernel(SPH::DFSPHCData data, SPH::UnifiedP
 
     RealCuda radius_sq = data.m_kernel_precomp.getRadius();
     Vector3d pos = particleSet->pos[i];
-    Vector3d pos_cell = (pos / radius_sq) + 50; //on that line the radius is not yet squared
+    Vector3d pos_cell = (pos / radius_sq) + data.gridOffset; //on that line the radius is not yet squared
     pos_cell.toFloor();
     int x = pos_cell.x;
     int y = pos_cell.y;
@@ -1371,15 +1472,16 @@ __global__ void DFSPH_neighborsSearch_kernel(SPH::DFSPHCData data, SPH::UnifiedP
     unsigned int successive_cells_count = (x > 0) ? 3 : 2;
     x = (x > 0) ? x - 1 : x;
 
-#define ITER_CELLS_FOR_BODY(input_body,code){\
-    const SPH::UnifiedParticleSet& body = input_body;\
+#define ITER_CELLS_FOR_BODY(neighborsDataSet_i,pos_body_particles_i,code){\
+    SPH::NeighborsSearchDataSet* neighborsDataSet= neighborsDataSet_i;\
+    Vector3d* pos_body_particles=pos_body_particles_i;\
     for (int k = -1; k < 2; ++k) {\
     for (int m = -1; m < 2; ++m) {\
     unsigned int cur_cell_id = COMPUTE_CELL_INDEX(x, y + k, z + m);\
-    unsigned int end = body.neighborsDataSet->cell_start_end[cur_cell_id + successive_cells_count];\
-    for (unsigned int cur_particle = body.neighborsDataSet->cell_start_end[cur_cell_id]; cur_particle < end; ++cur_particle) {\
-    unsigned int j = body.neighborsDataSet->p_id_sorted[cur_particle];\
-    if ((pos - body.pos[j]).squaredNorm() < radius_sq) {\
+    unsigned int end = neighborsDataSet->cell_start_end[cur_cell_id + successive_cells_count];\
+    for (unsigned int cur_particle = neighborsDataSet->cell_start_end[cur_cell_id]; cur_particle < end; ++cur_particle) {\
+    unsigned int j = neighborsDataSet->p_id_sorted[cur_particle];\
+    if ((pos - pos_body_particles[j]).squaredNorm() < radius_sq) {\
     code\
 }\
 }\
@@ -1388,18 +1490,81 @@ __global__ void DFSPH_neighborsSearch_kernel(SPH::DFSPHCData data, SPH::UnifiedP
 }
 #endif
 
-    //fluid
-    ITER_CELLS_FOR_BODY(data.fluid_data_cuda[0], if (i != j) { *cur_neighbor_ptr++ = j;	nb_neighbors_fluid++; });
 
-    //boundaries
-    ITER_CELLS_FOR_BODY(data.boundaries_data_cuda[0], *cur_neighbor_ptr++ = j; nb_neighbors_boundary++; );
+    if (data.is_fluid_aggregated){
+        int neighbors_solids[MAX_NEIGHBOURS];
 
-    if (data.vector_dynamic_bodies_data_cuda != NULL) {
-        for (int id_body = 0; id_body < data.numDynamicBodies; ++id_body) {
-            ITER_CELLS_FOR_BODY(data.vector_dynamic_bodies_data_cuda[id_body],
-                                *cur_neighbor_ptr++ = WRITTE_DYNAMIC_BODIES_PARTICLES_INDEX(id_body, j); nb_neighbors_dynamic_objects++; )
+        //dynamic bodies
+        if (data.vector_dynamic_bodies_data_cuda != NULL) {
+
+#ifdef GROUP_DYNAMIC_BODIES_NEIGHBORS_SEARCH
+            ITER_CELLS_FOR_BODY(data.neighborsDataSetGroupedDynamicBodies_cuda, data.posBufferGroupedDynamicBodies,
+                                if(j<data.fluid_data_cuda->numParticles){
+                                    if (i != j) { *cur_neighbor_ptr++ = j;	nb_neighbors_fluid++; }
+                                }else{int body_id=0; int count_particles_previous_bodies=data.fluid_data_cuda->numParticles;
+                                      while((count_particles_previous_bodies+data.vector_dynamic_bodies_data_cuda[body_id].numParticles)<j ){
+                                          count_particles_previous_bodies+=data.vector_dynamic_bodies_data_cuda[body_id].numParticles;
+                                          body_id++;
+                                      }
+                                      //*cur_neighbor_ptr++ = WRITTE_DYNAMIC_BODIES_PARTICLES_INDEX(body_id, j-count_particles_previous_bodies);
+                                      neighbors_solids[nb_neighbors_dynamic_objects]=WRITTE_DYNAMIC_BODIES_PARTICLES_INDEX(body_id, j-count_particles_previous_bodies);
+                                      nb_neighbors_dynamic_objects++;} )
+        #else
+            for (int id_body = 0; id_body < data.numDynamicBodies; ++id_body) {
+                ITER_CELLS_FOR_BODY(data.vector_dynamic_bodies_data_cuda[id_body].neighborsDataSet, data.vector_dynamic_bodies_data_cuda[id_body].pos,
+                                    *cur_neighbor_ptr++ = WRITTE_DYNAMIC_BODIES_PARTICLES_INDEX(id_body, j); nb_neighbors_dynamic_objects++; )
+            }
+#endif
+
+        }else{
+            //fluid
+            ITER_CELLS_FOR_BODY(data.fluid_data_cuda[0].neighborsDataSet, data.fluid_data_cuda[0].pos,
+                    if (i != j) { *cur_neighbor_ptr++ = j;	nb_neighbors_fluid++; });
         }
-    };
+
+        //boundaries
+        ITER_CELLS_FOR_BODY(data.boundaries_data_cuda[0].neighborsDataSet, data.boundaries_data_cuda[0].pos,
+                *cur_neighbor_ptr++ = j; nb_neighbors_boundary++; );
+
+
+        //copy the dynamic bodies at the end
+        for (int j=0;j<nb_neighbors_dynamic_objects;++j){
+            *cur_neighbor_ptr++=neighbors_solids[j];
+        }
+
+
+    }else{
+        //uses the standart version
+        //fluid
+        ITER_CELLS_FOR_BODY(data.fluid_data_cuda[0].neighborsDataSet, data.fluid_data_cuda[0].pos,
+                if (i != j) { *cur_neighbor_ptr++ = j;	nb_neighbors_fluid++; });
+
+        //boundaries
+        ITER_CELLS_FOR_BODY(data.boundaries_data_cuda[0].neighborsDataSet, data.boundaries_data_cuda[0].pos,
+                *cur_neighbor_ptr++ = j; nb_neighbors_boundary++; );
+
+
+        if (data.vector_dynamic_bodies_data_cuda != NULL) {
+
+#ifdef GROUP_DYNAMIC_BODIES_NEIGHBORS_SEARCH
+            ITER_CELLS_FOR_BODY(data.neighborsDataSetGroupedDynamicBodies_cuda, data.posBufferGroupedDynamicBodies,
+            {int body_id=0; int count_particles_previous_bodies=0;
+             while((count_particles_previous_bodies+data.vector_dynamic_bodies_data_cuda[body_id].numParticles)<j ){
+                 count_particles_previous_bodies+=data.vector_dynamic_bodies_data_cuda[body_id].numParticles;
+                 body_id++;
+             }
+             *cur_neighbor_ptr++ = WRITTE_DYNAMIC_BODIES_PARTICLES_INDEX(body_id, j-count_particles_previous_bodies);
+             nb_neighbors_dynamic_objects++;} )
+        #else
+            for (int id_body = 0; id_body < data.numDynamicBodies; ++id_body) {
+                ITER_CELLS_FOR_BODY(data.vector_dynamic_bodies_data_cuda[id_body].neighborsDataSet, data.vector_dynamic_bodies_data_cuda[id_body].pos,
+                                    *cur_neighbor_ptr++ = WRITTE_DYNAMIC_BODIES_PARTICLES_INDEX(id_body, j); nb_neighbors_dynamic_objects++; )
+            }
+#endif
+
+        }
+    }
+
 
 
     particleSet->numberOfNeighbourgs[3 * i] = nb_neighbors_fluid;
@@ -1463,10 +1628,12 @@ __global__ void DFSPH_neighborsSearchBasic_kernel(unsigned int numFluidParticles
 
 }
 
-void cuda_neighborsSearchInternal_sortParticlesId(Vector3d* pos, RealCuda kernel_radius, int numParticles, void **d_temp_storage_pair_sort,
-                                                  size_t   &temp_storage_bytes_pair_sort, unsigned int* cell_id, unsigned int* cell_id_sorted,
+void cuda_neighborsSearchInternal_sortParticlesId(Vector3d* pos, RealCuda kernel_radius, Vector3i gridOffset, int numParticles,
+                                                  void **d_temp_storage_pair_sort, size_t   &temp_storage_bytes_pair_sort,
+                                                  unsigned int* cell_id, unsigned int* cell_id_sorted,
                                                   unsigned int* p_id, unsigned int* p_id_sorted) {
     cudaError_t cudaStatus;
+
 
     /*
     //some test for the definition domain (it is just for debugging purposes)
@@ -1504,7 +1671,7 @@ void cuda_neighborsSearchInternal_sortParticlesId(Vector3d* pos, RealCuda kernel
 
     //compute the idx of the cell for each particles
     DFSPH_computeGridIdx_kernel<CELL_ROW_LENGTH, false> << <numBlocks, BLOCKSIZE >> > (pos, cell_id,
-                                                                                       kernel_radius, numParticles);
+                                                                                       kernel_radius, numParticles, gridOffset);
 
     cudaStatus = cudaDeviceSynchronize();
     if (cudaStatus != cudaSuccess) {
@@ -1793,7 +1960,8 @@ __global__ void apply_delta_to_buffer_kernel(Vector3d* buffer, Vector3d delta, c
 
 
 __global__ void remove_particle_layer_kernel(SPH::UnifiedParticleSet* particleSet, Vector3d movement, Vector3d* min, Vector3d *max,
-                                             RealCuda kernel_radius, int* count_moved_particles, int* count_possible_particles) {
+                                             RealCuda kernel_radius, Vector3i gridOffset,
+                                             int* count_moved_particles, int* count_possible_particles) {
     int i = blockIdx.x * blockDim.x + threadIdx.x;
     if (i >= particleSet->numParticles) { return; }
 
@@ -1809,16 +1977,16 @@ __global__ void remove_particle_layer_kernel(SPH::UnifiedParticleSet* particleSe
     Vector3d motion_axis = (movement / movement.norm()).abs();
 
     //compute the source and target cell row, we only keep the component in the direction of the motion
-    source_id = (source_id / kernel_radius) + 50 ;
+    source_id = (source_id / kernel_radius) + gridOffset ;
     source_id.toFloor();
     source_id *= motion_axis;
 
-    target_id = (target_id / kernel_radius) + 50;
+    target_id = (target_id / kernel_radius) + gridOffset;
     target_id.toFloor();
     target_id *= motion_axis;
 
     //compute the elll row for the particle and only keep the  component in the direction of the motion
-    Vector3d pos = (particleSet->pos[i] / kernel_radius) + 50;
+    Vector3d pos = (particleSet->pos[i] / kernel_radius) + gridOffset;
     pos.toFloor();
     pos *= motion_axis;
 
@@ -1827,24 +1995,18 @@ __global__ void remove_particle_layer_kernel(SPH::UnifiedParticleSet* particleSe
 
     if (pos == (source_id+movement)) {
         //I'll also move the paticles away
-        particleSet->pos[i].y += -2.0f;
-        particleSet->pos[i] += movement * 5;
+        particleSet->pos[i].y += 2.0f;
         particleSet->neighborsDataSet->cell_id[i] = 25000000;
         atomicAdd(count_moved_particles, 1);
 
-    }
-    else {
-        //find the particles that we will need as destination position
-        if (pos == (target_id - movement)) {
-            int id = atomicAdd(count_possible_particles, 1);
-            particleSet->neighborsDataSet->p_id_sorted[id] = i;
-        }
-
+    }else if (pos == (target_id - movement)) {
+        int id = atomicAdd(count_possible_particles, 1);
+        particleSet->neighborsDataSet->p_id_sorted[id] = i;
+    }else if (pos == target_id || pos == source_id) {
         //move the particles that are on the border
-        if (pos == target_id || pos == source_id) {
-            particleSet->pos[i] += movement*kernel_radius;
-        }
+        particleSet->pos[i] += movement*kernel_radius;
     }
+
 }
 
 __global__ void adapt_inserted_particles_position_kernel(SPH::UnifiedParticleSet* particleSet, int* count_moved_particles, int* count_possible_particles, 
@@ -1854,17 +2016,19 @@ __global__ void adapt_inserted_particles_position_kernel(SPH::UnifiedParticleSet
 
     if (particleSet->neighborsDataSet->cell_id[i] == 25000000) {
         int id = atomicAdd(count_moved_particles, 1);
+
         if (id < (*count_possible_particles)) {
             int ref_particle_id = particleSet->neighborsDataSet->p_id_sorted[id];
             particleSet->pos[i] = particleSet->pos[ref_particle_id] + mov_pos;
-            particleSet->vel[i] = particleSet->vel[ref_particle_id];
+            particleSet->vel[i] = Vector3d(0,0,0); //particleSet->vel[ref_particle_id];
             particleSet->kappa[i] = particleSet->kappa[ref_particle_id];
             particleSet->kappaV[i] = particleSet->kappaV[ref_particle_id];
 
             particleSet->neighborsDataSet->cell_id[i] = 0;
         }
         else {
-            particleSet->pos[i] = plane_for_remaining;
+            //particleSet->pos[i]= plane_for_remaining;
+
         }
     }
 
@@ -1902,8 +2066,11 @@ __global__ void translate_borderline_particles_kernel(SPH::DFSPHCData data, SPH:
     int i = blockIdx.x * blockDim.x + threadIdx.x;
     if (i >= particleSet->numParticles) { return; }
 
-    RealCuda affected_distance_sq = data.particleRadius / 8.0f;
+    RealCuda affected_distance_sq = data.particleRadius*1.5;
     affected_distance_sq *= affected_distance_sq;
+
+    RealCuda precise_affected_distance_sq = data.particleRadius*1.5;
+    precise_affected_distance_sq *= precise_affected_distance_sq;
 
 
 
@@ -1912,7 +2079,8 @@ __global__ void translate_borderline_particles_kernel(SPH::DFSPHCData data, SPH:
     Vector3d max=*data.bmax;
 #define max_row 10
     RealCuda p_distance = data.particleRadius * 2;
-    Vector3d plane_unit = data.damp_planes[0].abs() / data.damp_planes[0].norm();
+    Vector3d plane_unit = movement.abs() / movement.norm();
+    bool positive_motion = plane_unit.dot(movement)>0;
     Vector3d plane_unit_perp = (Vector3d(1, 0, 1) - plane_unit);
     //I need to know the width I have
     Vector3d width = (max) - (min);
@@ -1931,18 +2099,165 @@ __global__ void translate_borderline_particles_kernel(SPH::DFSPHCData data, SPH:
             particleSet->pos[i].y += 2.0f;
             break;
         }
-    }//*/
-    //return;
+    }
+    return;
+    //*/
+    bool remaining_particle=particleSet->neighborsDataSet->cell_id[i] == 25000000;
 
     //so I know I onlyhave 2 damp planes the first one being the one near the min
     for (int k = 0; k < 2; ++k) {
 
         Vector3d plane = data.damp_planes[k];
-        if ((particleSet->pos[i] * plane_unit - plane).squaredNorm() < affected_distance_sq) {
+        if (((particleSet->pos[i] * plane_unit - plane).squaredNorm() < affected_distance_sq)||remaining_particle) {
+            //let's try to estimate the density to see if there are actual surpression
+            bool distance_too_short=false;
+            if (remaining_particle){
+                distance_too_short=true;
+            }else{
 
+                if (k==0){
+                    //we can do a simple distance check in essence
+
+                    Vector3d cur_particle_pos=particleSet->pos[i];
+
+
+                    Vector3i cell_pos=(particleSet->pos[i]/data.getKernelRadius()).toFloor()+data.gridOffset;
+                    cell_pos+=Vector3i(0,-1,0);
+                    //ok since I want to explore the bottom cell firts I need to move in the plane
+                    cell_pos-=plane_unit_perp;
+
+                    //potential offset
+                    Vector3d particle_offset=Vector3d(0,0,0);
+                    //*
+
+
+
+                    //we skipp some cases to only move the particles that are on one side
+                    if (positive_motion){
+                        //for positive motion the lower plane is on the source
+                        if (plane_unit.dot(cur_particle_pos) <= plane_unit.dot(data.damp_planes[0])){
+                            continue;
+                            cell_pos += plane_unit*1;//since the particle lower than that have already been moved in the direction once
+                        }else{
+                            cell_pos -= plane_unit*2;
+                        }
+                    }else{
+                        //if the motion is negative then the lower plane is the target
+                        if (plane_unit.dot(cur_particle_pos) <= plane_unit.dot(data.damp_planes[0])){
+                            //the cell that need to be explored are on row away from us
+                            cell_pos+=plane_unit;
+                        }else{
+                            continue;
+                            //we need to move the particle we are checking toward on rows in the direction of the movement
+                            particle_offset=plane_unit*data.getKernelRadius()*-1;
+                        }
+                    }
+                    //*/
+
+                    //I only need to check if the other side of the jonction border is too close, no need to check the same side since
+                    //it was part of a fluid at rest
+                    for (int k=0;k<3;++k){//that's y
+                        for (int l=0;l<3;++l){//that's the coordinate in the plane
+
+                            Vector3i cur_cell_pos=cell_pos+plane_unit_perp*l;
+                            int cur_cell_id=COMPUTE_CELL_INDEX(cur_cell_pos.x,cur_cell_pos.y+k,cur_cell_pos.z);
+                            UnifiedParticleSet* body=data.fluid_data_cuda;
+                            NeighborsSearchDataSet* neighborsDataSet=body->neighborsDataSet;
+                            unsigned int end = neighborsDataSet->cell_start_end[cur_cell_id+1];
+                            for (unsigned int cur_particle = neighborsDataSet->cell_start_end[cur_cell_id]; cur_particle < end; ++cur_particle) {
+                                unsigned int j = neighborsDataSet->p_id_sorted[cur_particle];
+                                if ((cur_particle_pos - (body->pos[j]+particle_offset)).squaredNorm() < precise_affected_distance_sq) {
+                                    distance_too_short=true;
+                                    break;
+                                }
+                            }
+                        }
+                        if (distance_too_short){break;}
+                    }
+
+                }else{
+                    Vector3d cur_particle_pos=particleSet->pos[i];
+
+
+                    Vector3i cell_pos=(particleSet->pos[i]/data.getKernelRadius()).toFloor()+data.gridOffset;
+                    cell_pos+=Vector3i(0,-1,0);
+                    //ok since I want to explore the bottom cell firts I need to move in the plane
+                    cell_pos-=plane_unit_perp;
+
+                    //on the target side the cell of the right side are a copy of the left side !
+                    // so we have to check the row agaisnt itself
+                    //but we will have to translate the particles depending on the side we are on
+                    Vector3d particle_offset=Vector3d(0,0,0);
+
+
+                    if (positive_motion){
+                        if (plane_unit.dot(cur_particle_pos) > plane_unit.dot(data.damp_planes[1])) {
+                            //the cell that need to be explored are on row away from us
+                            cell_pos-=plane_unit;
+                        }else{
+                            continue;
+                            //we need to move the particle we are checking toward on rows in the direction of the movement
+                            particle_offset=plane_unit*data.getKernelRadius();
+                        }
+                    }else{
+                        if (plane_unit.dot(cur_particle_pos) > plane_unit.dot(data.damp_planes[1])) {
+                            continue;
+                            cell_pos -= plane_unit*1;//since the particle lower than that have already been moved in the direction once
+                        }else{
+                            cell_pos += plane_unit*2;
+                        }
+
+                    }
+
+
+                    //I only need to check if the other side of the jonction border is too close, no need to check the same side since
+                    //it was part of a fluid at rest
+                    for (int k=0;k<3;++k){//that's y
+                        for (int l=0;l<3;++l){//that's the coordinate in the plane
+
+                            Vector3i cur_cell_pos=cell_pos+plane_unit_perp*l;
+                            int cur_cell_id=COMPUTE_CELL_INDEX(cur_cell_pos.x,cur_cell_pos.y+k,cur_cell_pos.z);
+                            UnifiedParticleSet* body=data.fluid_data_cuda;
+                            NeighborsSearchDataSet* neighborsDataSet=body->neighborsDataSet;
+                            unsigned int end = neighborsDataSet->cell_start_end[cur_cell_id + 1];
+                            for (unsigned int cur_particle = neighborsDataSet->cell_start_end[cur_cell_id]; cur_particle < end; ++cur_particle) {
+                                unsigned int j = neighborsDataSet->p_id_sorted[cur_particle];
+                                if ((cur_particle_pos - (body->pos[j]+particle_offset)).squaredNorm() < precise_affected_distance_sq) {
+                                    distance_too_short=true;
+                                    break;
+                                }
+                            }
+                            if (distance_too_short){break;}
+                        }
+                    }
+
+                }
+            }
+
+
+            if (!distance_too_short){
+                //that mean this particle is not too close for another and there is no need to handle it
+                continue;
+            }else{
+                //for testing purposes
+                //particleSet->pos[i].y+=2.0f;
+                //return;
+            }
+
+
+
+            bool near_min=true;
             //get a unique id to compute the position
-            //int id = atomicAdd((k==0)?count_moved_particles: count_possible_particles, 1);
-            int id = atomicAdd((k==0)? moved_particles_min_plane : moved_particles_max_plane, 1);
+            //int id = atomicAdd((k==0)? moved_particles_min_plane : moved_particles_max_plane, 1);
+            int id = atomicAdd(moved_particles_max_plane, 1);
+            //*
+            if ((id%3)==0){
+                id/=3;
+                near_min=false;
+            }else{
+                id = atomicAdd(moved_particles_min_plane, 1);
+            }
+            //*/
 
             //and compute the particle position
             int row_count = id / max_count_width;
@@ -1951,15 +2266,15 @@ __global__ void translate_borderline_particles_kernel(SPH::DFSPHCData data, SPH:
             Vector3d pos_local = Vector3d(0, 0, 0);
             pos_local.y += level_count*(p_distance*0.80);
             //the 1 or -1 at the end is because the second iter start at the max and it need to go reverse
-            pos_local += (plane_unit*p_distance*(row_count - level_count*max_row) + plane_unit_perp*p_distance*(id - row_count*max_count_width))*((k == 0) ? 1 : -1);
+            pos_local += (plane_unit*p_distance*(row_count - level_count*max_row) + plane_unit_perp*p_distance*(id - row_count*max_count_width))*((near_min) ? 1 : -1);
             //just a simple interleave on y
             if (level_count & 1 != 0) {
-                pos_local += (Vector3d(1,0,1)*(p_distance / 2.0f))*((k == 0) ? 1 : -1);
+                pos_local += (Vector3d(1,0,1)*(p_distance / 2.0f))*((near_min) ? 1 : -1);
             }
 
             //now I need to find the first possible position
             //it depends if we are close to the min of to the max
-            Vector3d pos_f = (k == 0) ? min : max;
+            Vector3d pos_f = (near_min) ? min : max;
 
             //and for the height we need to find the column
             Vector3d pos_temp = (pos_f + pos_local);
@@ -1968,11 +2283,19 @@ __global__ void translate_borderline_particles_kernel(SPH::DFSPHCData data, SPH:
             //so from the id I have here I need to know the corresponding id before any particle movement
             //the easiest way is to notivce that anything before the first plane and after the secodn plane have been moved
             //anything else is still the same
-            if (plane_unit.dot(pos_temp) < plane_unit.dot(data.damp_planes[0]) || plane_unit.dot(pos_temp) > plane_unit.dot(data.damp_planes[1])) {
-                pos_temp -= (movement*data.getKernelRadius());
+            if (near_min){
+                //0 is the min plane
+                if (plane_unit.dot(pos_temp) < plane_unit.dot(data.damp_planes[0])){
+                    pos_temp -= (movement*data.getKernelRadius());
+                }
+            }else{
+                //1 is the max plane
+                if (plane_unit.dot(pos_temp) > plane_unit.dot(data.damp_planes[1])) {
+                    pos_temp -= (movement*data.getKernelRadius());
+                }
             }
 
-            pos_temp= pos_temp / data.getKernelRadius() + 50;
+            pos_temp= pos_temp / data.getKernelRadius() + data.gridOffset;
             pos_temp.toFloor();
 
             //read the actual height
@@ -1988,11 +2311,13 @@ __global__ void translate_borderline_particles_kernel(SPH::DFSPHCData data, SPH:
             particleSet->kappa[i] = 0;
             particleSet->kappaV[i] = 0;
 
+            //if he particle was moved we are done
+            return;
         }
     }
 }
 
-
+#define SHOW_MESSAGES_IN_CUDA_FUNCTIONS
 void move_simulation_cuda(SPH::DFSPHCData& data, Vector3d movement) {
     data.damp_planes_count = 0;
     //compute the movement on the position and the axis
@@ -2020,10 +2345,7 @@ void move_simulation_cuda(SPH::DFSPHCData& data, Vector3d movement) {
         apply_delta_to_buffer_kernel<< <numBlocks, BLOCKSIZE >> > (particleSet->pos, mov_pos, numParticles);
         gpuErrchk(cudaDeviceSynchronize());
 
-        //and we need ot updatethe neighbor structure
-        //I'll take the easy way and just rerun the neighbor computation
-        //there shoudl eb a faster way but it will be enougth for now
-        particleSet->initNeighborsSearchData(data.getKernelRadius(), false);
+
 
 #ifdef SHOW_MESSAGES_IN_CUDA_FUNCTIONS
         std::chrono::steady_clock::time_point end = std::chrono::steady_clock::now();
@@ -2036,7 +2358,7 @@ void move_simulation_cuda(SPH::DFSPHCData& data, Vector3d movement) {
     particleSet = data.fluid_data;
     {
         //I'll need the information of whih cell contains which particles
-        particleSet->initNeighborsSearchData(data.getKernelRadius(), false);
+        particleSet->initNeighborsSearchData(data, false);
 
 
         std::chrono::steady_clock::time_point start = std::chrono::steady_clock::now();
@@ -2076,10 +2398,10 @@ void move_simulation_cuda(SPH::DFSPHCData& data, Vector3d movement) {
         //this flag tjhe particles that need tobe moved and store the index of the particles that are in the target row
         //also apply the movement to the border rows
         remove_particle_layer_kernel << <numBlocks, BLOCKSIZE >> > (particleSet->gpu_ptr, movement, data.bmin, data.bmax, data.getKernelRadius(),
-                                                                    count_rmv_particles, count_possible_particles);
+                                                                    data.gridOffset, count_rmv_particles, count_possible_particles);
         gpuErrchk(cudaDeviceSynchronize());
 
-        //std::cout << "count particle delta: (moved particles, possible particles)" << *count_rmv_particles <<"  "<< *count_possible_particles<< std::endl;
+        std::cout << "count particle delta: (moved particles, possible particles)" << *count_rmv_particles <<"  "<< *count_possible_particles<< std::endl;
         std::chrono::steady_clock::time_point tp1 = std::chrono::steady_clock::now();
 
         //compute the positions of the 2 planes where there is a junction
@@ -2117,9 +2439,9 @@ void move_simulation_cuda(SPH::DFSPHCData& data, Vector3d movement) {
         }
         data.damp_planes[data.damp_planes_count++] = plane;
 
-        //reorder the two if the movmeent is negative
-        if (movement.abs() != movement) {
-            plane= data.damp_planes[data.damp_planes_count - 1];
+        //always save the source
+        if (movement.abs() == movement) {
+            plane= data.damp_planes[data.damp_planes_count - 2];
         }
 
         //now modify the position of the particles that need to be moved in the new layers
@@ -2139,9 +2461,9 @@ void move_simulation_cuda(SPH::DFSPHCData& data, Vector3d movement) {
 
         //trigger the damping mechanism
         data.damp_borders = true;
-        data.damp_borders_steps_count = 25;
+        data.damp_borders_steps_count = 5;
 
-        add_border_to_damp_planes_cuda(data);
+        //add_border_to_damp_planes_cuda(data);
 
 
         //transate the particles that are too close to the jonction planes
@@ -2165,7 +2487,13 @@ void move_simulation_cuda(SPH::DFSPHCData& data, Vector3d movement) {
 
     }
 
+    //we can now update the offset on the grid
+    data.gridOffset-=movement;
 
+    //and we need ot updatethe neighbor structure for the static particles
+    //I'll take the easy way and just rerun the neighbor computation
+    //there shoudl eb a faster way but it will be enougth for now
+    data.boundaries_data->initNeighborsSearchData(data, false);
 }
 
 void add_border_to_damp_planes_cuda(SPH::DFSPHCData& data) {
@@ -2175,11 +2503,11 @@ void add_border_to_damp_planes_cuda(SPH::DFSPHCData& data) {
 
 
     RealCuda min_plane_precision = data.particleRadius / 1000;
-    data.damp_planes[data.damp_planes_count + 0] = Vector3d((abs(data.bmin->x) > min_plane_precision) ? data.bmin->x : min_plane_precision, 0, 0);
-    data.damp_planes[data.damp_planes_count + 1] = Vector3d((abs(data.bmax->x) > min_plane_precision) ? data.bmax->x : min_plane_precision, 0, 0);
-    data.damp_planes[data.damp_planes_count + 2] = Vector3d(0, 0, (abs(data.bmin->z) > min_plane_precision) ? data.bmin->z : min_plane_precision);
-    data.damp_planes[data.damp_planes_count + 3] = Vector3d(0, 0, (abs(data.bmax->z) > min_plane_precision) ? data.bmax->z : min_plane_precision);
-    data.damp_planes_count += 4;
+    data.damp_planes[data.damp_planes_count ++] = Vector3d((abs(data.bmin->x) > min_plane_precision) ? data.bmin->x : min_plane_precision, 0, 0);
+    data.damp_planes[data.damp_planes_count ++] = Vector3d((abs(data.bmax->x) > min_plane_precision) ? data.bmax->x : min_plane_precision, 0, 0);
+    data.damp_planes[data.damp_planes_count ++] = Vector3d(0, 0, (abs(data.bmin->z) > min_plane_precision) ? data.bmin->z : min_plane_precision);
+    data.damp_planes[data.damp_planes_count ++] = Vector3d(0, 0, (abs(data.bmax->z) > min_plane_precision) ? data.bmax->z : min_plane_precision);
+    //data.damp_planes[data.damp_planes_count ++] = Vector3d(0, (abs(data.bmin->y) > min_plane_precision) ? data.bmin->y : min_plane_precision, 0);
 
 }
 
@@ -2280,15 +2608,15 @@ __global__ void place_additional_particles_right_above_kernel(SPH::DFSPHCData da
 
     //and for the height we need to find the column
     Vector3d pos_temp = (pos_f + pos_local);
-    pos_temp = pos_temp / data.getKernelRadius() + 50;
+    pos_temp = pos_temp / data.getKernelRadius() + data.gridOffset;
     pos_temp.toFloor();
 
     //now if required check if the particle is near enougth from the border
     int effective_id = 0;
     if (border_range > 0) {
-        min = min / data.getKernelRadius() + 50 + border_range;
+        min = min / data.getKernelRadius() + data.gridOffset + border_range;
         min.toFloor();
-        max = max / data.getKernelRadius() + 50 - border_range;
+        max = max / data.getKernelRadius() + data.gridOffset - border_range;
         max.toFloor();
         //
         if (!(pos_temp.x<min.x || pos_temp.z<min.z || pos_temp.x>max.x || pos_temp.z>max.z)) {
@@ -2324,7 +2652,7 @@ void control_fluid_height_cuda(SPH::DFSPHCData& data, RealCuda target_height) {
 
 
     //we will need the neighbors data to know where the particles are
-    particleSet->initNeighborsSearchData(data.getKernelRadius(), false);
+    particleSet->initNeighborsSearchData(data, false);
 
 
 
@@ -2459,11 +2787,11 @@ void control_fluid_height_cuda(SPH::DFSPHCData& data, RealCuda target_height) {
             cudaMallocManaged(&(count_created_particles), sizeof(int));
         }
         *count_created_particles = 0;
+        //and place the particles in the simulation
         place_additional_particles_right_above_kernel << <numBlocks, BLOCKSIZE >> > (data, particleSet->gpu_ptr, column_max_height,
                                                                                      count_new_particles, border_range, (border_range>0) ? count_created_particles : NULL);
 
 
-        //and place the particles in the simulation
         gpuErrchk(cudaDeviceSynchronize());
         data.destructor_activated = true;
 
@@ -2479,6 +2807,75 @@ void control_fluid_height_cuda(SPH::DFSPHCData& data, RealCuda target_height) {
 
 }
 
+
+Vector3d get_simulation_center_cuda(SPH::DFSPHCData& data){
+    //get the min and max
+    get_min_max_pos_kernel << <1, 1 >> > (data.boundaries_data->gpu_ptr, data.bmin, data.bmax, data.particleRadius);
+    gpuErrchk(cudaDeviceSynchronize());
+
+    //std::cout<<"get_simulation_center_cuda min max: "<<
+    //           data.bmin->x<<"  "<<data.bmin->z<<"  "<<data.bmax->x<<"  "<<data.bmax->z<<std::endl;
+
+    //and computethe center
+    return ((*data.bmax)+(*data.bmin))/2;
+}
+
+
+
+__global__ void compute_dynamic_body_particle_mass_kernel(SPH::DFSPHCData data, SPH::UnifiedParticleSet* particleSet) {
+    int i = blockIdx.x * blockDim.x + threadIdx.x;
+    if (i >= particleSet->numParticles) { return; }
+
+    Real delta = 0;//data.W_zero;
+
+    RealCuda radius_sq = data.m_kernel_precomp.getRadius();
+    Vector3d pos = particleSet->pos[i];
+    Vector3d pos_cell = (pos / radius_sq) + data.gridOffset; //on that line the radius is not yet squared
+    pos_cell.toFloor();
+    int x = pos_cell.x;
+    int y = pos_cell.y;
+    int z = pos_cell.z;
+    radius_sq *= radius_sq;
+
+
+    //since this version use the std index to be able to iterate on 3 successive cells
+    //I can do the -1 at the start on x.
+    //one thing: it x=0 then we can only iterate 2 cells at a time
+    unsigned int successive_cells_count = (x > 0) ? 3 : 2;
+    x = (x > 0) ? x - 1 : x;
+
+
+    const SPH::UnifiedParticleSet& body = *particleSet;
+    for (int k = -1; k < 2; ++k) {
+        for (int m = -1; m < 2; ++m) {
+            unsigned int cur_cell_id = COMPUTE_CELL_INDEX(x, y + k, z + m);
+            unsigned int end = body.neighborsDataSet->cell_start_end[cur_cell_id + successive_cells_count];
+            for (unsigned int cur_particle = body.neighborsDataSet->cell_start_end[cur_cell_id]; cur_particle < end; ++cur_particle) {
+                unsigned int j = body.neighborsDataSet->p_id_sorted[cur_particle];
+                if ((pos - body.pos[j]).squaredNorm() < radius_sq) {
+                    if (i != j) { delta += data.W(pos - body.pos[j]); }
+                }
+            }
+        }
+    }
+
+
+    const Real volume = 1.0 / delta;
+    particleSet->mass[i] = particleSet->density0 * volume;
+}
+
+void compute_UnifiedParticleSet_particles_mass_cuda(SPH::DFSPHCData& data, SPH::UnifiedParticleSet& container){
+    int numBlocks = (container.numParticles + BLOCKSIZE - 1) / BLOCKSIZE;
+
+    container.initNeighborsSearchData(data, false);
+
+
+    data.destructor_activated = false;
+    compute_dynamic_body_particle_mass_kernel << <numBlocks, BLOCKSIZE >> > (data, container.gpu_ptr);
+    gpuErrchk(cudaDeviceSynchronize());
+    data.destructor_activated = true;
+}
+
 void cuda_neighborsSearch(SPH::DFSPHCData& data) {
 
     //std::chrono::steady_clock::time_point begin_global = std::chrono::steady_clock::now();
@@ -2487,36 +2884,53 @@ void cuda_neighborsSearch(SPH::DFSPHCData& data) {
     static float time_avg_global = 0;
     time_count++;
 
+    /*
     if (time_count<5) {
         cuda_shuffleData(data.fluid_data[0]);
         std::cout << "randomizing particle order" << std::endl;
     }
+    //*/
 
+    bool need_sort = ((time_count%15)==0);
+
+    if (need_sort){
+        std::cout<<"doing full neighbor search"<<std::endl;
+    }
+
+    bool old_fluid_aggregated=data.is_fluid_aggregated;
     cudaError_t cudaStatus;
     if (true){
-        /*
-        float time;
-        static float time_avg = 0;
+        if (need_sort&&data.is_fluid_aggregated){
+            data.is_fluid_aggregated=false;
+            data.neighborsDataSetGroupedDynamicBodies->numParticles-=data.fluid_data->numParticles;
+        }
+
+
+        //*
         std::chrono::steady_clock::time_point begin = std::chrono::steady_clock::now();
         //*/
 
         //first let's generate the cell start end for the dynamic bodies
+#ifdef GROUP_DYNAMIC_BODIES_NEIGHBORS_SEARCH
+        cuda_initNeighborsSearchDataSetGroupedDynamicBodies(data);
+#else
         for (int i = 0; i < data.numDynamicBodies; ++i) {
             SPH::UnifiedParticleSet& body = data.vector_dynamic_bodies_data[i];
             body.initNeighborsSearchData(data.m_kernel_precomp.getRadius(), false);
         }
+#endif
+        std::chrono::steady_clock::time_point middle = std::chrono::steady_clock::now();
 
         //no need to ever do it forthe boundaries since they don't ever move
 
         //now update the cell start end of the fluid particles
-        {
+        if ((!data.is_fluid_aggregated)||data.numDynamicBodies<1){
 
             //since it the init iter I'll sort both even if it's the boundaries
             static int step_count = 0;
             step_count++;
 
-            bool need_sort = true;
-            data.fluid_data->initNeighborsSearchData(data.m_kernel_precomp.getRadius(), need_sort);
+            data.fluid_data->initNeighborsSearchData(data, need_sort);
 
 
             cudaStatus = cudaDeviceSynchronize();
@@ -2528,12 +2942,17 @@ void cuda_neighborsSearch(SPH::DFSPHCData& data) {
 
         }
 
-        /*
-        std::chrono::steady_clock::time_point end = std::chrono::steady_clock::now();
-        time = std::chrono::duration_cast<std::chrono::nanoseconds> (end - begin).count() / 1000000.0f;
+        //*
 
-        time_avg += time;
-        printf("Time to generate cell start end: %f ms   avg: %f ms \n", time, time_avg / time_count);
+        std::chrono::steady_clock::time_point end = std::chrono::steady_clock::now();
+        float time0;
+        float time1;
+        static float time_avg = 0;
+        time0 = std::chrono::duration_cast<std::chrono::nanoseconds> (middle - begin).count() / 1000000.0f;
+        time1 = std::chrono::duration_cast<std::chrono::nanoseconds> (end - middle).count() / 1000000.0f;
+
+        time_avg += time0+time1;
+        //printf("Time to generate cell start end: %f ms (%f,%f)   avg: %f ms \n", time0+time1,time0,time1, time_avg / time_count);
 
         if (time_count > 150) {
             time_avg = 0;
@@ -2545,7 +2964,7 @@ void cuda_neighborsSearch(SPH::DFSPHCData& data) {
     //and we can now do the actual search of the neaighbor for eahc fluid particle
     if (true)
     {
-        /*
+        //*
         float time;
         static float time_avg = 0;
         std::chrono::steady_clock::time_point begin = std::chrono::steady_clock::now();
@@ -2577,12 +2996,12 @@ void cuda_neighborsSearch(SPH::DFSPHCData& data) {
             exit(1598);
         }
 
-        /*
+        //*
         std::chrono::steady_clock::time_point end = std::chrono::steady_clock::now();
         time = std::chrono::duration_cast<std::chrono::nanoseconds> (end - begin).count() / 1000000.0f;
 
         time_avg += time;
-        printf("Time to generate neighbors buffers: %f ms   avg: %f ms \n", time, time_avg / time_count);
+        //printf("Time to generate neighbors buffers: %f ms   avg: %f ms \n", time, time_avg / time_count);
 
         if (time_count > 150) {
             time_avg = 0;
@@ -2631,6 +3050,12 @@ void cuda_neighborsSearch(SPH::DFSPHCData& data) {
         //*/
     }
 
+    //reactive the aggragation if we desactivated it because a sort was required
+    if (need_sort&&old_fluid_aggregated){
+        data.is_fluid_aggregated=true;
+        data.neighborsDataSetGroupedDynamicBodies->numParticles+=data.fluid_data->numParticles;
+    }
+
     /*
     std::chrono::steady_clock::time_point end = std::chrono::steady_clock::now();
     time_global = std::chrono::duration_cast<std::chrono::nanoseconds> (end - begin_global).count() / 1000000.0f;
@@ -2643,10 +3068,12 @@ void cuda_neighborsSearch(SPH::DFSPHCData& data) {
 
 
 void cuda_initNeighborsSearchDataSet(SPH::UnifiedParticleSet& particleSet, SPH::NeighborsSearchDataSet& dataSet,
-                                     RealCuda kernel_radius, bool sortBuffers){
+                                     SPH::DFSPHCData& data, bool sortBuffers){
+
+
 
     //com the id
-    cuda_neighborsSearchInternal_sortParticlesId(particleSet.pos, kernel_radius, dataSet.numParticles,
+    cuda_neighborsSearchInternal_sortParticlesId(particleSet.pos, data.getKernelRadius(), data.gridOffset, dataSet.numParticles,
                                                  &dataSet.d_temp_storage_pair_sort, dataSet.temp_storage_bytes_pair_sort, dataSet.cell_id, dataSet.cell_id_sorted,
                                                  dataSet.p_id, dataSet.p_id_sorted);
 
@@ -2658,9 +3085,70 @@ void cuda_initNeighborsSearchDataSet(SPH::UnifiedParticleSet& particleSet, SPH::
     }
 
 
+
     //and now I cna compute the start and end of each cell :)
     cuda_neighborsSearchInternal_computeCellStartEnd(dataSet.numParticles, dataSet.cell_id_sorted, dataSet.hist,
                                                      &dataSet.d_temp_storage_cumul_hist, dataSet.temp_storage_bytes_cumul_hist, dataSet.cell_start_end);
+
+
+
+
+}
+
+
+__global__ void DFSPH_fill_aggregated_pos_buffer_kernel(SPH::DFSPHCData data, unsigned int num_particles) {
+
+    int i = blockIdx.x * blockDim.x + threadIdx.x;
+    if (i >= num_particles) { return; }
+
+    if (data.is_fluid_aggregated){
+        if (i<data.fluid_data_cuda->numParticles){
+
+            //writte de pos
+            data.posBufferGroupedDynamicBodies[i]=data.fluid_data_cuda->pos[i];
+
+            return;
+        }
+    }
+
+    //find the current dynamic body
+    int count_particles_previous_bodies=(data.is_fluid_aggregated)?data.fluid_data_cuda->numParticles:0;
+    int body_id=0;
+    while((count_particles_previous_bodies+data.vector_dynamic_bodies_data_cuda[body_id].numParticles)<i ){
+        count_particles_previous_bodies+=data.vector_dynamic_bodies_data_cuda[body_id].numParticles;
+        body_id++;
+    }
+
+    //writte de pos
+    data.posBufferGroupedDynamicBodies[i]=data.vector_dynamic_bodies_data_cuda[body_id].pos[i-count_particles_previous_bodies];
+}
+
+void cuda_initNeighborsSearchDataSetGroupedDynamicBodies(SPH::DFSPHCData& data){
+    if (data.numDynamicBodies<1){
+        return;
+    }
+
+    SPH::NeighborsSearchDataSet& dataSet=*(data.neighborsDataSetGroupedDynamicBodies);
+
+
+    // now fill itr
+    int numBlocks = (dataSet.numParticles + BLOCKSIZE - 1) / BLOCKSIZE;
+    DFSPH_fill_aggregated_pos_buffer_kernel<< <numBlocks, BLOCKSIZE >> > (data, dataSet.numParticles);
+    gpuErrchk(cudaDeviceSynchronize());
+
+    //and now we can do the neighbor search
+    //com the id
+    cuda_neighborsSearchInternal_sortParticlesId(data.posBufferGroupedDynamicBodies, data.getKernelRadius(), data.gridOffset, dataSet.numParticles,
+                                                 &dataSet.d_temp_storage_pair_sort, dataSet.temp_storage_bytes_pair_sort, dataSet.cell_id, dataSet.cell_id_sorted,
+                                                 dataSet.p_id, dataSet.p_id_sorted);
+
+
+
+    //and now I cna compute the start and end of each cell :)
+    cuda_neighborsSearchInternal_computeCellStartEnd(dataSet.numParticles, dataSet.cell_id_sorted, dataSet.hist,
+                                                     &dataSet.d_temp_storage_cumul_hist, dataSet.temp_storage_bytes_cumul_hist, dataSet.cell_start_end);
+
+
 
 }
 
@@ -2932,14 +3420,15 @@ void read_rigid_body_force_cuda(SPH::UnifiedParticleSet& container) {
 }
 
 
-__global__ void compute_fluid_impact_on_dynamic_body_kernel(SPH::UnifiedParticleSet* container, Vector3d* force, Vector3d* moment) {
+__global__ void compute_fluid_impact_on_dynamic_body_kernel(SPH::UnifiedParticleSet* container, Vector3d rb_position,
+                                                            Vector3d* force, Vector3d* moment) {
     int i = blockIdx.x * blockDim.x + threadIdx.x;
     if (i >= container->numParticles) { return; }
 
     Vector3d F,M;
 
     F=container->F[i];
-    M=(container->pos[i]-container->rigidBody->position).cross(F);
+    M=(container->pos[i]-rb_position).cross(F);
 
     atomicAdd(&(force->x),F.x);
     atomicAdd(&(force->y),F.y);
@@ -2960,11 +3449,64 @@ void compute_fluid_impact_on_dynamic_body_cuda(SPH::UnifiedParticleSet& containe
     *moment_cuda=Vector3d(0,0,0);
 
     int numBlocks = (container.numParticles + BLOCKSIZE - 1) / BLOCKSIZE;
-    compute_fluid_impact_on_dynamic_body_kernel << <numBlocks, BLOCKSIZE >> > (container.gpu_ptr, force_cuda, moment_cuda);
+    compute_fluid_impact_on_dynamic_body_kernel << <numBlocks, BLOCKSIZE >> > (container.gpu_ptr,
+                                                                               container.rigidBody_cpu->position, force_cuda, moment_cuda);
     gpuErrchk(cudaDeviceSynchronize());
 
     force=*force_cuda;
     moment=*moment_cuda;
+}
+
+__global__ void compute_fluid_boyancy_on_dynamic_body_kernel(SPH::UnifiedParticleSet* container, Vector3d* force, Vector3d* pt_appli) {
+    int i = blockIdx.x * blockDim.x + threadIdx.x;
+    if (i >= container->numParticles) { return; }
+
+
+
+    //I use the abs just in case for some reason the vertical force is negative ...
+    //By this I mena that the y component also contains the y component of the drag. but there
+    //is no way to extract the actual boyancy, soand approximation will have to do
+    RealCuda boyancy=container->F[i].y;
+    RealCuda boyancy_abs=abs(boyancy);
+    if(boyancy_abs>0){
+        Vector3d pt=container->pos[i]*boyancy_abs;
+
+        //in the x componant I'll store the total abs
+        atomicAdd(&(force->x),boyancy_abs);
+        atomicAdd(&(force->y),boyancy);
+        atomicAdd(&(pt_appli->x),pt.x);
+        atomicAdd(&(pt_appli->y),pt.y);
+        atomicAdd(&(pt_appli->z),pt.z);
+    }
+}
+
+void compute_fluid_Boyancy_on_dynamic_body_cuda(SPH::UnifiedParticleSet& container, Vector3d& force, Vector3d& pt_appli){
+    static Vector3d* force_cuda = NULL;
+    static Vector3d* pt_cuda = NULL;
+    if (force_cuda == NULL) {
+        cudaMallocManaged(&(force_cuda),sizeof(Vector3d));
+        cudaMallocManaged(&(pt_cuda),sizeof(Vector3d));
+    }
+    *force_cuda=Vector3d(0,0,0);
+    *pt_cuda=Vector3d(0,0,0);
+
+    int numBlocks = (container.numParticles + BLOCKSIZE - 1) / BLOCKSIZE;
+    compute_fluid_boyancy_on_dynamic_body_kernel << <numBlocks, BLOCKSIZE >> > (container.gpu_ptr, force_cuda, pt_cuda);
+    gpuErrchk(cudaDeviceSynchronize());
+
+    force=*force_cuda;
+    //if the sum of the force is non zero
+    if(abs(force.y)>0){
+        pt_appli=*pt_cuda;
+
+        //now compute the avg to get the actual point
+        pt_appli= pt_appli/force.x;
+        //and clear the x component
+        force.x=0;
+    }else{
+        force=Vector3d(0,0,0);
+        pt_appli=Vector3d(0,0,0);
+    }
 }
 
 void allocate_and_copy_UnifiedParticleSet_vector_cuda(SPH::UnifiedParticleSet** out_vector, SPH::UnifiedParticleSet* in_vector, int numSets) {
@@ -2993,22 +3535,21 @@ void allocate_and_copy_UnifiedParticleSet_vector_cuda(SPH::UnifiedParticleSet** 
         body.releaseDataOnDestruction = false;
 
         //duplicate the neighbor dataset to the gpu
-        gpuErrchk(cudaMalloc(&(body.neighborsDataSet), sizeof(SPH::NeighborsSearchDataSet)));
+        bool copy_neighbor_struct=true;
 
-        gpuErrchk(cudaMemcpy(body.neighborsDataSet, in_vector[i].neighborsDataSet,
-                             sizeof(SPH::NeighborsSearchDataSet), cudaMemcpyHostToDevice));
+#ifdef GROUP_DYNAMIC_BODIES_NEIGHBORS_SEARCH
+        //copy_neighbor_struct=false;
+#endif
 
+        if (copy_neighbor_struct){
+            gpuErrchk(cudaMalloc(&(body.neighborsDataSet), sizeof(SPH::NeighborsSearchDataSet)));
 
-        if (body.is_dynamic_object){
-            //here I'll have to handle the force at some point
-            ///TODO do that
-
-            //also duplicate the structure that contains the rigid body informations
-            gpuErrchk(cudaMalloc(&(body.rigidBody), sizeof(SPH::DynamicBody)));
-
-            gpuErrchk(cudaMemcpy(body.rigidBody, in_vector[i].rigidBody,
-                                 sizeof(SPH::DynamicBody), cudaMemcpyHostToDevice));
+            gpuErrchk(cudaMemcpy(body.neighborsDataSet, in_vector[i].neighborsDataSet,
+                                 sizeof(SPH::NeighborsSearchDataSet), cudaMemcpyHostToDevice));
+        }else{
+            body.neighborsDataSet=NULL;
         }
+
     }
     //*/
 
@@ -3017,11 +3558,45 @@ void allocate_and_copy_UnifiedParticleSet_vector_cuda(SPH::UnifiedParticleSet** 
 
 
     //Now I have to update the pointer of the cpu set so that it point to the gpu structure
-
-
     delete[] temp;
+
+
+
 }
 
+
+
+void allocate_grouped_neighbors_struct_cuda(SPH::DFSPHCData& data){
+    int numParticles=0;
+    std::cout<<"initialising aggregated structure"<<std::endl;
+
+    if (data.is_fluid_aggregated){
+        numParticles+=data.fluid_data->numParticles;
+    }
+
+    for(int i=0;i<data.numDynamicBodies;++i){
+        numParticles+= data.vector_dynamic_bodies_data[i].numParticles;
+    }
+
+    //allocate the dataset
+    if (data.neighborsDataSetGroupedDynamicBodies==NULL){
+        data.neighborsDataSetGroupedDynamicBodies=new SPH::NeighborsSearchDataSet(numParticles,numParticles);
+
+        //duplicate the neighbor dataset to the gpu
+        gpuErrchk(cudaMalloc(&(data.neighborsDataSetGroupedDynamicBodies_cuda), sizeof(SPH::NeighborsSearchDataSet)));
+
+        gpuErrchk(cudaMemcpy(data.neighborsDataSetGroupedDynamicBodies_cuda, data.neighborsDataSetGroupedDynamicBodies,
+                             sizeof(SPH::NeighborsSearchDataSet), cudaMemcpyHostToDevice));
+    }
+
+    //now it's like the normal neighbor search excapt that we have to iterate on all the solid particles
+    //instead of just one buffer
+    //the easiest way is to build a new pos array that contains all the solid particles
+    if (data.posBufferGroupedDynamicBodies==NULL){
+        cudaMalloc(&(data.posBufferGroupedDynamicBodies), numParticles * sizeof(Vector3d));
+    }
+
+}
 
 void update_neighborsSearchBuffers_UnifiedParticleSet_vector_cuda(SPH::UnifiedParticleSet** out_vector, SPH::UnifiedParticleSet* in_vector, int numSets) {
     SPH::UnifiedParticleSet* temp;
@@ -3185,6 +3760,8 @@ void init_precomputed_kernel_from_values(SPH::PrecomputedCubicKernelPerso& kerne
 
 void allocate_neighbors_search_data_set(SPH::NeighborsSearchDataSet& dataSet) {
 
+
+
     //allocatethe mme for fluid particles
     cudaMallocManaged(&(dataSet.cell_id), dataSet.numParticlesMax * sizeof(unsigned int));
     cudaMallocManaged(&(dataSet.cell_id_sorted), dataSet.numParticlesMax * sizeof(unsigned int));
@@ -3292,6 +3869,138 @@ void release_neighbors_search_data_set(SPH::NeighborsSearchDataSet& dataSet, boo
 /*
 AFTER THIS ARE ONLY THE TEST FUNCTION TO HAVE CUDA WORKING ...
 */
+
+
+inline __host__ __device__ float3 make_float3(float s)
+{
+    return make_float3(s, s, s);
+}
+
+inline __host__ __device__ float4 make_float4(float s)
+{
+    return make_float4(s, s, s, s);
+}
+
+inline __host__ __device__ float4 operator*(float4& a, RealCuda b)
+{
+    return make_float4(a.x * b, a.y * b, a.z * b, 0);
+}
+
+inline __host__ __device__ float3 operator*(float3& a, RealCuda b)
+{
+    return make_float3(a.x * b, a.y * b, a.z * b);
+}
+
+inline __host__ __device__ void operator+=(float4 &a, float4 b)
+{
+    a.x += b.x;
+    a.y += b.y;
+    a.z += b.z;
+}
+
+inline __host__ __device__ void operator+=(float3 &a, float3 b)
+{
+    a.x += b.x;
+    a.y += b.y;
+    a.z += b.z;
+}
+
+
+
+template<typename T>
+__global__ void test_vector_type_kernel(T* v1, T* v2, RealCuda factor, int count_elem) {
+    int i = blockIdx.x * blockDim.x + threadIdx.x;
+    if (i >= count_elem) { return; }
+
+    v1[i]+=v2[i]*factor;
+}
+
+void compare_vector3_struct_speed(){
+    RealCuda factor=0.001;
+    int count_elem= 1000000;
+    Vector3d* v1_v3d;
+    Vector3d* v2_v3d;
+    float3* v1_f3;
+    float3* v2_f3;
+    float4* v1_f4;
+    float4* v2_f4;
+    Vector3d* v1_v3d_2=new Vector3d[count_elem];
+    Vector3d* v2_v3d_2=new Vector3d[count_elem];
+    float3* v1_f3_2=new float3[count_elem];
+    float3* v2_f3_2=new float3[count_elem];
+    float4* v1_f4_2=new float4[count_elem];
+    float4* v2_f4_2=new float4[count_elem];
+    cudaMalloc(&(v1_v3d), count_elem * sizeof(Vector3d));
+    cudaMalloc(&(v2_v3d), count_elem * sizeof(Vector3d));
+
+    cudaMalloc(&(v1_f3), count_elem * sizeof(float3));
+    cudaMalloc(&(v2_f3), count_elem * sizeof(float3));
+
+    cudaMalloc(&(v1_f4), count_elem * sizeof(float4));
+    cudaMalloc(&(v2_f4), count_elem * sizeof(float4));
+
+    for (int i=0;i<count_elem;++i){
+        v1_v3d_2[i]=i;
+        v2_v3d_2[i]=i;
+        v1_f3_2[i]=make_float3(i);
+        v2_f3_2[i]=make_float3(i);
+        v1_f4_2[i]=make_float4(i);
+        v2_f4_2[i]=make_float4(i);
+    }
+
+    gpuErrchk(cudaMemcpy(v1_v3d, v1_v3d_2,count_elem * sizeof(Vector3d),cudaMemcpyHostToDevice));
+    gpuErrchk(cudaMemcpy(v2_v3d, v2_v3d_2,count_elem * sizeof(Vector3d),cudaMemcpyHostToDevice));
+    gpuErrchk(cudaMemcpy(v1_f3, v1_f3_2,count_elem * sizeof(float3),cudaMemcpyHostToDevice));
+    gpuErrchk(cudaMemcpy(v2_f3, v2_f3_2,count_elem * sizeof(float3),cudaMemcpyHostToDevice));
+    gpuErrchk(cudaMemcpy(v1_f4, v1_f4_2,count_elem * sizeof(float4),cudaMemcpyHostToDevice));
+    gpuErrchk(cudaMemcpy(v2_f4, v2_f4_2,count_elem * sizeof(float4),cudaMemcpyHostToDevice));
+
+    int numBlocks = (count_elem + BLOCKSIZE - 1) / BLOCKSIZE;
+    gpuErrchk(cudaDeviceSynchronize());
+
+    float avg0=0;
+    float avg1=0;
+    float avg2=0;
+
+    int iter=10;
+    for (int i=0;i<iter;++i){
+        std::chrono::steady_clock::time_point t0 = std::chrono::steady_clock::now();
+        test_vector_type_kernel<float3> << <numBlocks, BLOCKSIZE >> > (v1_f3, v2_f3, factor, count_elem);
+        gpuErrchk(cudaDeviceSynchronize());
+
+        std::chrono::steady_clock::time_point t1 = std::chrono::steady_clock::now();
+        test_vector_type_kernel<Vector3d> << <numBlocks, BLOCKSIZE >> > (v1_v3d, v2_v3d, factor, count_elem);
+        gpuErrchk(cudaDeviceSynchronize());
+
+        std::chrono::steady_clock::time_point t2 = std::chrono::steady_clock::now();
+        test_vector_type_kernel<float4> << <numBlocks, BLOCKSIZE >> > (v1_f4, v2_f4, factor, count_elem);
+        gpuErrchk(cudaDeviceSynchronize());
+
+        std::chrono::steady_clock::time_point t3 = std::chrono::steady_clock::now();
+
+        float time_0 = std::chrono::duration_cast<std::chrono::nanoseconds> (t1 - t0).count() / 1000000.0f;
+        float time_1 = std::chrono::duration_cast<std::chrono::nanoseconds> (t2 - t1).count() / 1000000.0f;
+        float time_2 = std::chrono::duration_cast<std::chrono::nanoseconds> (t3 - t2).count() / 1000000.0f;
+
+        printf("comparison between vector data struct  (float3, Vector3d, float4): %f   %f   %f\n", time_0, time_1, time_2);
+
+        if (iter>0){
+            avg0+=time_0;
+            avg1+=time_1;
+            avg2+=time_2;
+        }
+    }
+    iter--;
+
+    printf("comparison between vector data struct Global (float3, Vector3d, float4): %f   %f   %f\n",
+           avg0/iter, avg1/iter, avg2/iter);
+
+}
+
+
+
+
+
 
 
 cudaError_t addWithCuda(int *c, const int *a, const int *b, unsigned int size);

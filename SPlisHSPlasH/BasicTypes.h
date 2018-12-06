@@ -1,11 +1,11 @@
 #ifndef __BasicTypes_h__
 #define __BasicTypes_h__
 
-#define SPLISHSPLASH_FRAMEWORK
-
 #ifndef USE_FLOAT
 #define USE_DOUBLE
 #endif
+
+#define SPLISHSPLASH_FRAMEWORK
 
 #ifdef USE_DOUBLE
 typedef double Real;

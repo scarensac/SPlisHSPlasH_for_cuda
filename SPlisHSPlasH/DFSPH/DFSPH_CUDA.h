@@ -41,9 +41,9 @@ protected:
     unsigned int m_maxIterationsV;
 
     //new members needed for the frameworks outside of splishsplash
-    RealCuda desired_time_step;
 #endif //SPLISHSPLASH_FRAMEWORK
 
+    RealCuda desired_time_step;
     unsigned int m_counter;
     const Real m_eps = 1.0e-5;
     bool m_enableDivergenceSolver;
@@ -117,7 +117,8 @@ public:
     void updateTimeStepDuration(RealCuda duration);
     void forceUpdateRigidBodies();
     void getFluidImpactOnDynamicBodies(std::vector<SPH::Vector3d>& sph_forces, std::vector<SPH::Vector3d>& sph_moments);
-
+    void getFluidBoyancyOnDynamicBodies(std::vector<SPH::Vector3d>& forces, std::vector<SPH::Vector3d>& pts_appli);
+    SPH::Vector3d getSimulationCenter();
 };
 }
 

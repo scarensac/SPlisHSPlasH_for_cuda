@@ -10,6 +10,12 @@
 #include <fstream>
 #include <sstream>
 
+/*
+#ifdef SPLISHSPLASH_FRAMEWORK
+throw("DFSPHCData::readDynamicData must not be used outside of the SPLISHSPLASH framework");
+#else
+#endif //SPLISHSPLASH_FRAMEWORK
+//*/
 
 using namespace SPH;
 using namespace std;
@@ -85,7 +91,9 @@ void DFSPHCUDA::step()
         static std::chrono::steady_clock::time_point end;
         tab_timepoint[current_timepoint++] = std::chrono::steady_clock::now();
 
-        m_data.loadDynamicObjectsData(m_model);
+        if (!is_dynamic_bodies_paused){
+            m_data.loadDynamicObjectsData(m_model);
+        }
 
 
         tab_timepoint[current_timepoint++] = std::chrono::steady_clock::now();
@@ -108,7 +116,7 @@ void DFSPHCUDA::step()
         tab_timepoint[current_timepoint++] = std::chrono::steady_clock::now();
 
 
-        cuda_viscosityXSPH(m_data);
+        cuda_externalForces(m_data);
 
 
         tab_timepoint[current_timepoint++] = std::chrono::steady_clock::now();
@@ -117,10 +125,9 @@ void DFSPHCUDA::step()
         //cuda_CFL(m_data, 0.0001, m_cflFactor, m_cflMaxTimeStepSize);
 
 #ifdef SPLISHSPLASH_FRAMEWORK
-        const Real new_time_step = TimeManager::getCurrent()->getTimeStepSize();
-#else
-        const Real new_time_step = desired_time_step;
+		desired_time_step = TimeManager::getCurrent()->getTimeStepSize();
 #endif //SPLISHSPLASH_FRAMEWORK
+        const Real new_time_step = desired_time_step;
         m_data.updateTimeStep(new_time_step);
 
         tab_timepoint[current_timepoint++] = std::chrono::steady_clock::now();
@@ -1137,8 +1144,11 @@ void DFSPHCUDA::handleDynamicBodiesPause(bool pause) {
     FluidModel::RigidBodyParticleObject* particleObjtemp = static_cast<FluidModel::RigidBodyParticleObject*>(m_model->m_particleObjects[2]);
     std::cout << "vel_check: " << particleObjtemp->m_v[0].x() << "  " << particleObjtemp->m_v[0].y() << "  " << particleObjtemp->m_v[0].z() << std::endl;
     //*/
-
     is_dynamic_bodies_paused = pause;
+
+    if (is_dynamic_bodies_paused){
+        m_data.pause_solids();
+    }
 }
 
 
@@ -1157,19 +1167,27 @@ void DFSPHCUDA::handleSimulationSave(bool save_liquid, bool save_solids, bool sa
     }
 }
 
-void DFSPHCUDA::handleSimulationLoad(bool load_liquid, bool load_liquid_velocities, bool load_solids, bool load_solids_velocities, 
-                                     bool load_boundaries, bool load_boundaries_velocities) {
-    if (load_liquid) {
-        m_data.read_fluid_from_file(load_liquid_velocities);
-    }
+void DFSPHCUDA::handleSimulationLoad(bool load_liquid, bool load_liquid_velocities, bool load_solids, bool load_solids_velocities,
+	bool load_boundaries, bool load_boundaries_velocities) {
 
-    if (load_boundaries) {
-        m_data.read_boundaries_from_file(load_boundaries_velocities);
-    }
+	if (load_boundaries) {
+		m_data.read_boundaries_from_file(load_boundaries_velocities);
+	}
 
-    if (load_solids) {
-        m_data.read_solids_from_file(load_solids_velocities);
-    }
+	if (load_solids) {
+		m_data.read_solids_from_file(load_solids_velocities);
+	}
+
+	//recompute the particle mass for the rigid particles
+	if (load_boundaries || load_solids) {
+		m_data.computeRigidBodiesParticlesMass();
+	}
+
+	if (load_liquid) {
+		m_data.read_fluid_from_file(load_liquid_velocities);
+	}
+
+
 
 }
 
@@ -1207,12 +1225,7 @@ void DFSPHCUDA::zeroFluidVelocities() {
 
 
 void DFSPHCUDA::updateTimeStepDuration(RealCuda duration){
-
-#ifdef SPLISHSPLASH_FRAMEWORK
-	throw("DFSPHCUDA::updateTimeStepDuration this function must not be called in the splishsplash framework");
-#else
     desired_time_step=duration;
-#endif //SPLISHSPLASH_FRAMEWORK
 }
 
 void DFSPHCUDA::forceUpdateRigidBodies(){
@@ -1221,4 +1234,12 @@ void DFSPHCUDA::forceUpdateRigidBodies(){
 
 void DFSPHCUDA::getFluidImpactOnDynamicBodies(std::vector<SPH::Vector3d>& sph_forces, std::vector<SPH::Vector3d>& sph_moments){
     m_data.getFluidImpactOnDynamicBodies(sph_forces,sph_moments);
+}
+
+void DFSPHCUDA::getFluidBoyancyOnDynamicBodies(std::vector<SPH::Vector3d>& forces, std::vector<SPH::Vector3d>& pts_appli){
+    m_data.getFluidBoyancyOnDynamicBodies(forces,pts_appli);
+}
+
+SPH::Vector3d DFSPHCUDA::getSimulationCenter(){
+    return m_data.getSimulationCenter();
 }

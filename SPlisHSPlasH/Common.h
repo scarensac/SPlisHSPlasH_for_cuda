@@ -1,11 +1,8 @@
 #ifndef __Common_h__
 #define __Common_h__
 
-
 #include "BasicTypes.h"
 #include "Vector.h"
-#include <string>
-
 
 #ifdef SPLISHSPLASH_FRAMEWORK
 #include <Eigen/Dense>

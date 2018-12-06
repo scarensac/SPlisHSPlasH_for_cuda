@@ -339,7 +339,7 @@ namespace SPH
 
 	/** \brief Adhesion kernel used for the surface tension method of Akinci el al. \cite Akinci:2013.
 	*/
-	class AdhesionKernel
+    class AdhesionKernel
 	{
 	protected:
 		static Real m_radius;
@@ -488,6 +488,15 @@ namespace SPH
 	Real PrecomputedKernel<KernelType, resolution>::m_invStepSize;
 	template<typename KernelType, unsigned int resolution>
 	Real PrecomputedKernel<KernelType, resolution>::m_W_zero;
+
+#ifndef SPLISHSPLASH_FRAMEWORK
+    class FluidModel
+    {
+    public:
+        typedef PrecomputedKernel<CubicKernel, 10000> PrecomputedCubicKernel;
+        RealCuda m_supportRadius;
+    };
+#endif
 }
 
 #endif

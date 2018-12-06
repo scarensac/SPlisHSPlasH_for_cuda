@@ -20,7 +20,7 @@ namespace SPH
 		RealCuda s;
 		Vector3d v;
 
-		FUNCTION Quaternion() { v = Vector3d(0, 0, 0); s = 0; }
+        FUNCTION Quaternion() { v = Vector3d(0, 0, 0); s = 1; }
 		FUNCTION Quaternion(RealCuda x, RealCuda y, RealCuda z, RealCuda w) { v.x = x; v.y = y; v.z = z; s = w; }
 		FUNCTION Quaternion(Vector3d v_i, RealCuda w) { v = v_i; s = w; }
 		//init from array without check

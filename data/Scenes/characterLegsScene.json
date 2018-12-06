@@ -1,0 +1,167 @@
+{
+	"Configuration": 
+	{
+		"particleRadius": 0.001
+	},
+	"Simulation": 
+	{
+		"timeStepSize": 0.005,
+		"maxIter" : 5,
+		"maxIterVel" : 5,
+		"velocityUpdateMethod" : 0,
+		"contactTolerance": 0.05,
+		"tetModelSimulationMethod": 2,
+		"triangleModelSimulationMethod": 2,
+		"triangleModelBendingMethod": 2,
+		"contactStiffnessRigidBody" : 1.0,
+		"contactStiffnessParticleRigidBody": 100.0,
+		"cloth_stiffness": 1.0,
+		"cloth_bendingStiffness": 0.005,
+		"cloth_xxStiffness": 1.0,
+		"cloth_yyStiffness": 1.0,
+		"cloth_xyStiffness": 1.0,
+		"cloth_xyPoissonRatio": 0.3,
+		"cloth_yxPoissonRatio": 0.3,
+		"cloth_normalizeStretch": 0,
+		"cloth_normalizeShear": 0, 
+		"solid_stiffness": 1.0,
+		"solid_poissonRatio": 0.2,
+		"solid_normalizeStretch": 0,
+		"solid_normalizeShear": 0
+	},
+	"RigidBodies": [
+		{
+			"geometryFile": "../models/UnitBox.obj",
+			"translation": [0,2,0],
+			"rotationAxis": [1, 0, 0],
+			"rotationAngle": 0,
+			"scale": [2, 4, 2],
+			"color": [0.1, 0.4, 0.6, 1.0], 
+			"isDynamic": false,
+			"isWall": true
+		},
+		{
+			"id": 2,
+			"geometryFile": "../models/body_parts/capsule_upperleg.obj",
+			"isDynamic": 1, 
+			"density": 1000, 
+			"translation": [0,0,0],
+			"rotationAxis": [0, 0, 1],
+			"rotationAngle": 0.0,
+			"scale": [1, 1, 1],
+			"restitution" : 0.6,
+			"friction" : 0.2,
+			"color": [0.0, 0.2, 0.6, 1.0], 
+			"collisionObjectType": 2,
+			"collisionObjectScale": [0.2, 0.1, 0.2]	
+		},
+		{
+			"id": 3,
+			"geometryFile": "../models/body_parts/capsule_lowerleg.obj",
+			"isDynamic": 1, 
+			"density": 1000, 
+			"translation": [0,0,0],
+			"rotationAxis": [0, 0, 1],
+			"rotationAngle": 0.0,
+			"scale": [1, 1, 1],
+			"restitution" : 0.6,
+			"friction" : 0.2,
+			"color": [0.0, 0.2, 0.6, 1.0], 
+			"collisionObjectType": 2,
+			"collisionObjectScale": [0.2, 0.1, 0.2]	
+		},
+		{
+			"id": 4,
+			"geometryFile": "../models/body_parts/capsule_upperleg.obj",
+			"isDynamic": 1, 
+			"density": 1000, 
+			"translation": [0,0,0],
+			"rotationAxis": [0, 0, 1],
+			"rotationAngle": 0.0,
+			"scale": [1, 1, 1],
+			"restitution" : 0.6,
+			"friction" : 0.2,
+			"color": [0.0, 0.2, 0.6, 1.0], 
+			"collisionObjectType": 2,
+			"collisionObjectScale": [0.2, 0.1, 0.2]	
+		},
+		{
+			"id": 5,
+			"geometryFile": "../models/body_parts/capsule_lowerleg.obj",
+			"isDynamic": 1, 
+			"density": 1000, 
+			"translation": [0,0,0],
+			"rotationAxis": [0, 0, 1],
+			"rotationAngle": 0.0,
+			"scale": [1, 1, 1],
+			"restitution" : 0.6,
+			"friction" : 0.2,
+			"color": [0.0, 0.2, 0.6, 1.0], 
+			"collisionObjectType": 2,
+			"collisionObjectScale": [0.2, 0.1, 0.2]	
+		},
+		{
+			"id": 6,
+			"geometryFile": "../models/body_parts/box_foot.obj",
+			"isDynamic": 1, 
+			"density": 1000, 
+			"translation": [0,0,0],
+			"rotationAxis": [0, 0, 1],
+			"rotationAngle": 0.0,
+			"scale": [1, 1, 1],
+			"restitution" : 0.6,
+			"friction" : 0.2,
+			"color": [0.0, 0.2, 0.6, 1.0], 
+			"collisionObjectType": 2,
+			"collisionObjectScale": [0.2, 0.1, 0.2]	
+		},
+		{
+			"id": 7,
+			"geometryFile": "../models/body_parts/box_foot.obj",
+			"isDynamic": 1, 
+			"density": 1000, 
+			"translation": [0,0,0],
+			"rotationAxis": [0, 0, 1],
+			"rotationAngle": 0.0,
+			"scale": [1, 1, 1],
+			"restitution" : 0.6,
+			"friction" : 0.2,
+			"color": [0.0, 0.2, 0.6, 1.0], 
+			"collisionObjectType": 2,
+			"collisionObjectScale": [0.2, 0.1, 0.2]	
+		}
+	],
+	"FluidBlocks": [
+		{
+			"denseMode": 0,
+			"start": [0, 0.0, 0],
+			"end": [0.4, 2.1, 2],
+			"translation": [-1, 0.0, -1],
+			"scale": [1, 1, 1]
+		},
+		{
+			"denseMode": 0,
+			"start": [1.6, 0.0, 0],
+			"end": [2, 2.1, 2],
+			"translation": [-1, 0.0, -1],
+			"scale": [1, 1, 1]
+		},
+		{
+			"denseMode": 0,
+			"start": [0.4, 0.0, 0],
+			"end": [1.6, 2.1, 0.4],
+			"translation": [-1, 0.0, -1],
+			"scale": [1, 1, 1]
+		},
+		{
+			"denseMode": 0,
+			"start": [0.4, 0.0, 1.6],
+			"end": [1.6, 2.1, 2],
+			"translation": [-1, 0.0, -1],
+			"scale": [1, 1, 1]
+		}
+	]	
+}
+
+
+
