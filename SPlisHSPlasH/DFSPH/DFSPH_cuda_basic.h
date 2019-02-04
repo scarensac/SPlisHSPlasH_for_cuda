@@ -86,6 +86,7 @@ void compute_fluid_impact_on_dynamic_body_cuda(SPH::UnifiedParticleSet& containe
 void compute_fluid_Boyancy_on_dynamic_body_cuda(SPH::UnifiedParticleSet& container, Vector3d& force, Vector3d& pt_appli);
 void allocate_and_copy_UnifiedParticleSet_vector_cuda(SPH::UnifiedParticleSet** out_vector, SPH::UnifiedParticleSet* in_vector, int numSets);
 void allocate_grouped_neighbors_struct_cuda(SPH::DFSPHCData& data);
+void release_grouped_neighbors_struct_cuda(SPH::DFSPHCData& data);
 void update_neighborsSearchBuffers_UnifiedParticleSet_vector_cuda(SPH::UnifiedParticleSet** out_vector, SPH::UnifiedParticleSet* in_vector, int numSets);
 //this function is the one that must be called when releasing the unified particles that are fully cuda allocated
 void release_UnifiedParticleSet_vector_cuda(SPH::UnifiedParticleSet** vector, int numSets);

@@ -59,6 +59,9 @@ void DFSPHCUDA::step()
 
     static int count_steps = 0;
 
+	static int true_count_steps = 0;
+	true_count_steps++;
+
 #ifdef SPLISHSPLASH_FRAMEWORK
     m_data.viscosity = m_viscosity->getViscosity();
 #else
@@ -186,15 +189,15 @@ void DFSPHCUDA::step()
                      iter_divergence_avg / (count_steps + 1) << " ( " << m_iterationsV << " )   divergence : " << std::endl;
 
 
-        if (false){
-            std::string filename = "timmings_detailled.csv";
+        if (true){
+            std::string filename = "timmings_detailled_2_4_iter.csv";
             if (count_steps == 0) {
                 std::remove(filename.c_str());
             }
             ofstream myfile;
             myfile.open(filename, std::ios_base::app);
             if (myfile.is_open()) {
-                myfile << total_time / (count_steps + 1) << ", " << m_iterations << ", " << m_iterationsV << std::endl;;
+                myfile << (true_count_steps)*m_data.get_current_timestep() << ",  "<< time_iter << ", " << m_iterations << ", " << m_iterationsV << std::endl;;
                 myfile.close();
             }
             else {
@@ -295,8 +298,7 @@ void DFSPHCUDA::step()
 
 
 
-    static int true_count_steps = 0;
-    std::cout << "step finished: " << true_count_steps++<<"  "<< count_steps++ << std::endl;
+    std::cout << "step finished: " << true_count_steps<<"  "<< count_steps++ << std::endl;
 }
 
 void DFSPHCUDA::reset()

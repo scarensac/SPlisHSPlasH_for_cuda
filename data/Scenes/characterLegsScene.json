@@ -1,7 +1,7 @@
 {
 	"Configuration": 
 	{
-		"particleRadius": 0.001
+		"particleRadius": 0.025
 	},
 	"Simulation": 
 	{
@@ -42,7 +42,7 @@
 		},
 		{
 			"id": 2,
-			"geometryFile": "../models/body_parts/capsule_upperleg.obj",
+			"geometryFile": "../models/body_parts_reduced_0.025/capsule_upperleg.obj",
 			"isDynamic": 1, 
 			"density": 1000, 
 			"translation": [0,0,0],
@@ -57,7 +57,7 @@
 		},
 		{
 			"id": 3,
-			"geometryFile": "../models/body_parts/capsule_lowerleg.obj",
+			"geometryFile": "../models/body_parts_reduced_0.025/capsule_lowerleg.obj",
 			"isDynamic": 1, 
 			"density": 1000, 
 			"translation": [0,0,0],
@@ -72,7 +72,7 @@
 		},
 		{
 			"id": 4,
-			"geometryFile": "../models/body_parts/capsule_upperleg.obj",
+			"geometryFile": "../models/body_parts_reduced_0.025/capsule_upperleg.obj",
 			"isDynamic": 1, 
 			"density": 1000, 
 			"translation": [0,0,0],
@@ -87,7 +87,7 @@
 		},
 		{
 			"id": 5,
-			"geometryFile": "../models/body_parts/capsule_lowerleg.obj",
+			"geometryFile": "../models/body_parts_reduced_0.025/capsule_lowerleg.obj",
 			"isDynamic": 1, 
 			"density": 1000, 
 			"translation": [0,0,0],
@@ -102,7 +102,7 @@
 		},
 		{
 			"id": 6,
-			"geometryFile": "../models/body_parts/box_foot.obj",
+			"geometryFile": "../models/body_parts_reduced_0.025/box_foot.obj",
 			"isDynamic": 1, 
 			"density": 1000, 
 			"translation": [0,0,0],
@@ -117,7 +117,7 @@
 		},
 		{
 			"id": 7,
-			"geometryFile": "../models/body_parts/box_foot.obj",
+			"geometryFile": "../models/body_parts_reduced_0.025/box_foot.obj",
 			"isDynamic": 1, 
 			"density": 1000, 
 			"translation": [0,0,0],

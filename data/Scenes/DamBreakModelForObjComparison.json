@@ -1,0 +1,106 @@
+{
+	"Configuration": 
+	{
+		"timeStepSize": 0.003,
+		"particleRadius": 0.025, 
+		"density0": 1000, 
+		"simulationMethod": 4,
+		"viscosity": 0.03,
+		"viscosityMethod": 2,
+		"gravitation": [0,-9.81,0], 
+		"surfaceTension": 0.2,
+		"surfaceTensionMethod": 0,
+		"cflMethod": 0, 
+		"cflFactor": 0.5,
+		"cflMaxTimeStepSize": 0.005,
+		"maxIterations": 100,
+		"maxError": 0.01,
+		"maxIterationsV": 100,
+		"maxErrorV": 0.1,		
+		"stiffness": 50000,
+		"exponent": 7,
+		"velocityUpdateMethod": 0,
+		"enableDivergenceSolver": true		
+	},
+	"RigidBodies": [
+		{
+			"id": 1,
+			"geometryFile": "../models/UnitBox.obj",
+			"translation": [0,1.5,0],
+			"rotationAxis": [1, 0, 0],
+			"rotationAngle": 0,
+			"scale": [2, 4, 2],
+			"color": [0.1, 0.4, 0.6, 1.0], 
+			"isDynamic": false,
+			"isWall": true,
+			"collisionObjectType": 2
+		},
+		{
+			"id": 2,
+			"geometryFile": "../models/sphere.obj",
+			"translation": [0,0,0],
+			"rotationAxis": [1, 0, 0],
+			"rotationAngle": 0,
+			"scale": [0.05, 0.05, 0.05],
+			"color": [0.1, 0.4, 0.6, 1.0], 
+			"isDynamic": 1,
+			"collisionObjectType": 2	
+		},
+		{
+			"id": 3,
+			"geometryFile": "../models/sphere.obj",
+			"translation": [0,0,0],
+			"rotationAxis": [1, 0, 0],
+			"rotationAngle": 0,
+			"scale": [0.1, 0.1, 0.1],
+			"color": [0.1, 0.4, 0.6, 1.0], 
+			"isDynamic": 1,
+			"collisionObjectType": 2	
+		},
+		{
+			"id": 4,
+			"geometryFile": "../models/sphere.obj",
+			"translation": [0,0,0],
+			"rotationAxis": [1, 0, 0],
+			"rotationAngle": 0,
+			"scale": [0.2, 0.2, 0.2],
+			"color": [0.1, 0.4, 0.6, 1.0], 
+			"isDynamic": 1,
+			"collisionObjectType": 2	
+		},
+		{
+			"id": 5,
+			"geometryFile": "../models/sphere.obj",
+			"translation": [0,0,0],
+			"rotationAxis": [1, 0, 0],
+			"rotationAngle": 0,
+			"scale": [0.3, 0.3, 0.3],
+			"color": [0.1, 0.4, 0.6, 1.0], 
+			"isDynamic": 1,
+			"collisionObjectType": 2	
+		},
+		{
+			"id": 6,
+			"geometryFile": "../models/sphere.obj",
+			"translation": [0,0,0],
+			"rotationAxis": [1, 0, 0],
+			"rotationAngle": 0,
+			"scale": [0.5, 0.5, 0.5],
+			"color": [0.1, 0.4, 0.6, 1.0], 
+			"isDynamic": 1,
+			"collisionObjectType": 2	
+		}
+	],
+	"FluidBlocks": [
+		{
+			"denseMode": 0,
+			"start": [-1, -0.4, -1],
+			"end": [1, 2, 1],
+			"translation": [0, 0.0, 0.0],
+			"scale": [1, 1, 1]
+		}
+	]	
+}
+
+
+

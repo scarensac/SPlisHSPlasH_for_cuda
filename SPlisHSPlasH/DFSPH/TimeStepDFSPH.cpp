@@ -4,6 +4,9 @@
 #include "SimulationDataDFSPH.h"
 #include <iostream>
 #include "SPlisHSPlasH/Utilities/Timing.h"
+#include <fstream>
+#include <sstream>
+
 
 using namespace SPH;
 using namespace std;
@@ -92,10 +95,29 @@ void TimeStepDFSPH::step()
 	tm->setTime (tm->getTime () + h);
 
 
+
+
 	 std::chrono::steady_clock::time_point end = std::chrono::steady_clock::now();
 	 float time_iter = std::chrono::duration_cast<std::chrono::nanoseconds> (end - start).count() / 1000000.0f;
 	 static float total_time = 0;
 	 total_time += time_iter;
+
+	 if (false) {
+		 std::string filename = "timmings_detailled_cpu.csv";
+		 if (count_steps == 0) {
+			 std::remove(filename.c_str());
+		 }
+		 std::ofstream myfile;
+		 myfile.open(filename, std::ios_base::app);
+		 if (myfile.is_open()) {
+			 myfile << time_iter << ", " << m_iterations << ", " << m_iterationsV << std::endl;;
+			 myfile.close();
+		 }
+		 else {
+			 std::cout << "failed to open file: " << filename << "   reason: " << std::strerror(errno) << std::endl;
+		 }
+	 }
+
 
 	 std::cout << "step finished: " << total_time/ (count_steps) << "  (" << time_iter << ")  " << count_steps++ << std::endl;
 

@@ -19,10 +19,14 @@
 using namespace SPH;
 using namespace std;
 
+#ifdef SPLISHSPLASH_FRAMEWORK
+//const std::string fluid_files_folder = "../data/save_folder/";
+const std::string fluid_files_folder = "../data/save_folder/simple_box/";
+#else
 const std::string fluid_files_folder = "./configuration_data/fluid_data/cdp_char/";
 //const std::string fluid_files_folder = "./configuration_data/fluid_data/test_ball_object/";
 //const std::string fluid_files_folder = "./configuration_data/fluid_data/test_box_object/";
-//const std::string fluid_files_folder = "./";
+#endif
 
 #define USE_WARMSTART
 #define USE_WARMSTART_V
@@ -665,6 +669,9 @@ DFSPHCData::DFSPHCData(FluidModel *model): DFSPHCData()
 
 
     std::cout << "particle radius and suport radius: " << particleRadius<<"   "<<m_kernel.getRadius() << std::endl;
+	for (int i = 0; i < 5; ++i) {
+		std::cout<<1-i*0.005<<"  "<< gradW(Vector3d(1 - i*0.005, 0, 0)*model->m_supportRadius).x << std::endl;
+	}
 
 #ifdef SPLISHSPLASH_FRAMEWORK
     if (model!=NULL) {
@@ -870,12 +877,21 @@ void DFSPHCData::read_fluid_from_file(bool load_velocities) {
 	clear_fluid_data();
 	fluid_data = new UnifiedParticleSet[1];
 
+	std::cout << "after clear" << std::endl;
+
+
 	//read the data to cpu pointer
 	std::string file_name = fluid_files_folder + "fluid_file.txt";
 	fluid_data[0].load_from_file(file_name, load_velocities);
 
+	std::cout << "after load" << std::endl;
+
+
 	//init gpu struct
     allocate_and_copy_UnifiedParticleSet_vector_cuda(&fluid_data_cuda, fluid_data, 1);
+
+
+	std::cout << "after gpu init" << std::endl;
 
 	//init the boundaries neighbor searchs
 	//fluid_data[0].initNeighborsSearchData(this->m_kernel_precomp.getRadius(), true, false);
@@ -884,6 +900,8 @@ void DFSPHCData::read_fluid_from_file(bool load_velocities) {
 	damp_borders_steps_count = 5;
 	add_border_to_damp_planes_cuda(*this);
 
+
+	std::cout << "after adding damp planes" << std::endl;
 
     //allocate the grouped neighbor struct
 #ifdef GROUP_DYNAMIC_BODIES_NEIGHBORS_SEARCH
@@ -1008,6 +1026,11 @@ void DFSPHCData::clear_fluid_data() {
 	if (fluid_data != NULL) {
 		delete[] fluid_data; fluid_data = NULL;
 	}
+
+
+#ifdef GROUP_DYNAMIC_BODIES_NEIGHBORS_SEARCH
+	release_grouped_neighbors_struct_cuda(*this);
+#endif
 }
 
 void DFSPHCData::clear_boundaries_data() {

@@ -342,7 +342,7 @@ public:
     //the size is 75 because I checked and the max neighbours I reached was 58
     //so I put some more to be sure. In the end those buffers will stay on the GPU memory
     //so there will be no transfers.
-#define MAX_NEIGHBOURS 75
+#define MAX_NEIGHBOURS 205
     //this allow the control of the destructor call
     //especially it was create to be able to use temp variable sot copy to cuda
     //but I also need it for the initialisation because doing a=b(params) call the destructur at the end of the line ...

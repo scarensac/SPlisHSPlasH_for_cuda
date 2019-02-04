@@ -25,10 +25,10 @@
 	"RigidBodies": [
 		{
 			"geometryFile": "../models/UnitBox.obj",
-			"translation": [2,2,0.75],
+			"translation": [0,2,0],
 			"rotationAxis": [1, 0, 0],
 			"rotationAngle": 0,
-			"scale": [4, 4, 1.5],
+			"scale": [2, 4, 3],
 			"color": [0.1, 0.4, 0.6, 1.0], 
 			"isDynamic": false,
 			"isWall": true
@@ -38,8 +38,29 @@
 		{
 			"denseMode": 0,
 			"start": [0, 0.0, 0],
-			"end": [2.5, 2, 1.5],
-			"translation": [0, 0.0, 0.0],
+			"end": [0.4, 2.1, 3],
+			"translation": [-1, 0.0, -1.5],
+			"scale": [1, 1, 1]
+		},
+		{
+			"denseMode": 0,
+			"start": [1.6, 0.0, 0],
+			"end": [2, 2.1, 3],
+			"translation": [-1, 0.0, -1.5],
+			"scale": [1, 1, 1]
+		},
+		{
+			"denseMode": 0,
+			"start": [0.4, 0.0, 0],
+			"end": [1.6, 2.1, 1.2],
+			"translation": [-1, 0.0, -1.5],
+			"scale": [1, 1, 1]
+		},
+		{
+			"denseMode": 0,
+			"start": [0.4, 0.0, 1.8],
+			"end": [1.6, 2.1, 3],
+			"translation": [-1, 0.0, -1.5],
 			"scale": [1, 1, 1]
 		}
 	]	

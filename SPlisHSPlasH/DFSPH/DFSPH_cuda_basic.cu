@@ -8,6 +8,8 @@
 #include <chrono>
 #include <iostream>
 #include <thread>
+#include <sstream>
+#include <fstream>
 
 //#define SHOW_MESSAGES_IN_CUDA_FUNCTIONS
 
@@ -1253,14 +1255,14 @@ int cuda_divergenceSolve(SPH::DFSPHCData& m_data, const unsigned int maxIter, co
     cuda_divergence_warmstart_init(m_data);
 
     std::chrono::steady_clock::time_point m0 = std::chrono::steady_clock::now();
-    cuda_divergence_compute<true>(m_data);
+    //cuda_divergence_compute<true>(m_data);
 #endif
 
     std::chrono::steady_clock::time_point m1 = std::chrono::steady_clock::now();
     //////////////////////////////////////////////////////////////////////////
     // Compute velocity of density change
     //////////////////////////////////////////////////////////////////////////
-    cuda_divergence_init(m_data);
+   // cuda_divergence_init(m_data);
 
     std::chrono::steady_clock::time_point m2 = std::chrono::steady_clock::now();
 
@@ -1277,7 +1279,7 @@ int cuda_divergenceSolve(SPH::DFSPHCData& m_data, const unsigned int maxIter, co
     float time_3_1 = 0;
     float time_3_2 = 0;
     RealCuda avg_density_err = 0.0;
-    while (((avg_density_err > eta) || (m_iterationsV < 1)) && (m_iterationsV < maxIter))
+    while (((avg_density_err > eta) || (m_iterationsV < 4)) && (m_iterationsV < maxIter))
     {
 
         //////////////////////////////////////////////////////////////////////////
@@ -2463,7 +2465,7 @@ void move_simulation_cuda(SPH::DFSPHCData& data, Vector3d movement) {
         data.damp_borders = true;
         data.damp_borders_steps_count = 5;
 
-        //add_border_to_damp_planes_cuda(data);
+        add_border_to_damp_planes_cuda(data);
 
 
         //transate the particles that are too close to the jonction planes
@@ -3056,6 +3058,163 @@ void cuda_neighborsSearch(SPH::DFSPHCData& data) {
         data.neighborsDataSetGroupedDynamicBodies->numParticles+=data.fluid_data->numParticles;
     }
 
+	static int count_steps = 0;
+	count_steps++;
+	static int count_nb_area_move = 0;
+	static Vector3d old_area_offset=data.gridOffset;
+
+	if (old_area_offset != data.gridOffset) {
+		count_nb_area_move++;
+
+		std::ostringstream oss;
+		oss << count_steps << "  "<< count_nb_area_move;
+		oss << std::endl;
+
+		std::ofstream myfile;
+		myfile.open("fluid_stability_perturbation_time_points.csv", std::ios_base::app);
+		myfile << oss.str();
+		myfile.close();
+	}
+	old_area_offset = data.gridOffset;
+
+
+	//if (count_steps>666)
+	if (count_nb_area_move > 5)
+	{
+		static bool first_time = true;
+		if (first_time) {
+			std::remove("fluid_stability.csv");
+			std::remove("fluid_stability_slice.csv");
+			first_time = false;
+		}
+
+		
+
+		//let's do the evaluation here
+		int intervals_z_count = 7;
+		RealCuda intervals_z_size = 0.2;
+		int intervals_y_count = 6;
+		RealCuda intervals_y_size = 0.25;
+		RealCuda spacing = 0.2;
+
+		static Vector3d* signed_cumul = NULL;
+		static int* count_particles = NULL;
+		static Vector3d* positions = NULL;
+		static Vector3d* velocities = NULL;
+		if (signed_cumul == NULL) {
+			signed_cumul = new Vector3d[intervals_z_count * intervals_y_count];
+			count_particles = new int[intervals_z_count * intervals_y_count];
+			positions = new Vector3d[data.fluid_data->numParticles];
+			velocities = new Vector3d[data.fluid_data->numParticles];
+			//cudaMallocManaged(&(signed_cumul), sizeof(Vector3d) * intervals_z_count*4);
+		}
+
+		for (int i = 0; i < intervals_z_count * intervals_y_count; ++i) {
+			signed_cumul[i] = Vector3d(0, 0, 0);
+			count_particles[i] = 0;
+		}
+
+		//get the vel on the cpu
+		gpuErrchk(cudaMemcpy(positions, data.fluid_data->pos, data.fluid_data->numParticles * sizeof(Vector3d), cudaMemcpyDeviceToHost));
+		gpuErrchk(cudaMemcpy(velocities, data.fluid_data->vel, data.fluid_data->numParticles * sizeof(Vector3d), cudaMemcpyDeviceToHost));
+
+		//we store the min and max before the movement of the solid particles
+		Vector3d middle = get_simulation_center_cuda(data);
+		Vector3d start = middle;
+		start.z -= 0.1 + (intervals_z_size+spacing)*((int)(intervals_z_count / 2));
+		start.y = (*data.bmin).y+intervals_y_size;
+
+		std::cout << "start pos: " << start.z << "  " << start.y << std::endl;
+
+		for (int i = 0; i < data.fluid_data->numParticles; ++i) {
+			Vector3d pos = positions[i];
+			if (pos.z < start.z) {
+				continue;
+			}
+
+			Vector3d location = start;
+			location.z += intervals_z_size;
+			//find the z position
+			int k = 0;
+			bool is_interspacing = false;
+			while (location.z < pos.z) {
+				location.z += spacing;
+				if (location.z > pos.z) {
+					is_interspacing = true;
+					break;
+				}
+
+				++k;
+				location.z += intervals_z_size;
+			}
+			if ((k >= intervals_z_count) || is_interspacing) {
+				continue;
+			}
+
+			//find the y position
+			int l = 0;
+			while (location.y < pos.y) {
+				++l;
+				location.y += intervals_y_size;
+			}
+			if (l >= intervals_y_count) {
+				continue;
+			}
+
+			//now we have the cell number
+			signed_cumul[k + intervals_z_count * l] += velocities[i];
+			count_particles[k + intervals_z_count * l]++;
+
+		}
+
+
+		for (int i = 0; i < intervals_z_count * intervals_y_count; ++i) {
+			if (count_particles[i] > 0) {
+				signed_cumul[i] /= count_particles[i];
+			}
+		}
+
+
+		//writte the number of solid to the main file	
+		
+		{
+			std::ostringstream oss;
+			oss << count_steps << "  ";
+			for (int i = 0; i < intervals_z_count * intervals_y_count; ++i) {
+				oss << ((count_particles[i] > 0) ? signed_cumul[i].norm() : -1)<<"  ";
+			}
+			oss << std::endl;
+
+			std::ofstream myfile;
+			myfile.open("fluid_stability.csv", std::ios_base::app);
+			myfile << oss.str();
+			myfile.close();
+		}
+		{
+			std::ostringstream oss;
+			oss << count_steps << "  ";
+			for (int k = 0; k < intervals_z_count ; ++k) {
+				Vector3d cumul = Vector3d(0, 0, 0);
+				int cumul_i = 0;
+				for (int l = 0; l < intervals_y_count; ++l) {
+					cumul += count_particles[k + intervals_z_count * l] * signed_cumul[k + intervals_z_count * l];
+					cumul_i += count_particles[k + intervals_z_count * l];
+				}
+				cumul /= cumul_i;
+
+				oss << ((cumul_i > 0) ? cumul.norm() : -1) << "  ";
+			}
+			oss << std::endl;
+
+			std::ofstream myfile;
+			myfile.open("fluid_stability_slice.csv", std::ios_base::app);
+			myfile << oss.str();
+			myfile.close();
+		}
+
+		
+	}
+
     /*
     std::chrono::steady_clock::time_point end = std::chrono::steady_clock::now();
     time_global = std::chrono::duration_cast<std::chrono::nanoseconds> (end - begin_global).count() / 1000000.0f;
@@ -3596,6 +3755,14 @@ void allocate_grouped_neighbors_struct_cuda(SPH::DFSPHCData& data){
         cudaMalloc(&(data.posBufferGroupedDynamicBodies), numParticles * sizeof(Vector3d));
     }
 
+}
+
+
+void release_grouped_neighbors_struct_cuda(SPH::DFSPHCData& data) {
+	gpuErrchk(cudaFree(data.neighborsDataSetGroupedDynamicBodies_cuda)); data.neighborsDataSetGroupedDynamicBodies_cuda = NULL;
+	delete data.neighborsDataSetGroupedDynamicBodies; data.neighborsDataSetGroupedDynamicBodies = NULL;
+
+	gpuErrchk(cudaFree(data.posBufferGroupedDynamicBodies)); data.posBufferGroupedDynamicBodies = NULL;
 }
 
 void update_neighborsSearchBuffers_UnifiedParticleSet_vector_cuda(SPH::UnifiedParticleSet** out_vector, SPH::UnifiedParticleSet* in_vector, int numSets) {
