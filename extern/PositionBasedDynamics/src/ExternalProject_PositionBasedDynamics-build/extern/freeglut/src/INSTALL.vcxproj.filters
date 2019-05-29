@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="UTF-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="14.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
     <CustomBuild Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\PositionBasedDynamics\src\ExternalProject_PositionBasedDynamics-build\CMakeFiles\de62ea4068fbb91b65a7d29e1043a829\INSTALL_force.rule">

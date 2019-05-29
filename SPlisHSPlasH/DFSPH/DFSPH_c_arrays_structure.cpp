@@ -19,14 +19,17 @@
 using namespace SPH;
 using namespace std;
 
+
 #ifdef SPLISHSPLASH_FRAMEWORK
-//const std::string fluid_files_folder = "../data/save_folder/";
-const std::string fluid_files_folder = "../data/save_folder/simple_box/";
+const std::string fluid_files_folder = "../data/save_folder/";
 #else
-const std::string fluid_files_folder = "./configuration_data/fluid_data/cdp_char/";
+const std::string fluid_files_folder = "./configuration_data/fluid_data/cdp_char_reduced/";
+//const std::string fluid_files_folder = "./configuration_data/fluid_data/cdp_char/";
 //const std::string fluid_files_folder = "./configuration_data/fluid_data/test_ball_object/";
 //const std::string fluid_files_folder = "./configuration_data/fluid_data/test_box_object/";
+//const std::string fluid_files_folder = "./configuration_data/fluid_data/test_objects/";
 #endif
+
 
 #define USE_WARMSTART
 #define USE_WARMSTART_V
@@ -87,6 +90,11 @@ void PrecomputedCubicKernelPerso::setRadius(RealCuda val)
 	
 }
 
+
+void PrecomputedCubicKernelPerso::freeMemory(){
+    free_precomputed_kernel_managed(*this);
+}
+
 NeighborsSearchDataSet::NeighborsSearchDataSet() 
 {
 	numParticles=0;
@@ -108,6 +116,8 @@ NeighborsSearchDataSet::NeighborsSearchDataSet()
 
 	intermediate_buffer_v3d = NULL;
 	intermediate_buffer_real = NULL;
+
+    gpu_ptr=NULL;
 
 }
 
@@ -144,7 +154,20 @@ void NeighborsSearchDataSet::initData(UnifiedParticleSet* particleSet, SPH::DFSP
 }
 
 void NeighborsSearchDataSet::deleteComputationBuffer() {
-	release_neighbors_search_data_set(*this, true);
+    release_neighbors_search_data_set(*this, true);
+}
+
+
+void NeighborsSearchDataSet::updateActiveParticleNumber(unsigned int val) {
+
+    numParticles = val;
+    if (gpu_ptr!=NULL){
+        update_active_particle_number_cuda<SPH::NeighborsSearchDataSet>(*this);
+    }
+}
+
+void NeighborsSearchDataSet::changeMaxParticleNumber(int numParticlesMax_i){
+    change_max_particle_number(*this,numParticlesMax_i);
 }
 
 UnifiedParticleSet::UnifiedParticleSet() {
@@ -246,16 +269,10 @@ void UnifiedParticleSet::clear() {
 	//release the cuda buffers
 	release_UnifiedParticleSet_cuda((*this));
 
-	//delete the cpu buffers if there are some
-	if (is_dynamic_object) {
-		if (F_cpu != NULL) {
-			delete[] F_cpu; F_cpu = NULL;
-		}
-	}
-
 	//delete the rendering data and the buffer using the cuda interop
-	if (renderingData != NULL) {
-		cuda_opengl_releaseParticleRendering(*renderingData);
+    if (renderingData != NULL) {
+        //the rendering data and the pos/vel buffer
+        cuda_opengl_releaseParticleRendering(*renderingData);release_UnifiedParticleSet_cuda((*this));
 		delete renderingData; renderingData = NULL;
 	}
 
@@ -498,8 +515,9 @@ void UnifiedParticleSet::load_from_file(std::string file_path, bool load_velocit
 			vel = Vector3d(0, 0, 0);
         }
 
+        //this is just used to lowerthe floorrelative the the rb simulation
         if(!is_dynamic_object&&!velocity_impacted_by_fluid_solver){
-            //pos.y-=0.1;
+            //pos.y-=0.2;
         }
 
         mass_temp[i] = mass;
@@ -567,11 +585,22 @@ void UnifiedParticleSet::write_forces_to_file(std::string file_path) {
 }
 
 
-void UnifiedParticleSet::update_active_particle_number(unsigned int val) {
-	numParticles = val;
-	neighborsDataSet->numParticles = numParticles;
+void UnifiedParticleSet::updateActiveParticleNumber(unsigned int val) {
 
-	update_active_particle_number_cuda(*this);
+    numParticles = val;
+    if (gpu_ptr!=NULL){
+        update_active_particle_number_cuda<SPH::UnifiedParticleSet>(*this);
+    }
+
+    neighborsDataSet->updateActiveParticleNumber(val);
+}
+
+
+void UnifiedParticleSet::changeMaxParticleNumber(int numParticlesMax_i){
+    change_max_particle_number(*this,numParticlesMax_i);
+
+
+    neighborsDataSet->changeMaxParticleNumber(numParticlesMax_i);
 }
 
 
@@ -598,6 +627,12 @@ void UnifiedParticleSet::zeroVelocities() {
         //updateDynamicBodiesParticles();
     }
 }
+
+
+void UnifiedParticleSet::getMinMaxNaive(Vector3d& min, Vector3d& max) {
+
+}
+
 
 DFSPHCData::DFSPHCData() {
 
@@ -634,8 +669,10 @@ DFSPHCData::DFSPHCData() {
     is_fluid_aggregated=true;
 
 
-	damp_borders=false;
-	damp_borders_steps_count = 0;
+    damp_borders=false;
+    damp_borders_steps_count = 0;
+    cancel_wave=false;
+    cancel_wave_steps_count = 0;
 
 	bmin=NULL;
 	bmax=NULL;
@@ -669,9 +706,6 @@ DFSPHCData::DFSPHCData(FluidModel *model): DFSPHCData()
 
 
     std::cout << "particle radius and suport radius: " << particleRadius<<"   "<<m_kernel.getRadius() << std::endl;
-	for (int i = 0; i < 5; ++i) {
-		std::cout<<1-i*0.005<<"  "<< gradW(Vector3d(1 - i*0.005, 0, 0)*model->m_supportRadius).x << std::endl;
-	}
 
 #ifdef SPLISHSPLASH_FRAMEWORK
     if (model!=NULL) {
@@ -680,13 +714,6 @@ DFSPHCData::DFSPHCData(FluidModel *model): DFSPHCData()
 		boundaries_data[0] = UnifiedParticleSet(model->m_particleObjects[1]->numberOfParticles(), false, false, false);
 		boundaries_data[0].releaseDataOnDestruction = true;
 		allocate_and_copy_UnifiedParticleSet_vector_cuda(&boundaries_data_cuda, boundaries_data, 1);
-
-
-		//unified particles for the fluid
-		fluid_data = new UnifiedParticleSet[1];
-		fluid_data[0] = UnifiedParticleSet(model->numActiveParticles(), true, true, false);
-		fluid_data[0].releaseDataOnDestruction = true;
-		allocate_and_copy_UnifiedParticleSet_vector_cuda(&fluid_data_cuda, fluid_data, 1);
 
 		//allocate the data for the dynamic bodies
 		numDynamicBodies = static_cast<int>(model->m_particleObjects.size() - 2);
@@ -698,12 +725,18 @@ DFSPHCData::DFSPHCData(FluidModel *model): DFSPHCData()
 
 		allocate_and_copy_UnifiedParticleSet_vector_cuda(&vector_dynamic_bodies_data_cuda, vector_dynamic_bodies_data, numDynamicBodies);
 
-		//recompute the particle mass for the rigid particles
-		computeRigidBodiesParticlesMass();
-		
-		//allocate the aggregated neighbor struct
-		allocate_grouped_neighbors_struct_cuda(*this);
 
+
+		//unified particles for the fluid
+		fluid_data = new UnifiedParticleSet[1];
+		fluid_data[0] = UnifiedParticleSet(model->numActiveParticles(), true, true, false);
+		fluid_data[0].releaseDataOnDestruction = true;
+		allocate_and_copy_UnifiedParticleSet_vector_cuda(&fluid_data_cuda, fluid_data, 1);
+
+
+#ifdef GROUP_DYNAMIC_BODIES_NEIGHBORS_SEARCH
+		allocate_grouped_neighbors_struct_cuda(*this);
+#endif
 	}
 
 #else
@@ -731,8 +764,14 @@ DFSPHCData::~DFSPHCData() {
 		delete[] boundaries_data;
 
 		//the last thing the needs to be done is to clear the kernel (in the case of the precomputed one
-		///TODO clear the kernel
-	}
+        m_kernel_precomp.freeMemory();
+
+        free_DFSPHCData_base_cuda(*this);
+
+#ifdef GROUP_DYNAMIC_BODIES_NEIGHBORS_SEARCH
+        free_grouped_neighbors_struct_cuda(*this);
+#endif
+    }
 }
 
 void DFSPHCData::reset(FluidModel *model) {
@@ -749,6 +788,8 @@ void DFSPHCData::reset(FluidModel *model) {
 	
 	h = TimeManager::getCurrent()->getTimeStepSize();
     density0 = model->getDensity0();
+
+	std::cout << "initialising with timestep // density " << h << " // " << density0 << std::endl;
 #else
     h = 0.001;
     density0 = 1000;
@@ -760,16 +801,16 @@ void DFSPHCData::reset(FluidModel *model) {
 
 
 #ifdef SPLISHSPLASH_FRAMEWORK
-    //load the data for the fluid
-    fluid_data->reset<FluidModel>(model);
-    //init the boundaries neighbor searchs
-    fluid_data->initNeighborsSearchData(*this, true, false);
+
 
 
 
     //load the data for the boundaries
     FluidModel::RigidBodyParticleObject* particleObj = static_cast<FluidModel::RigidBodyParticleObject*>(model->m_particleObjects[1]);
     boundaries_data->reset<FluidModel::RigidBodyParticleObject>(particleObj);
+	initGridOffset();
+	
+
     //init the boundaries neighbor searchs
     boundaries_data->initNeighborsSearchData(*this, true, false);
     //I need to update the ptrs on the cuda version because for the boudaries I clear the intermediary buffer to fre some memory
@@ -787,10 +828,34 @@ void DFSPHCData::reset(FluidModel *model) {
         ///to sort the data since I copy them at every time step (so it would be useless)
     }
 
+	//load the data for the fluid
+	fluid_data->reset<FluidModel>(model);
+	//init the boundaries neighbor searchs
+	fluid_data->initNeighborsSearchData(*this, true, false);
+
 #endif //SPLISHSPLASH_FRAMEWORK
 
 }
 
+void DFSPHCData::initGridOffset() {
+	Vector3d min, max;
+
+	boundaries_data->getMinMaxNaive(min, max);
+
+	Vector3i required_grid_size = ((max - min) / getKernelRadius()).toFloor();
+
+	std::cout << "detected min(x y z): " << min.x << " " << min.y << " " << min.z <<
+		"     max:(x y z): " << max.x << " " << max.y << " " << max.z <<
+		"     required grid size:(x y z): " << required_grid_size.x << " " << required_grid_size.y << " " << required_grid_size.z <<
+		std::endl;
+
+	//compute the offset
+	//just take the id of the min minus 1 (the minus 2 is just to be safe ad be compatible when the dynamic area is used)
+	//of course you need to take the negative of the result...
+	gridOffset = ((min / getKernelRadius()).toFloor() - 2)*-1;
+
+	std::cout << "new grid offset(x y z): " << gridOffset.x << " " << gridOffset.y << " " << gridOffset.z << std::endl;
+}
 
 void DFSPHCData::readDynamicData(FluidModel *model, SimulationDataDFSPH& data) {
 
@@ -877,21 +942,12 @@ void DFSPHCData::read_fluid_from_file(bool load_velocities) {
 	clear_fluid_data();
 	fluid_data = new UnifiedParticleSet[1];
 
-	std::cout << "after clear" << std::endl;
-
-
 	//read the data to cpu pointer
 	std::string file_name = fluid_files_folder + "fluid_file.txt";
 	fluid_data[0].load_from_file(file_name, load_velocities);
 
-	std::cout << "after load" << std::endl;
-
-
 	//init gpu struct
     allocate_and_copy_UnifiedParticleSet_vector_cuda(&fluid_data_cuda, fluid_data, 1);
-
-
-	std::cout << "after gpu init" << std::endl;
 
 	//init the boundaries neighbor searchs
 	//fluid_data[0].initNeighborsSearchData(this->m_kernel_precomp.getRadius(), true, false);
@@ -900,8 +956,6 @@ void DFSPHCData::read_fluid_from_file(bool load_velocities) {
 	damp_borders_steps_count = 5;
 	add_border_to_damp_planes_cuda(*this);
 
-
-	std::cout << "after adding damp planes" << std::endl;
 
     //allocate the grouped neighbor struct
 #ifdef GROUP_DYNAMIC_BODIES_NEIGHBORS_SEARCH
@@ -1026,11 +1080,6 @@ void DFSPHCData::clear_fluid_data() {
 	if (fluid_data != NULL) {
 		delete[] fluid_data; fluid_data = NULL;
 	}
-
-
-#ifdef GROUP_DYNAMIC_BODIES_NEIGHBORS_SEARCH
-	release_grouped_neighbors_struct_cuda(*this);
-#endif
 }
 
 void DFSPHCData::clear_boundaries_data() {
@@ -1147,12 +1196,24 @@ void DFSPHCData::handleFLuidLevelControl(RealCuda level) {
 	}
 }
 
-void DFSPHCData::getFluidImpactOnDynamicBodies(std::vector<SPH::Vector3d>& sph_forces, std::vector<SPH::Vector3d>& sph_moments){
+
+RealCuda DFSPHCData::computeFluidLevel(){
+    return find_fluid_height_cuda(*this);
+}
+
+void DFSPHCData::getFluidImpactOnDynamicBodies(std::vector<SPH::Vector3d>& sph_forces, std::vector<SPH::Vector3d>& sph_moments,
+                                               const std::vector<SPH::Vector3d> &reduction_factors){
+    //std::cout<<"conputing impact start"<<std::endl;
     for (int i = 0; i < numDynamicBodies; ++i) {
         Vector3d force, moment;
-        compute_fluid_impact_on_dynamic_body_cuda(vector_dynamic_bodies_data[i],force,moment);
+        compute_fluid_impact_on_dynamic_body_cuda(vector_dynamic_bodies_data[i],force,moment, reduction_factors[i]);
         sph_forces.push_back(force);
         sph_moments.push_back(moment);
+
+        //std::cout<<"force on body "<<i<<":   "<<force.x<<"  "<<force.y<<"  "<<force.z<<"   ("<<force.norm()<<std::endl;
+        //std::cout<<"reduction factor "<<i<<":   "<<reduction_factors[i].x<<"  "<<reduction_factors[i].y<<"  "<<reduction_factors[i].z<<std::endl;
+
+
     }
 
 }
@@ -1173,6 +1234,8 @@ SPH::Vector3d DFSPHCData::getSimulationCenter(){
 
 
 void DFSPHCData::computeRigidBodiesParticlesMass(){
+    std::cout<<"updating rigid body particle mass start"<<std::endl;
+
     //do the comutation for the dynamic bodies
     for (int i=0;i<numDynamicBodies;++i){
         vector_dynamic_bodies_data[i].computeParticlesMass(this);
@@ -1180,5 +1243,7 @@ void DFSPHCData::computeRigidBodiesParticlesMass(){
 
     //and for the boundaries
     boundaries_data->computeParticlesMass(this);
+
+    std::cout<<"updating rigid body particle mass end"<<std::endl;
 
 }

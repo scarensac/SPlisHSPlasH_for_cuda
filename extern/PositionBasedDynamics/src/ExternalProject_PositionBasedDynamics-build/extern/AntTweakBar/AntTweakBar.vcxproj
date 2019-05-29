@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="UTF-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <Project DefaultTargets="Build" ToolsVersion="14.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup Label="ProjectConfigurations">
     <ProjectConfiguration Include="Debug|x64">
@@ -20,7 +20,7 @@
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{CDB0DFD1-141E-39CE-AD21-59436ACCBADF}</ProjectGuid>
-    <WindowsTargetPlatformVersion>10.0.16299.0</WindowsTargetPlatformVersion>
+    <WindowsTargetPlatformVersion>10.0.14393.0</WindowsTargetPlatformVersion>
     <Keyword>Win32Proj</Keyword>
     <Platform>x64</Platform>
     <ProjectName>AntTweakBar</ProjectName>
@@ -127,7 +127,8 @@
       <WarningLevel>Level3</WarningLevel>
       <PreprocessorDefinitions>WIN32;_WINDOWS;NDEBUG;_CRT_SECURE_NO_DEPRECATE;TW_EXPORTS;TW_STATIC;CMAKE_INTDIR="Release";%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ObjectFileName>$(IntDir)</ObjectFileName>
-      <DebugInformationFormat></DebugInformationFormat>
+      <DebugInformationFormat>
+      </DebugInformationFormat>
     </ClCompile>
     <ResourceCompile>
       <PreprocessorDefinitions>WIN32;_WINDOWS;NDEBUG;_CRT_SECURE_NO_DEPRECATE;TW_EXPORTS;TW_STATIC;CMAKE_INTDIR=\"Release\";%(PreprocessorDefinitions)</PreprocessorDefinitions>
@@ -160,7 +161,8 @@
       <WarningLevel>Level3</WarningLevel>
       <PreprocessorDefinitions>WIN32;_WINDOWS;NDEBUG;_CRT_SECURE_NO_DEPRECATE;TW_EXPORTS;TW_STATIC;CMAKE_INTDIR="MinSizeRel";%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ObjectFileName>$(IntDir)</ObjectFileName>
-      <DebugInformationFormat></DebugInformationFormat>
+      <DebugInformationFormat>
+      </DebugInformationFormat>
     </ClCompile>
     <ResourceCompile>
       <PreprocessorDefinitions>WIN32;_WINDOWS;NDEBUG;_CRT_SECURE_NO_DEPRECATE;TW_EXPORTS;TW_STATIC;CMAKE_INTDIR=\"MinSizeRel\";%(PreprocessorDefinitions)</PreprocessorDefinitions>
@@ -215,7 +217,7 @@
     <CustomBuild Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\PositionBasedDynamics\src\ExternalProject_PositionBasedDynamics\extern\AntTweakBar\CMakeLists.txt">
       <Message Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Building Custom Rule D:/Users/scarensac/Documents/GitHub/SPlisHSPlasH/extern/PositionBasedDynamics/src/ExternalProject_PositionBasedDynamics/extern/AntTweakBar/CMakeLists.txt</Message>
       <Command Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">setlocal
-"C:\Program Files\CMake\bin\cmake.exe" -HD:/Users/scarensac/Documents/GitHub/SPlisHSPlasH/extern/PositionBasedDynamics/src/ExternalProject_PositionBasedDynamics -BD:/Users/scarensac/Documents/GitHub/SPlisHSPlasH/extern/PositionBasedDynamics/src/ExternalProject_PositionBasedDynamics-build --check-stamp-file D:/Users/scarensac/Documents/GitHub/SPlisHSPlasH/extern/PositionBasedDynamics/src/ExternalProject_PositionBasedDynamics-build/extern/AntTweakBar/CMakeFiles/generate.stamp
+"C:\Program Files\CMake\bin\cmake.exe" -SD:/Users/scarensac/Documents/GitHub/SPlisHSPlasH/extern/PositionBasedDynamics/src/ExternalProject_PositionBasedDynamics -BD:/Users/scarensac/Documents/GitHub/SPlisHSPlasH/extern/PositionBasedDynamics/src/ExternalProject_PositionBasedDynamics-build --check-stamp-file D:/Users/scarensac/Documents/GitHub/SPlisHSPlasH/extern/PositionBasedDynamics/src/ExternalProject_PositionBasedDynamics-build/extern/AntTweakBar/CMakeFiles/generate.stamp
 if %errorlevel% neq 0 goto :cmEnd
 :cmEnd
 endlocal &amp; call :cmErrorLevel %errorlevel% &amp; goto :cmDone
@@ -228,7 +230,7 @@ if %errorlevel% neq 0 goto :VCEnd</Command>
       <LinkObjects Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</LinkObjects>
       <Message Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Building Custom Rule D:/Users/scarensac/Documents/GitHub/SPlisHSPlasH/extern/PositionBasedDynamics/src/ExternalProject_PositionBasedDynamics/extern/AntTweakBar/CMakeLists.txt</Message>
       <Command Condition="'$(Configuration)|$(Platform)'=='Release|x64'">setlocal
-"C:\Program Files\CMake\bin\cmake.exe" -HD:/Users/scarensac/Documents/GitHub/SPlisHSPlasH/extern/PositionBasedDynamics/src/ExternalProject_PositionBasedDynamics -BD:/Users/scarensac/Documents/GitHub/SPlisHSPlasH/extern/PositionBasedDynamics/src/ExternalProject_PositionBasedDynamics-build --check-stamp-file D:/Users/scarensac/Documents/GitHub/SPlisHSPlasH/extern/PositionBasedDynamics/src/ExternalProject_PositionBasedDynamics-build/extern/AntTweakBar/CMakeFiles/generate.stamp
+"C:\Program Files\CMake\bin\cmake.exe" -SD:/Users/scarensac/Documents/GitHub/SPlisHSPlasH/extern/PositionBasedDynamics/src/ExternalProject_PositionBasedDynamics -BD:/Users/scarensac/Documents/GitHub/SPlisHSPlasH/extern/PositionBasedDynamics/src/ExternalProject_PositionBasedDynamics-build --check-stamp-file D:/Users/scarensac/Documents/GitHub/SPlisHSPlasH/extern/PositionBasedDynamics/src/ExternalProject_PositionBasedDynamics-build/extern/AntTweakBar/CMakeFiles/generate.stamp
 if %errorlevel% neq 0 goto :cmEnd
 :cmEnd
 endlocal &amp; call :cmErrorLevel %errorlevel% &amp; goto :cmDone
@@ -241,7 +243,7 @@ if %errorlevel% neq 0 goto :VCEnd</Command>
       <LinkObjects Condition="'$(Configuration)|$(Platform)'=='Release|x64'">false</LinkObjects>
       <Message Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">Building Custom Rule D:/Users/scarensac/Documents/GitHub/SPlisHSPlasH/extern/PositionBasedDynamics/src/ExternalProject_PositionBasedDynamics/extern/AntTweakBar/CMakeLists.txt</Message>
       <Command Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">setlocal
-"C:\Program Files\CMake\bin\cmake.exe" -HD:/Users/scarensac/Documents/GitHub/SPlisHSPlasH/extern/PositionBasedDynamics/src/ExternalProject_PositionBasedDynamics -BD:/Users/scarensac/Documents/GitHub/SPlisHSPlasH/extern/PositionBasedDynamics/src/ExternalProject_PositionBasedDynamics-build --check-stamp-file D:/Users/scarensac/Documents/GitHub/SPlisHSPlasH/extern/PositionBasedDynamics/src/ExternalProject_PositionBasedDynamics-build/extern/AntTweakBar/CMakeFiles/generate.stamp
+"C:\Program Files\CMake\bin\cmake.exe" -SD:/Users/scarensac/Documents/GitHub/SPlisHSPlasH/extern/PositionBasedDynamics/src/ExternalProject_PositionBasedDynamics -BD:/Users/scarensac/Documents/GitHub/SPlisHSPlasH/extern/PositionBasedDynamics/src/ExternalProject_PositionBasedDynamics-build --check-stamp-file D:/Users/scarensac/Documents/GitHub/SPlisHSPlasH/extern/PositionBasedDynamics/src/ExternalProject_PositionBasedDynamics-build/extern/AntTweakBar/CMakeFiles/generate.stamp
 if %errorlevel% neq 0 goto :cmEnd
 :cmEnd
 endlocal &amp; call :cmErrorLevel %errorlevel% &amp; goto :cmDone
@@ -254,7 +256,7 @@ if %errorlevel% neq 0 goto :VCEnd</Command>
       <LinkObjects Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">false</LinkObjects>
       <Message Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">Building Custom Rule D:/Users/scarensac/Documents/GitHub/SPlisHSPlasH/extern/PositionBasedDynamics/src/ExternalProject_PositionBasedDynamics/extern/AntTweakBar/CMakeLists.txt</Message>
       <Command Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">setlocal
-"C:\Program Files\CMake\bin\cmake.exe" -HD:/Users/scarensac/Documents/GitHub/SPlisHSPlasH/extern/PositionBasedDynamics/src/ExternalProject_PositionBasedDynamics -BD:/Users/scarensac/Documents/GitHub/SPlisHSPlasH/extern/PositionBasedDynamics/src/ExternalProject_PositionBasedDynamics-build --check-stamp-file D:/Users/scarensac/Documents/GitHub/SPlisHSPlasH/extern/PositionBasedDynamics/src/ExternalProject_PositionBasedDynamics-build/extern/AntTweakBar/CMakeFiles/generate.stamp
+"C:\Program Files\CMake\bin\cmake.exe" -SD:/Users/scarensac/Documents/GitHub/SPlisHSPlasH/extern/PositionBasedDynamics/src/ExternalProject_PositionBasedDynamics -BD:/Users/scarensac/Documents/GitHub/SPlisHSPlasH/extern/PositionBasedDynamics/src/ExternalProject_PositionBasedDynamics-build --check-stamp-file D:/Users/scarensac/Documents/GitHub/SPlisHSPlasH/extern/PositionBasedDynamics/src/ExternalProject_PositionBasedDynamics-build/extern/AntTweakBar/CMakeFiles/generate.stamp
 if %errorlevel% neq 0 goto :cmEnd
 :cmEnd
 endlocal &amp; call :cmErrorLevel %errorlevel% &amp; goto :cmDone
@@ -270,62 +272,62 @@ if %errorlevel% neq 0 goto :VCEnd</Command>
   <ItemGroup>
     <ClInclude Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\PositionBasedDynamics\src\ExternalProject_PositionBasedDynamics\extern\AntTweakBar\include\AntTweakBar.h" />
     <ClInclude Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\PositionBasedDynamics\src\ExternalProject_PositionBasedDynamics\extern\AntTweakBar\src\AntPerfTimer.h" />
-    <ClCompile Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\PositionBasedDynamics\src\ExternalProject_PositionBasedDynamics\extern\AntTweakBar\src\LoadOGL.cpp"  />
+    <ClCompile Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\PositionBasedDynamics\src\ExternalProject_PositionBasedDynamics\extern\AntTweakBar\src\LoadOGL.cpp" />
     <ClInclude Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\PositionBasedDynamics\src\ExternalProject_PositionBasedDynamics\extern\AntTweakBar\src\LoadOGL.h" />
-    <ClCompile Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\PositionBasedDynamics\src\ExternalProject_PositionBasedDynamics\extern\AntTweakBar\src\LoadOGLCore.cpp"  />
+    <ClCompile Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\PositionBasedDynamics\src\ExternalProject_PositionBasedDynamics\extern\AntTweakBar\src\LoadOGLCore.cpp" />
     <ClInclude Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\PositionBasedDynamics\src\ExternalProject_PositionBasedDynamics\extern\AntTweakBar\src\LoadOGLCore.h" />
     <ClInclude Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\PositionBasedDynamics\src\ExternalProject_PositionBasedDynamics\extern\AntTweakBar\src\MiniGLFW.h" />
     <ClInclude Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\PositionBasedDynamics\src\ExternalProject_PositionBasedDynamics\extern\AntTweakBar\src\MiniGLUT.h" />
     <ClInclude Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\PositionBasedDynamics\src\ExternalProject_PositionBasedDynamics\extern\AntTweakBar\src\MiniSDL12.h" />
     <ClInclude Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\PositionBasedDynamics\src\ExternalProject_PositionBasedDynamics\extern\AntTweakBar\src\MiniSDL13.h" />
     <ClInclude Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\PositionBasedDynamics\src\ExternalProject_PositionBasedDynamics\extern\AntTweakBar\src\MiniSFML16.h" />
-    <ClCompile Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\PositionBasedDynamics\src\ExternalProject_PositionBasedDynamics\extern\AntTweakBar\src\TwBar.cpp"  />
+    <ClCompile Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\PositionBasedDynamics\src\ExternalProject_PositionBasedDynamics\extern\AntTweakBar\src\TwBar.cpp" />
     <ClInclude Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\PositionBasedDynamics\src\ExternalProject_PositionBasedDynamics\extern\AntTweakBar\src\TwBar.h" />
-    <ClCompile Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\PositionBasedDynamics\src\ExternalProject_PositionBasedDynamics\extern\AntTweakBar\src\TwColors.cpp"  />
+    <ClCompile Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\PositionBasedDynamics\src\ExternalProject_PositionBasedDynamics\extern\AntTweakBar\src\TwColors.cpp" />
     <ClInclude Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\PositionBasedDynamics\src\ExternalProject_PositionBasedDynamics\extern\AntTweakBar\src\TwColors.h" />
-    <ClCompile Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\PositionBasedDynamics\src\ExternalProject_PositionBasedDynamics\extern\AntTweakBar\src\TwEventGLFW.c" >
+    <ClCompile Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\PositionBasedDynamics\src\ExternalProject_PositionBasedDynamics\extern\AntTweakBar\src\TwEventGLFW.c">
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">CompileAsC</CompileAs>
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">CompileAsC</CompileAs>
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">CompileAsC</CompileAs>
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">CompileAsC</CompileAs>
     </ClCompile>
-    <ClCompile Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\PositionBasedDynamics\src\ExternalProject_PositionBasedDynamics\extern\AntTweakBar\src\TwEventGLUT.c" >
+    <ClCompile Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\PositionBasedDynamics\src\ExternalProject_PositionBasedDynamics\extern\AntTweakBar\src\TwEventGLUT.c">
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">CompileAsC</CompileAs>
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">CompileAsC</CompileAs>
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">CompileAsC</CompileAs>
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">CompileAsC</CompileAs>
     </ClCompile>
-    <ClCompile Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\PositionBasedDynamics\src\ExternalProject_PositionBasedDynamics\extern\AntTweakBar\src\TwEventSDL.c" >
+    <ClCompile Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\PositionBasedDynamics\src\ExternalProject_PositionBasedDynamics\extern\AntTweakBar\src\TwEventSDL.c">
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">CompileAsC</CompileAs>
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">CompileAsC</CompileAs>
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">CompileAsC</CompileAs>
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">CompileAsC</CompileAs>
     </ClCompile>
-    <ClCompile Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\PositionBasedDynamics\src\ExternalProject_PositionBasedDynamics\extern\AntTweakBar\src\TwEventSDL12.c" >
+    <ClCompile Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\PositionBasedDynamics\src\ExternalProject_PositionBasedDynamics\extern\AntTweakBar\src\TwEventSDL12.c">
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">CompileAsC</CompileAs>
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">CompileAsC</CompileAs>
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">CompileAsC</CompileAs>
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">CompileAsC</CompileAs>
     </ClCompile>
-    <ClCompile Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\PositionBasedDynamics\src\ExternalProject_PositionBasedDynamics\extern\AntTweakBar\src\TwEventSDL13.c" >
+    <ClCompile Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\PositionBasedDynamics\src\ExternalProject_PositionBasedDynamics\extern\AntTweakBar\src\TwEventSDL13.c">
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">CompileAsC</CompileAs>
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">CompileAsC</CompileAs>
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">CompileAsC</CompileAs>
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">CompileAsC</CompileAs>
     </ClCompile>
-    <ClCompile Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\PositionBasedDynamics\src\ExternalProject_PositionBasedDynamics\extern\AntTweakBar\src\TwEventSFML.cpp"  />
-    <ClCompile Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\PositionBasedDynamics\src\ExternalProject_PositionBasedDynamics\extern\AntTweakBar\src\TwFonts.cpp"  />
+    <ClCompile Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\PositionBasedDynamics\src\ExternalProject_PositionBasedDynamics\extern\AntTweakBar\src\TwEventSFML.cpp" />
+    <ClCompile Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\PositionBasedDynamics\src\ExternalProject_PositionBasedDynamics\extern\AntTweakBar\src\TwFonts.cpp" />
     <ClInclude Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\PositionBasedDynamics\src\ExternalProject_PositionBasedDynamics\extern\AntTweakBar\src\TwFonts.h" />
     <ClInclude Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\PositionBasedDynamics\src\ExternalProject_PositionBasedDynamics\extern\AntTweakBar\src\TwGraph.h" />
-    <ClCompile Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\PositionBasedDynamics\src\ExternalProject_PositionBasedDynamics\extern\AntTweakBar\src\TwMgr.cpp"  />
+    <ClCompile Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\PositionBasedDynamics\src\ExternalProject_PositionBasedDynamics\extern\AntTweakBar\src\TwMgr.cpp" />
     <ClInclude Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\PositionBasedDynamics\src\ExternalProject_PositionBasedDynamics\extern\AntTweakBar\src\TwMgr.h" />
-    <ClCompile Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\PositionBasedDynamics\src\ExternalProject_PositionBasedDynamics\extern\AntTweakBar\src\TwOpenGL.cpp"  />
+    <ClCompile Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\PositionBasedDynamics\src\ExternalProject_PositionBasedDynamics\extern\AntTweakBar\src\TwOpenGL.cpp" />
     <ClInclude Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\PositionBasedDynamics\src\ExternalProject_PositionBasedDynamics\extern\AntTweakBar\src\TwOpenGL.h" />
-    <ClCompile Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\PositionBasedDynamics\src\ExternalProject_PositionBasedDynamics\extern\AntTweakBar\src\TwOpenGLCore.cpp"  />
+    <ClCompile Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\PositionBasedDynamics\src\ExternalProject_PositionBasedDynamics\extern\AntTweakBar\src\TwOpenGLCore.cpp" />
     <ClInclude Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\PositionBasedDynamics\src\ExternalProject_PositionBasedDynamics\extern\AntTweakBar\src\TwOpenGLCore.h" />
-    <ClCompile Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\PositionBasedDynamics\src\ExternalProject_PositionBasedDynamics\extern\AntTweakBar\src\TwPrecomp.cpp"  />
+    <ClCompile Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\PositionBasedDynamics\src\ExternalProject_PositionBasedDynamics\extern\AntTweakBar\src\TwPrecomp.cpp" />
     <ClInclude Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\PositionBasedDynamics\src\ExternalProject_PositionBasedDynamics\extern\AntTweakBar\src\TwPrecomp.h" />
-    <ClCompile Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\PositionBasedDynamics\src\ExternalProject_PositionBasedDynamics\extern\AntTweakBar\src\TwEventWin.c" >
+    <ClCompile Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\PositionBasedDynamics\src\ExternalProject_PositionBasedDynamics\extern\AntTweakBar\src\TwEventWin.c">
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">CompileAsC</CompileAs>
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">CompileAsC</CompileAs>
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">CompileAsC</CompileAs>
@@ -336,6 +338,8 @@ if %errorlevel% neq 0 goto :VCEnd</Command>
     <ProjectReference Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\PositionBasedDynamics\src\ExternalProject_PositionBasedDynamics-build\ZERO_CHECK.vcxproj">
       <Project>{5BA473BD-71A3-3836-A2F4-298D9BA21D45}</Project>
       <Name>ZERO_CHECK</Name>
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
     </ProjectReference>
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

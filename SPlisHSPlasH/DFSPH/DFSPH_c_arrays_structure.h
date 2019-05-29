@@ -114,8 +114,15 @@ public:
     RealCuda m_W_zero;
     unsigned int m_resolution;
 public:
+
+    PrecomputedCubicKernelPerso(){
+        m_W=NULL;
+        m_gradW=NULL;
+    }
+
     FUNCTION RealCuda getRadius() { return m_radius; }
     void setRadius(RealCuda val);
+    void freeMemory();
 
 public:
     FUNCTION RealCuda W(const Vector3d &r) const
@@ -306,6 +313,9 @@ public:
     Vector3d* intermediate_buffer_v3d ;
     RealCuda* intermediate_buffer_real;
 
+    //pointer for the gpu storage (that should be a copy of this item but allocated on the gpu)
+    NeighborsSearchDataSet* gpu_ptr;
+
     //empty contructor to make static arrays possible
     NeighborsSearchDataSet();
 
@@ -331,6 +341,8 @@ public:
     void deleteComputationBuffer();
 
 
+    void updateActiveParticleNumber(unsigned int val);
+    void changeMaxParticleNumber(int numParticlesMax_i);
 
 
 };
@@ -342,7 +354,7 @@ public:
     //the size is 75 because I checked and the max neighbours I reached was 58
     //so I put some more to be sure. In the end those buffers will stay on the GPU memory
     //so there will be no transfers.
-#define MAX_NEIGHBOURS 205
+#define MAX_NEIGHBOURS 90
     //this allow the control of the destructor call
     //especially it was create to be able to use temp variable sot copy to cuda
     //but I also need it for the initialisation because doing a=b(params) call the destructur at the end of the line ...
@@ -458,11 +470,14 @@ public:
         return numberOfNeighbourgs[particle_id * 3 + body_id];
     }
 
-    void update_active_particle_number(unsigned int val);
+    void updateActiveParticleNumber(unsigned int val);
+    void changeMaxParticleNumber(int numParticlesMax_i);
 
     void add_particles(std::vector<Vector3d> pos, std::vector<Vector3d> vel);
 
     void zeroVelocities();
+
+	void getMinMaxNaive(Vector3d& min, Vector3d& max);
 
 };
 
@@ -540,16 +555,24 @@ public:
     Vector3d* posBufferGroupedDynamicBodies;
     bool is_fluid_aggregated;
 
-    bool damp_borders;
-    int damp_borders_steps_count;
     Vector3d* bmin;
     Vector3d* bmax;
+
+    bool damp_borders;
+    int damp_borders_steps_count;
     Vector3d* damp_planes;
     int damp_planes_count;
+
+    bool cancel_wave;
+    int cancel_wave_steps_count;
+    Vector3d* cancel_wave_planes;
+    RealCuda cancel_wave_lowest_point;
 
     DFSPHCData();
     DFSPHCData(FluidModel *model);
     ~DFSPHCData();
+
+	
 
     FUNCTION RealCuda getSurfaceTension(){return m_surfaceTension;}
 
@@ -559,6 +582,7 @@ public:
     void readDynamicObjectsData(FluidModel *model);
 
     void reset(FluidModel *model);
+	void initGridOffset();
 
     inline void updateTimeStep(RealCuda h_fut) {
         h_future = h_fut;
@@ -599,8 +623,10 @@ public:
 
     void zeroFluidVelocities();
     void handleFLuidLevelControl(RealCuda level);
+    RealCuda computeFluidLevel();
 
-    void getFluidImpactOnDynamicBodies(std::vector<SPH::Vector3d>& sph_forces, std::vector<SPH::Vector3d>& sph_moments);
+    void getFluidImpactOnDynamicBodies(std::vector<SPH::Vector3d>& sph_forces, std::vector<SPH::Vector3d>& sph_moments,
+                                       const std::vector<SPH::Vector3d>& reduction_factors);
     void getFluidBoyancyOnDynamicBodies(std::vector<SPH::Vector3d>& forces, std::vector<SPH::Vector3d>& pts_appli);
 
     SPH::Vector3d getSimulationCenter();

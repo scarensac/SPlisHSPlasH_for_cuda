@@ -39,7 +39,7 @@ DFSPHCUDA::DFSPHCUDA(FluidModel *model) :
     m_iterations=0;
     m_maxError=0.01;
     m_maxIterations=100;
-    m_maxErrorV=0.1;
+    m_maxErrorV=0.01;
     m_maxIterationsV=100;
     desired_time_step=m_data.get_current_timestep();
 #endif //SPLISHSPLASH_FRAMEWORK
@@ -47,6 +47,7 @@ DFSPHCUDA::DFSPHCUDA(FluidModel *model) :
     m_iterationsV = 0;
     m_enableDivergenceSolver = true;
     is_dynamic_bodies_paused = false;
+    show_fluid_timings=false;
 }
 
 DFSPHCUDA::~DFSPHCUDA(void)
@@ -58,9 +59,6 @@ void DFSPHCUDA::step()
 {
 
     static int count_steps = 0;
-
-	static int true_count_steps = 0;
-	true_count_steps++;
 
 #ifdef SPLISHSPLASH_FRAMEWORK
     m_data.viscosity = m_viscosity->getViscosity();
@@ -99,6 +97,7 @@ void DFSPHCUDA::step()
         }
 
 
+
         tab_timepoint[current_timepoint++] = std::chrono::steady_clock::now();
         //*
         cuda_neighborsSearch(m_data);
@@ -128,9 +127,10 @@ void DFSPHCUDA::step()
         //cuda_CFL(m_data, 0.0001, m_cflFactor, m_cflMaxTimeStepSize);
 
 #ifdef SPLISHSPLASH_FRAMEWORK
-		desired_time_step = TimeManager::getCurrent()->getTimeStepSize();
-#endif //SPLISHSPLASH_FRAMEWORK
+        const Real new_time_step = TimeManager::getCurrent()->getTimeStepSize();
+#else
         const Real new_time_step = desired_time_step;
+#endif //SPLISHSPLASH_FRAMEWORK
         m_data.updateTimeStep(new_time_step);
 
         tab_timepoint[current_timepoint++] = std::chrono::steady_clock::now();
@@ -184,20 +184,30 @@ void DFSPHCUDA::step()
         static float iter_divergence_avg = 0;
         iter_pressure_avg += m_iterations;
         iter_divergence_avg += m_iterationsV;
-        std::cout << "timestep total: " << total_time / (count_steps + 1) << "   this step: " << time_iter + time_between << "  (" << time_iter << "  " << time_between << ")" << std::endl;
-        std::cout << "solver iteration avg (current step) density: " <<  iter_pressure_avg / (count_steps + 1) << " ( " << m_iterations << " )   divergence : " <<
-                     iter_divergence_avg / (count_steps + 1) << " ( " << m_iterationsV << " )   divergence : " << std::endl;
+
+        if(show_fluid_timings){
+            std::cout << "timestep total: " << total_time / (count_steps + 1) << "   this step: " << time_iter + time_between << "  (" << time_iter << "  " << time_between << ")" << std::endl;
+            std::cout << "solver iteration avg (current step) density: " <<  iter_pressure_avg / (count_steps + 1) << " ( " << m_iterations << " )   divergence : " <<
+                         iter_divergence_avg / (count_steps + 1) << " ( " << m_iterationsV << " )   divergence : " << std::endl;
 
 
-        if (true){
-            std::string filename = "timmings_detailled_2_4_iter.csv";
+            for (int i = 0; i < NB_TIME_POINTS; ++i) {
+                float time = std::chrono::duration_cast<std::chrono::nanoseconds> (tab_timepoint[i+1] - tab_timepoint[i]).count() / 1000000.0f;
+                tab_avg[i] += time;
+                std::cout << tab_name[i] << "  :"<< (tab_avg[i]/(count_steps+1))<< "  ("<<time <<")"<< std::endl ;
+            }
+        }
+
+
+        if (false){
+            std::string filename = "timmings_detailled.csv";
             if (count_steps == 0) {
                 std::remove(filename.c_str());
             }
             ofstream myfile;
             myfile.open(filename, std::ios_base::app);
             if (myfile.is_open()) {
-                myfile << (true_count_steps)*m_data.get_current_timestep() << ",  "<< time_iter << ", " << m_iterations << ", " << m_iterationsV << std::endl;;
+                myfile << total_time / (count_steps + 1) << ", " << m_iterations << ", " << m_iterationsV << std::endl;;
                 myfile.close();
             }
             else {
@@ -206,13 +216,6 @@ void DFSPHCUDA::step()
         }
 
 
-        for (int i = 0; i < NB_TIME_POINTS; ++i) {
-            float time = std::chrono::duration_cast<std::chrono::nanoseconds> (tab_timepoint[i+1] - tab_timepoint[i]).count() / 1000000.0f;
-            tab_avg[i] += time;
-            std::cout << tab_name[i] << "  :"<< (tab_avg[i]/(count_steps+1))<< "  ("<<time <<")"<< std::endl ;
-
-
-        }
 
         if (count_steps > 1500) {
             count_steps = 0;
@@ -298,7 +301,10 @@ void DFSPHCUDA::step()
 
 
 
-    std::cout << "step finished: " << true_count_steps<<"  "<< count_steps++ << std::endl;
+    if(show_fluid_timings){
+        static int true_count_steps = 0;
+        std::cout << "step finished: " << true_count_steps++<<"  "<< count_steps++ << std::endl;
+    }
 }
 
 void DFSPHCUDA::reset()
@@ -325,7 +331,7 @@ void DFSPHCUDA::reset()
 }
 
 
-#ifdef SPLISHSPLASH_FRAMEWORK#endif //SPLISHSPLASH_FRAMEWORK
+#ifdef SPLISHSPLASH_FRAMEWORK
 
 void DFSPHCUDA::computeDFSPHFactor()
 {
@@ -1169,25 +1175,27 @@ void DFSPHCUDA::handleSimulationSave(bool save_liquid, bool save_solids, bool sa
     }
 }
 
-void DFSPHCUDA::handleSimulationLoad(bool load_liquid, bool load_liquid_velocities, bool load_solids, bool load_solids_velocities,
-	bool load_boundaries, bool load_boundaries_velocities) {
+void DFSPHCUDA::handleSimulationLoad(bool load_liquid, bool load_liquid_velocities, bool load_solids, bool load_solids_velocities, 
+                                     bool load_boundaries, bool load_boundaries_velocities) {
 
-	if (load_boundaries) {
-		m_data.read_boundaries_from_file(load_boundaries_velocities);
-	}
+    if (load_boundaries) {
+        m_data.read_boundaries_from_file(load_boundaries_velocities);
+    }
 
-	if (load_solids) {
-		m_data.read_solids_from_file(load_solids_velocities);
-	}
+    if (load_solids) {
+        m_data.read_solids_from_file(load_solids_velocities);
+    }
 
-	//recompute the particle mass for the rigid particles
-	if (load_boundaries || load_solids) {
-		m_data.computeRigidBodiesParticlesMass();
-	}
+    //recompute the particle mass for the rigid particles
+    if (load_boundaries||load_solids){
+        m_data.computeRigidBodiesParticlesMass();
 
-	if (load_liquid) {
-		m_data.read_fluid_from_file(load_liquid_velocities);
-	}
+        handleSimulationSave(false, true, true);
+    }
+
+    if (load_liquid) {
+        m_data.read_fluid_from_file(load_liquid_velocities);
+    }
 
 
 
@@ -1208,6 +1216,13 @@ void DFSPHCUDA::handleFLuidLevelControl(RealCuda level) {
     }
 }
 
+
+RealCuda DFSPHCUDA::getFluidLevel() {
+    return m_data.computeFluidLevel();
+}
+
+
+
 void DFSPHCUDA::updateRigidBodiesStatefromFile() {
     m_data.update_solids_from_file();
 }
@@ -1226,16 +1241,19 @@ void DFSPHCUDA::zeroFluidVelocities() {
 }
 
 
+#ifndef SPLISHSPLASH_FRAMEWORK
 void DFSPHCUDA::updateTimeStepDuration(RealCuda duration){
     desired_time_step=duration;
 }
+#endif //SPLISHSPLASH_FRAMEWORK
 
 void DFSPHCUDA::forceUpdateRigidBodies(){
     m_data.loadDynamicObjectsData(m_model);
 }
 
-void DFSPHCUDA::getFluidImpactOnDynamicBodies(std::vector<SPH::Vector3d>& sph_forces, std::vector<SPH::Vector3d>& sph_moments){
-    m_data.getFluidImpactOnDynamicBodies(sph_forces,sph_moments);
+void DFSPHCUDA::getFluidImpactOnDynamicBodies(std::vector<SPH::Vector3d>& sph_forces, std::vector<SPH::Vector3d>& sph_moments,
+                                              const std::vector<SPH::Vector3d>& reduction_factors){
+    m_data.getFluidImpactOnDynamicBodies(sph_forces,sph_moments, reduction_factors);
 }
 
 void DFSPHCUDA::getFluidBoyancyOnDynamicBodies(std::vector<SPH::Vector3d>& forces, std::vector<SPH::Vector3d>& pts_appli){

@@ -17,6 +17,8 @@ include(${PROJECT_PATH}/CMake/Common.cmake)
 
 string(APPEND CMAKE_CUDA_FLAGS "  -gencode arch=compute_61,code=sm_61")
 
+ 
+message(STATUS "CUDA compiler: " ${CMAKE_CUDA_COMPILER})
 
 if (WIN32)
   subdirs(
