@@ -666,7 +666,7 @@ DFSPHCData::DFSPHCData() {
     neighborsDataSetGroupedDynamicBodies=NULL;
     neighborsDataSetGroupedDynamicBodies_cuda=NULL;
     posBufferGroupedDynamicBodies=NULL;
-    is_fluid_aggregated=true;
+    is_fluid_aggregated=false;
 
 
     damp_borders=false;
@@ -680,6 +680,7 @@ DFSPHCData::DFSPHCData() {
 	damp_planes_count = 0;
 
 	allocate_DFSPHCData_base_cuda(*this);
+
 }
 
 DFSPHCData::DFSPHCData(FluidModel *model): DFSPHCData()
@@ -710,8 +711,9 @@ DFSPHCData::DFSPHCData(FluidModel *model): DFSPHCData()
 #ifdef SPLISHSPLASH_FRAMEWORK
     if (model!=NULL) {
 		//unified particles for the boundaries
+		bool compute_boundaries_pressure = true;
 		boundaries_data = new UnifiedParticleSet[1];
-		boundaries_data[0] = UnifiedParticleSet(model->m_particleObjects[1]->numberOfParticles(), false, false, false);
+		boundaries_data[0] = UnifiedParticleSet(model->m_particleObjects[1]->numberOfParticles(), compute_boundaries_pressure, false, false);
 		boundaries_data[0].releaseDataOnDestruction = true;
 		allocate_and_copy_UnifiedParticleSet_vector_cuda(&boundaries_data_cuda, boundaries_data, 1);
 
@@ -745,6 +747,8 @@ DFSPHCData::DFSPHCData(FluidModel *model): DFSPHCData()
 
     //init the values from the model
     reset(model);
+
+
 }
 
 DFSPHCData::~DFSPHCData() {

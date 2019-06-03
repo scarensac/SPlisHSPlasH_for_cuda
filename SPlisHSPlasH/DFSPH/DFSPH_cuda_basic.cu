@@ -20,6 +20,7 @@
 
 #define USE_WARMSTART
 #define USE_WARMSTART_V
+#define COMPUTATION_BOUNDARIES_FULL
 
 #define BITSHIFT_INDEX_DYNAMIC_BODIES
 
@@ -329,6 +330,9 @@ __device__ void computeDensityChange(const SPH::DFSPHCData& m_data, SPH::Unified
     }
 }
 
+ __device__ void divergenceSolveParticle(SPH::DFSPHCData& m_data, SPH::UnifiedParticleSet* particleSet, const unsigned int i) {
+
+}
 
 template <bool warm_start> __device__ void divergenceSolveParticle(SPH::DFSPHCData& m_data, SPH::UnifiedParticleSet* particleSet, const unsigned int i) {
     Vector3d v_i = Vector3d(0, 0, 0);
@@ -512,23 +516,12 @@ template <bool warm_start> __device__ void pressureSolveParticle(SPH::DFSPHCData
         //////////////////////////////////////////////////////////////////////////
         // Boundary
         //////////////////////////////////////////////////////////////////////////
-        //#define PRESSURE_COMPUTATION_BOUNDARIES_FULL
-#ifndef PRESSURE_COMPUTATION_BOUNDARIES_FULL
+
         ITER_NEIGHBORS_BOUNDARIES(
                     i,
                     v_i += ki * body.mass[neighborIndex] * m_data.gradW(xi - body.pos[neighborIndex]);
                 );
-#else
-        ITER_NEIGHBORS_BOUNDARIES(
-                    i,
-                    const RealCuda kSum = (ki + ((warm_start) ? body.kappa[neighborIndex] : (body.densityAdv[neighborIndex])*body.factor[neighborIndex]));
-                if (fabs(kSum) > m_eps)
-        {
-            // ki, kj already contain inverse density
-            v_i += kSum * body.mass[neighborIndex] * m_data.gradW(xi - body.pos[neighborIndex]);
-        }
-        );
-#endif
+
 
 
         //////////////////////////////////////////////////////////////////////////
@@ -566,7 +559,7 @@ __global__ void DFSPH_divergence_warmstart_init_kernel(SPH::DFSPHCData m_data, S
     //computeDensityChange(m_data, i);
 
 
-    //I can actually make the factor and desity computation here
+    //I can actually make the factor and density computation here
     {
         //////////////////////////////////////////////////////////////////////////
         // Compute gradient dp_i/dx_j * (1/k)  and dp_j/dx_j * (1/k)
@@ -660,10 +653,12 @@ void cuda_divergence_warmstart_init(SPH::DFSPHCData& data) {
         DFSPH_divergence_warmstart_init_kernel<false> << <numBlocks, BLOCKSIZE >> > (data, data.fluid_data[0].gpu_ptr);
     }
 
-    if (data.boundaries_data[0].has_factor_computation){//boundaries (technically computing the density adv is useless here but nvm)
+	//*
+    if (data.boundaries_data[0].has_factor_computation){//boundaries
         int numBlocks = (data.boundaries_data[0].numParticles + BLOCKSIZE - 1) / BLOCKSIZE;
-        DFSPH_divergence_warmstart_init_kernel<true> << <numBlocks, BLOCKSIZE >> > (data, data.boundaries_data[0].gpu_ptr);
+        DFSPH_divergence_warmstart_init_kernel<false> << <numBlocks, BLOCKSIZE >> > (data, data.boundaries_data[0].gpu_ptr);
     }
+	//*/
 
 
     cudaError_t cudaStatus = cudaDeviceSynchronize();
@@ -672,6 +667,17 @@ void cuda_divergence_warmstart_init(SPH::DFSPHCData& data) {
         exit(1598);
     }
 }
+
+//WARNING !!! this is not suposed to be called for the fluid this function is used for boundaries and object for witch 
+//doing the velocity variation computation makes no sense but still need the accumulation of kappa for the warm start
+__global__ void DFSPH_divergence_accumulate_kappaV_kernel(SPH::UnifiedParticleSet* particleSet) {
+	int i = blockIdx.x * blockDim.x + threadIdx.x;
+	if (i >= particleSet->numParticles) { return; }
+
+	const RealCuda ki =  (particleSet->densityAdv[i])*particleSet->factor[i];
+    particleSet->kappaV[i] += ki; 
+}
+
 
 template<bool warmstart> __global__ void DFSPH_divergence_compute_kernel(SPH::DFSPHCData m_data, SPH::UnifiedParticleSet* particleSet) {
     int i = blockIdx.x * blockDim.x + threadIdx.x;
@@ -689,8 +695,20 @@ template<bool warmstart> __global__ void DFSPH_divergence_compute_kernel(SPH::DF
 }
 
 template<bool warmstart> void cuda_divergence_compute(SPH::DFSPHCData& data) {
-    int numBlocks = (data.fluid_data[0].numParticles + BLOCKSIZE - 1) / BLOCKSIZE;
-    DFSPH_divergence_compute_kernel<warmstart> << <numBlocks, BLOCKSIZE >> > (data, data.fluid_data[0].gpu_ptr);
+	{//fluid
+		int numBlocks = (data.fluid_data[0].numParticles + BLOCKSIZE - 1) / BLOCKSIZE;
+		DFSPH_divergence_compute_kernel<warmstart> << <numBlocks, BLOCKSIZE >> > (data, data.fluid_data[0].gpu_ptr);
+	}
+
+	//*
+	
+	if (data.boundaries_data[0].has_factor_computation) {//boundaries 
+		if (!warmstart) {
+			int numBlocks = (data.boundaries_data[0].numParticles + BLOCKSIZE - 1) / BLOCKSIZE;
+			DFSPH_divergence_accumulate_kappaV_kernel << <numBlocks, BLOCKSIZE >> > (data.boundaries_data[0].gpu_ptr);
+		}
+	}
+	//*/
 
     cudaError_t cudaStatus = cudaDeviceSynchronize();
     if (cudaStatus != cudaSuccess) {
@@ -785,8 +803,17 @@ __global__ void DFSPH_divergence_init_kernel(SPH::DFSPHCData m_data, SPH::Unifie
 }
 
 void cuda_divergence_init(SPH::DFSPHCData& data) {
-    int numBlocks = (data.fluid_data[0].numParticles + BLOCKSIZE - 1) / BLOCKSIZE;
-    DFSPH_divergence_init_kernel << <numBlocks, BLOCKSIZE >> > (data, data.fluid_data[0].gpu_ptr);
+	{//fluid
+		int numBlocks = (data.fluid_data[0].numParticles + BLOCKSIZE - 1) / BLOCKSIZE;
+		DFSPH_divergence_init_kernel << <numBlocks, BLOCKSIZE >> > (data, data.fluid_data[0].gpu_ptr);
+	}
+
+	//*
+	if (data.boundaries_data[0].has_factor_computation) {//boundaries 
+		int numBlocks = (data.boundaries_data[0].numParticles + BLOCKSIZE - 1) / BLOCKSIZE;
+		DFSPH_divergence_init_kernel << <numBlocks, BLOCKSIZE >> > (data, data.boundaries_data[0].gpu_ptr);
+	}
+	//*/
 
     cudaError_t cudaStatus = cudaDeviceSynchronize();
     if (cudaStatus != cudaSuccess) {
@@ -804,10 +831,20 @@ __global__ void DFSPH_divergence_loop_end_kernel(SPH::DFSPHCData m_data, SPH::Un
 }
 
 RealCuda cuda_divergence_loop_end(SPH::DFSPHCData& data) {
-    int numBlocks = (data.fluid_data[0].numParticles + BLOCKSIZE - 1) / BLOCKSIZE;
     RealCuda* avg_density_err = SVS_CU::get()->avg_density_err;
 
-    DFSPH_divergence_loop_end_kernel << <numBlocks, BLOCKSIZE >> > (data, data.fluid_data[0].gpu_ptr, avg_density_err);
+	{//fluid
+		int numBlocks = (data.fluid_data[0].numParticles + BLOCKSIZE - 1) / BLOCKSIZE;
+		DFSPH_divergence_loop_end_kernel << <numBlocks, BLOCKSIZE >> > (data, data.fluid_data[0].gpu_ptr, avg_density_err);
+	}
+
+	//*
+	if (data.boundaries_data[0].has_factor_computation) {//boundaries 
+		int numBlocks = (data.boundaries_data[0].numParticles + BLOCKSIZE - 1) / BLOCKSIZE;
+		DFSPH_divergence_loop_end_kernel << <numBlocks, BLOCKSIZE >> > (data, data.boundaries_data[0].gpu_ptr, avg_density_err);
+	}
+	//*/
+
 
     cudaError_t cudaStatus = cudaDeviceSynchronize();
     if (cudaStatus != cudaSuccess) {
@@ -1182,10 +1219,12 @@ void cuda_pressure_init(SPH::DFSPHCData& data) {
         int numBlocks = (data.fluid_data[0].numParticles + BLOCKSIZE - 1) / BLOCKSIZE;
         DFSPH_pressure_init_kernel<false> << <numBlocks, BLOCKSIZE >> > (data, data.fluid_data[0].gpu_ptr);
     }
+	/*
     if (data.boundaries_data[0].has_factor_computation) {//boundaries
         int numBlocks = (data.boundaries_data[0].numParticles + BLOCKSIZE - 1) / BLOCKSIZE;
         DFSPH_pressure_init_kernel<true> << <numBlocks, BLOCKSIZE >> > (data, data.boundaries_data[0].gpu_ptr);
     }
+	//*/
 
     cudaError_t cudaStatus = cudaDeviceSynchronize();
     if (cudaStatus != cudaSuccess) {
@@ -1230,10 +1269,12 @@ RealCuda cuda_pressure_loop_end(SPH::DFSPHCData& data) {
         int numBlocks = (data.fluid_data[0].numParticles + BLOCKSIZE - 1) / BLOCKSIZE;
         DFSPH_pressure_loop_end_kernel<false> << <numBlocks, BLOCKSIZE >> > (data, data.fluid_data[0].gpu_ptr, avg_density_err);
     }
+	/*
     if (data.boundaries_data[0].has_factor_computation) {//boundaries
         int numBlocks = (data.boundaries_data[0].numParticles + BLOCKSIZE - 1) / BLOCKSIZE;
         DFSPH_pressure_loop_end_kernel<true> << <numBlocks, BLOCKSIZE >> > (data, data.boundaries_data[0].gpu_ptr, avg_density_err);
     }
+	//*/
 
     /*
     ///LOL the detailed implementation is slower so no need to even think about developping data
@@ -1560,6 +1601,7 @@ __global__ void DFSPH_setVector3dBufferToZero_kernel(Vector3d* buff, unsigned in
     buff[i] = Vector3d(0, 0, 0);
 }
 
+template <bool is_fluid_container>
 __global__ void DFSPH_neighborsSearch_kernel(SPH::DFSPHCData data, SPH::UnifiedParticleSet* particleSet) {
 
     int i = blockIdx.x * blockDim.x + threadIdx.x;
@@ -1633,7 +1675,7 @@ __global__ void DFSPH_neighborsSearch_kernel(SPH::DFSPHCData data, SPH::UnifiedP
         int neighbors_solids[MAX_NEIGHBOURS];
 
         //dynamic bodies
-        if (data.vector_dynamic_bodies_data_cuda != NULL) {
+        if (data.numDynamicBodies >0) {
 
 #ifdef GROUP_DYNAMIC_BODIES_NEIGHBORS_SEARCH
             ITER_CELLS_FOR_BODY(data.neighborsDataSetGroupedDynamicBodies_cuda, data.posBufferGroupedDynamicBodies,
@@ -1675,14 +1717,14 @@ __global__ void DFSPH_neighborsSearch_kernel(SPH::DFSPHCData data, SPH::UnifiedP
         //uses the standart version
         //fluid
         ITER_CELLS_FOR_BODY(data.fluid_data_cuda[0].neighborsDataSet, data.fluid_data_cuda[0].pos,
-                if (i != j) { *cur_neighbor_ptr++ = j;	nb_neighbors_fluid++; });
+                if (!is_fluid_container || i != j) { *cur_neighbor_ptr++ = j;	nb_neighbors_fluid++; });
 
         //boundaries
         ITER_CELLS_FOR_BODY(data.boundaries_data_cuda[0].neighborsDataSet, data.boundaries_data_cuda[0].pos,
-                *cur_neighbor_ptr++ = j; nb_neighbors_boundary++; );
+			if (is_fluid_container || i != j) { *cur_neighbor_ptr++ = j; nb_neighbors_boundary++; });
 
 
-        if (data.vector_dynamic_bodies_data_cuda != NULL) {
+        if (data.numDynamicBodies > 0) {
 
 #ifdef GROUP_DYNAMIC_BODIES_NEIGHBORS_SEARCH
             ITER_CELLS_FOR_BODY(data.neighborsDataSetGroupedDynamicBodies_cuda, data.posBufferGroupedDynamicBodies,
@@ -1910,7 +1952,7 @@ void cuda_sortData(SPH::UnifiedParticleSet& particleSet, unsigned int * sort_id)
     gpuErrchk(cudaDeviceSynchronize());
     gpuErrchk(cudaMemcpy(particleSet.mass, intermediate_buffer_real, numParticles * sizeof(RealCuda), cudaMemcpyDeviceToDevice));
 
-    if (particleSet.velocity_impacted_by_fluid_solver) {
+    if (particleSet.has_factor_computation) {
         //kappa
         DFSPH_sortFromIndex_kernel<RealCuda> << <numBlocks, BLOCKSIZE >> > (particleSet.kappa, intermediate_buffer_real, p_id_sorted, numParticles);
         gpuErrchk(cudaDeviceSynchronize());
@@ -2013,7 +2055,7 @@ void cuda_shuffleData(SPH::UnifiedParticleSet& particleSet) {
     gpuErrchk(cudaDeviceSynchronize());
     gpuErrchk(cudaMemcpy(particleSet.mass, intermediate_buffer_real, numParticles * sizeof(RealCuda), cudaMemcpyDeviceToDevice));
 
-    if (particleSet.velocity_impacted_by_fluid_solver) {
+    if (particleSet.has_factor_computation) {
         //kappa
         DFSPH_sortFromIndex_kernel<RealCuda> << <numBlocks, BLOCKSIZE >> > (particleSet.kappa, intermediate_buffer_real, p_id_sorted, numParticles);
         gpuErrchk(cudaDeviceSynchronize());
@@ -3332,11 +3374,14 @@ void cuda_neighborsSearch(SPH::DFSPHCData& data) {
         int numBlocks = (data.fluid_data[0].numParticles + BLOCKSIZE - 1) / BLOCKSIZE;
 
         //*
-        DFSPH_neighborsSearch_kernel << <numBlocks, BLOCKSIZE >> > (data, data.fluid_data_cuda);
+        DFSPH_neighborsSearch_kernel<true> << <numBlocks, BLOCKSIZE >> > (data, data.fluid_data_cuda);
 
+		//*
         if (data.boundaries_data->has_factor_computation) {
-            DFSPH_neighborsSearch_kernel << <numBlocks, BLOCKSIZE >> > (data, data.boundaries_data_cuda);
+            //DFSPH_neighborsSearch_kernel<false> << <numBlocks, BLOCKSIZE >> > (data, data.boundaries_data_cuda);
         }
+		//*/
+
         //*/
         /*
         //this test show that even just computing the neighbors for the fluid particle
@@ -3406,6 +3451,24 @@ void cuda_neighborsSearch(SPH::DFSPHCData& data) {
 
 
         //*/
+		/*
+		{
+			//another test ot be sure the contruction of the boundries neighbors works orrectly
+			if (data.boundaries_data->has_factor_computation) {
+				//a simple check to know the  nbr of neighbors of the first boundries particle
+
+				int nb_neighbors[3] = { 0 };
+				
+				for (int k = 0; k < 3; ++k) {
+					nb_neighbors[k] = data.boundaries_data->getNumberOfNeighbourgs(0, k);
+				}
+
+				printf(" nbr of neighbors %d     fluid // boundaries // bodies   %d // %d // %d\n",
+					nb_neighbors[0] + nb_neighbors[1] + nb_neighbors[2], nb_neighbors[0], nb_neighbors[1], nb_neighbors[2]);
+			}
+		}
+
+		//*/
     }
 
     //reactive the aggragation if we desactivated it because a sort was required
@@ -3413,6 +3476,8 @@ void cuda_neighborsSearch(SPH::DFSPHCData& data) {
         data.is_fluid_aggregated=true;
     }
 
+
+	
     /*
     std::chrono::steady_clock::time_point end = std::chrono::steady_clock::now();
     time_global = std::chrono::duration_cast<std::chrono::nanoseconds> (end - begin_global).count() / 1000000.0f;
@@ -3697,10 +3762,11 @@ void allocate_UnifiedParticleSet_cuda(SPH::UnifiedParticleSet& container) {
         cudaMalloc(&(container.factor), container.numParticlesMax * sizeof(RealCuda));
         cudaMalloc(&(container.densityAdv), container.numParticlesMax * sizeof(RealCuda));
 
-        if (container.velocity_impacted_by_fluid_solver) {
+        cudaMalloc(&(container.kappa), container.numParticlesMax * sizeof(RealCuda));
+        cudaMalloc(&(container.kappaV), container.numParticlesMax * sizeof(RealCuda));
+        
+		if (container.velocity_impacted_by_fluid_solver) {
             cudaMalloc(&(container.acc), container.numParticlesMax * sizeof(Vector3d));
-            cudaMalloc(&(container.kappa), container.numParticlesMax * sizeof(RealCuda));
-            cudaMalloc(&(container.kappaV), container.numParticlesMax * sizeof(RealCuda));
 
             //I need the allocate the memory cub need to compute the reduction
             //I need the avg pointer because cub require it (but i'll clear after the cub call)
@@ -3739,10 +3805,10 @@ void release_UnifiedParticleSet_cuda(SPH::UnifiedParticleSet& container) {
         CUDA_FREE_PTR(container.factor);
         CUDA_FREE_PTR(container.densityAdv);
 
+        CUDA_FREE_PTR(container.kappa);
+        CUDA_FREE_PTR(container.kappaV);
         if (container.velocity_impacted_by_fluid_solver) {
             CUDA_FREE_PTR(container.acc);
-            CUDA_FREE_PTR(container.kappa);
-            CUDA_FREE_PTR(container.kappaV);
 
             CUDA_FREE_PTR(container.d_temp_storage);
             container.temp_storage_bytes = 0;
@@ -3776,9 +3842,9 @@ void load_UnifiedParticleSet_cuda(SPH::UnifiedParticleSet& container, Vector3d* 
 
     if (container.has_factor_computation) {
 
+        gpuErrchk(cudaMemset(container.kappa, 0, container.numParticles * sizeof(RealCuda)));
+        gpuErrchk(cudaMemset(container.kappaV, 0, container.numParticles * sizeof(RealCuda)));
         if (container.velocity_impacted_by_fluid_solver) {
-            gpuErrchk(cudaMemset(container.kappa, 0, container.numParticles * sizeof(RealCuda)));
-            gpuErrchk(cudaMemset(container.kappaV, 0, container.numParticles * sizeof(RealCuda)));
         }
     }
 
@@ -3937,7 +4003,17 @@ void allocate_and_copy_UnifiedParticleSet_vector_cuda(SPH::UnifiedParticleSet** 
 
 void allocate_grouped_neighbors_struct_cuda(SPH::DFSPHCData& data){
     std::cout<<"initialising aggregated structure"<<std::endl;
-
+	
+	if (data.numDynamicBodies < 1) {
+		std::cout << "no dynamic bodies detected" << std::endl;
+		
+		//ok so I need the grouped buffer because I reuse it for external forces computation
+		//note if I want to rmv that restriction I only have to use the one 
+		//TODO apply that modification
+		cudaMalloc(&(data.posBufferGroupedDynamicBodies), data.fluid_data->numParticlesMax * sizeof(Vector3d));
+		
+		return;
+	}
 
     if (data.neighborsDataSetGroupedDynamicBodies!=NULL||data.posBufferGroupedDynamicBodies!=NULL){
         throw("allocate_grouped_neighbors_struct_cuda already allocated");
@@ -3966,7 +4042,6 @@ void allocate_grouped_neighbors_struct_cuda(SPH::DFSPHCData& data){
     //instead of just one buffer
     //the easiest way is to build a new pos array that contains all the dynamic particles
     cudaMalloc(&(data.posBufferGroupedDynamicBodies), numParticlesMax * sizeof(Vector3d));
-
 
 }
 
