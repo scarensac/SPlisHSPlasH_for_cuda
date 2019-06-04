@@ -330,9 +330,7 @@ __device__ void computeDensityChange(const SPH::DFSPHCData& m_data, SPH::Unified
     }
 }
 
- __device__ void divergenceSolveParticle(SPH::DFSPHCData& m_data, SPH::UnifiedParticleSet* particleSet, const unsigned int i) {
 
-}
 
 template <bool warm_start> __device__ void divergenceSolveParticle(SPH::DFSPHCData& m_data, SPH::UnifiedParticleSet* particleSet, const unsigned int i) {
     Vector3d v_i = Vector3d(0, 0, 0);
@@ -363,18 +361,31 @@ template <bool warm_start> __device__ void divergenceSolveParticle(SPH::DFSPHCDa
     }
     );
 
+#ifdef COMPUTATION_BOUNDARIES_FULL
+	ITER_NEIGHBORS_BOUNDARIES(
+		i,
+		const RealCuda kSum = (ki + ((warm_start) ? body.kappaV[neighborIndex] : (body.densityAdv[neighborIndex])*body.factor[neighborIndex]));
+	if (fabs(kSum) > m_eps)
+	{
+		// ki, kj already contain inverse density
+		v_i += kSum *  body.mass[neighborIndex] * m_data.gradW(xi - body.pos[neighborIndex]);
+	}
+	);
+#endif
+
 
     if (fabs(ki) > m_eps)
     {
         //////////////////////////////////////////////////////////////////////////
         // Boundary
         //////////////////////////////////////////////////////////////////////////
+#ifndef COMPUTATION_BOUNDARIES_FULL
         ITER_NEIGHBORS_BOUNDARIES(
                     i,
                     const Vector3d delta = ki * body.mass[neighborIndex] * m_data.gradW(xi - body.pos[neighborIndex]);
                 v_i += delta;// ki already contains inverse density
         );
-
+#endif
 
         //////////////////////////////////////////////////////////////////////////
         // Dynamic bodies
@@ -511,17 +522,30 @@ template <bool warm_start> __device__ void pressureSolveParticle(SPH::DFSPHCData
     }
     );
 
+#ifdef COMPUTATION_BOUNDARIES_FULL
+	ITER_NEIGHBORS_BOUNDARIES(
+		i,
+		const RealCuda kSum = (ki + ((warm_start) ? body.kappa[neighborIndex] : (body.densityAdv[neighborIndex])*body.factor[neighborIndex]));
+	if (fabs(kSum) > m_eps)
+	{
+		// ki, kj already contain inverse density
+		v_i += kSum * body.mass[neighborIndex] * m_data.gradW(xi - body.pos[neighborIndex]);
+	}
+	);
+#endif
+
     if (fabs(ki) > m_eps)
     {
         //////////////////////////////////////////////////////////////////////////
         // Boundary
         //////////////////////////////////////////////////////////////////////////
 
+#ifndef COMPUTATION_BOUNDARIES_FULL
         ITER_NEIGHBORS_BOUNDARIES(
                     i,
                     v_i += ki * body.mass[neighborIndex] * m_data.gradW(xi - body.pos[neighborIndex]);
                 );
-
+#endif
 
 
         //////////////////////////////////////////////////////////////////////////
@@ -1170,6 +1194,16 @@ void cuda_update_vel(SPH::DFSPHCData& data) {
 
 }
 
+//WARNING !!! this is not suposed to be called for the fluid this function is used for boundaries and object for witch 
+//doing the velocity variation computation makes no sense but still need the accumulation of kappa for the warm start
+__global__ void DFSPH_density_accumulate_kappa_kernel(SPH::UnifiedParticleSet* particleSet) {
+	int i = blockIdx.x * blockDim.x + threadIdx.x;
+	if (i >= particleSet->numParticles) { return; }
+
+	const RealCuda ki = (particleSet->densityAdv[i])*particleSet->factor[i];
+	particleSet->kappa[i] += ki;
+}
+
 template<bool warmstart> __global__ void DFSPH_pressure_compute_kernel(SPH::DFSPHCData m_data, SPH::UnifiedParticleSet* particleSet) {
     int i = blockIdx.x * blockDim.x + threadIdx.x;
     if (i >= particleSet->numParticles) { return; }
@@ -1179,8 +1213,17 @@ template<bool warmstart> __global__ void DFSPH_pressure_compute_kernel(SPH::DFSP
 }
 
 template<bool warmstart> void cuda_pressure_compute(SPH::DFSPHCData& data) {
-    int numBlocks = (data.fluid_data[0].numParticles + BLOCKSIZE - 1) / BLOCKSIZE;
-    DFSPH_pressure_compute_kernel<warmstart> << <numBlocks, BLOCKSIZE >> > (data, data.fluid_data[0].gpu_ptr);
+	{//fluid
+		int numBlocks = (data.fluid_data[0].numParticles + BLOCKSIZE - 1) / BLOCKSIZE;
+		DFSPH_pressure_compute_kernel<warmstart> << <numBlocks, BLOCKSIZE >> > (data, data.fluid_data[0].gpu_ptr);
+	}
+
+	if (data.boundaries_data[0].has_factor_computation) {//boundaries 
+		if (!warmstart) {
+			int numBlocks = (data.boundaries_data[0].numParticles + BLOCKSIZE - 1) / BLOCKSIZE;
+			DFSPH_density_accumulate_kappa_kernel << <numBlocks, BLOCKSIZE >> > (data.boundaries_data[0].gpu_ptr);
+		}
+	}
 
     cudaError_t cudaStatus = cudaDeviceSynchronize();
     if (cudaStatus != cudaSuccess) {
@@ -1192,7 +1235,7 @@ template void cuda_pressure_compute<true>(SPH::DFSPHCData& data);
 template void cuda_pressure_compute<false>(SPH::DFSPHCData& data);
 
 
-template <bool ignore_when_no_fluid_near>
+
 __global__ void DFSPH_pressure_init_kernel(SPH::DFSPHCData m_data, SPH::UnifiedParticleSet* particleSet) {
     int i = blockIdx.x * blockDim.x + threadIdx.x;
     if (i >= particleSet->numParticles) { return; }
@@ -1200,12 +1243,6 @@ __global__ void DFSPH_pressure_init_kernel(SPH::DFSPHCData m_data, SPH::UnifiedP
 #ifdef USE_WARMSTART
     particleSet->kappa[i] = 0;
 #endif
-
-    if (ignore_when_no_fluid_near) {
-        if (particleSet->getNumberOfNeighbourgs(i) == 0) {
-            return;
-        }
-    }
 
     particleSet->factor[i] *= m_data.invH_future;
 
@@ -1217,14 +1254,14 @@ __global__ void DFSPH_pressure_init_kernel(SPH::DFSPHCData m_data, SPH::UnifiedP
 void cuda_pressure_init(SPH::DFSPHCData& data) {
     {//fluid
         int numBlocks = (data.fluid_data[0].numParticles + BLOCKSIZE - 1) / BLOCKSIZE;
-        DFSPH_pressure_init_kernel<false> << <numBlocks, BLOCKSIZE >> > (data, data.fluid_data[0].gpu_ptr);
+        DFSPH_pressure_init_kernel << <numBlocks, BLOCKSIZE >> > (data, data.fluid_data[0].gpu_ptr);
     }
-	/*
-    if (data.boundaries_data[0].has_factor_computation) {//boundaries
-        int numBlocks = (data.boundaries_data[0].numParticles + BLOCKSIZE - 1) / BLOCKSIZE;
-        DFSPH_pressure_init_kernel<true> << <numBlocks, BLOCKSIZE >> > (data, data.boundaries_data[0].gpu_ptr);
-    }
-	//*/
+	
+	if (data.boundaries_data[0].has_factor_computation) {//boundaries 
+		int numBlocks = (data.boundaries_data[0].numParticles + BLOCKSIZE - 1) / BLOCKSIZE;
+		DFSPH_pressure_init_kernel << <numBlocks, BLOCKSIZE >> > (data, data.boundaries_data[0].gpu_ptr);
+	}
+
 
     cudaError_t cudaStatus = cudaDeviceSynchronize();
     if (cudaStatus != cudaSuccess) {
@@ -1233,16 +1270,11 @@ void cuda_pressure_init(SPH::DFSPHCData& data) {
     }
 }
 
-template <bool ignore_when_no_fluid_near>
+
 __global__ void DFSPH_pressure_loop_end_kernel(SPH::DFSPHCData m_data, SPH::UnifiedParticleSet* particleSet, RealCuda* avg_density_err) {
     int i = blockIdx.x * blockDim.x + threadIdx.x;
     if (i >= particleSet->numParticles) { return; }
 
-    if (ignore_when_no_fluid_near) {
-        if (particleSet->getNumberOfNeighbourgs(i) == 0) {
-            return;
-        }
-    }
 
     computeDensityAdv(m_data, particleSet, i);
     //atomicAdd(avg_density_err, m_data.densityAdv[i]);
@@ -1265,16 +1297,17 @@ RealCuda cuda_pressure_loop_end(SPH::DFSPHCData& data) {
 
     RealCuda* avg_density_err = SVS_CU::get()->avg_density_err;
 
-    {
-        int numBlocks = (data.fluid_data[0].numParticles + BLOCKSIZE - 1) / BLOCKSIZE;
-        DFSPH_pressure_loop_end_kernel<false> << <numBlocks, BLOCKSIZE >> > (data, data.fluid_data[0].gpu_ptr, avg_density_err);
-    }
-	/*
-    if (data.boundaries_data[0].has_factor_computation) {//boundaries
-        int numBlocks = (data.boundaries_data[0].numParticles + BLOCKSIZE - 1) / BLOCKSIZE;
-        DFSPH_pressure_loop_end_kernel<true> << <numBlocks, BLOCKSIZE >> > (data, data.boundaries_data[0].gpu_ptr, avg_density_err);
-    }
-	//*/
+	{//fluid
+		int numBlocks = (data.fluid_data[0].numParticles + BLOCKSIZE - 1) / BLOCKSIZE;
+		DFSPH_pressure_loop_end_kernel << <numBlocks, BLOCKSIZE >> > (data, data.fluid_data[0].gpu_ptr, avg_density_err);
+	}
+
+	if (data.boundaries_data[0].has_factor_computation) {//boundaries 
+		int numBlocks = (data.boundaries_data[0].numParticles + BLOCKSIZE - 1) / BLOCKSIZE;
+		DFSPH_pressure_loop_end_kernel << <numBlocks, BLOCKSIZE >> > (data, data.boundaries_data[0].gpu_ptr, avg_density_err);
+	}
+
+
 
     /*
     ///LOL the detailed implementation is slower so no need to even think about developping data
