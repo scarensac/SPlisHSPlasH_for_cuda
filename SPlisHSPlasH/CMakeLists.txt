@@ -45,6 +45,14 @@ set(DFSPH_HEADER_FILES
 #	DFSPH/DFSPH_cpu_c_arrays.h
 #	DFSPH/DFSPH_cpu_c_arrays_advanced.h
 	DFSPH/DFSPH_cuda_basic.h
+	DFSPH/DFSPH_macro_cuda.h
+	DFSPH/DFSPH_define_cuda.h
+	DFSPH/DFSPH_memory_management_cuda.h
+	DFSPH/DFSPH_rendering_cuda.h
+	DFSPH/DFSPH_static_variables_structure_cuda.h
+	DFSPH/DFSPH_core_cuda.h
+	DFSPH/SPH_other_systems_cuda.h
+	DFSPH/basic_kernels_cuda.cuh
 	DFSPH/DFSPH_CUDA.h
 	DFSPH/SimulationDataDFSPH.h
 	DFSPH/TimeStepDFSPH.h
@@ -55,6 +63,12 @@ set(DFSPH_SOURCE_FILES
 #	DFSPH/DFSPH_cpu_c_arrays.cpp
 #	DFSPH/DFSPH_cpu_c_arrays_advanced.cpp
 	DFSPH/DFSPH_cuda_basic.cu
+	DFSPH/DFSPH_memory_management_cuda.cu
+	DFSPH/DFSPH_rendering_cuda.cu
+	DFSPH/DFSPH_static_variables_structure_cuda.cu
+	DFSPH/DFSPH_core_cuda.cu
+	DFSPH/basic_kernels_cuda.cu
+	DFSPH/SPH_other_systems_cuda.cu
 	DFSPH/DFSPH_CUDA.cpp
 	DFSPH/SimulationDataDFSPH.cpp
 	DFSPH/TimeStepDFSPH.cpp

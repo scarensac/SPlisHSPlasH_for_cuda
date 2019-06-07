@@ -1126,11 +1126,11 @@ void DFSPHCUDA::checkVector3(std::string txt, Vector3d old_v, Vector3d new_v) {
 
 
 void DFSPHCUDA::renderFluid() {
-    cuda_renderFluid(m_data);
+    cuda_renderFluid(&m_data);
 }
 
 void DFSPHCUDA::renderBoundaries(bool renderWalls) {
-    cuda_renderBoundaries(m_data, renderWalls);
+    cuda_renderBoundaries(&m_data, renderWalls);
 }
 
 

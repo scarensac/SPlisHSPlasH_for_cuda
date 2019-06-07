@@ -198,6 +198,27 @@
     <ClInclude Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\SPlisHSPlasH\DFSPH\DFSPH_cuda_basic.h">
       <Filter>Header Files\DFSPH</Filter>
     </ClInclude>
+    <ClInclude Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\SPlisHSPlasH\DFSPH\DFSPH_macro_cuda.h">
+      <Filter>Header Files\DFSPH</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\SPlisHSPlasH\DFSPH\DFSPH_define_cuda.h">
+      <Filter>Header Files\DFSPH</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\SPlisHSPlasH\DFSPH\DFSPH_memory_management_cuda.h">
+      <Filter>Header Files\DFSPH</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\SPlisHSPlasH\DFSPH\DFSPH_rendering_cuda.h">
+      <Filter>Header Files\DFSPH</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\SPlisHSPlasH\DFSPH\DFSPH_static_variables_structure_cuda.h">
+      <Filter>Header Files\DFSPH</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\SPlisHSPlasH\DFSPH\DFSPH_core_cuda.h">
+      <Filter>Header Files\DFSPH</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\SPlisHSPlasH\DFSPH\SPH_other_systems_cuda.h">
+      <Filter>Header Files\DFSPH</Filter>
+    </ClInclude>
     <ClInclude Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\SPlisHSPlasH\DFSPH\DFSPH_CUDA.h">
       <Filter>Header Files\DFSPH</Filter>
     </ClInclude>
@@ -275,9 +296,32 @@
     <CudaCompile Include="..\..\SPlisHSPlasH\DFSPH\DFSPH_cuda_basic.cu">
       <Filter>Source Files\DFSPH</Filter>
     </CudaCompile>
+    <CudaCompile Include="..\..\SPlisHSPlasH\DFSPH\DFSPH_memory_management_cuda.cu">
+      <Filter>Source Files\DFSPH</Filter>
+    </CudaCompile>
+    <CudaCompile Include="..\..\SPlisHSPlasH\DFSPH\DFSPH_rendering_cuda.cu">
+      <Filter>Source Files\DFSPH</Filter>
+    </CudaCompile>
+    <CudaCompile Include="..\..\SPlisHSPlasH\DFSPH\DFSPH_static_variables_structure_cuda.cu">
+      <Filter>Source Files\DFSPH</Filter>
+    </CudaCompile>
+    <CudaCompile Include="..\..\SPlisHSPlasH\DFSPH\DFSPH_core_cuda.cu">
+      <Filter>Source Files\DFSPH</Filter>
+    </CudaCompile>
+    <CudaCompile Include="..\..\SPlisHSPlasH\DFSPH\basic_kernels_cuda.cu">
+      <Filter>Source Files\DFSPH</Filter>
+    </CudaCompile>
+    <CudaCompile Include="..\..\SPlisHSPlasH\DFSPH\SPH_other_systems_cuda.cu">
+      <Filter>Source Files\DFSPH</Filter>
+    </CudaCompile>
   </ItemGroup>
   <ItemGroup>
     <CustomBuild Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\SPlisHSPlasH\CMakeLists.txt" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\SPlisHSPlasH\DFSPH\basic_kernels_cuda.cuh">
+      <Filter>Header Files\DFSPH</Filter>
+    </None>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="Header Files">
