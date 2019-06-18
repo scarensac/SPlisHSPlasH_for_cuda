@@ -676,6 +676,30 @@ void MiniGL::setClientIdleFunc (int hz, void (*func) (void))
 		idlefunc = func;
 		glutIdleFunc (idle);
 	}
+
+	//two images
+	//-2.3 - 1.7 - 8.544   0.967888   0.190311   0.162962   0.0204188   1
+	//m_translation[0] = -2.3;
+	//m_translation[1] = -1.7;
+	//m_translation[2] = -8.544;
+	//m_rotation = Quaternionr(0.96788, 0.190311, 0.162962, 0.020418);
+	//m_zoom =1
+
+	//three images
+	//-1.7 - 1.75 - 8.544 0.967888   0.190311   0.162962   0.0204188   0.7
+	m_translation[0] = -1.7;
+	m_translation[1] = -1.75;
+	m_translation[2] = -8.544;
+	m_rotation = Quaternionr(0.96788, 0.190311, 0.162962, 0.020418);
+	m_zoom = 0.7;
+
+	//moving fluid
+	//-3.9 - 1.15 - 5.944   0.997327   0.0045513   0.0727403   0.00326365   1
+	//m_translation[0] = -2;
+	//m_translation[1] = -1.15;
+	//m_translation[2] = -5.944;
+	//m_rotation = Quaternionr(0.997327, 0.0045513, 0.0727403, 0.00326365);
+	//m_zoom = 1;//0.9
 }
 
 void MiniGL::setKeyFunc (int nr, unsigned char k, void (*func) (void))
@@ -767,6 +791,7 @@ void MiniGL::setProjectionMatrix (int width, int height)
 	gluPerspective(fovy, (Real)width / (Real)height, znear, zfar);
 }
 
+#include <iostream>
 void MiniGL::viewport ()
 {
 	glClear (GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -777,6 +802,8 @@ void MiniGL::viewport ()
 	glLoadIdentity ();
 	setProjectionMatrix (width, height);
 	glMatrixMode (GL_MODELVIEW);
+
+	
 
 	glTranslatef((float)m_translation[0], (float)m_translation[1], (float)m_translation[2]);
 	Matrix3r rot;
@@ -790,6 +817,12 @@ void MiniGL::viewport ()
 	transform(2,2) *= scale[2];
 	Real *transformMatrix = transform.data();
 	glLoadMatrix(&transformMatrix[0]);
+
+	/*
+	std::cout << (float)m_translation[0] << "   " << (float)m_translation[1] << "   " << (float)m_translation[2] << "   " <<
+		m_rotation.w() << "   " << m_rotation.x() << "   " << m_rotation.y() << "   " << m_rotation.z() << "   " <<
+		m_zoom << std::endl;
+	//*/
 }
 
 void MiniGL::initLights ()

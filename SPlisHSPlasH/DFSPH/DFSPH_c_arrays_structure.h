@@ -292,6 +292,8 @@ class UnifiedParticleSet;
 
 class NeighborsSearchDataSet {
 public:
+	int set_id;
+
     unsigned int numParticles;
     unsigned int numParticlesMax;
     unsigned int* cell_id;

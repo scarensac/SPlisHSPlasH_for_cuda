@@ -63,6 +63,7 @@ namespace SPH
 		GLint m_context_major_version;
 		GLint m_context_minor_version;
 		Shader m_shader;
+		Shader m_shader_transparent;
 		Shader m_meshShader;
 		SimulationMethod m_simulationMethod;
 		std::vector<Parameter> m_parameters;
@@ -113,7 +114,7 @@ namespace SPH
 		void buildModel();
 		void cleanup();
 
-		void renderFluid();
+		void renderFluid(int type_renderer=0);
 		void renderBoundariesDFSPH_CUDA(bool renderWalls);
 		bool isDFSPH();
 
@@ -130,8 +131,8 @@ namespace SPH
 		Shader& getMeshShader() { return m_meshShader; }
 		void meshShaderBegin(const float *col);
 		void meshShaderEnd();
-		void pointShaderBegin(const float *col);
-		void pointShaderEnd();
+		void pointShaderBegin(const float *col, int type_renderer = 0);
+		void pointShaderEnd(int type_renderer = 0);
 		SceneLoader::Scene& getScene() { return m_scene; }
 		SimulationMethod &getSimulationMethod() { return m_simulationMethod; }
 

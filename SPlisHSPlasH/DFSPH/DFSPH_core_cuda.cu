@@ -185,7 +185,7 @@ template <bool warm_start> __device__ void divergenceSolveParticle(SPH::DFSPHCDa
 	}
 	);
 
-#ifdef COMPUTATION_BOUNDARIES_FULL
+#ifdef USE_BOUNDARIES_DYNAMIC_PROPERTiES
 	ITER_NEIGHBORS_BOUNDARIES(
 		i,
 		const RealCuda kSum = (ki + ((warm_start) ? body.kappaV[neighborIndex] : (body.densityAdv[neighborIndex])*body.factor[neighborIndex]));
@@ -203,7 +203,7 @@ template <bool warm_start> __device__ void divergenceSolveParticle(SPH::DFSPHCDa
 		//////////////////////////////////////////////////////////////////////////
 		// Boundary
 		//////////////////////////////////////////////////////////////////////////
-#ifndef COMPUTATION_BOUNDARIES_FULL
+#ifndef USE_BOUNDARIES_DYNAMIC_PROPERTiES
 		ITER_NEIGHBORS_BOUNDARIES(
 			i,
 			const Vector3d delta = ki * body.mass[neighborIndex] * m_data.gradW(xi - body.pos[neighborIndex]);
@@ -519,7 +519,7 @@ int cuda_divergenceSolve(SPH::DFSPHCData& m_data, const unsigned int maxIter, co
 	float time_3_1 = 0;
 	float time_3_2 = 0;
 	RealCuda avg_density_err = 0.0;
-	while (((avg_density_err > eta) || (m_iterationsV < 3)) && (m_iterationsV < maxIter))
+	while (((avg_density_err > eta) || (m_iterationsV < 1)) && (m_iterationsV < maxIter))
 	{
 
 		//////////////////////////////////////////////////////////////////////////
@@ -587,7 +587,7 @@ template <bool warm_start> __device__ void pressureSolveParticle(SPH::DFSPHCData
 	}
 	);
 
-#ifdef COMPUTATION_BOUNDARIES_FULL
+#ifdef USE_BOUNDARIES_DYNAMIC_PROPERTiES
 	ITER_NEIGHBORS_BOUNDARIES(
 		i,
 		const RealCuda kSum = (ki + ((warm_start) ? body.kappa[neighborIndex] : (body.densityAdv[neighborIndex])*body.factor[neighborIndex]));
@@ -605,7 +605,7 @@ template <bool warm_start> __device__ void pressureSolveParticle(SPH::DFSPHCData
 		// Boundary
 		//////////////////////////////////////////////////////////////////////////
 
-#ifndef COMPUTATION_BOUNDARIES_FULL
+#ifndef USE_BOUNDARIES_DYNAMIC_PROPERTiES
 		ITER_NEIGHBORS_BOUNDARIES(
 			i,
 			v_i += ki * body.mass[neighborIndex] * m_data.gradW(xi - body.pos[neighborIndex]);
@@ -1128,18 +1128,26 @@ void cuda_neighborsSearchInternal_sortParticlesId(Vector3d* pos, RealCuda kernel
 	}
 
 
-	//do the actual sort
+
 	// Run sorting operation
 	cub::DeviceRadixSort::SortPairs(*d_temp_storage_pair_sort, temp_storage_bytes_pair_sort,
 		cell_id, cell_id_sorted, p_id, p_id_sorted, numParticles);
 	//*/
 
-
+	cudaGetLastError();
 	cudaStatus = cudaDeviceSynchronize();
 	if (cudaStatus != cudaSuccess) {
 		fprintf(stderr, "sort failed: %d\n", (int)cudaStatus);
 		exit(1598);
 	}
+
+	/*
+	cudaStatus = cudaGetLastError();
+	if (cudaStatus != cudaSuccess) {
+		fprintf(stderr, "sort failed2: %d\n", (int)cudaStatus);
+		exit(1598);
+	}
+	//*/
 
 }
 
@@ -1188,12 +1196,10 @@ void cuda_initNeighborsSearchDataSet(SPH::UnifiedParticleSet& particleSet, SPH::
 	SPH::DFSPHCData& data, bool sortBuffers) {
 
 
-
 	//com the id
 	cuda_neighborsSearchInternal_sortParticlesId(particleSet.pos, data.getKernelRadius(), data.gridOffset, dataSet.numParticles,
 		&dataSet.d_temp_storage_pair_sort, dataSet.temp_storage_bytes_pair_sort, dataSet.cell_id, dataSet.cell_id_sorted,
 		dataSet.p_id, dataSet.p_id_sorted);
-
 
 
 	//since it the init iter I'll sort both even if it's the boundaries
@@ -1206,7 +1212,6 @@ void cuda_initNeighborsSearchDataSet(SPH::UnifiedParticleSet& particleSet, SPH::
 	//and now I cna compute the start and end of each cell :)
 	cuda_neighborsSearchInternal_computeCellStartEnd(dataSet.numParticles, dataSet.cell_id_sorted, dataSet.hist,
 		&dataSet.d_temp_storage_cumul_hist, dataSet.temp_storage_bytes_cumul_hist, dataSet.cell_start_end);
-
 
 
 
@@ -1714,7 +1719,7 @@ void cuda_neighborsSearch(SPH::DFSPHCData& data) {
 
 		//*
 		if (data.boundaries_data->has_factor_computation) {
-			//DFSPH_neighborsSearch_kernel<false> << <numBlocks, BLOCKSIZE >> > (data, data.boundaries_data_cuda);
+			DFSPH_neighborsSearch_kernel<false> << <numBlocks, BLOCKSIZE >> > (data, data.boundaries_data_cuda);
 		}
 		//*/
 
@@ -1752,6 +1757,20 @@ void cuda_neighborsSearch(SPH::DFSPHCData& data) {
 
 		/*
 		{
+			{
+			std::cout << "test: " << data.fluid_data->neighborsDataSet->cell_id_sorted[0] << "   " <<
+				data.fluid_data->neighborsDataSet->cell_id_sorted[10] << "   " <<
+				data.fluid_data->neighborsDataSet->cell_id_sorted[50] << "   " << std::endl;
+
+			int count_valid = 0;
+			for (int i = 0; i < data.fluid_data->numParticles; ++i) {
+				if (data.fluid_data->neighborsDataSet->cell_id_sorted[i] != 0) {
+					count_valid++;
+				}
+			}
+			std::cout << "test2: " << count_valid << std::endl;
+			}
+
 		//a simple check to know the max nbr of neighbors
 		static int absolute_max = 0;
 		int max = 0;
@@ -1787,7 +1806,7 @@ void cuda_neighborsSearch(SPH::DFSPHCData& data) {
 
 
 		//*/
-		/*
+		//*
 		{
 		//another test ot be sure the contruction of the boundries neighbors works orrectly
 		if (data.boundaries_data->has_factor_computation) {

@@ -3,7 +3,7 @@
 
 #define BLOCKSIZE 256
 #define m_eps 1.0e-5
-#define CELL_ROW_LENGTH 64
+#define CELL_ROW_LENGTH 124
 #define CELL_COUNT CELL_ROW_LENGTH*CELL_ROW_LENGTH*CELL_ROW_LENGTH
 
 //use warm start
@@ -11,7 +11,10 @@
 #define USE_WARMSTART_V //for divergence
 
 //apply physics values for static boundaries particles
-#define COMPUTATION_BOUNDARIES_FULL
+//#define COMPUTE_BOUNDARIES_DYNAMIC_PROPERTiES
+#ifdef COMPUTE_BOUNDARIES_DYNAMIC_PROPERTiES
+//#define USE_BOUNDARIES_DYNAMIC_PROPERTiES
+#endif
 
 //use bit shift for dynamic bodies particles index
 #define BITSHIFT_INDEX_DYNAMIC_BODIES

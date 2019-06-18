@@ -5,8 +5,9 @@
 #include "SimulationDataDFSPH.h"
 #endif //SPLISHSPLASH_FRAMEWORK
 #include "SPlisHSPlasH/SPHKernels.h"
-#include <iostream>
 #include "DFSPH_cuda_basic.h"
+#include "DFSPH_define_cuda.h"
+#include <iostream>
 #include <fstream>
 #include <stdio.h>
 #include <cerrno>
@@ -123,6 +124,9 @@ NeighborsSearchDataSet::NeighborsSearchDataSet()
 
 NeighborsSearchDataSet::NeighborsSearchDataSet(unsigned int numParticles_i, unsigned int numParticlesMax_i) : NeighborsSearchDataSet()	
 {
+	static int count_sets = 0;
+	set_id=count_sets++;
+
 	numParticles = numParticles_i;
 	numParticlesMax = numParticlesMax_i;
 
@@ -709,9 +713,17 @@ DFSPHCData::DFSPHCData(FluidModel *model): DFSPHCData()
     std::cout << "particle radius and suport radius: " << particleRadius<<"   "<<m_kernel.getRadius() << std::endl;
 
 #ifdef SPLISHSPLASH_FRAMEWORK
-    if (model!=NULL) {
+	if (model != NULL) {
 		//unified particles for the boundaries
-		bool compute_boundaries_pressure = true;
+		bool compute_boundaries_pressure = false;
+#ifdef	COMPUTE_BOUNDARIES_DYNAMIC_PROPERTiES
+		compute_boundaries_pressure = true;
+		std::cout << "COMPUTE_BOUNDARIES_DYNAMIC_PROPERTiES" << std::endl;
+#ifdef USE_BOUNDARIES_DYNAMIC_PROPERTiES
+		std::cout << "USE_BOUNDARIES_DYNAMIC_PROPERTiES" << std::endl;
+
+#endif
+#endif
 		boundaries_data = new UnifiedParticleSet[1];
 		boundaries_data[0] = UnifiedParticleSet(model->m_particleObjects[1]->numberOfParticles(), compute_boundaries_pressure, false, false);
 		boundaries_data[0].releaseDataOnDestruction = true;

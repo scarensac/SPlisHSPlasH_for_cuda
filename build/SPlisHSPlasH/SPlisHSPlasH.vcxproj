@@ -76,7 +76,7 @@
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>
-      <AdditionalIncludeDirectories>D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\eigen;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\install\CompactNSearch\include;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\cub-1.7.4\cub;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\glew\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\eigen;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\install\CompactNSearch\include;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\cub-1.8.0\cub;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\glew\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <AssemblerListingLocation>Debug/</AssemblerListingLocation>
       <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
       <CompileAs>CompileAsCpp</CompileAs>
@@ -94,10 +94,10 @@
     </ClCompile>
     <ResourceCompile>
       <PreprocessorDefinitions>WIN32;_DEBUG;_WINDOWS;_CRT_SECURE_NO_DEPRECATE;SPH_DATA_PATH=\"../data\";CMAKE_INTDIR=\"Debug\";%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\eigen;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\install\CompactNSearch\include;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\cub-1.7.4\cub;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\glew\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\eigen;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\install\CompactNSearch\include;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\cub-1.8.0\cub;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\glew\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ResourceCompile>
     <CudaCompile>
-      <Include>D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\eigen;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\install\CompactNSearch\include;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\cub-1.7.4\cub;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\glew\include;%(Include)</Include>
+      <Include>D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\eigen;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\install\CompactNSearch\include;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\cub-1.8.0\cub;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\glew\include;%(Include)</Include>
       <Defines>_WINDOWS;_CRT_SECURE_NO_DEPRECATE;SPH_DATA_PATH="../data";CMAKE_INTDIR="Debug";%(Defines)</Defines>
       <AdditionalOptions>%(AdditionalOptions) -Xcompiler="/EHsc -Zi -Ob0"</AdditionalOptions>
       <CodeGeneration>compute_61,sm_61</CodeGeneration>
@@ -112,7 +112,7 @@
       <Warning>W3</Warning>
     </CudaCompile>
     <Midl>
-      <AdditionalIncludeDirectories>D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\eigen;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\install\CompactNSearch\include;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\cub-1.7.4\cub;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\glew\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\eigen;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\install\CompactNSearch\include;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\cub-1.8.0\cub;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\glew\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <OutputDirectory>$(ProjectDir)/$(IntDir)</OutputDirectory>
       <HeaderFileName>%(Filename).h</HeaderFileName>
       <TypeLibraryName>%(Filename).tlb</TypeLibraryName>
@@ -129,7 +129,7 @@
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <ClCompile>
-      <AdditionalIncludeDirectories>D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\eigen;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\install\CompactNSearch\include;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\cub-1.7.4\cub;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\glew\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\eigen;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\install\CompactNSearch\include;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\cub-1.8.0\cub;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\glew\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <AssemblerListingLocation>Release/</AssemblerListingLocation>
       <CompileAs>CompileAsCpp</CompileAs>
       <ExceptionHandling>Sync</ExceptionHandling>
@@ -151,10 +151,10 @@
     </ClCompile>
     <ResourceCompile>
       <PreprocessorDefinitions>WIN32;_WINDOWS;NDEBUG;_CRT_SECURE_NO_DEPRECATE;SPH_DATA_PATH=\"../data\";CMAKE_INTDIR=\"Release\";%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\eigen;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\install\CompactNSearch\include;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\cub-1.7.4\cub;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\glew\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\eigen;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\install\CompactNSearch\include;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\cub-1.8.0\cub;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\glew\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ResourceCompile>
     <CudaCompile>
-      <Include>D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\eigen;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\install\CompactNSearch\include;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\cub-1.7.4\cub;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\glew\include;%(Include)</Include>
+      <Include>D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\eigen;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\install\CompactNSearch\include;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\cub-1.8.0\cub;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\glew\include;%(Include)</Include>
       <Defines>_WINDOWS;NDEBUG;_CRT_SECURE_NO_DEPRECATE;SPH_DATA_PATH="../data";CMAKE_INTDIR="Release";%(Defines)</Defines>
       <AdditionalOptions>%(AdditionalOptions) -Xcompiler="/EHsc -Ob2"</AdditionalOptions>
       <CodeGeneration>compute_61,sm_61</CodeGeneration>
@@ -168,7 +168,7 @@
       <Warning>W3</Warning>
     </CudaCompile>
     <Midl>
-      <AdditionalIncludeDirectories>D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\eigen;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\install\CompactNSearch\include;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\cub-1.7.4\cub;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\glew\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\eigen;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\install\CompactNSearch\include;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\cub-1.8.0\cub;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\glew\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <OutputDirectory>$(ProjectDir)/$(IntDir)</OutputDirectory>
       <HeaderFileName>%(Filename).h</HeaderFileName>
       <TypeLibraryName>%(Filename).tlb</TypeLibraryName>
@@ -185,7 +185,7 @@
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">
     <ClCompile>
-      <AdditionalIncludeDirectories>D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\eigen;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\install\CompactNSearch\include;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\cub-1.7.4\cub;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\glew\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\eigen;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\install\CompactNSearch\include;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\cub-1.8.0\cub;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\glew\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <AssemblerListingLocation>MinSizeRel/</AssemblerListingLocation>
       <CompileAs>CompileAsCpp</CompileAs>
       <ExceptionHandling>Sync</ExceptionHandling>
@@ -202,10 +202,10 @@
     </ClCompile>
     <ResourceCompile>
       <PreprocessorDefinitions>WIN32;_WINDOWS;NDEBUG;_CRT_SECURE_NO_DEPRECATE;SPH_DATA_PATH=\"../data\";CMAKE_INTDIR=\"MinSizeRel\";%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\eigen;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\install\CompactNSearch\include;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\cub-1.7.4\cub;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\glew\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\eigen;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\install\CompactNSearch\include;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\cub-1.8.0\cub;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\glew\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ResourceCompile>
     <CudaCompile>
-      <Include>D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\eigen;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\install\CompactNSearch\include;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\cub-1.7.4\cub;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\glew\include;%(Include)</Include>
+      <Include>D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\eigen;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\install\CompactNSearch\include;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\cub-1.8.0\cub;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\glew\include;%(Include)</Include>
       <Defines>_WINDOWS;NDEBUG;_CRT_SECURE_NO_DEPRECATE;SPH_DATA_PATH="../data";CMAKE_INTDIR="MinSizeRel";%(Defines)</Defines>
       <AdditionalOptions>%(AdditionalOptions) -Xcompiler="/EHsc -Ob1"</AdditionalOptions>
       <CodeGeneration>compute_61,sm_61</CodeGeneration>
@@ -219,7 +219,7 @@
       <Warning>W3</Warning>
     </CudaCompile>
     <Midl>
-      <AdditionalIncludeDirectories>D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\eigen;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\install\CompactNSearch\include;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\cub-1.7.4\cub;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\glew\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\eigen;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\install\CompactNSearch\include;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\cub-1.8.0\cub;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\glew\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <OutputDirectory>$(ProjectDir)/$(IntDir)</OutputDirectory>
       <HeaderFileName>%(Filename).h</HeaderFileName>
       <TypeLibraryName>%(Filename).tlb</TypeLibraryName>
@@ -236,7 +236,7 @@
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">
     <ClCompile>
-      <AdditionalIncludeDirectories>D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\eigen;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\install\CompactNSearch\include;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\cub-1.7.4\cub;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\glew\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\eigen;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\install\CompactNSearch\include;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\cub-1.8.0\cub;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\glew\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <AssemblerListingLocation>RelWithDebInfo/</AssemblerListingLocation>
       <CompileAs>CompileAsCpp</CompileAs>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
@@ -252,10 +252,10 @@
     </ClCompile>
     <ResourceCompile>
       <PreprocessorDefinitions>WIN32;_WINDOWS;NDEBUG;_CRT_SECURE_NO_DEPRECATE;SPH_DATA_PATH=\"../data\";CMAKE_INTDIR=\"RelWithDebInfo\";%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\eigen;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\install\CompactNSearch\include;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\cub-1.7.4\cub;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\glew\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\eigen;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\install\CompactNSearch\include;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\cub-1.8.0\cub;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\glew\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ResourceCompile>
     <CudaCompile>
-      <Include>D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\eigen;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\install\CompactNSearch\include;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\cub-1.7.4\cub;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\glew\include;%(Include)</Include>
+      <Include>D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\eigen;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\install\CompactNSearch\include;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\cub-1.8.0\cub;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\glew\include;%(Include)</Include>
       <Defines>_WINDOWS;NDEBUG;_CRT_SECURE_NO_DEPRECATE;SPH_DATA_PATH="../data";CMAKE_INTDIR="RelWithDebInfo";%(Defines)</Defines>
       <AdditionalOptions>%(AdditionalOptions) -Xcompiler="/EHsc -Zi -Ob1"</AdditionalOptions>
       <CodeGeneration>compute_61,sm_61</CodeGeneration>
@@ -269,7 +269,7 @@
       <Warning>W3</Warning>
     </CudaCompile>
     <Midl>
-      <AdditionalIncludeDirectories>D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\eigen;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\install\CompactNSearch\include;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\cub-1.7.4\cub;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\glew\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\eigen;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\install\CompactNSearch\include;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\cub-1.8.0\cub;D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\extern\glew\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <OutputDirectory>$(ProjectDir)/$(IntDir)</OutputDirectory>
       <HeaderFileName>%(Filename).h</HeaderFileName>
       <TypeLibraryName>%(Filename).tlb</TypeLibraryName>

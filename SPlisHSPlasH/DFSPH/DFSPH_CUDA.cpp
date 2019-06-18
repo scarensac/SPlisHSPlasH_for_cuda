@@ -60,6 +60,12 @@ void DFSPHCUDA::step()
 
     static int count_steps = 0;
 
+	if (TimeManager::getCurrent()->getTime() > 0.5) {
+		if ((count_steps % 32) == 0) {
+			//handleSimulationMovement(Vector3d(1, 0, 0));
+		}
+	}
+
 #ifdef SPLISHSPLASH_FRAMEWORK
     m_data.viscosity = m_viscosity->getViscosity();
 #else
@@ -108,6 +114,8 @@ void DFSPHCUDA::step()
         if (m_enableDivergenceSolver)
         {
             m_iterationsV = cuda_divergenceSolve(m_data, m_maxIterationsV, m_maxErrorV);
+
+			
         }
         else
         {
@@ -143,7 +151,28 @@ void DFSPHCUDA::step()
 
 
         m_iterations = cuda_pressureSolve(m_data, m_maxIterations, m_maxError);
+		if (false&&count_steps == 100) {
+			std::string filename = "boundaries density adv.csv";
+				std::remove(filename.c_str());
+			ofstream myfile;
+			myfile.open(filename, std::ios_base::app);
+			if (myfile.is_open()) {
+				for (int i = 0; i < m_data.boundaries_data->numParticles; ++i) {
+					myfile << i << ", " << m_data.boundaries_data->getNumberOfNeighbourgs(i,0) 
+						<< ", " << m_data.boundaries_data->getNumberOfNeighbourgs(i,1) 
+						<< ", " << m_data.boundaries_data->getNumberOfNeighbourgs(i,2)
+						<< ", " << m_data.boundaries_data->density[i]
+						<< ", " << m_data.boundaries_data->densityAdv[i] << std::endl;;
 
+				}
+				//myfile << total_time / (count_steps + 1) << ", " << m_iterations << ", " << m_iterationsV << std::endl;;
+				myfile.close();
+			}
+			else {
+				std::cout << "failed to open file: " << filename << "   reason: " << std::strerror(errno) << std::endl;
+			}
+		}
+		
 
         tab_timepoint[current_timepoint++] = std::chrono::steady_clock::now();
 
@@ -200,6 +229,8 @@ void DFSPHCUDA::step()
 
 
         if (false){
+			static float real_time = 0;
+			real_time += new_time_step;
             std::string filename = "timmings_detailled.csv";
             if (count_steps == 0) {
                 std::remove(filename.c_str());
@@ -207,8 +238,9 @@ void DFSPHCUDA::step()
             ofstream myfile;
             myfile.open(filename, std::ios_base::app);
             if (myfile.is_open()) {
-                myfile << total_time / (count_steps + 1) << ", " << m_iterations << ", " << m_iterationsV << std::endl;;
-                myfile.close();
+                //myfile << total_time / (count_steps + 1) << ", " << m_iterations << ", " << m_iterationsV << std::endl;;
+				myfile << real_time << ", " << time_iter << ", " << m_iterations << ", " << m_iterationsV << std::endl;;
+				myfile.close();
             }
             else {
                 std::cout << "failed to open file: " << filename << "   reason: " << std::strerror(errno) << std::endl;
@@ -216,17 +248,18 @@ void DFSPHCUDA::step()
         }
 
 
+		if (false) {
+			if (count_steps > 1500) {
+				count_steps = 0;
+				total_time = 0;
+				iter_pressure_avg = 0;
+				iter_divergence_avg = 0;
 
-        if (count_steps > 1500) {
-            count_steps = 0;
-            total_time = 0;
-            iter_pressure_avg = 0;
-            iter_divergence_avg = 0;
-
-            for (int i = 0; i < NB_TIME_POINTS; ++i) {
-                tab_avg[i] = 0;
-            }
-        }
+				for (int i = 0; i < NB_TIME_POINTS; ++i) {
+					tab_avg[i] = 0;
+				}
+			}
+		}
 
         end = std::chrono::steady_clock::now();
 
@@ -303,8 +336,10 @@ void DFSPHCUDA::step()
 
     if(show_fluid_timings){
         static int true_count_steps = 0;
-        std::cout << "step finished: " << true_count_steps++<<"  "<< count_steps++ << std::endl;
+        std::cout << "step finished: " << true_count_steps<<"  "<< count_steps << std::endl;
+		true_count_steps++;
     }
+	count_steps++;
 }
 
 void DFSPHCUDA::reset()
@@ -1190,7 +1225,7 @@ void DFSPHCUDA::handleSimulationLoad(bool load_liquid, bool load_liquid_velociti
     if (load_boundaries||load_solids){
         m_data.computeRigidBodiesParticlesMass();
 
-        handleSimulationSave(false, true, true);
+        //handleSimulationSave(false, true, true);
     }
 
     if (load_liquid) {

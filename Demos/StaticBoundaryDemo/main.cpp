@@ -22,6 +22,10 @@
 #endif
 #endif
 
+#define FFMPEG_RENDER
+#ifdef FFMPEG_RENDER
+//#define USE_MULTIPLES_SHADER
+#endif
 using namespace SPH;
 using namespace Eigen;
 using namespace std;
@@ -37,6 +41,7 @@ void partioExport();
 DemoBase base;
 Real nextFrameTime = 0.0;
 unsigned int frameCounter = 1;
+FILE* ffmpeg = NULL;
 
 // main 
 int main( int argc, char **argv )
@@ -141,16 +146,118 @@ void timeStep ()
 				frameCounter++;
 			}
 		}
+		if (TimeManager::getCurrent()->getTime() > 0.5) {
+			//MiniGL::move(-0.7*TimeManager::getCurrent()->getTimeStepSize(), 0, 0);
+		}
 	}
+
+#ifdef FFMPEG_RENDER
+	//the part to save to file
+	static int steps=0;
+	if (ffmpeg != NULL) {
+		if (TimeManager::getCurrent()->getTime()>10) {
+			_pclose(ffmpeg);
+			exit(0);
+		}
+		steps++;
+	}
+#endif
 }
 
+#include <sstream>
 
 void render()
 {
-	MiniGL::coordinateSystem();
+	static int width = glutGet(GLUT_WINDOW_WIDTH);
+	static int height = glutGet(GLUT_WINDOW_HEIGHT);
+
+
+	static int printed_timing = 0;
+	static float old_time = 0;
+	static std::chrono::steady_clock::time_point old_real_time = std::chrono::steady_clock::now();
+
+	if (old_time == 0 && TimeManager::getCurrent()->getTime() > 0) {
+		old_time = TimeManager::getCurrent()->getTime();
+		old_real_time = std::chrono::steady_clock::now();
+	}
+
+	if (TimeManager::getCurrent()->getTime() > old_time + 0.25) {
+		float count_steps = (TimeManager::getCurrent()->getTime() - old_time) / TimeManager::getCurrent()->getTimeStepSize();
+		std::chrono::steady_clock::time_point now = std::chrono::steady_clock::now();
+		float time = std::chrono::duration_cast<std::chrono::nanoseconds> (now - old_real_time).count() / 1000000.0f;
+		printed_timing = time / count_steps;
+
+		old_real_time = now;
+		old_time = TimeManager::getCurrent()->getTime();
+	}
+
+	glDisable(GL_LIGHTING);
+	glColor3f(1, 0, 0);
+	std::ostringstream oss;
+	oss << printed_timing;
+
+	int w;
+	w = glutBitmapLength(GLUT_BITMAP_TIMES_ROMAN_24, (const unsigned char*)(oss.str().c_str()));
+
+	oss << " ms";
+
+
+	float x = .5; /* Centre in the middle of the window */
+	glWindowPos2i(width / 2 - w, height - 100);
+
+	int len = strlen(oss.str().c_str());
+	for (int i = 0; i < len; i++) {
+		glutBitmapCharacter(GLUT_BITMAP_TIMES_ROMAN_24, oss.str().c_str()[i]);
+	}
+	glEnable(GL_LIGHTING);
+
+#ifdef FFMPEG_RENDER
+	static int* buffer = new int[width*height];
+	
+
+	if (ffmpeg == NULL) {
+		int framerate = (1 / TimeManager::getCurrent()->getTimeStepSize())/2;
+		std::cout<<"video framerate: "<<framerate<< std::endl;
+		std::ostringstream oss;
+		// start ffmpeg telling it to expect raw rgba 720p-60hz frames
+		// -i - tells it to read frames from stdin
+		oss << "D:\\ffmpeg-4.1.3-win64-static\\bin\\ffmpeg " <<
+			" -r "<<framerate<<" -f rawvideo -pix_fmt rgba -s "<<width<<"x"<<height<<" -i - " <<
+			"-threads 0 -preset fast -y -pix_fmt yuv420p -crf 21 -vf vflip output.mp4";
+
+
+
+		// open pipe to ffmpeg's stdin in binary write mode
+		ffmpeg = _popen(oss.str().c_str(), "wb");
+	}
+#endif
+
+	//activate this if you want the axis
+	//MiniGL::coordinateSystem();
 
 	base.renderFluid();
+
+#ifdef FFMPEG_RENDER
+	glReadPixels(0, 0, width, height, GL_RGBA, GL_UNSIGNED_BYTE, buffer);
+
+	fwrite(buffer, sizeof(int)*width*height, 1, ffmpeg);
+
+
+#ifdef USE_MULTIPLES_SHADER
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_ACCUM_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
+
+	base.renderFluid(1);
+
+	glReadPixels(0, 0, width, height, GL_RGBA, GL_UNSIGNED_BYTE, buffer);
+	fwrite(buffer, sizeof(int)*width*height, 1, ffmpeg);
+#endif
+#endif
+
 	renderBoundary();
+
+
+
+	
 }
 
 void renderBoundary()
@@ -176,7 +283,7 @@ void renderBoundary()
 			}
 			else 
 			{
-				std::cout << "using original" << std::endl;
+				//std::cout << "using original" << std::endl;
 				glEnableVertexAttribArray(0);
 				for (int body = simulationMethod.model.numberOfRigidBodyParticleObjects() - 1; body >= 0; body--)
 				{

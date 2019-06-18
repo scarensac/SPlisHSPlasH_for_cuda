@@ -114,6 +114,7 @@ void DemoBase::cleanup()
 void DemoBase::initShaders()
 {
 	string vertFile = getDataPath() + "/shaders/vs_points.glsl";
+	//string fragFile = getDataPath() + "/shaders/fs_points_transparent.glsl";
 	string fragFile = getDataPath() + "/shaders/fs_points.glsl";
 	m_shader.compileShaderFile(GL_VERTEX_SHADER, vertFile);
 	m_shader.compileShaderFile(GL_FRAGMENT_SHADER, fragFile);
@@ -140,6 +141,22 @@ void DemoBase::initShaders()
 	m_meshShader.addUniform("shininess");
 	m_meshShader.addUniform("specular_factor");
 	m_meshShader.end();
+
+	vertFile = getDataPath() + "/shaders/vs_points.glsl";
+	fragFile = getDataPath() + "/shaders/fs_points_transparent.glsl";
+	m_shader_transparent.compileShaderFile(GL_VERTEX_SHADER, vertFile);
+	m_shader_transparent.compileShaderFile(GL_FRAGMENT_SHADER, fragFile);
+	m_shader_transparent.createAndLinkProgram();
+	m_shader_transparent.begin();
+	m_shader_transparent.addUniform("modelview_matrix");
+	m_shader_transparent.addUniform("projection_matrix");
+	m_shader_transparent.addUniform("radius");
+	m_shader_transparent.addUniform("viewport_width");
+	m_shader_transparent.addUniform("color");
+	m_shader_transparent.addUniform("projection_radius");
+	m_shader_transparent.addUniform("max_velocity");
+	m_shader_transparent.end();
+	
 }
 
 
@@ -163,23 +180,28 @@ void DemoBase::meshShaderEnd()
 	m_meshShader.end();
 }
 
-void DemoBase::pointShaderBegin(const float *col)
+void DemoBase::pointShaderBegin(const float *col,int type_renderer)
 {
-	m_shader.begin();
+	if (type_renderer == 1) {
+		glDepthMask(GL_FALSE);
+	}
+
+	Shader& shader = (type_renderer == 1) ? m_shader_transparent : m_shader;
+	shader.begin();
 
 	GLint viewport[4];
 	glGetIntegerv(GL_VIEWPORT, viewport);
-	glUniform1f(m_shader.getUniform("viewport_width"), (float)viewport[2]);
-	glUniform1f(m_shader.getUniform("radius"), (float)m_scene.particleRadius);
-	glUniform1f(m_shader.getUniform("max_velocity"), (GLfloat) getRenderMaxVelocity());
-	glUniform3fv(m_shader.getUniform("color"), 1, col);
+	glUniform1f(shader.getUniform("viewport_width"), (float)viewport[2]);
+	glUniform1f(shader.getUniform("radius"), (float)m_scene.particleRadius);
+	glUniform1f(shader.getUniform("max_velocity"), (GLfloat) getRenderMaxVelocity());
+	glUniform3fv(shader.getUniform("color"), 1, col);
 
 	GLfloat matrix[16];
 	glGetFloatv(GL_MODELVIEW_MATRIX, matrix);
-	glUniformMatrix4fv(m_shader.getUniform("modelview_matrix"), 1, GL_FALSE, matrix);
+	glUniformMatrix4fv(shader.getUniform("modelview_matrix"), 1, GL_FALSE, matrix);
 	GLfloat pmatrix[16];
 	glGetFloatv(GL_PROJECTION_MATRIX, pmatrix);
-	glUniformMatrix4fv(m_shader.getUniform("projection_matrix"), 1, GL_FALSE, pmatrix);
+	glUniformMatrix4fv(shader.getUniform("projection_matrix"), 1, GL_FALSE, pmatrix);
 
 	glEnable(GL_DEPTH_TEST);
 	// Point sprites do not have to be explicitly enabled since OpenGL 3.2 where
@@ -190,9 +212,14 @@ void DemoBase::pointShaderBegin(const float *col)
 	glPointParameterf(GL_POINT_SPRITE_COORD_ORIGIN, GL_LOWER_LEFT);
 }
 
-void DemoBase::pointShaderEnd()
+void DemoBase::pointShaderEnd(int type_renderer)
 {
-	m_shader.end();
+	Shader& shader = (type_renderer==1)?m_shader_transparent:m_shader;
+	shader.end();
+
+	if (type_renderer == 1) {
+		glDepthMask(GL_TRUE);
+	}
 }
 
 void DemoBase::initParameters()
@@ -920,7 +947,7 @@ bool DemoBase::isDFSPH() {
 
 
 
-void DemoBase::renderFluid()
+void DemoBase::renderFluid(int type_renderer)
 {
 	// Draw simulation model
 	MiniGL::drawTime(TimeManager::getCurrent()->getTime());
@@ -945,7 +972,7 @@ void DemoBase::renderFluid()
 	{
 		float fluidColor[4] = { 0.3f, 0.5f, 0.9f, 1.0f };
 		float fluidColor2[4] = { 0.3f, 0.9f, 0.5f, 1.0f };
-		pointShaderBegin(&fluidColor[0]);
+		pointShaderBegin(&fluidColor[0],type_renderer);
 
 	    if (m_simulationMethod.simulationMethod == SimulationMethods::DFSPH_CUDA)
 		{
@@ -976,7 +1003,7 @@ void DemoBase::renderFluid()
 		}
 
 
-		pointShaderEnd();
+		pointShaderEnd(type_renderer);
 	}
 	else
 	{

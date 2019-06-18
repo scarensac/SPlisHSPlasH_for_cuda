@@ -68,9 +68,9 @@ void allocate_UnifiedParticleSet_cuda(SPH::UnifiedParticleSet& container) {
 		cudaMallocManaged(&(container.numberOfNeighbourgs), container.numParticlesMax * 3 * sizeof(int));
 		cudaMallocManaged(&(container.neighbourgs), container.numParticlesMax * MAX_NEIGHBOURS * sizeof(int));
 
-		cudaMalloc(&(container.density), container.numParticlesMax * sizeof(RealCuda));
+		cudaMallocManaged(&(container.density), container.numParticlesMax * sizeof(RealCuda));
 		cudaMalloc(&(container.factor), container.numParticlesMax * sizeof(RealCuda));
-		cudaMalloc(&(container.densityAdv), container.numParticlesMax * sizeof(RealCuda));
+		cudaMallocManaged(&(container.densityAdv), container.numParticlesMax * sizeof(RealCuda));
 
 		cudaMalloc(&(container.kappa), container.numParticlesMax * sizeof(RealCuda));
 		cudaMalloc(&(container.kappaV), container.numParticlesMax * sizeof(RealCuda));
