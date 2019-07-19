@@ -151,18 +151,22 @@ void DFSPHCUDA::step()
 
 
         m_iterations = cuda_pressureSolve(m_data, m_maxIterations, m_maxError);
-		if (false&&count_steps == 100) {
+
+		if (false&&count_steps == 0) 	
+		{
+			//this is only for debug purpose
 			std::string filename = "boundaries density adv.csv";
 				std::remove(filename.c_str());
 			ofstream myfile;
 			myfile.open(filename, std::ios_base::app);
 			if (myfile.is_open()) {
-				for (int i = 0; i < m_data.boundaries_data->numParticles; ++i) {
-					myfile << i << ", " << m_data.boundaries_data->getNumberOfNeighbourgs(i,0) 
-						<< ", " << m_data.boundaries_data->getNumberOfNeighbourgs(i,1) 
-						<< ", " << m_data.boundaries_data->getNumberOfNeighbourgs(i,2)
-						<< ", " << m_data.boundaries_data->density[i]
-						<< ", " << m_data.boundaries_data->densityAdv[i] << std::endl;;
+				SPH::UnifiedParticleSet* set = m_data.fluid_data;
+				for (int i = 0; i < set->numParticles; ++i) {
+					myfile << i << ", " <<set->getNumberOfNeighbourgs(i,0) 
+						<< ", " << set->getNumberOfNeighbourgs(i,1) 
+						<< ", " << set->getNumberOfNeighbourgs(i,2)
+						<< ", " << set->density[i]
+						<< ", " << set->densityAdv[i] << std::endl;;
 
 				}
 				//myfile << total_time / (count_steps + 1) << ", " << m_iterations << ", " << m_iterationsV << std::endl;;
@@ -226,6 +230,12 @@ void DFSPHCUDA::step()
                 std::cout << tab_name[i] << "  :"<< (tab_avg[i]/(count_steps+1))<< "  ("<<time <<")"<< std::endl ;
             }
         }
+
+		if (true) {
+			if ((count_steps % 50) == 0) {
+				std::cout << "time computation for "<< count_steps <<" steps: " << total_time << std::endl;
+			}
+		}
 
 
         if (false){

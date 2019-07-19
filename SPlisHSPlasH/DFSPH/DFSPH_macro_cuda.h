@@ -70,13 +70,118 @@ inline void gpuAssert(cudaError_t code, const char *file, int line, bool abort =
 
 ////////////////////////////////////////////////////
 /////////   NEIGHBORS ITERATIONS       /////////////
-////////////////////////////////////////////////////
+//////////////////////////////////////////////////// 
 
-#define ITER_NEIGHBORS_INIT(index) int* neighbors_ptr = particleSet->getNeighboursPtr(index); int* end_ptr = neighbors_ptr;
+/////////   FROM STRUCTURE       /////////////
 
-#define ITER_NEIGHBORS_FLUID(index,code){\
+#define ITER_NEIGHBORS_INIT_FROM_STRUCTURE_BASE(data,particleSet,index)\
+	RealCuda radius_sq = data.getKernelRadius();\
+	Vector3d pos = particleSet->pos[index];\
+	Vector3d pos_cell = (pos / radius_sq) + data.gridOffset;\
+	int x = pos_cell.x;\
+	int y = pos_cell.y;\
+	int z = pos_cell.z;\
+	radius_sq *= radius_sq;
+
+
+#define ITER_NEIGHBORS_FROM_STRUCTURE_BASE(neighborsDataSet,positions,code){\
+    for (int k = -1; k < 2; ++k) {\
+    for (int m = -1; m < 2; ++m) {\
+    for (int n = -1; n < 2; ++n) {\
+    unsigned int cur_cell_id = COMPUTE_CELL_INDEX(x + n, y + k, z + m);\
+    unsigned int end = neighborsDataSet->cell_start_end[cur_cell_id + 1];\
+    for (unsigned int cur_particle = neighborsDataSet->cell_start_end[cur_cell_id]; cur_particle < end; ++cur_particle) {\
+    unsigned int j = neighborsDataSet->p_id_sorted[cur_particle];\
+    if ((pos - positions[j]).squaredNorm() < radius_sq) {\
+    code\
+}\
+}\
+}\
+}\
+}\
+}
+
+//since this version use the std index to be able to iterate on 3 successive cells
+//I can do the -1 at the start on x.
+//one thing: it x=0 then we can only iterate 2 cells at a time
+#define ITER_NEIGHBORS_INIT_FROM_STRUCTURE_LINEAR_ADVANCED(data,particleSet,index)\
+	ITER_NEIGHBORS_INIT_FROM_STRUCTURE_BASE(data,particleSet,index)\
+	unsigned int successive_cells_count = (x > 0) ? 3 : 2;\
+	x = (x > 0) ? x - 1 : x;
+
+
+#define ITER_NEIGHBORS_FROM_STRUCTURE_LINEAR_ADVANCED(neighborsDataSet,positions,code){\
+    for (int k = -1; k < 2; ++k) {\
+    for (int m = -1; m < 2; ++m) {\
+    unsigned int cur_cell_id = COMPUTE_CELL_INDEX(x, y + k, z + m);\
+    unsigned int end = neighborsDataSet->cell_start_end[cur_cell_id + successive_cells_count];\
+    for (unsigned int cur_particle = neighborsDataSet->cell_start_end[cur_cell_id]; cur_particle < end; ++cur_particle) {\
+    unsigned int j = neighborsDataSet->p_id_sorted[cur_particle];\
+    if ((pos - positions[j]).squaredNorm() < radius_sq) {\
+    code\
+}\
+}\
+}\
+}\
+}
+
+#ifdef USE_COMPLETE
+#define ITER_NEIGHBORS_INIT_FROM_STRUCTURE(data, particleSet, index) ITER_NEIGHBORS_INIT_FROM_STRUCTURE_BASE(data, particleSet, index)
+#define ITER_NEIGHBORS_FROM_STRUCTURE(neighborsDataSet,positions,code) ITER_NEIGHBORS_FROM_STRUCTURE_BASE(neighborsDataSet,positions,code)
+#else
+#define ITER_NEIGHBORS_INIT_FROM_STRUCTURE(data, particleSet, index) ITER_NEIGHBORS_INIT_FROM_STRUCTURE_LINEAR_ADVANCED(data, particleSet, index)
+#define ITER_NEIGHBORS_FROM_STRUCTURE(neighborsDataSet,positions,code) ITER_NEIGHBORS_FROM_STRUCTURE_LINEAR_ADVANCED(neighborsDataSet,positions,code)
+#endif
+
+///TODO that if(i!=j) is only a correct solution if there is only one fluid set and if we are computing the properties for that fluid set
+#define ITER_NEIGHBORS_FLUID_FROM_STRUCTURE(data,particleSet,index,code){\
+	const SPH::UnifiedParticleSet& body = data.fluid_data_cuda[0];\
+	ITER_NEIGHBORS_FROM_STRUCTURE(body.neighborsDataSet, body.pos,{if(index!=j){const unsigned int neighborIndex = j;code}})};
+
+#define ITER_NEIGHBORS_BOUNDARIES_FROM_STRUCTURE(data,particleSet,index,code){\
+	const SPH::UnifiedParticleSet& body = data.boundaries_data_cuda[0];\
+	ITER_NEIGHBORS_FROM_STRUCTURE(body.neighborsDataSet, body.pos,{const unsigned int neighborIndex = j;code})};
+
+
+
+#ifdef GROUP_DYNAMIC_BODIES_NEIGHBORS_SEARCH
+#define ITER_NEIGHBORS_SOLIDS_FROM_STRUCTURE(data,particleSet,index,code){\
+if (data.numDynamicBodies > 0) {\
+ITER_NEIGHBORS_FROM_STRUCTURE(data.neighborsDataSetGroupedDynamicBodies_cuda, data.posBufferGroupedDynamicBodies,\
+{ int body_id = 0; int count_particles_previous_bodies = 0;\
+while ((count_particles_previous_bodies + data.vector_dynamic_bodies_data_cuda[body_id].numParticles)<j) {\
+	count_particles_previous_bodies += data.vector_dynamic_bodies_data_cuda[body_id].numParticles;\
+	body_id++;\
+}\
+const SPH::UnifiedParticleSet& body = m_data.vector_dynamic_bodies_data_cuda[body_id];\
+const unsigned int neighborIndex = j - count_particles_previous_bodies;\
+code;\
+}\
+)\
+}\
+}
+#else
+#define ITER_NEIGHBORS_SOLIDS_FROM_STRUCTURE(data,index,code){\
+if (data.numDynamicBodies > 0) {\
+for (int id_body = 0; id_body < data.numDynamicBodies; ++id_body) {\
+const SPH::UnifiedParticleSet& body = m_data.vector_dynamic_bodies_data_cuda[id_body];\
+ITER_NEIGHBORS_FROM_STRUCTURE(body.neighborsDataSet, body.pos,\
+const unsigned int neighborIndex = j;\
+code;\
+)\
+}\
+}\
+}
+#endif
+
+
+/////////   FROM STORAGE       /////////////
+
+#define ITER_NEIGHBORS_INIT_FROM_STORAGE(data,particleSet,index) int* neighbors_ptr = particleSet->getNeighboursPtr(index); int* end_ptr = neighbors_ptr;
+
+#define ITER_NEIGHBORS_FLUID_FROM_STORAGE(data,particleSet,index,code){\
     end_ptr += particleSet->getNumberOfNeighbourgs(index);\
-    const SPH::UnifiedParticleSet& body = *(m_data.fluid_data_cuda);\
+    const SPH::UnifiedParticleSet& body = *(data.fluid_data_cuda);\
     while (neighbors_ptr != end_ptr)\
 {\
     const unsigned int neighborIndex = *neighbors_ptr++;\
@@ -85,8 +190,8 @@ inline void gpuAssert(cudaError_t code, const char *file, int line, bool abort =
     }
 
 
-#define ITER_NEIGHBORS_BOUNDARIES(index,code){\
-    const SPH::UnifiedParticleSet& body = *(m_data.boundaries_data_cuda);\
+#define ITER_NEIGHBORS_BOUNDARIES_FROM_STORAGE(data,particleSet,index,code){\
+    const SPH::UnifiedParticleSet& body = *(data.boundaries_data_cuda);\
     end_ptr += particleSet->getNumberOfNeighbourgs(index, 1);\
     while (neighbors_ptr != end_ptr)\
 {\
@@ -96,17 +201,28 @@ inline void gpuAssert(cudaError_t code, const char *file, int line, bool abort =
     }
 
 
-#define ITER_NEIGHBORS_SOLIDS(index,code){\
+#define ITER_NEIGHBORS_SOLIDS_FROM_STORAGE(data,particleSet,index,code){\
     end_ptr += particleSet->getNumberOfNeighbourgs(index, 2);\
     while (neighbors_ptr != end_ptr)\
 {\
     READ_DYNAMIC_BODIES_PARTICLES_INDEX(neighbors_ptr, bodyIndex, neighborIndex);\
-    const SPH::UnifiedParticleSet& body = m_data.vector_dynamic_bodies_data_cuda[bodyIndex];\
+    const SPH::UnifiedParticleSet& body = data.vector_dynamic_bodies_data_cuda[bodyIndex];\
     code; \
     }\
     }
 
 
+#ifdef STORE_PARTICLE_NEIGHBORS
+#define ITER_NEIGHBORS_INIT(data,particleSet,index) ITER_NEIGHBORS_INIT_FROM_STORAGE(data,particleSet,index)  
+#define ITER_NEIGHBORS_FLUID(data,particleSet,index,code) ITER_NEIGHBORS_FLUID_FROM_STORAGE(data,particleSet,index,code)
+#define ITER_NEIGHBORS_BOUNDARIES(data,particleSet,index,code) ITER_NEIGHBORS_BOUNDARIES_FROM_STORAGE(data,particleSet,index,code)
+#define ITER_NEIGHBORS_SOLIDS(data,particleSet,index,code) ITER_NEIGHBORS_SOLIDS_FROM_STORAGE(data,particleSet,index,code)
+#else
+#define ITER_NEIGHBORS_INIT(data,particleSet,index) ITER_NEIGHBORS_INIT_FROM_STRUCTURE(data,particleSet,index)  
+#define ITER_NEIGHBORS_FLUID(data,particleSet,index,code) ITER_NEIGHBORS_FLUID_FROM_STRUCTURE(data,particleSet,index,code)
+#define ITER_NEIGHBORS_BOUNDARIES(data,particleSet,index,code) ITER_NEIGHBORS_BOUNDARIES_FROM_STRUCTURE(data,particleSet,index,code)
+#define ITER_NEIGHBORS_SOLIDS(data,particleSet,index,code) ITER_NEIGHBORS_SOLIDS_FROM_STRUCTURE(data,particleSet,index,code)
+#endif
 
 ////////////////////////////////////////////////////
 /////////NEIGHBORS STRUCT CONSTRUCTION /////////////

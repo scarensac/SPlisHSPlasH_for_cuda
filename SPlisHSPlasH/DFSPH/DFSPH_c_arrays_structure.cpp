@@ -634,7 +634,7 @@ void UnifiedParticleSet::zeroVelocities() {
 
 
 void UnifiedParticleSet::getMinMaxNaive(Vector3d& min, Vector3d& max) {
-
+	get_UnifiedParticleSet_min_max_naive_cuda(*this, min, max);
 }
 
 
@@ -843,11 +843,16 @@ void DFSPHCData::reset(FluidModel *model) {
         ///the reason I don't do the neighbor search here is that I would not be able to use it
         ///to sort the data since I copy them at every time step (so it would be useless)
     }
+	
+
 
 	//load the data for the fluid
 	fluid_data->reset<FluidModel>(model);
 	//init the boundaries neighbor searchs
 	fluid_data->initNeighborsSearchData(*this, true, false);
+
+	//redo the rigid bodies mass computation
+	computeRigidBodiesParticlesMass();
 
 #endif //SPLISHSPLASH_FRAMEWORK
 

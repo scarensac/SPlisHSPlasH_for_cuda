@@ -30,7 +30,8 @@ protected:
     RealCuda m_l;
     RealCuda m_W_zero;
 public:
-    FUNCTION RealCuda getRadius() { return m_radius; }
+	FUNCTION RealCuda getRadius() { return m_radius; }
+	FUNCTION RealCuda getRadius() const { return m_radius; }
     FUNCTION void setRadius(RealCuda val)
     {
         m_radius = val;
@@ -505,7 +506,8 @@ public:
     FUNCTION inline RealCuda W(const Vector3d &r) const { return m_kernel.W(r); }
     FUNCTION inline RealCuda W(const RealCuda r) const { return m_kernel.W(r); }
     FUNCTION inline Vector3d gradW(const Vector3d &r) const { return m_kernel.gradW(r); }
-    FUNCTION inline RealCuda getKernelRadius()  { return m_kernel.getRadius(); }
+	FUNCTION inline RealCuda getKernelRadius() { return m_kernel.getRadius(); }
+	FUNCTION inline RealCuda getKernelRadius() const { return m_kernel.getRadius(); } 
 
     FUNCTION inline RealCuda WAdhesion(const Vector3d &r) const { return m_kernel_adhesion.W(r); }
     FUNCTION inline RealCuda WAdhesion(const RealCuda r) const { return m_kernel_adhesion.W(r); }

@@ -1,9 +1,9 @@
 #ifndef DFSPH_DEFINE_CUDA
 #define DFSPH_DEFINE_CUDA
 
-#define BLOCKSIZE 256
+#define BLOCKSIZE 128
 #define m_eps 1.0e-5
-#define CELL_ROW_LENGTH 124
+#define CELL_ROW_LENGTH 128
 #define CELL_COUNT CELL_ROW_LENGTH*CELL_ROW_LENGTH*CELL_ROW_LENGTH
 
 //use warm start
@@ -22,6 +22,14 @@
 //using norton bitshift for the cells is slower than using a normal index, not that much though
 //#define BITSHIFT_INDEX_NEIGHBORS_CELL
 //#define USE_COMPLETE
+
+//this control if the neighbors for each particle are stored
+//currently not using the stored particles only works when computing the porperties of the fluid with only one fluid
+//see macro file for comment on why
+#define STORE_PARTICLE_NEIGHBORS
+#ifdef STORE_PARTICLE_NEIGHBORS
+#define INTERLEAVE_NEIGHBORS
+#endif //STORE_PARTICLE_NEIGHBORS
 
 //print debug messages in cuda functions (may not activate /deactivate all messages)
 //#define SHOW_MESSAGES_IN_CUDA_FUNCTIONS

@@ -22,7 +22,7 @@
 #endif
 #endif
 
-#define FFMPEG_RENDER
+//#define FFMPEG_RENDER
 #ifdef FFMPEG_RENDER
 //#define USE_MULTIPLES_SHADER
 #endif
