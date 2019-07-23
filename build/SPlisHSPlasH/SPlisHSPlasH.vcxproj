@@ -381,9 +381,11 @@ if %errorlevel% neq 0 goto :VCEnd</Command>
     <ClCompile Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\SPlisHSPlasH\IISPH\SimulationDataIISPH.cpp" />
     <ClCompile Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\SPlisHSPlasH\IISPH\TimeStepIISPH.cpp" />
     <ClInclude Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\SPlisHSPlasH\DFSPH\DFSPH_c_arrays_structure.h" />
+    <ClInclude Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\SPlisHSPlasH\DFSPH\SPH_kernels.h" />
     <ClInclude Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\SPlisHSPlasH\DFSPH\DFSPH_cuda_basic.h" />
     <ClInclude Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\SPlisHSPlasH\DFSPH\DFSPH_macro_cuda.h" />
     <ClInclude Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\SPlisHSPlasH\DFSPH\DFSPH_define_cuda.h" />
+    <ClInclude Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\SPlisHSPlasH\DFSPH\DFSPH_define_c.h" />
     <ClInclude Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\SPlisHSPlasH\DFSPH\DFSPH_memory_management_cuda.h" />
     <ClInclude Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\SPlisHSPlasH\DFSPH\DFSPH_rendering_cuda.h" />
     <ClInclude Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\SPlisHSPlasH\DFSPH\DFSPH_static_variables_structure_cuda.h" />
@@ -394,6 +396,7 @@ if %errorlevel% neq 0 goto :VCEnd</Command>
     <ClInclude Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\SPlisHSPlasH\DFSPH\SimulationDataDFSPH.h" />
     <ClInclude Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\SPlisHSPlasH\DFSPH\TimeStepDFSPH.h" />
     <ClCompile Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\SPlisHSPlasH\DFSPH\DFSPH_c_arrays_structure.cpp" />
+    <ClCompile Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\SPlisHSPlasH\DFSPH\SPH_kernels.cpp" />
     <CudaCompile Include="..\..\SPlisHSPlasH\DFSPH\DFSPH_cuda_basic.cu" />
     <CudaCompile Include="..\..\SPlisHSPlasH\DFSPH\DFSPH_memory_management_cuda.cu" />
     <CudaCompile Include="..\..\SPlisHSPlasH\DFSPH\DFSPH_rendering_cuda.cu" />

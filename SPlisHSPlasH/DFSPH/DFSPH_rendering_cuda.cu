@@ -5,8 +5,12 @@
 
 #include "DFSPH_c_arrays_structure.h"
 
+#include <iostream>
+
 void cuda_opengl_initParticleRendering(ParticleSetRenderingData& renderingData, unsigned int numParticles,
 	Vector3d** pos, Vector3d** vel) {
+
+
 	glGenVertexArrays(1, &renderingData.vao); // Créer le VAO
 	glBindVertexArray(renderingData.vao); // Lier le VAO pour l'utiliser
 

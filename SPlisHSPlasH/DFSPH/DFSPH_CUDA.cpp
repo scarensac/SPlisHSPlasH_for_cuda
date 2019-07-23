@@ -154,6 +154,35 @@ void DFSPHCUDA::step()
 
 		if (false&&count_steps == 0) 	
 		{
+			/*
+			//a simple test showing all the first particle neighbors in order
+
+			{
+				int test_particle = 0;
+				std::cout << "particle id: " << test_particle << "  neighbors count: " << m_data.fluid_data->getNumberOfNeighbourgs(test_particle, 0) << "  " <<
+					m_data.fluid_data->getNumberOfNeighbourgs(test_particle, 1) << "  " <<
+					m_data.fluid_data->getNumberOfNeighbourgs(test_particle, 2) << std::endl;
+				int numParticles = m_data.fluid_data->numParticles;
+				int * end_ptr = m_data.fluid_data->getNeighboursPtr(test_particle);
+				int * cur_particle = end_ptr;
+				for (int k = 0; k < 3; ++k) {
+#ifdef INTERLEAVE_NEIGHBORS
+					end_ptr += m_data.fluid_data->getNumberOfNeighbourgs(test_particle, k)*numParticles;
+					while (cur_particle != end_ptr) {
+						std::cout << *cur_particle << std::endl;
+						cur_particle += numParticles;
+					}
+#else
+					end_ptr += m_data.fluid_data->getNumberOfNeighbourgs(test_particle, k);
+					while (cur_particle != end_ptr) {
+						std::cout << *cur_particle++ << std::endl;
+					}
+#endif
+				}
+			}
+
+			//*/
+
 			//this is only for debug purpose
 			std::string filename = "boundaries density adv.csv";
 				std::remove(filename.c_str());

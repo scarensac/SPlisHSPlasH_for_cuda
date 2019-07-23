@@ -35,66 +35,6 @@ const std::string fluid_files_folder = "./configuration_data/fluid_data/cdp_char
 #define USE_WARMSTART
 #define USE_WARMSTART_V
 
-void PrecomputedCubicKernelPerso::setRadius(RealCuda val)
-{
-	m_resolution = 10000;
-	m_radius = val;
-	m_radius2 = m_radius*m_radius;
-	const RealCuda stepSize = m_radius / (RealCuda)m_resolution;
-	m_invStepSize = 1.0 / stepSize;
-
-	if (true) {
-		RealCuda* W_temp = new RealCuda[m_resolution];
-		RealCuda* gradW_temp = new RealCuda[m_resolution + 1];
-
-		//init values
-		CubicKernelPerso kernel;
-		kernel.setRadius(val);
-		
-		for (unsigned int i = 0; i < m_resolution; ++i) {
-			W_temp[i] = FluidModel::PrecomputedCubicKernel::m_W[i];
-			gradW_temp[i] = FluidModel::PrecomputedCubicKernel::m_gradW[i];
-		}
-
-		gradW_temp[m_resolution] = 0.0;
-		m_W_zero = kernel.W(0.0);
-
-		
-		allocate_precomputed_kernel_managed(*this, true);
-
-		init_precomputed_kernel_from_values(*this, W_temp, gradW_temp);
-
-		//clean
-		delete[] W_temp;
-		delete[] gradW_temp;
-	}
-	else {
-		m_W = new RealCuda[m_resolution];
-		m_gradW = new RealCuda[m_resolution + 1];
-		
-		//init values
-		CubicKernelPerso kernel;
-		kernel.setRadius(val);
-		for (unsigned int i = 0; i < m_resolution; i++)
-		{
-			const RealCuda posX = stepSize * (RealCuda)i;		// Store kernel values in the middle of an interval
-			m_W[i] = kernel.W(posX);
-			kernel.setRadius(val);
-			if (posX > 1.0e-9)
-				m_gradW[i] = kernel.gradW(Vector3d(posX, 0.0, 0.0)).x / posX;
-			else
-				m_gradW[i] = 0.0;
-		}
-		m_gradW[m_resolution] = 0.0;
-		m_W_zero = W(0.0);
-	}
-	
-}
-
-
-void PrecomputedCubicKernelPerso::freeMemory(){
-    free_precomputed_kernel_managed(*this);
-}
 
 NeighborsSearchDataSet::NeighborsSearchDataSet() 
 {
@@ -260,25 +200,41 @@ UnifiedParticleSet::~UnifiedParticleSet() {
 	if (releaseDataOnDestruction) {
 		std::cout << "destroying the an unifiedDataSet with numParticles: " << numParticles<< std::endl;
 
+
+
 		clear();
 		
+
 	}
 	//*/
 }
 
 void UnifiedParticleSet::clear() {
+
+	read_last_error_cuda("middle 1  ");
+
 	//firsst free the neighbors
 	delete neighborsDataSet;
 
+
+	read_last_error_cuda("middle 2  ");
+
 	//release the cuda buffers
 	release_UnifiedParticleSet_cuda((*this));
+
+
 
 	//delete the rendering data and the buffer using the cuda interop
     if (renderingData != NULL) {
         //the rendering data and the pos/vel buffer
         cuda_opengl_releaseParticleRendering(*renderingData);release_UnifiedParticleSet_cuda((*this));
+		
+
+		
 		delete renderingData; renderingData = NULL;
 	}
+
+
 
 }
 
@@ -1029,7 +985,7 @@ void DFSPHCData::read_boundaries_from_file(bool load_velocities) {
 	allocate_and_copy_UnifiedParticleSet_vector_cuda(&boundaries_data_cuda, boundaries_data, 1);
 
 	//init the boundaries neighbor searchs
-    boundaries_data[0].initNeighborsSearchData(*this, true, false);
+    boundaries_data[0].initNeighborsSearchData(*this, false, false);
 
 	std::cout << "loading boundaries end" << std::endl;
 }
@@ -1104,13 +1060,15 @@ void DFSPHCData::clear_fluid_data() {
 }
 
 void DFSPHCData::clear_boundaries_data() {
+	read_last_error_cuda("before:  ");
 	if (boundaries_data_cuda != NULL) {
 		release_UnifiedParticleSet_vector_cuda(&boundaries_data_cuda, 1);
 	}
-
+	read_last_error_cuda("middle:  ");
 	if (boundaries_data != NULL) {
 		delete[] boundaries_data; boundaries_data = NULL;
 	}
+	read_last_error_cuda("end:  ");
 }
 
 void DFSPHCData::clear_solids_data() {

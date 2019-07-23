@@ -23,6 +23,10 @@
 
 #include "basic_kernels_cuda.cuh"
 
+void read_last_error_cuda(std::string msg) {
+	std::cout << msg << cudaGetErrorString(cudaGetLastError()) <<"  "<< std::endl;
+}
+
 
 __global__ void get_min_max_pos_naive_kernel(SPH::UnifiedParticleSet* particleSet, int* mutex, Vector3d* min_o, Vector3d *max_o) {
 
@@ -1173,3 +1177,6 @@ void add_border_to_damp_planes_cuda(SPH::DFSPHCData& data) {
 	data.damp_planes[data.damp_planes_count++] = Vector3d(0, (abs(data.bmin->y) > min_plane_precision) ? data.bmin->y : min_plane_precision, 0);
 
 }
+
+
+

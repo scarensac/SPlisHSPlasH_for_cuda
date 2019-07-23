@@ -54,15 +54,13 @@ inline void gpuAssert(cudaError_t code, const char *file, int line, bool abort =
 
 //WARNING his one declare the body/particle index by itself
 //you just have to give it the variable name you want
-#define READ_DYNAMIC_BODIES_PARTICLES_INDEX_BITSHIFT(neighbors_ptr, body_index,particle_index)  \
-    const unsigned int identifier = *neighbors_ptr++;\
-    const unsigned int particle_index = identifier >> 0x8;\
-    const unsigned int body_index = identifier & 0xFF;
+#define READ_DYNAMIC_BODIES_PARTICLES_INDEX_BITSHIFT(neighbors_idx, body_index,particle_index)  \
+    const unsigned int particle_index = neighbors_idx >> 0x8;\
+    const unsigned int body_index = neighbors_idx & 0xFF;
 
-#define READ_DYNAMIC_BODIES_PARTICLES_INDEX_ADDITION(neighbors_ptr, body_index,particle_index)   \
-    const unsigned int identifier = *neighbors_ptr++;\
-    const unsigned int particle_index = identifier % (1000000);\
-    const unsigned int body_index=identifier / 1000000;
+#define READ_DYNAMIC_BODIES_PARTICLES_INDEX_ADDITION(neighbors_idx, body_index,particle_index)   \
+    const unsigned int particle_index = neighbors_idx % (1000000);\
+    const unsigned int body_index=neighbors_idx / 1000000;
 
 
 
@@ -176,15 +174,27 @@ code;\
 
 
 /////////   FROM STORAGE       /////////////
+#define ITER_NEIGHBORS_INIT_FROM_STORAGE_BASE(data,particleSet,index) int* neighbors_ptr = particleSet->getNeighboursPtr(index); int* end_ptr = neighbors_ptr;
 
-#define ITER_NEIGHBORS_INIT_FROM_STORAGE(data,particleSet,index) int* neighbors_ptr = particleSet->getNeighboursPtr(index); int* end_ptr = neighbors_ptr;
+#ifdef INTERLEAVE_NEIGHBORS
+#define WRITTE_AND_ADVANCE_NEIGHBORS(neighbors_storage_ptr_cur_pos,index) *neighbors_storage_ptr_cur_pos = index; neighbors_storage_ptr_cur_pos+=numParticles;
+#define READ_AND_ADVANCE_NEIGHBOR(var_name,ptr_cur_pos)  const unsigned int var_name = *ptr_cur_pos; ptr_cur_pos+=numParticles;
+#define ADVANCE_END_PTR(ptr,nb_neighbors) ptr+= nb_neighbors*numParticles;
+#define ITER_NEIGHBORS_INIT_FROM_STORAGE(data,particleSet,index) ITER_NEIGHBORS_INIT_FROM_STORAGE_BASE(data,particleSet,index); int numParticles=particleSet->numParticles;
+#else
+#define WRITTE_AND_ADVANCE_NEIGHBORS(neighbors_storage_ptr_cur_pos,index) *neighbors_storage_ptr_cur_pos++ = index;
+#define READ_AND_ADVANCE_NEIGHBOR(var_name,ptr_cur_pos)  const unsigned int var_name = *ptr_cur_pos++;
+#define ADVANCE_END_PTR(ptr,nb_neighbors) ptr+= nb_neighbors;
+#define ITER_NEIGHBORS_INIT_FROM_STORAGE(data,particleSet,index) ITER_NEIGHBORS_INIT_FROM_STORAGE_BASE(data,particleSet,index)
+#endif
+
 
 #define ITER_NEIGHBORS_FLUID_FROM_STORAGE(data,particleSet,index,code){\
-    end_ptr += particleSet->getNumberOfNeighbourgs(index);\
+	ADVANCE_END_PTR(end_ptr,particleSet->getNumberOfNeighbourgs(index));\
     const SPH::UnifiedParticleSet& body = *(data.fluid_data_cuda);\
     while (neighbors_ptr != end_ptr)\
 {\
-    const unsigned int neighborIndex = *neighbors_ptr++;\
+    READ_AND_ADVANCE_NEIGHBOR(neighborIndex,neighbors_ptr)\
     code;\
     }\
     }
@@ -192,20 +202,21 @@ code;\
 
 #define ITER_NEIGHBORS_BOUNDARIES_FROM_STORAGE(data,particleSet,index,code){\
     const SPH::UnifiedParticleSet& body = *(data.boundaries_data_cuda);\
-    end_ptr += particleSet->getNumberOfNeighbourgs(index, 1);\
+	ADVANCE_END_PTR(end_ptr,particleSet->getNumberOfNeighbourgs(index,1));\
     while (neighbors_ptr != end_ptr)\
 {\
-    const unsigned int neighborIndex = *neighbors_ptr++;\
+    READ_AND_ADVANCE_NEIGHBOR(neighborIndex,neighbors_ptr)\
     code; \
     }\
     }
 
 
 #define ITER_NEIGHBORS_SOLIDS_FROM_STORAGE(data,particleSet,index,code){\
-    end_ptr += particleSet->getNumberOfNeighbourgs(index, 2);\
+	ADVANCE_END_PTR(end_ptr, particleSet->getNumberOfNeighbourgs(index,2)); \
     while (neighbors_ptr != end_ptr)\
 {\
-    READ_DYNAMIC_BODIES_PARTICLES_INDEX(neighbors_ptr, bodyIndex, neighborIndex);\
+	READ_AND_ADVANCE_NEIGHBOR(dummy,neighbors_ptr);\
+    READ_DYNAMIC_BODIES_PARTICLES_INDEX(dummy, bodyIndex, neighborIndex);\
     const SPH::UnifiedParticleSet& body = data.vector_dynamic_bodies_data_cuda[bodyIndex];\
     code; \
     }\

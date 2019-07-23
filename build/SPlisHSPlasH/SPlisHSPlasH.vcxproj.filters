@@ -55,6 +55,9 @@
     <ClCompile Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\SPlisHSPlasH\DFSPH\DFSPH_c_arrays_structure.cpp">
       <Filter>Source Files\DFSPH</Filter>
     </ClCompile>
+    <ClCompile Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\SPlisHSPlasH\DFSPH\SPH_kernels.cpp">
+      <Filter>Source Files\DFSPH</Filter>
+    </ClCompile>
     <ClCompile Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\SPlisHSPlasH\DFSPH\DFSPH_CUDA.cpp">
       <Filter>Source Files\DFSPH</Filter>
     </ClCompile>
@@ -195,6 +198,9 @@
     <ClInclude Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\SPlisHSPlasH\DFSPH\DFSPH_c_arrays_structure.h">
       <Filter>Header Files\DFSPH</Filter>
     </ClInclude>
+    <ClInclude Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\SPlisHSPlasH\DFSPH\SPH_kernels.h">
+      <Filter>Header Files\DFSPH</Filter>
+    </ClInclude>
     <ClInclude Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\SPlisHSPlasH\DFSPH\DFSPH_cuda_basic.h">
       <Filter>Header Files\DFSPH</Filter>
     </ClInclude>
@@ -202,6 +208,9 @@
       <Filter>Header Files\DFSPH</Filter>
     </ClInclude>
     <ClInclude Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\SPlisHSPlasH\DFSPH\DFSPH_define_cuda.h">
+      <Filter>Header Files\DFSPH</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\SPlisHSPlasH\DFSPH\DFSPH_define_c.h">
       <Filter>Header Files\DFSPH</Filter>
     </ClInclude>
     <ClInclude Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\SPlisHSPlasH\DFSPH\DFSPH_memory_management_cuda.h">

@@ -42,11 +42,13 @@ set(IISPH_SOURCE_FILES
 	
 set(DFSPH_HEADER_FILES
 	DFSPH/DFSPH_c_arrays_structure.h
+	DFSPH/SPH_kernels.h
 #	DFSPH/DFSPH_cpu_c_arrays.h
 #	DFSPH/DFSPH_cpu_c_arrays_advanced.h
 	DFSPH/DFSPH_cuda_basic.h
 	DFSPH/DFSPH_macro_cuda.h
 	DFSPH/DFSPH_define_cuda.h
+	DFSPH/DFSPH_define_c.h
 	DFSPH/DFSPH_memory_management_cuda.h
 	DFSPH/DFSPH_rendering_cuda.h
 	DFSPH/DFSPH_static_variables_structure_cuda.h
@@ -60,6 +62,7 @@ set(DFSPH_HEADER_FILES
 	
 set(DFSPH_SOURCE_FILES
 	DFSPH/DFSPH_c_arrays_structure.cpp
+	DFSPH/SPH_kernels.cpp
 #	DFSPH/DFSPH_cpu_c_arrays.cpp
 #	DFSPH/DFSPH_cpu_c_arrays_advanced.cpp
 	DFSPH/DFSPH_cuda_basic.cu

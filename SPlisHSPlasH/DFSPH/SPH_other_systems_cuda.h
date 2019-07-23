@@ -7,6 +7,7 @@
 
 using namespace SPH;
 
+void read_last_error_cuda(std::string msg);
 
 void get_UnifiedParticleSet_min_max_naive_cuda(SPH::UnifiedParticleSet& particleSet, Vector3d& min, Vector3d& max);
 
@@ -22,5 +23,6 @@ Vector3d get_simulation_center_cuda(SPH::DFSPHCData& data);
 //dynamic simulation area related
 void move_simulation_cuda(SPH::DFSPHCData& data, Vector3d movement);
 void add_border_to_damp_planes_cuda(SPH::DFSPHCData& data);
+
 
 #endif //DFSPH_STATIC_VAR_STRUCT

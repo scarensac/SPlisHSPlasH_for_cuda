@@ -1605,14 +1605,20 @@ __global__ void DFSPH_neighborsSearch_kernel(SPH::DFSPHCData data, SPH::UnifiedP
 
 	ITER_NEIGHBORS_INIT_FROM_STRUCTURE(data, particleSet, i);
 
+	//this variable is need for the interleave but I'm not modifying all the macro for only a single case
+#ifdef INTERLEAVE_NEIGHBORS
+	int numParticles = particleSet->numParticles;
+#endif
+
 	unsigned int nb_neighbors_fluid = 0;
 	unsigned int nb_neighbors_boundary = 0;
 	unsigned int nb_neighbors_dynamic_objects = 0;
-	int* cur_neighbor_ptr = particleSet->neighbourgs + i*MAX_NEIGHBOURS;
+	int* cur_neighbor_ptr= particleSet->getNeighboursPtr(i);
 	//int neighbors_fluid[MAX_NEIGHBOURS];//doing it with local buffer was not faster
 	//int neighbors_boundary[MAX_NEIGHBOURS];
 
 
+	
 	if (data.is_fluid_aggregated) {
 		int neighbors_solids[MAX_NEIGHBOURS];
 
@@ -1622,7 +1628,7 @@ __global__ void DFSPH_neighborsSearch_kernel(SPH::DFSPHCData data, SPH::UnifiedP
 #ifdef GROUP_DYNAMIC_BODIES_NEIGHBORS_SEARCH
 			ITER_NEIGHBORS_FROM_STRUCTURE(data.neighborsDataSetGroupedDynamicBodies_cuda, data.posBufferGroupedDynamicBodies,
 				if (j<data.fluid_data_cuda->numParticles) {
-					if (i != j) { *cur_neighbor_ptr++ = j;	nb_neighbors_fluid++; }
+					if (i != j) { WRITTE_AND_ADVANCE_NEIGHBORS(cur_neighbor_ptr, j);	nb_neighbors_fluid++; }
 				}
 				else {
 					int body_id = 0; int count_particles_previous_bodies = data.fluid_data_cuda->numParticles;
@@ -1645,35 +1651,34 @@ __global__ void DFSPH_neighborsSearch_kernel(SPH::DFSPHCData data, SPH::UnifiedP
 		else {
 			//fluid
 			ITER_NEIGHBORS_FROM_STRUCTURE(data.fluid_data_cuda[0].neighborsDataSet, data.fluid_data_cuda[0].pos,
-				if (i != j) { *cur_neighbor_ptr++ = j;	nb_neighbors_fluid++; });
+				if (i != j) { WRITTE_AND_ADVANCE_NEIGHBORS(cur_neighbor_ptr, j);	nb_neighbors_fluid++; });
 		}
 
 		//boundaries
 		ITER_NEIGHBORS_FROM_STRUCTURE(data.boundaries_data_cuda[0].neighborsDataSet, data.boundaries_data_cuda[0].pos,
-			*cur_neighbor_ptr++ = j; nb_neighbors_boundary++; );
+			WRITTE_AND_ADVANCE_NEIGHBORS(cur_neighbor_ptr, j); nb_neighbors_boundary++; );
 
 
 		//copy the dynamic bodies at the end
 		for (int j = 0; j<nb_neighbors_dynamic_objects; ++j) {
-			*cur_neighbor_ptr++ = neighbors_solids[j];
+			WRITTE_AND_ADVANCE_NEIGHBORS(cur_neighbor_ptr, neighbors_solids[j]);
 		}
-
 
 	}
 	else {
-		int dummy_memory = 0;
+
 		//uses the standart version
 		//fluid
 		if (is_fluid_container) {
 
 			ITER_NEIGHBORS_FROM_STRUCTURE(data.fluid_data_cuda[0].neighborsDataSet, data.fluid_data_cuda[0].pos,
-				if (!is_fluid_container || i != j) { *cur_neighbor_ptr++ = j;	nb_neighbors_fluid++; });
+				if (!is_fluid_container || i != j) { WRITTE_AND_ADVANCE_NEIGHBORS(cur_neighbor_ptr, j);	nb_neighbors_fluid++; });
 
 		}
 
 		//boundaries
 		ITER_NEIGHBORS_FROM_STRUCTURE(data.boundaries_data_cuda[0].neighborsDataSet, data.boundaries_data_cuda[0].pos,
-			if (is_fluid_container || i != j) {*cur_neighbor_ptr++ = j; nb_neighbors_boundary++; });
+			if (is_fluid_container || i != j) { WRITTE_AND_ADVANCE_NEIGHBORS(cur_neighbor_ptr, j); nb_neighbors_boundary++; });
 
 
 		if (data.numDynamicBodies > 0) {
@@ -1685,19 +1690,19 @@ __global__ void DFSPH_neighborsSearch_kernel(SPH::DFSPHCData data, SPH::UnifiedP
 				count_particles_previous_bodies += data.vector_dynamic_bodies_data_cuda[body_id].numParticles;
 				body_id++;
 			}
-			*cur_neighbor_ptr++ = WRITTE_DYNAMIC_BODIES_PARTICLES_INDEX(body_id, j - count_particles_previous_bodies);
+			int neighbor_idx= WRITTE_DYNAMIC_BODIES_PARTICLES_INDEX(body_id, j - count_particles_previous_bodies);
+			WRITTE_AND_ADVANCE_NEIGHBORS(cur_neighbor_ptr, neighbor_idx);
 			nb_neighbors_dynamic_objects++; })
 #else
 			for (int id_body = 0; id_body < data.numDynamicBodies; ++id_body) {
 				ITER_NEIGHBORS_FROM_STRUCTURE(data.vector_dynamic_bodies_data_cuda[id_body].neighborsDataSet, data.vector_dynamic_bodies_data_cuda[id_body].pos,
-					*cur_neighbor_ptr++ = WRITTE_DYNAMIC_BODIES_PARTICLES_INDEX(id_body, j); nb_neighbors_dynamic_objects++; )
+					int neighbor_idx = WRITTE_DYNAMIC_BODIES_PARTICLES_INDEX(body_id, j - count_particles_previous_bodies);
+				WRITTE_AND_ADVANCE_NEIGHBORS(cur_neighbor_ptr, neighbor_idx); )
 			}
 #endif
 
 		}
 
-		dummy_memory++;
-		int val_final = dummy_memory;
 	}
 
 
@@ -1974,6 +1979,8 @@ void cuda_neighborsSearch(SPH::DFSPHCData& data) {
 		}
 
 		//*/
+
+		
 	}
 #endif //STORE_PARTICLE_NEIGHBORS
 
@@ -2301,6 +2308,8 @@ __global__ void DFSPH_updateDynamicObjectParticles_kernel(int numParticles, Vect
 }
 
 void update_dynamicObject_UnifiedParticleSet_cuda(SPH::UnifiedParticleSet& particle_set) {
+
+
 	if (particle_set.is_dynamic_object) {
 		int numBlocks = (particle_set.numParticles + BLOCKSIZE - 1) / BLOCKSIZE;
 

@@ -22,6 +22,7 @@
 
 
 #include "basic_kernels_cuda.cuh"
+#include "SPH_other_systems_cuda.h"
 
 
 void allocate_DFSPHCData_base_cuda(SPH::DFSPHCData& data) {
@@ -57,6 +58,7 @@ void free_DFSPHCData_base_cuda(SPH::DFSPHCData& data) {
 
 
 void allocate_UnifiedParticleSet_cuda(SPH::UnifiedParticleSet& container) {
+
 
 	//cudaMalloc(&(container.pos), container.numParticles * sizeof(Vector3d)); //use opengl buffer with cuda interop
 	//cudaMalloc(&(container.vel), container.numParticles * sizeof(Vector3d)); //use opengl buffer with cuda interop
@@ -103,7 +105,6 @@ void allocate_UnifiedParticleSet_cuda(SPH::UnifiedParticleSet& container) {
 }
 
 void release_UnifiedParticleSet_cuda(SPH::UnifiedParticleSet& container) {
-
 	CUDA_FREE_PTR(container.mass);
 
 	if (container.has_factor_computation) {
@@ -135,13 +136,13 @@ void release_UnifiedParticleSet_cuda(SPH::UnifiedParticleSet& container) {
 	if (container.is_dynamic_object) {
 		FREE_PTR(container.F_cpu);
 	}
-
 }
 
 
 
 
 void load_UnifiedParticleSet_cuda(SPH::UnifiedParticleSet& container, Vector3d* pos, Vector3d* vel, RealCuda* mass) {
+
 	gpuErrchk(cudaMemcpy(container.pos, pos, container.numParticles * sizeof(Vector3d), cudaMemcpyHostToDevice));
 	gpuErrchk(cudaMemcpy(container.vel, vel, container.numParticles * sizeof(Vector3d), cudaMemcpyHostToDevice));
 	gpuErrchk(cudaMemcpy(container.mass, mass, container.numParticles * sizeof(RealCuda), cudaMemcpyHostToDevice));
@@ -404,21 +405,11 @@ void update_neighborsSearchBuffers_UnifiedParticleSet_vector_cuda(SPH::UnifiedPa
 
 
 void release_UnifiedParticleSet_vector_cuda(SPH::UnifiedParticleSet** vector, int numSets) {
-	//to be able to release the internal buffer I need firt to copy everything back to the cpu
-	//then release the internal buffers
-	//then release the UnifiedParticleSet
-	//*
-	SPH::UnifiedParticleSet* temp;
-	temp = new SPH::UnifiedParticleSet[numSets];
+	//each stucture properly clear itself currently so here i just need to destroy the high level array
+	CUDA_FREE_PTR((*vector));
 
+	cudaDeviceSynchronize();
 
-	gpuErrchk(cudaMemcpy(temp, *vector, numSets * sizeof(SPH::UnifiedParticleSet), cudaMemcpyDeviceToHost));
-
-	for (int i = 0; i < numSets; ++i) {
-		cudaFree(temp[i].neighborsDataSet); temp[i].neighborsDataSet = NULL;
-	}
-
-	cudaFree(*vector); *vector = NULL;
 }
 
 
@@ -695,31 +686,32 @@ void allocate_neighbors_search_data_set(SPH::NeighborsSearchDataSet& dataSet, bo
 
 void release_neighbors_search_data_set(SPH::NeighborsSearchDataSet& dataSet, bool keep_result_buffers, bool keep_grid_related,
 	bool keep_gpu) {
-	//allocatethe mme for fluid particles
-	cudaFree(dataSet.cell_id); dataSet.cell_id = NULL;
-	cudaFree(dataSet.local_id); dataSet.local_id = NULL;
-	cudaFree(dataSet.p_id); dataSet.p_id = NULL;
-	cudaFree(dataSet.cell_id_sorted); dataSet.cell_id_sorted = NULL;
 
-	cudaFree(dataSet.d_temp_storage_pair_sort); dataSet.d_temp_storage_pair_sort = NULL;
+	//allocatethe mme for fluid particles
+	CUDA_FREE_PTR(dataSet.cell_id);
+	CUDA_FREE_PTR(dataSet.local_id);
+	CUDA_FREE_PTR(dataSet.p_id);
+	CUDA_FREE_PTR(dataSet.cell_id_sorted);
+
+	CUDA_FREE_PTR(dataSet.d_temp_storage_pair_sort);
 	dataSet.temp_storage_bytes_pair_sort = 0;
 
-	cudaFree(dataSet.intermediate_buffer_v3d); dataSet.intermediate_buffer_v3d = NULL;
-	cudaFree(dataSet.intermediate_buffer_real); dataSet.intermediate_buffer_real = NULL;
+	CUDA_FREE_PTR(dataSet.intermediate_buffer_v3d);
+	CUDA_FREE_PTR(dataSet.intermediate_buffer_real);
 
 	if (!keep_grid_related) {
-		cudaFree(dataSet.hist); dataSet.hist = NULL;
-		cudaFree(dataSet.d_temp_storage_cumul_hist); dataSet.d_temp_storage_cumul_hist = NULL;
+		CUDA_FREE_PTR(dataSet.hist);
+		CUDA_FREE_PTR(dataSet.d_temp_storage_cumul_hist);
 		dataSet.temp_storage_bytes_cumul_hist = 0;
 	}
 
 	dataSet.internal_buffers_allocated = false;
 
 	if (!keep_result_buffers) {
-		cudaFree(dataSet.p_id_sorted); dataSet.p_id_sorted = NULL;
+		CUDA_FREE_PTR(dataSet.p_id_sorted);
 
 		if (!keep_grid_related) {
-			cudaFree(dataSet.cell_start_end); dataSet.cell_start_end = NULL;
+			CUDA_FREE_PTR(dataSet.cell_start_end);
 		}
 	}
 
