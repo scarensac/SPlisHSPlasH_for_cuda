@@ -5,6 +5,9 @@
 
 #others
 data/save_folder/
+extern/CompactNSearch/
+extern/PositionBasedDynamics/
+
 
 # User-specific files
 *.suo
@@ -60,7 +63,6 @@ artifacts/
 *_i.h
 *.ilk
 *.meta
-*.obj
 *.pch
 *.pdb
 *.pgc
