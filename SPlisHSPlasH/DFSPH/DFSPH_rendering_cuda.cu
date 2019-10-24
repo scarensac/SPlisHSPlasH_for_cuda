@@ -4,12 +4,16 @@
 #include "DFSPH_macro_cuda.h"
 
 #include "DFSPH_c_arrays_structure.h"
+#include "SPH_other_systems_cuda.h"
 
 #include <iostream>
+
+
 
 void cuda_opengl_initParticleRendering(ParticleSetRenderingData& renderingData, unsigned int numParticles,
 	Vector3d** pos, Vector3d** vel) {
 
+	read_last_error_cuda("before alloc rendering on gpu: ");
 
 	glGenVertexArrays(1, &renderingData.vao); // Créer le VAO
 	glBindVertexArray(renderingData.vao); // Lier le VAO pour l'utiliser

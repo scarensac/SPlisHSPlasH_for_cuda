@@ -59,6 +59,7 @@ void free_DFSPHCData_base_cuda(SPH::DFSPHCData& data) {
 
 void allocate_UnifiedParticleSet_cuda(SPH::UnifiedParticleSet& container) {
 
+	read_last_error_cuda("before alloc unified on gpu: ");
 
 	//cudaMalloc(&(container.pos), container.numParticles * sizeof(Vector3d)); //use opengl buffer with cuda interop
 	//cudaMalloc(&(container.vel), container.numParticles * sizeof(Vector3d)); //use opengl buffer with cuda interop

@@ -5,6 +5,7 @@
 
 #others
 data/save_folder/
+data/models/Cache/
 extern/CompactNSearch/
 extern/PositionBasedDynamics/
 extern/install/
