@@ -22,4 +22,13 @@
 //so there will be no transfers.
 #define MAX_NEIGHBOURS 90
 
+//control the precomputation of the kernel
+#define PRECOMPUTED_KERNELS
+#define PRECOMPUTED_KERNELS_SAMPLE_COUNT 1000
+#ifdef PRECOMPUTED_KERNELS
+#define PRECOMPUTED_KERNELS_USE_CONSTANT_MEMORY
+#endif
+
+
+
 #endif 

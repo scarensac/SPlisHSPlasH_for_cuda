@@ -6,8 +6,10 @@
 
 #ifdef __NVCC__
 #define FUNCTION __host__ __device__
+#define SQRT_MACRO(x) SQRT_MACRO_CUDA(x)
 #else
 #define FUNCTION 
+#define SQRT_MACRO(x) std::sqrt(x)
 #endif
 
 
@@ -80,8 +82,8 @@ namespace SPH
 
 		FUNCTION inline T squaredNorm() { return x*x + y*y + z*z; }
 		FUNCTION inline T squaredNorm() const { return x*x + y*y + z*z; }
-		FUNCTION inline T norm() { return std::sqrt(squaredNorm()); }
-		FUNCTION inline T norm() const { return std::sqrt(squaredNorm()); }
+		FUNCTION inline T norm() { return SQRT_MACRO(squaredNorm()); }
+		FUNCTION inline T norm() const { return SQRT_MACRO(squaredNorm()); }
 
 		template<typename T2>
 		FUNCTION inline T dot(const Vector3<T2> &o) const { return x * o.x + y * o.y + z * o.z; }

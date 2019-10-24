@@ -650,23 +650,28 @@ DFSPHCData::DFSPHCData(FluidModel *model): DFSPHCData()
 
 #ifdef SPLISHSPLASH_FRAMEWORK
     particleRadius = model->getParticleRadius();
-    m_kernel.setRadius(model->m_supportRadius);
-    m_kernel_precomp.setRadius(model->m_supportRadius);
-
-    m_kernel_adhesion.setRadius(model->m_supportRadius);
-    m_kernel_cohesion.setRadius(model->m_supportRadius);
+	RealCuda supportRadius = model->m_supportRadius;
 #else
     particleRadius = 0.025;
-    m_kernel.setRadius(particleRadius*4);
-    m_kernel_precomp.setRadius(particleRadius*4);
-    m_kernel_adhesion.setRadius(particleRadius*4);
-    m_kernel_cohesion.setRadius(particleRadius*4);
+	RealCuda supportRadius = particleRadius * 4;
 #endif //SPLISHSPLASH_FRAMEWORK
-    //W_zero = m_kernel.W_zero();
+
+#ifdef PRECOMPUTED_KERNELS 
+	m_kernel_precomp.setRadius(supportRadius);
 	W_zero = m_kernel_precomp.W_zero();
+#else
+	m_kernel.setRadius(supportRadius);
+    W_zero = m_kernel.W_zero();
+#endif
 
 
-    std::cout << "particle radius and suport radius: " << particleRadius<<"   "<<m_kernel.getRadius() << std::endl;
+    m_kernel_adhesion.setRadius(supportRadius);
+    m_kernel_cohesion.setRadius(supportRadius);
+
+
+
+
+    std::cout << "particle radius and suport radius: " << particleRadius<<"   "<< supportRadius  << std::endl;
 
 #ifdef SPLISHSPLASH_FRAMEWORK
 	if (model != NULL) {
@@ -716,7 +721,7 @@ DFSPHCData::DFSPHCData(FluidModel *model): DFSPHCData()
     //init the values from the model
     reset(model);
 
-
+	read_last_error_cuda("check for errors end creation  ");
 }
 
 DFSPHCData::~DFSPHCData() {

@@ -25,6 +25,162 @@
 
 #include "basic_kernels_cuda.cuh"
 
+//#include "SPH_memory_storage_precomp_kernels.cuh"
+
+
+
+////////////////////////////////////////////////////
+/////////       constant memory kernel /////////////
+////////////////////////////////////////////////////
+
+#include "SPlisHSPlasH\BasicTypes.h"
+#include <string>
+#include <vector>
+
+#include "SPlisHSPlasH\Vector.h"
+#include "SPlisHSPlasH\Quaternion.h"
+
+#include "DFSPH_define_c.h"
+#include "cuda_runtime.h"
+
+
+//#include "SPH_memory_storage_precomp_kernels.cuh"
+
+#ifdef PRECOMPUTED_KERNELS_USE_CONSTANT_MEMORY
+
+__constant__ RealCuda m_W[PRECOMPUTED_KERNELS_SAMPLE_COUNT];
+__constant__ RealCuda m_gradW[PRECOMPUTED_KERNELS_SAMPLE_COUNT];
+__constant__ RealCuda m_radius;
+__constant__ RealCuda m_radius2;
+__constant__ RealCuda m_invStepSize;
+
+
+
+
+
+__device__  RealCuda get_constant_W_cuda(const SPH::Vector3d &r)
+{
+	RealCuda res = 0.0;
+	const RealCuda r2 = r.squaredNorm();
+	if (r2 <= m_radius2)
+	{
+		const RealCuda r = sqrt(r2);
+		const unsigned int pos = (unsigned int)(r * m_invStepSize);
+		res = m_W[pos];
+	}
+	return res;
+}
+
+//*
+__device__  RealCuda get_constant_W_cuda(const RealCuda r)
+{
+	RealCuda res = 0.0;
+	if (r <= m_radius)
+	{
+		const unsigned int pos = (unsigned int)(r * m_invStepSize);
+		res = m_W[pos];
+	}
+	return res;
+}
+__device__  SPH::Vector3d get_constant_grad_W_cuda(const SPH::Vector3d &r)
+{
+	SPH::Vector3d res;
+	const RealCuda r2 = r.squaredNorm();
+	if (r2 <= m_radius2)
+	{
+		const RealCuda rl = sqrt(r2);
+		const unsigned int pos = (unsigned int)(rl * m_invStepSize);
+		res = m_gradW[pos] * r;
+	}
+	else
+		res.setZero();
+
+	return res;
+}
+//*/
+
+
+#include "SPH_memory_storage_precomp_kernels.h"
+#include "SPH_other_systems_cuda.h"
+#include <iostream>
+
+void writte_to_precomp_kernel(RealCuda* W_i, RealCuda* gradW_i, RealCuda radius, RealCuda radius2, RealCuda invStepSize) {
+	cudaMemcpyToSymbol(m_W, W_i, sizeof(RealCuda) * PRECOMPUTED_KERNELS_SAMPLE_COUNT);
+	read_last_error_cuda("test");
+	cudaMemcpyToSymbol(m_gradW, gradW_i, sizeof(RealCuda) * PRECOMPUTED_KERNELS_SAMPLE_COUNT);
+	read_last_error_cuda("test");
+	cudaMemcpyToSymbol(m_radius, &radius, sizeof(RealCuda));
+	read_last_error_cuda("test");
+	cudaMemcpyToSymbol(m_radius2, &radius2, sizeof(RealCuda));
+	read_last_error_cuda("test");
+	cudaMemcpyToSymbol(m_invStepSize, &invStepSize, sizeof(RealCuda));
+	read_last_error_cuda("test");
+	cudaDeviceSynchronize();
+	/*
+	for (int i = 0; i < PRECOMPUTED_KERNELS_SAMPLE_COUNT; ++i) {
+	std::cout << "kernel values: " << W_i[i] << "  " << gradW_i[i] << std::endl;
+	}
+
+	test_constant_mem_precomp_kernel_cuda();
+	//*/
+}
+#include "DFSPH_macro_cuda.h"
+
+__global__ void test_constant_mem_precomp_kernel_kernel(RealCuda* W, SPH::Vector3d* gradW, RealCuda* r, RealCuda* r2, RealCuda* invd) {
+	int i = blockIdx.x * blockDim.x + threadIdx.x;
+	if (i >= PRECOMPUTED_KERNELS_SAMPLE_COUNT) { return; }
+
+	const RealCuda posX = 1.0 / m_invStepSize * (RealCuda)i;
+	SPH::Vector3d distance = Vector3d(posX, 0.0, 0.0);
+
+	W[i] = KERNEL_W("data", distance);
+	gradW[i] = KERNEL_GRAD_W("data", distance);
+
+	if (i == 0) {
+		*r = m_radius;
+		*r2 = m_radius2;
+		*invd = m_invStepSize;
+	}
+}
+
+void test_constant_mem_precomp_kernel_cuda() {
+	RealCuda* W;
+	SPH::Vector3d* gradW;
+	RealCuda* r;
+	RealCuda* r2;
+	RealCuda* invd;
+
+	cudaMallocManaged(&(W), sizeof(RealCuda) * PRECOMPUTED_KERNELS_SAMPLE_COUNT);
+	cudaMallocManaged(&(gradW), sizeof(SPH::Vector3d) * PRECOMPUTED_KERNELS_SAMPLE_COUNT);
+	cudaMallocManaged(&(r), sizeof(RealCuda));
+	cudaMallocManaged(&(r2), sizeof(RealCuda));
+	cudaMallocManaged(&(invd), sizeof(RealCuda));
+
+	{//fluid
+		int numBlocks = (PRECOMPUTED_KERNELS_SAMPLE_COUNT + BLOCKSIZE - 1) / BLOCKSIZE;
+		test_constant_mem_precomp_kernel_kernel << <numBlocks, BLOCKSIZE >> > (W, gradW, r, r2, invd);
+	}
+	cudaDeviceSynchronize();
+
+	for (int i = 0; i < PRECOMPUTED_KERNELS_SAMPLE_COUNT; ++i) {
+		std::cout << "kernel values: " << W[i] << "  " << gradW[i].x << std::endl;
+	}
+
+	std::cout << "end_values: " << *r << "  " << *r2 << "  " << *invd << std::endl;
+
+	CUDA_FREE_PTR(W);
+	CUDA_FREE_PTR(gradW);
+	CUDA_FREE_PTR(r);
+	CUDA_FREE_PTR(r2);
+	CUDA_FREE_PTR(invd);
+}
+#endif // !BLOCKER//see the macro_cuda_file_for an explanaitions
+
+
+
+
+
+
 
 ////////////////////////////////////////////////////
 /////////       DIVERGENCE SOLVER      /////////////
@@ -77,8 +233,8 @@ __global__ void DFSPH_divergence_warmstart_init_kernel(SPH::DFSPHCData m_data, S
 		ITER_NEIGHBORS_FLUID(m_data, particleSet,
 			i,
 			const Vector3d &xj = body.pos[neighborIndex];
-		density += body.mass[neighborIndex] * m_data.W(xi - xj);
-		const Vector3d grad_p_j = body.mass[neighborIndex] * m_data.gradW(xi - xj);
+		density += body.mass[neighborIndex] * KERNEL_W(m_data,xi - xj);
+		const Vector3d grad_p_j = body.mass[neighborIndex] * KERNEL_GRAD_W(m_data,xi - xj);
 		sum_grad_p_k += grad_p_j.squaredNorm();
 		grad_p_i += grad_p_j;
 		densityAdv += (vi - body.vel[neighborIndex]).dot(grad_p_j);
@@ -92,8 +248,8 @@ __global__ void DFSPH_divergence_warmstart_init_kernel(SPH::DFSPHCData m_data, S
 		ITER_NEIGHBORS_BOUNDARIES(m_data, particleSet,
 			i,
 			const Vector3d &xj = body.pos[neighborIndex];
-		density += body.mass[neighborIndex] * m_data.W(xi - xj);
-		const Vector3d grad_p_j = body.mass[neighborIndex] * m_data.gradW(xi - xj);
+		density += body.mass[neighborIndex] * KERNEL_W(m_data,xi - xj);
+		const Vector3d grad_p_j = body.mass[neighborIndex] * KERNEL_GRAD_W(m_data,xi - xj);
 		sum_grad_p_k += grad_p_j.squaredNorm();
 		grad_p_i += grad_p_j;
 		densityAdv += (vi - body.vel[neighborIndex]).dot(grad_p_j);
@@ -107,8 +263,8 @@ __global__ void DFSPH_divergence_warmstart_init_kernel(SPH::DFSPHCData m_data, S
 		ITER_NEIGHBORS_SOLIDS(m_data, particleSet,
 			i,
 			const Vector3d &xj = body.pos[neighborIndex];
-		density += body.mass[neighborIndex] * m_data.W(xi - xj);
-		const Vector3d grad_p_j = body.mass[neighborIndex] * m_data.gradW(xi - xj);
+		density += body.mass[neighborIndex] * KERNEL_W(m_data,xi - xj);
+		const Vector3d grad_p_j = body.mass[neighborIndex] * KERNEL_GRAD_W(m_data,xi - xj);
 		sum_grad_p_k += grad_p_j.squaredNorm();
 		grad_p_i += grad_p_j;
 		densityAdv += (vi - body.vel[neighborIndex]).dot(grad_p_j);
@@ -195,7 +351,7 @@ template <bool warm_start> __device__ void divergenceSolveParticle(SPH::DFSPHCDa
 	if (fabs(kSum) > m_eps)
 	{
 		// ki, kj already contain inverse density
-		v_i += kSum *  body.mass[neighborIndex] * m_data.gradW(xi - body.pos[neighborIndex]);
+		v_i += kSum *  body.mass[neighborIndex] * KERNEL_GRAD_W(m_data,xi - body.pos[neighborIndex]);
 	}
 	);
 
@@ -206,7 +362,7 @@ template <bool warm_start> __device__ void divergenceSolveParticle(SPH::DFSPHCDa
 	if (fabs(kSum) > m_eps)
 	{
 		// ki, kj already contain inverse density
-		v_i += kSum *  body.mass[neighborIndex] * m_data.gradW(xi - body.pos[neighborIndex]);
+		v_i += kSum *  body.mass[neighborIndex] * KERNEL_GRAD_W(m_data,xi - body.pos[neighborIndex]);
 	}
 	);
 #endif
@@ -220,7 +376,7 @@ template <bool warm_start> __device__ void divergenceSolveParticle(SPH::DFSPHCDa
 #ifndef USE_BOUNDARIES_DYNAMIC_PROPERTiES
 		ITER_NEIGHBORS_BOUNDARIES(m_data, particleSet,
 			i,
-			const Vector3d delta = ki * body.mass[neighborIndex] * m_data.gradW(xi - body.pos[neighborIndex]);
+			const Vector3d delta = ki * body.mass[neighborIndex] * KERNEL_GRAD_W(m_data,xi - body.pos[neighborIndex]);
 		v_i += delta;// ki already contains inverse density
 		);
 #endif
@@ -231,7 +387,7 @@ template <bool warm_start> __device__ void divergenceSolveParticle(SPH::DFSPHCDa
 
 		ITER_NEIGHBORS_SOLIDS(m_data, particleSet,
 			i,
-			Vector3d delta = ki * body.mass[neighborIndex] * m_data.gradW(xi - body.pos[neighborIndex]);
+			Vector3d delta = ki * body.mass[neighborIndex] * KERNEL_GRAD_W(m_data,xi - body.pos[neighborIndex]);
 		v_i += delta;// ki already contains inverse density
 
 					 //we apply the force to the body particle (no invH since it has been fatorized at the end)
@@ -331,7 +487,7 @@ __device__ void computeDensityChange(const SPH::DFSPHCData& m_data, SPH::Unified
 
 		ITER_NEIGHBORS_FLUID(m_data, particleSet,
 			index,
-			densityAdv += body.mass[neighborIndex] * (vi - body.vel[neighborIndex]).dot(m_data.gradW(xi - body.pos[neighborIndex]));
+			densityAdv += body.mass[neighborIndex] * (vi - body.vel[neighborIndex]).dot(KERNEL_GRAD_W(m_data,xi - body.pos[neighborIndex]));
 			computeDensityChange_additional
 		);
 		//////////////////////////////////////////////////////////////////////////
@@ -339,7 +495,7 @@ __device__ void computeDensityChange(const SPH::DFSPHCData& m_data, SPH::Unified
 		//////////////////////////////////////////////////////////////////////////
 		ITER_NEIGHBORS_BOUNDARIES(m_data, particleSet,
 			index,
-			densityAdv += body.mass[neighborIndex] * (vi - body.vel[neighborIndex]).dot(m_data.gradW(xi - body.pos[neighborIndex]));
+			densityAdv += body.mass[neighborIndex] * (vi - body.vel[neighborIndex]).dot(KERNEL_GRAD_W(m_data,xi - body.pos[neighborIndex]));
 			computeDensityChange_additional
 		);
 
@@ -348,7 +504,7 @@ __device__ void computeDensityChange(const SPH::DFSPHCData& m_data, SPH::Unified
 		//////////////////////////////////////////////////////////////////////////
 		ITER_NEIGHBORS_SOLIDS(m_data, particleSet,
 			index,
-			densityAdv += body.mass[neighborIndex] * (vi - body.vel[neighborIndex]).dot(m_data.gradW(xi - body.pos[neighborIndex]));
+			densityAdv += body.mass[neighborIndex] * (vi - body.vel[neighborIndex]).dot(KERNEL_GRAD_W(m_data,xi - body.pos[neighborIndex]));
 			computeDensityChange_additional
 		);
 
@@ -399,8 +555,8 @@ __global__ void DFSPH_divergence_init_kernel(SPH::DFSPHCData m_data, SPH::Unifie
 			ITER_NEIGHBORS_FLUID(m_data, particleSet,
 				i,
 				const Vector3d &xj = body.pos[neighborIndex];
-			density += body.mass[neighborIndex] * m_data.W(xi - xj);
-			const Vector3d grad_p_j = body.mass[neighborIndex] * m_data.gradW(xi - xj);
+			density += body.mass[neighborIndex] * KERNEL_W(m_data,xi - xj);
+			const Vector3d grad_p_j = body.mass[neighborIndex] * KERNEL_GRAD_W(m_data,xi - xj);
 			sum_grad_p_k += grad_p_j.squaredNorm();
 			grad_p_i += grad_p_j;
 			);
@@ -411,8 +567,8 @@ __global__ void DFSPH_divergence_init_kernel(SPH::DFSPHCData m_data, SPH::Unifie
 			ITER_NEIGHBORS_BOUNDARIES(m_data, particleSet,
 				i,
 				const Vector3d &xj = body.pos[neighborIndex];
-			density += body.mass[neighborIndex] * m_data.W(xi - xj);
-			const Vector3d grad_p_j = body.mass[neighborIndex] * m_data.gradW(xi - xj);
+			density += body.mass[neighborIndex] * KERNEL_W(m_data,xi - xj);
+			const Vector3d grad_p_j = body.mass[neighborIndex] * KERNEL_GRAD_W(m_data,xi - xj);
 			sum_grad_p_k += grad_p_j.squaredNorm();
 			grad_p_i += grad_p_j;
 			);
@@ -424,8 +580,8 @@ __global__ void DFSPH_divergence_init_kernel(SPH::DFSPHCData m_data, SPH::Unifie
 			ITER_NEIGHBORS_SOLIDS(m_data, particleSet,
 				i,
 				const Vector3d &xj = body.pos[neighborIndex];
-			density += body.mass[neighborIndex] * m_data.W(xi - xj);
-			const Vector3d grad_p_j = body.mass[neighborIndex] * m_data.gradW(xi - xj);
+			density += body.mass[neighborIndex] * KERNEL_W(m_data,xi - xj);
+			const Vector3d grad_p_j = body.mass[neighborIndex] * KERNEL_GRAD_W(m_data,xi - xj);
 			sum_grad_p_k += grad_p_j.squaredNorm();
 			grad_p_i += grad_p_j;
 			);
@@ -615,7 +771,7 @@ template <bool warm_start> __device__ void pressureSolveParticle(SPH::DFSPHCData
 	if (fabs(kSum) > m_eps)
 	{
 		// ki, kj already contain inverse density
-		v_i += kSum * body.mass[neighborIndex] * m_data.gradW(xi - body.pos[neighborIndex]);
+		v_i += kSum * body.mass[neighborIndex] * KERNEL_GRAD_W(m_data,xi - body.pos[neighborIndex]);
 	}
 	);
 
@@ -626,7 +782,7 @@ template <bool warm_start> __device__ void pressureSolveParticle(SPH::DFSPHCData
 	if (fabs(kSum) > m_eps)
 	{
 		// ki, kj already contain inverse density
-		v_i += kSum * body.mass[neighborIndex] * m_data.gradW(xi - body.pos[neighborIndex]);
+		v_i += kSum * body.mass[neighborIndex] * KERNEL_GRAD_W(m_data,xi - body.pos[neighborIndex]);
 	}
 	);
 #endif
@@ -640,7 +796,7 @@ template <bool warm_start> __device__ void pressureSolveParticle(SPH::DFSPHCData
 #ifndef USE_BOUNDARIES_DYNAMIC_PROPERTiES
 		ITER_NEIGHBORS_BOUNDARIES(m_data, particleSet,
 			i,
-			v_i += ki * body.mass[neighborIndex] * m_data.gradW(xi - body.pos[neighborIndex]);
+			v_i += ki * body.mass[neighborIndex] * KERNEL_GRAD_W(m_data,xi - body.pos[neighborIndex]);
 		);
 #endif
 
@@ -650,7 +806,7 @@ template <bool warm_start> __device__ void pressureSolveParticle(SPH::DFSPHCData
 		//////////////////////////////////////////////////////////////////////////
 		ITER_NEIGHBORS_SOLIDS(m_data, particleSet,
 			i,
-			Vector3d delta = ki * body.mass[neighborIndex] * m_data.gradW(xi - body.pos[neighborIndex]);
+			Vector3d delta = ki * body.mass[neighborIndex] * KERNEL_GRAD_W(m_data,xi - body.pos[neighborIndex]);
 		v_i += delta;// ki already contains inverse density
 
 					 //we apply the force to the body particle (no invH since it has been fatorized at the end)
@@ -721,7 +877,7 @@ __device__ void computeDensityAdv(SPH::DFSPHCData& m_data, SPH::UnifiedParticleS
 
 	ITER_NEIGHBORS_FLUID(m_data, particleSet,
 		index,
-		delta += body.mass[neighborIndex] * (vi - body.vel[neighborIndex]).dot(m_data.gradW(xi - body.pos[neighborIndex]));
+		delta += body.mass[neighborIndex] * (vi - body.vel[neighborIndex]).dot(KERNEL_GRAD_W(m_data,xi - body.pos[neighborIndex]));
 	);
 
 	//////////////////////////////////////////////////////////////////////////
@@ -729,7 +885,7 @@ __device__ void computeDensityAdv(SPH::DFSPHCData& m_data, SPH::UnifiedParticleS
 	//////////////////////////////////////////////////////////////////////////
 	ITER_NEIGHBORS_BOUNDARIES(m_data, particleSet,
 		index,
-		delta += body.mass[neighborIndex] * (vi - body.vel[neighborIndex]).dot(m_data.gradW(xi - body.pos[neighborIndex]));
+		delta += body.mass[neighborIndex] * (vi - body.vel[neighborIndex]).dot(KERNEL_GRAD_W(m_data,xi - body.pos[neighborIndex]));
 	);
 
 	//////////////////////////////////////////////////////////////////////////
@@ -737,7 +893,7 @@ __device__ void computeDensityAdv(SPH::DFSPHCData& m_data, SPH::UnifiedParticleS
 	//////////////////////////////////////////////////////////////////////////
 	ITER_NEIGHBORS_SOLIDS(m_data, particleSet,
 		index,
-		delta += body.mass[neighborIndex] * (vi - body.vel[neighborIndex]).dot(m_data.gradW(xi - body.pos[neighborIndex]));
+		delta += body.mass[neighborIndex] * (vi - body.vel[neighborIndex]).dot(KERNEL_GRAD_W(m_data,xi - body.pos[neighborIndex]));
 	)
 
 		particleSet->densityAdv[index] = MAX_MACRO_CUDA(particleSet->density[index] + m_data.h_future*delta - m_data.density0, 0.0);
@@ -934,8 +1090,8 @@ __global__ void DFSPH_viscosityXSPH_kernel(SPH::DFSPHCData m_data, SPH::UnifiedP
 		i,
 		Vector3d xixj = xi - body.pos[neighborIndex];
 	RealCuda mass_div_density = body.mass[neighborIndex] / body.density[neighborIndex];
-	ai -= m_data.invH * m_data.viscosity * (mass_div_density) * (vi - body.vel[neighborIndex]) * m_data.W(xixj);
-	ni += mass_div_density * m_data.gradW(xixj);
+	ai -= m_data.invH * m_data.viscosity * (mass_div_density) * (vi - body.vel[neighborIndex]) * KERNEL_W(m_data,xixj);
+	ni += mass_div_density * KERNEL_GRAD_W(m_data,xixj);
 	)
 		//*/
 		/*
@@ -943,7 +1099,7 @@ __global__ void DFSPH_viscosityXSPH_kernel(SPH::DFSPHCData m_data, SPH::UnifiedP
 		ITER_NEIGHBORS_FLUID(
 		i,
 		ai -= m_data.invH * m_data.viscosity * (body.mass[neighborIndex] / body.density[neighborIndex]) *
-		(vi - body.vel[neighborIndex]) * m_data.W(xi - body.pos[neighborIndex]);
+		(vi - body.vel[neighborIndex]) * KERNEL_W(m_data,xi - body.pos[neighborIndex]);
 
 		)//*/
 
@@ -2366,7 +2522,7 @@ __global__ void compute_dynamic_body_particle_mass_kernel(SPH::DFSPHCData data, 
 			for (unsigned int cur_particle = body.neighborsDataSet->cell_start_end[cur_cell_id]; cur_particle < end; ++cur_particle) {
 				unsigned int j = body.neighborsDataSet->p_id_sorted[cur_particle];
 				if ((pos - body.pos[j]).squaredNorm() < radius_sq) {
-					if (i != j) { delta += data.W(pos - body.pos[j]); }
+					if (i != j) { delta += KERNEL_W(data,pos - body.pos[j]); }
 				}
 			}
 		}
@@ -2404,7 +2560,7 @@ __global__ void compute_boundaries_density_error_kernel(SPH::DFSPHCData data, SP
 	//////////////////////////////////////////////////////////////////////////
 	ITER_NEIGHBORS_BOUNDARIES(data, particleSet,
 		i,
-		density += body.mass[neighborIndex] * data.W(particleSet->pos[i] - body.pos[neighborIndex]);
+		density += body.mass[neighborIndex] * KERNEL_W(data,particleSet->pos[i] - body.pos[neighborIndex]);
 	);
 	//*/
 	/*
@@ -2432,7 +2588,7 @@ __global__ void compute_boundaries_density_error_kernel(SPH::DFSPHCData data, SP
 			for (unsigned int cur_particle = body.neighborsDataSet->cell_start_end[cur_cell_id]; cur_particle < end; ++cur_particle) {
 				unsigned int j = body.neighborsDataSet->p_id_sorted[cur_particle];
 				if ((pos - body.pos[j]).squaredNorm() < radius_sq) {
-					if (i != j) { density += particleSet->mass[j] * data.W(pos - body.pos[j]); }
+					if (i != j) { density += particleSet->mass[j] * KERNEL_W(data,pos - body.pos[j]); }
 				}
 			}
 		}
