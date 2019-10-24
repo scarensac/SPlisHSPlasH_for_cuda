@@ -201,6 +201,9 @@
     <ClInclude Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\SPlisHSPlasH\DFSPH\SPH_kernels.h">
       <Filter>Header Files\DFSPH</Filter>
     </ClInclude>
+    <ClInclude Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\SPlisHSPlasH\DFSPH\SPH_memory_storage_precomp_kernels.h">
+      <Filter>Header Files\DFSPH</Filter>
+    </ClInclude>
     <ClInclude Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\SPlisHSPlasH\DFSPH\DFSPH_cuda_basic.h">
       <Filter>Header Files\DFSPH</Filter>
     </ClInclude>

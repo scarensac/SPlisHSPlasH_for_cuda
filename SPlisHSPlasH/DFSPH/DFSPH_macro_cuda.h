@@ -32,7 +32,18 @@ inline void gpuAssert(cudaError_t code, const char *file, int line, bool abort =
 #define FREE_PTR(ptr) if(ptr!=NULL){delete ptr; ptr=NULL;};
 #define CUDA_FREE_PTR(ptr) if(ptr!=NULL){cudaFree(ptr); ptr=NULL;};
 
+////////////////////////////////////////////////////
+/////////Kernel function constant/global////////////
+////////////////////////////////////////////////////
 
+
+#ifdef PRECOMPUTED_KERNELS_USE_CONSTANT_MEMORY
+#define KERNEL_W(data,val) get_constant_W_cuda(val)
+#define KERNEL_GRAD_W(data,val) get_constant_grad_W_cuda(val)
+#else
+#define KERNEL_W(data,val) data.W(val)
+#define KERNEL_GRAD_W(data, val) data.gradW(val)
+#endif
 
 
 ////////////////////////////////////////////////////
@@ -266,4 +277,5 @@ __device__ unsigned int compute_morton_magic_numbers(unsigned int x, unsigned in
 #endif
 
 #endif //DFSPH_MACRO_CUDA
+
 

@@ -6,7 +6,6 @@
 #include <vector>
 
 
-
 #include "SPlisHSPlasH\Vector.h"
 #include "SPlisHSPlasH\Quaternion.h"
 
@@ -100,6 +99,8 @@ public:
     }
 };
 
+
+
 class PrecomputedCubicKernelPerso
 {
 public:
@@ -117,50 +118,51 @@ public:
         m_gradW=NULL;
     }
 
-    FUNCTION RealCuda getRadius() { return m_radius; }
+	FUNCTION RealCuda getRadius() { return m_radius; }
+	FUNCTION RealCuda getRadius() const { return m_radius; }
     void setRadius(RealCuda val);
     void freeMemory();
 
 public:
-    FUNCTION RealCuda W(const Vector3d &r) const
-    {
-        RealCuda res = 0.0;
-        const RealCuda r2 = r.squaredNorm();
-        if (r2 <= m_radius2)
-        {
-            const RealCuda r = sqrt(r2);
-            const unsigned int pos = (unsigned int)(r * m_invStepSize);
-            res = m_W[pos];
-        }
-        return res;
-    }
+	FUNCTION RealCuda W(const Vector3d &r) const
+	{
+		RealCuda res = 0.0;
+		const RealCuda r2 = r.squaredNorm();
+		if (r2 <= m_radius2)
+		{
+			const RealCuda r = sqrt(r2);
+			const unsigned int pos = (unsigned int)(r * m_invStepSize);
+			res = m_W[pos];
+		}
+		return res;
+	}
 
-    FUNCTION RealCuda W(const RealCuda r) const
-    {
-        RealCuda res = 0.0;
-        if (r <= m_radius)
-        {
-            const unsigned int pos = (unsigned int)(r * m_invStepSize);
-            res = m_W[pos];
-        }
-        return res;
-    }
+	FUNCTION RealCuda W(const RealCuda r) const
+	{
+		RealCuda res = 0.0;
+		if (r <= m_radius)
+		{
+			const unsigned int pos = (unsigned int)(r * m_invStepSize);
+			res = m_W[pos];
+		}
+		return res;
+	}
 
-    FUNCTION Vector3d gradW(const Vector3d &r) const
-    {
-        Vector3d res;
-        const RealCuda r2 = r.squaredNorm();
-        if (r2 <= m_radius2)
-        {
-            const RealCuda rl = sqrt(r2);
-            const unsigned int pos = (unsigned int)(rl * m_invStepSize);
-            res = m_gradW[pos] * r;
-        }
-        else
-            res.setZero();
+	FUNCTION Vector3d gradW(const Vector3d &r) const
+	{
+		Vector3d res;
+		const RealCuda r2 = r.squaredNorm();
+		if (r2 <= m_radius2)
+		{
+			const RealCuda rl = sqrt(r2);
+			const unsigned int pos = (unsigned int)(rl * m_invStepSize);
+			res = m_gradW[pos] * r;
+		}
+		else
+			res.setZero();
 
-        return res;
-    }
+		return res;
+	}
 
     FUNCTION inline RealCuda W_zero() const
     {

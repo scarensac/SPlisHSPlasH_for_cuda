@@ -43,6 +43,8 @@ set(IISPH_SOURCE_FILES
 set(DFSPH_HEADER_FILES
 	DFSPH/DFSPH_c_arrays_structure.h
 	DFSPH/SPH_kernels.h
+	DFSPH/SPH_memory_storage_precomp_kernels.h
+#	DFSPH/SPH_memory_storage_precomp_kernels.cuh
 #	DFSPH/DFSPH_cpu_c_arrays.h
 #	DFSPH/DFSPH_cpu_c_arrays_advanced.h
 	DFSPH/DFSPH_cuda_basic.h
@@ -63,6 +65,7 @@ set(DFSPH_HEADER_FILES
 set(DFSPH_SOURCE_FILES
 	DFSPH/DFSPH_c_arrays_structure.cpp
 	DFSPH/SPH_kernels.cpp
+#	DFSPH/SPH_memory_storage_precomp_kernels.cu
 #	DFSPH/DFSPH_cpu_c_arrays.cpp
 #	DFSPH/DFSPH_cpu_c_arrays_advanced.cpp
 	DFSPH/DFSPH_cuda_basic.cu
@@ -165,7 +168,7 @@ include_directories(${PROJECT_PATH}/extern/cub-1.8.0/cub)
 include_directories(${PROJECT_PATH}/extern/glew/include)
 
 
-add_library(SPlisHSPlasH
+add_library(SPlisHSPlasH STATIC
 	BasicTypes.h
 	Common.h
 	Vector.h
@@ -223,6 +226,9 @@ add_library(SPlisHSPlasH
 	
 	CMakeLists.txt
 )
+# I'd love to be able to use that line but it causes too many bugs
+# set_target_properties(SPlisHSPlasH PROPERTIES CUDA_SEPARABLE_COMPILATION ON)
+# set_property(TARGET SPlisHSPlasH PROPERTY CUDA_SEPARABLE_COMPILATION ON)
 
 add_dependencies(SPlisHSPlasH ExternalProject_CompactNSearch)
 

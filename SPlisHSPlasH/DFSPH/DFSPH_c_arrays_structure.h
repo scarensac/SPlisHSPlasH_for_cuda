@@ -246,11 +246,21 @@ public:
     const Vector3d gravitation = Vector3d(0.0f, -9.81, 0.0f);
 
     //static size and value all time
+
+#ifdef PRECOMPUTED_KERNELS
+	FUNCTION inline RealCuda W(const Vector3d &r) const { return m_kernel_precomp.W(r); }
+	FUNCTION inline RealCuda W(const RealCuda r) const { return m_kernel_precomp.W(r); }
+	FUNCTION inline Vector3d gradW(const Vector3d &r) const { return m_kernel_precomp.gradW(r); }
+	FUNCTION inline RealCuda getKernelRadius() { return m_kernel_precomp.getRadius(); }
+	FUNCTION inline RealCuda getKernelRadius() const { return m_kernel_precomp.getRadius(); }
+#else
     FUNCTION inline RealCuda W(const Vector3d &r) const { return m_kernel.W(r); }
     FUNCTION inline RealCuda W(const RealCuda r) const { return m_kernel.W(r); }
     FUNCTION inline Vector3d gradW(const Vector3d &r) const { return m_kernel.gradW(r); }
 	FUNCTION inline RealCuda getKernelRadius() { return m_kernel.getRadius(); }
 	FUNCTION inline RealCuda getKernelRadius() const { return m_kernel.getRadius(); } 
+#endif // PRECOMPUTED_KERNELS
+
 
     FUNCTION inline RealCuda WAdhesion(const Vector3d &r) const { return m_kernel_adhesion.W(r); }
     FUNCTION inline RealCuda WAdhesion(const RealCuda r) const { return m_kernel_adhesion.W(r); }

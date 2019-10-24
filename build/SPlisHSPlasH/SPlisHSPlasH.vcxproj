@@ -382,6 +382,7 @@ if %errorlevel% neq 0 goto :VCEnd</Command>
     <ClCompile Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\SPlisHSPlasH\IISPH\TimeStepIISPH.cpp" />
     <ClInclude Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\SPlisHSPlasH\DFSPH\DFSPH_c_arrays_structure.h" />
     <ClInclude Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\SPlisHSPlasH\DFSPH\SPH_kernels.h" />
+    <ClInclude Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\SPlisHSPlasH\DFSPH\SPH_memory_storage_precomp_kernels.h" />
     <ClInclude Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\SPlisHSPlasH\DFSPH\DFSPH_cuda_basic.h" />
     <ClInclude Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\SPlisHSPlasH\DFSPH\DFSPH_macro_cuda.h" />
     <ClInclude Include="D:\Users\scarensac\Documents\GitHub\SPlisHSPlasH\SPlisHSPlasH\DFSPH\DFSPH_define_cuda.h" />
