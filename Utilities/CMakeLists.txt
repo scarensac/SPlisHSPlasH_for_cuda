@@ -13,6 +13,8 @@ add_library(Utilities
 	SceneLoader.h
 	StringTools.cpp
 	StringTools.h
+	BinaryFileReaderWriter.h
+	Logger.h
 	
 	CMakeLists.txt
 )

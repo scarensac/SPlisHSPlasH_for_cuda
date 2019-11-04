@@ -246,6 +246,8 @@ code;\
 #define ITER_NEIGHBORS_SOLIDS(data,particleSet,index,code) ITER_NEIGHBORS_SOLIDS_FROM_STRUCTURE(data,particleSet,index,code)
 #endif
 
+
+
 ////////////////////////////////////////////////////
 /////////NEIGHBORS STRUCT CONSTRUCTION /////////////
 ////////////////////////////////////////////////////

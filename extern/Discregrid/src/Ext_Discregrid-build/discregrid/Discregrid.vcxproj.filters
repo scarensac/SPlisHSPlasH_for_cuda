@@ -1,0 +1,117 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="14.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <ClCompile Include="C:\Users\LIRIS-CARENSAC\Documents\GitHub\SPlisHSPlasH_for_cuda\extern\Discregrid\src\Ext_Discregrid\discregrid\src\discrete_grid.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\LIRIS-CARENSAC\Documents\GitHub\SPlisHSPlasH_for_cuda\extern\Discregrid\src\Ext_Discregrid\discregrid\src\cubic_lagrange_discrete_grid.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\LIRIS-CARENSAC\Documents\GitHub\SPlisHSPlasH_for_cuda\extern\Discregrid\src\Ext_Discregrid\discregrid\src\acceleration\bounding_sphere_hierarchy.cpp">
+      <Filter>Source Files Acceleration</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\LIRIS-CARENSAC\Documents\GitHub\SPlisHSPlasH_for_cuda\extern\Discregrid\src\Ext_Discregrid\discregrid\src\mesh\entity_containers.cpp">
+      <Filter>Source Files Mesh</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\LIRIS-CARENSAC\Documents\GitHub\SPlisHSPlasH_for_cuda\extern\Discregrid\src\Ext_Discregrid\discregrid\src\mesh\entity_iterators.cpp">
+      <Filter>Source Files Mesh</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\LIRIS-CARENSAC\Documents\GitHub\SPlisHSPlasH_for_cuda\extern\Discregrid\src\Ext_Discregrid\discregrid\src\mesh\triangle_mesh.cpp">
+      <Filter>Source Files Mesh</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\LIRIS-CARENSAC\Documents\GitHub\SPlisHSPlasH_for_cuda\extern\Discregrid\src\Ext_Discregrid\discregrid\src\geometry\mesh_distance.cpp">
+      <Filter>Source Files Geometry</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\LIRIS-CARENSAC\Documents\GitHub\SPlisHSPlasH_for_cuda\extern\Discregrid\src\Ext_Discregrid\discregrid\src\geometry\point_triangle_distance.cpp">
+      <Filter>Source Files Geometry</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\LIRIS-CARENSAC\Documents\GitHub\SPlisHSPlasH_for_cuda\extern\Discregrid\src\Ext_Discregrid\discregrid\src\utility\timing.cpp">
+      <Filter>Source Files Utility</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="C:\Users\LIRIS-CARENSAC\Documents\GitHub\SPlisHSPlasH_for_cuda\extern\Discregrid\src\Ext_Discregrid\discregrid\include\Discregrid\discrete_grid.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\LIRIS-CARENSAC\Documents\GitHub\SPlisHSPlasH_for_cuda\extern\Discregrid\src\Ext_Discregrid\discregrid\include\Discregrid\cubic_lagrange_discrete_grid.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\LIRIS-CARENSAC\Documents\GitHub\SPlisHSPlasH_for_cuda\extern\Discregrid\src\Ext_Discregrid\discregrid\include\Discregrid\acceleration\bounding_sphere_hierarchy.hpp">
+      <Filter>Header Files Acceleration</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\LIRIS-CARENSAC\Documents\GitHub\SPlisHSPlasH_for_cuda\extern\Discregrid\src\Ext_Discregrid\discregrid\include\Discregrid\acceleration\bounding_sphere.hpp">
+      <Filter>Header Files Acceleration</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\LIRIS-CARENSAC\Documents\GitHub\SPlisHSPlasH_for_cuda\extern\Discregrid\src\Ext_Discregrid\discregrid\include\Discregrid\acceleration\kd_tree.hpp">
+      <Filter>Header Files Acceleration</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\LIRIS-CARENSAC\Documents\GitHub\SPlisHSPlasH_for_cuda\extern\Discregrid\src\Ext_Discregrid\discregrid\include\Discregrid\acceleration\kd_tree.inl">
+      <Filter>Header Files Acceleration</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\LIRIS-CARENSAC\Documents\GitHub\SPlisHSPlasH_for_cuda\extern\Discregrid\src\Ext_Discregrid\discregrid\include\Discregrid\mesh\triangle_mesh.hpp">
+      <Filter>Header Files Mesh</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\LIRIS-CARENSAC\Documents\GitHub\SPlisHSPlasH_for_cuda\extern\Discregrid\src\Ext_Discregrid\discregrid\include\Discregrid\mesh\entity_containers.hpp">
+      <Filter>Header Files Mesh</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\LIRIS-CARENSAC\Documents\GitHub\SPlisHSPlasH_for_cuda\extern\Discregrid\src\Ext_Discregrid\discregrid\include\Discregrid\mesh\entity_iterators.hpp">
+      <Filter>Header Files Mesh</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\LIRIS-CARENSAC\Documents\GitHub\SPlisHSPlasH_for_cuda\extern\Discregrid\src\Ext_Discregrid\discregrid\include\Discregrid\mesh\halfedge.hpp">
+      <Filter>Header Files Mesh</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\LIRIS-CARENSAC\Documents\GitHub\SPlisHSPlasH_for_cuda\extern\Discregrid\src\Ext_Discregrid\discregrid\include\Discregrid\geometry\mesh_distance.hpp">
+      <Filter>Header Files Geometry</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\LIRIS-CARENSAC\Documents\GitHub\SPlisHSPlasH_for_cuda\extern\Discregrid\src\Ext_Discregrid\discregrid\src\geometry\point_triangle_distance.hpp">
+      <Filter>Header Files Geometry</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\LIRIS-CARENSAC\Documents\GitHub\SPlisHSPlasH_for_cuda\extern\Discregrid\src\Ext_Discregrid\discregrid\include\Discregrid\utility\serialize.hpp">
+      <Filter>Header Files Utility</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\LIRIS-CARENSAC\Documents\GitHub\SPlisHSPlasH_for_cuda\extern\Discregrid\src\Ext_Discregrid\discregrid\include\Discregrid\utility\lru_cache.hpp">
+      <Filter>Header Files Utility</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\LIRIS-CARENSAC\Documents\GitHub\SPlisHSPlasH_for_cuda\extern\Discregrid\src\Ext_Discregrid\discregrid\src\utility\timing.hpp">
+      <Filter>Header Files Utility</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\LIRIS-CARENSAC\Documents\GitHub\SPlisHSPlasH_for_cuda\extern\Discregrid\src\Ext_Discregrid\discregrid\src\utility\spinlock.hpp">
+      <Filter>Header Files Utility</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <CustomBuild Include="C:\Users\LIRIS-CARENSAC\Documents\GitHub\SPlisHSPlasH_for_cuda\extern\Discregrid\src\Ext_Discregrid\discregrid\CMakeLists.txt" />
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="Header Files">
+      <UniqueIdentifier>{1FCAD26B-9637-30A5-8C39-D826346CE1C0}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files Acceleration">
+      <UniqueIdentifier>{54A02D75-359C-3CED-8142-0ED73F7F69E4}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files Geometry">
+      <UniqueIdentifier>{865DBC35-7DD0-3FFC-8496-4A6C8370884B}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files Mesh">
+      <UniqueIdentifier>{9637F0B0-7793-39BB-853A-8649B8DBD2A1}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files Utility">
+      <UniqueIdentifier>{ECD21653-E52D-3785-92A8-F3C16BBFE2E8}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files">
+      <UniqueIdentifier>{450F32E0-6F54-3194-A99F-3B00C7919330}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files Acceleration">
+      <UniqueIdentifier>{15E817D5-4436-38E7-9003-00D3A586AB26}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files Geometry">
+      <UniqueIdentifier>{EF70FE50-655F-3F30-BEF3-C40483A805E8}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files Mesh">
+      <UniqueIdentifier>{8E36924D-5C6E-31A6-A9E4-B163BD277954}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files Utility">
+      <UniqueIdentifier>{6F689872-E333-31BA-AF68-7B98F5B6995A}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+</Project>

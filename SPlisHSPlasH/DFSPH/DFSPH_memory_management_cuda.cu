@@ -81,6 +81,11 @@ void allocate_UnifiedParticleSet_cuda(SPH::UnifiedParticleSet& container) {
 		if (container.velocity_impacted_by_fluid_solver) {
 			cudaMalloc(&(container.acc), container.numParticlesMax * sizeof(Vector3d));
 
+#ifdef BENDER2019_BOUNDARIES
+			cudaMallocManaged(&(container.X_rigids), container.numParticlesMax * sizeof(Vector3d));
+			cudaMallocManaged(&(container.V_rigids), container.numParticlesMax * sizeof(RealCuda));
+#endif
+
 			//I need the allocate the memory cub need to compute the reduction
 			//I need the avg pointer because cub require it (but i'll clear after the cub call)
 			RealCuda* avg_density_err = SVS_CU::get()->avg_density_err;
@@ -121,6 +126,11 @@ void release_UnifiedParticleSet_cuda(SPH::UnifiedParticleSet& container) {
 		CUDA_FREE_PTR(container.kappaV);
 		if (container.velocity_impacted_by_fluid_solver) {
 			CUDA_FREE_PTR(container.acc);
+
+#ifdef BENDER2019_BOUNDARIES
+			CUDA_FREE_PTR(container.V_rigids);
+			CUDA_FREE_PTR(container.X_rigids);
+#endif
 
 			CUDA_FREE_PTR(container.d_temp_storage);
 			container.temp_storage_bytes = 0;
@@ -723,4 +733,10 @@ void release_neighbors_search_data_set(SPH::NeighborsSearchDataSet& dataSet, boo
 
 
 
-
+void load_bender2019_boundaries_from_cpu(SPH::UnifiedParticleSet& container, RealCuda* V_rigids_i, Vector3d* X_rigids_i) {
+	
+	//for some reason his returns invalid argument
+	gpuErrchk(cudaMemcpy(container.X_rigids, X_rigids_i, container.numParticles * sizeof(Vector3d), cudaMemcpyHostToDevice));
+	gpuErrchk(cudaMemcpy(container.V_rigids, V_rigids_i, container.numParticles * sizeof(RealCuda), cudaMemcpyHostToDevice));
+	
+}

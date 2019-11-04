@@ -150,11 +150,14 @@ set(UTILS_HEADER_FILES
 	Utilities/PoissonDiskSampling.h
 	Utilities/Timing.h
 	Utilities/MatrixFreeSolver.h
+	Utilities/GaussQuadrature.h
 	)
+	
 	
 set(UTILS_SOURCE_FILES
 	Utilities/PoissonDiskSampling.cpp
 	Utilities/Timing.cpp
+	Utilities/GaussQuadrature.cpp
 	)	
 	
 find_package( Eigen3 REQUIRED )
@@ -166,6 +169,11 @@ include_directories( ${EIGEN3_INCLUDE_DIR} )
 include_directories(${PROJECT_PATH}/extern/install/CompactNSearch/include)
 include_directories(${PROJECT_PATH}/extern/cub-1.8.0/cub)
 include_directories(${PROJECT_PATH}/extern/glew/include)
+
+############################################################
+# DiscreGrid
+############################################################
+include_directories(${PROJECT_PATH}/extern/install/Discregrid/include)
 
 
 add_library(SPlisHSPlasH STATIC
@@ -190,6 +198,10 @@ add_library(SPlisHSPlasH STATIC
 	TriangleMesh.h
 	NonPressureForceBase.cpp
 	NonPressureForceBase.h
+	BoundaryModel.h
+	BoundaryModel.cpp
+	BoundaryModel_Bender2019.h
+	BoundaryModel_Bender2019.cpp
 	
 	${WCSPH_HEADER_FILES}
 	${WCSPH_SOURCE_FILES}

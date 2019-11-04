@@ -12,6 +12,11 @@
 
 namespace SPH
 {
+#ifdef BENDER2019_BOUNDARIES
+	class BoundaryModel_Bender2019;
+#endif
+
+
 class SimulationDataDFSPH;
 
 
@@ -73,6 +78,14 @@ protected:
     void computeNonPressureForces();
     void viscosity_XSPH();
     void surfaceTension_Akinci2013();
+
+
+	//for bender 2019 boundaries
+	BoundaryModel_Bender2019* m_boundaryModelBender2019;
+	void computeVolumeAndBoundaryX(const unsigned int i);
+	void initVolumeMap(BoundaryModel_Bender2019* boundaryModel);
+
+
 #endif //SPLISHSPLASH_FRAMEWORK
 
 
@@ -125,6 +138,8 @@ public:
                                        const std::vector<SPH::Vector3d>& reduction_factors);
     void getFluidBoyancyOnDynamicBodies(std::vector<SPH::Vector3d>& forces, std::vector<SPH::Vector3d>& pts_appli);
     SPH::Vector3d getSimulationCenter();
+
+
 };
 }
 

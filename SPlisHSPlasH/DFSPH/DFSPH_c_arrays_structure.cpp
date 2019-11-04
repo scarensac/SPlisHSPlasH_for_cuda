@@ -593,6 +593,10 @@ void UnifiedParticleSet::getMinMaxNaive(Vector3d& min, Vector3d& max) {
 	get_UnifiedParticleSet_min_max_naive_cuda(*this, min, max);
 }
 
+void UnifiedParticleSet::loadBender2019BoundariesFromCPU(RealCuda* V_rigids_i, Vector3d* X_rigids_i) {
+	load_bender2019_boundaries_from_cpu(*this, V_rigids_i, X_rigids_i);
+
+}
 
 DFSPHCData::DFSPHCData() {
 
@@ -841,18 +845,28 @@ void DFSPHCData::initGridOffset() {
 
 void DFSPHCData::readDynamicData(FluidModel *model, SimulationDataDFSPH& data) {
 
-
 #ifdef SPLISHSPLASH_FRAMEWORK
 	if (model->numActiveParticles() != fluid_data->numParticles) {
+		std::cout << "DFSPHCData::readDynamicData the nbr of particles inside the model and on the GPU do not match (model // gpu)" <<
+			model->numActiveParticles() << "  //   " << fluid_data->numParticles << std::endl;
 		exit(1569);
 	}
+	
 
+	Vector3d* pos = new Vector3d[fluid_data->numParticles];
+	Vector3d* vel = new Vector3d[fluid_data->numParticles];
+	read_UnifiedParticleSet_cuda(*fluid_data, pos, vel, NULL, NULL);
+
+	
 	//density and acc are not conserved between timesteps so no need to copy them
 	for (int i = 0; i <  fluid_data->numParticles; ++i) {
-		model->getPosition(0, i) = vector3dTo3r(fluid_data->pos[i]);
-		model->getVelocity(0, i) = vector3dTo3r(fluid_data->vel[i]);
+		model->getPosition(0, i) = vector3dTo3r(pos[i]);
+		model->getVelocity(0, i) = vector3dTo3r(vel[i]);
 		
 	}
+
+	delete[] pos;
+	delete[] vel;
 #else
     throw("DFSPHCData::readDynamicDatamust not be used outside of the SPLISHSPLASH framework");
 #endif //SPLISHSPLASH_FRAMEWORK
@@ -1231,3 +1245,9 @@ void DFSPHCData::computeRigidBodiesParticlesMass(){
     std::cout<<"updating rigid body particle mass end"<<std::endl;
 
 }
+
+
+void DFSPHCData::loadBender2019BoundariesFromCPU(RealCuda* V_rigids_i, Vector3d* X_rigids_i) {
+	fluid_data->loadBender2019BoundariesFromCPU(V_rigids_i, X_rigids_i);
+}
+

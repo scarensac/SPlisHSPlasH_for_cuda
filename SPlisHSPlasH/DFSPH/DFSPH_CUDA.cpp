@@ -10,6 +10,11 @@
 #include <fstream>
 #include <sstream>
 
+#ifdef BENDER2019_BOUNDARIES
+#include "SPlisHSPlasH/BoundaryModel_Bender2019.h"
+#include "SPlisHSPlasH/StaticRigidBody.h"
+#include "SPlisHSPlasH/Utilities/GaussQuadrature.h"
+#endif
 /*
 #ifdef SPLISHSPLASH_FRAMEWORK
 throw("DFSPHCData::readDynamicData must not be used outside of the SPLISHSPLASH framework");
@@ -48,6 +53,16 @@ DFSPHCUDA::DFSPHCUDA(FluidModel *model) :
     m_enableDivergenceSolver = true;
     is_dynamic_bodies_paused = false;
     show_fluid_timings=false;
+
+#ifdef BENDER2019_BOUNDARIES
+	m_boundaryModelBender2019 = new BoundaryModel_Bender2019();
+	StaticRigidBody* rbo = dynamic_cast<StaticRigidBody*>(model->getRigidBodyParticleObject(0)->m_rigidBody);
+	m_boundaryModelBender2019->initModel(rbo, model);
+	SPH::TriangleMesh& mesh = rbo->getGeometry();
+	initVolumeMap(m_boundaryModelBender2019);
+
+	
+#endif
 }
 
 DFSPHCUDA::~DFSPHCUDA(void)
@@ -103,10 +118,56 @@ void DFSPHCUDA::step()
         }
 
 
-
         tab_timepoint[current_timepoint++] = std::chrono::steady_clock::now();
         //*
         cuda_neighborsSearch(m_data);
+
+		///TODO change the code so that the boundaries volumes and distances are conputed directly on the GPU
+#ifdef BENDER2019_BOUNDARIES
+		{
+
+			RealCuda* V_rigids= new RealCuda[m_data.getFluidParticlesCount()];
+			Vector3d* X_rigids= new Vector3d[m_data.getFluidParticlesCount()];
+
+			//sadly I need to update the cpu storage positions as long as those calculations are done on cpu
+			//TODO replace that by a simple read of the positions no need to update the damn model
+			m_data.readDynamicData(m_model,m_simulationData);
+
+			//do the actual conputation
+			int numParticles = m_data.getFluidParticlesCount();
+			#pragma omp parallel default(shared)
+			{
+				#pragma omp for schedule(static)  
+				for (int i = 0; i < (int)numParticles; i++)
+				{
+					computeVolumeAndBoundaryX(i);
+
+					X_rigids[i] = vector3rTo3d(m_boundaryModelBender2019->getBoundaryXj(0, i));
+					V_rigids[i] = m_boundaryModelBender2019->getBoundaryVolume(0, i);;
+				}
+			}
+
+
+			//now send that info to the GPU
+			m_data.loadBender2019BoundariesFromCPU(V_rigids,X_rigids);
+
+
+			/*
+			for (int i = 0; i < (int)numParticles; i++)
+			{
+				std::cout << "particle " << i << 
+					"  v // x // density  " <<
+					V_rigids[i]<<"  //  "<< X_rigids[i].x << " " <<X_rigids[i].y << " "<< X_rigids[i].z << "  //  "<<
+					std::endl;
+			}
+			//*/
+
+			delete[](X_rigids);
+			delete[](V_rigids);
+
+			
+		}
+#endif
 
         tab_timepoint[current_timepoint++] = std::chrono::steady_clock::now();
 
@@ -1164,6 +1225,241 @@ void DFSPHCUDA::surfaceTension_Akinci2013()
     throw("go look for the code but there are multiples funtion to copy so ...");
 }
 
+void DFSPHCUDA::computeVolumeAndBoundaryX(const unsigned int i)
+{
+	//I leave those just to make the transition easier to code
+	const unsigned int nFluids = 1;
+	const unsigned int nBoundaries = 1;
+	const bool sim2D = false;
+	const Real supportRadius = m_model->getSupportRadius();
+	const Real particleRadius = m_model->getParticleRadius();
+	const Real dt = TimeManager::getCurrent()->getTimeStepSize();
+	int fluidModelIndex = 0;
+	Vector3r xi=m_model->getPosition(0,i);
+	//*
+
+	for (unsigned int pid = 0; pid < nBoundaries; pid++)
+	{
+		BoundaryModel_Bender2019* bm = m_boundaryModelBender2019;
+
+		Vector3r& boundaryXj = bm->getBoundaryXj(fluidModelIndex, i);
+		boundaryXj.setZero();
+		Real& boundaryVolume = bm->getBoundaryVolume(fluidModelIndex, i);
+		boundaryVolume = 0.0;
+
+		const Vector3r& t = bm->getRigidBodyObject()->getPosition();
+		const Matrix3r& R = bm->getRigidBodyObject()->getRotation();
+
+		Eigen::Vector3d normal;
+		const Eigen::Vector3d localXi = (R.transpose() * (xi - t)).cast<double>();
+
+		std::array<unsigned int, 32> cell;
+		Eigen::Vector3d c0;
+		Eigen::Matrix<double, 32, 1> N;
+#ifdef USE_FD_NORMAL
+		bool chk = bm->getMap()->determineShapeFunctions(0, localXi, cell, c0, N);
+#else
+		Eigen::Matrix<double, 32, 3> dN;
+		bool chk = bm->getMap()->determineShapeFunctions(0, localXi, cell, c0, N, &dN);
+#endif
+		Real dist = numeric_limits<Real>::max();
+		if (chk)
+#ifdef USE_FD_NORMAL
+			dist = static_cast<Real>(bm->getMap()->interpolate(0, localXi, cell, c0, N));
+#else
+			dist = static_cast<Real>(bm->getMap()->interpolate(0, localXi, cell, c0, N, &normal, &dN));
+#endif
+		
+		if ((dist > 0.1 * particleRadius) && (dist < supportRadius))
+		{
+			const Real volume = static_cast<Real>(bm->getMap()->interpolate(1, localXi, cell, c0, N));
+			if ((volume > 1e-6) && (volume != numeric_limits<Real>::max()))
+			{
+				boundaryVolume = volume;
+
+#ifdef USE_FD_NORMAL
+				if (sim2D)
+					approximateNormal(bm->getMap(), localXi, normal, 2);
+				else
+					approximateNormal(bm->getMap(), localXi, normal, 3);
+#endif
+				normal = R.cast<double>() * normal;
+				const double nl = normal.norm();
+				if (nl > 1.0e-6)
+				{
+					normal /= nl;
+					boundaryXj = (xi - dist * normal.cast<Real>());
+				}
+				else
+				{
+					boundaryVolume = 0.0;
+				}
+			}
+			else
+			{
+				boundaryVolume = 0.0;
+			}
+		}
+		else if (dist <= 0.1 * particleRadius)
+		{
+			normal = R.cast<double>() * normal;
+			const double nl = normal.norm();
+			if (nl > 1.0e-6)
+			{
+				throw("If this is triggered it means a particle was too close to the border so you'll need to reactivate that code I'm sure doesn't work");
+				/*
+				normal /= nl;
+				// project to surface
+				Real d = -dist;
+				d = std::min(d, static_cast<Real>(0.25 / 0.005)* particleRadius* dt);		// get up in small steps
+				sim->getFluidModel(fluidModelIndex)->getPosition(i) = (xi + d * normal.cast<Real>());
+				// adapt velocity in normal direction
+				sim->getFluidModel(fluidModelIndex)->getVelocity(i) += (0.05 - sim->getFluidModel(fluidModelIndex)->getVelocity(i).dot(normal.cast<Real>())) * normal.cast<Real>();
+				//*/
+			}
+			boundaryVolume = 0.0;
+		}
+		else
+		{
+			boundaryVolume = 0.0;
+		}
+	}
+     //*/
+}
+
+
+void DFSPHCUDA::initVolumeMap(BoundaryModel_Bender2019* boundaryModel) {
+	StaticRigidBody* rbo = dynamic_cast<StaticRigidBody*>(boundaryModel->getRigidBodyObject());
+	SPH::TriangleMesh& mesh = rbo->getGeometry();
+	std::vector<Vector3r>& x= mesh.getVertices();
+	std::vector<unsigned int>& faces= mesh.getFaces();
+
+	const Real supportRadius = m_model->getSupportRadius();
+	Discregrid::CubicLagrangeDiscreteGrid* volumeMap;
+
+	
+	
+	//////////////////////////////////////////////////////////////////////////
+	// Generate distance field of object using Discregrid
+	//////////////////////////////////////////////////////////////////////////
+#ifdef USE_DOUBLE_CUDA
+	Discregrid::TriangleMesh sdfMesh(&x[0][0], faces.data(), x.size(), faces.size() / 3);
+#else
+	// if type is float, copy vector to double vector
+	std::vector<double> doubleVec;
+	doubleVec.resize(3 * x.size());
+	for (unsigned int i = 0; i < x.size(); i++)
+		for (unsigned int j = 0; j < 3; j++)
+			doubleVec[3 * i + j] = x[i][j];
+	Discregrid::TriangleMesh sdfMesh(&doubleVec[0], faces.data(), x.size(), faces.size() / 3);
+#endif
+
+	Discregrid::MeshDistance md(sdfMesh);
+	Eigen::AlignedBox3d domain;
+	for (auto const& x_ : x)
+	{
+		domain.extend(x_.cast<double>());
+	}
+	const Real tolerance = 0.0;///TODO set that as a parameter the current valu is just the one I read from the current project github
+	domain.max() += (4.0 * supportRadius + tolerance) * Eigen::Vector3d::Ones();
+	domain.min() -= (4.0 * supportRadius + tolerance) * Eigen::Vector3d::Ones();
+
+	std::cout << "Domain - min: " << domain.min()[0] << ", " << domain.min()[1] << ", " << domain.min()[2] << std::endl;
+	std::cout << "Domain - max: " << domain.max()[0] << ", " << domain.max()[1] << ", " << domain.max()[2] << std::endl;
+
+	Eigen::Matrix<unsigned int, 3, 1> resolutionSDF = Eigen::Matrix<unsigned int, 3, 1>(40, 30, 15);///TODO set that as a parameter the current valu is just the one I read from the current project github
+	std::cout << "Set SDF resolution: " << resolutionSDF[0] << ", " << resolutionSDF[1] << ", " << resolutionSDF[2] << std::endl;
+	volumeMap = new Discregrid::CubicLagrangeDiscreteGrid(domain, std::array<unsigned int, 3>({ resolutionSDF[0], resolutionSDF[1], resolutionSDF[2] }));
+	auto func = Discregrid::DiscreteGrid::ContinuousFunction{};
+
+	//volumeMap->setErrorTolerance(0.001);
+	
+	Real sign = 1.0;
+	bool mapInvert = true; ///TODO set that as a parameter the current valu is just the one I read from the current project github
+	if (mapInvert)
+		sign = -1.0;
+	const Real particleRadius = m_model->getParticleRadius();
+	// subtract 0.5 * particle radius to prevent penetration of particles and the boundary
+	func = [&md, &sign, &tolerance, &particleRadius](Eigen::Vector3d const& xi) {return sign * (md.signedDistanceCached(xi) - tolerance - 0.5 * particleRadius); };
+
+	std::cout << "Generate SDF" << std::endl;
+	volumeMap->addFunction(func, false);
+
+	//////////////////////////////////////////////////////////////////////////
+	// Generate volume map of object using Discregrid
+	//////////////////////////////////////////////////////////////////////////
+	
+	const bool sim2D = false;
+
+	auto int_domain = Eigen::AlignedBox3d(Eigen::Vector3d::Constant(-supportRadius), Eigen::Vector3d::Constant(supportRadius));
+	Real factor = 1.0;
+	if (sim2D)
+		factor = 1.75;
+	auto volume_func = [&](Eigen::Vector3d const& x)
+	{
+		auto dist = volumeMap->interpolate(0u, x);
+		if (dist > (1.0 + 1.0 )* supportRadius)
+		{
+			return 0.0;
+		}
+
+		auto integrand = [&volumeMap, &x, &supportRadius, &factor](Eigen::Vector3d const& xi) -> double
+		{
+			if (xi.squaredNorm() > supportRadius* supportRadius)
+				return 0.0;
+
+			auto dist = volumeMap->interpolate(0u, x + xi);
+
+			if (dist <= 0.0)
+				return 1.0 - 0.1 * dist / supportRadius;
+			if (dist < 1.0 / factor * supportRadius)
+				return static_cast<double>(CubicKernel::W(factor * static_cast<Real>(dist)) / CubicKernel::W_zero());
+			return 0.0;
+		};
+
+		double res = 0.0;
+		res = 0.8 * GaussQuadrature::integrate(integrand, int_domain, 30);
+
+		return res;
+	};
+	
+	auto cell_diag = volumeMap->cellSize().norm();
+	std::cout << "Generate volume map..." << std::endl;
+	const bool no_reduction = true;
+	volumeMap->addFunction(volume_func, false, [&](Eigen::Vector3d const& x_)
+		{
+			if (no_reduction)
+			{
+				return true;
+			}
+			auto x = x_.cwiseMax(volumeMap->domain().min()).cwiseMin(volumeMap->domain().max());
+			auto dist = volumeMap->interpolate(0u, x);
+			if (dist == std::numeric_limits<double>::max())
+			{
+				return false;
+			}
+
+			return -6.0 * supportRadius < dist + cell_diag && dist - cell_diag < 2.0 * supportRadius;
+		});
+
+	// reduction
+	if (!no_reduction)
+	{
+		std::cout << "Reduce discrete fields...";
+		volumeMap->reduceField(0u, [&](Eigen::Vector3d const&, double v)->double
+			{
+				return 0.0 <= v && v <= 3.0;
+			});
+		std::cout << "DONE" << std::endl;
+	}
+
+	boundaryModel->setMap(volumeMap);
+
+	
+	//*/
+}
+
+
 #endif //SPLISHSPLASH_FRAMEWORK
 
 void DFSPHCUDA::checkReal(std::string txt, Real old_v, Real new_v) {
@@ -1337,3 +1633,4 @@ void DFSPHCUDA::getFluidBoyancyOnDynamicBodies(std::vector<SPH::Vector3d>& force
 SPH::Vector3d DFSPHCUDA::getSimulationCenter(){
     return m_data.getSimulationCenter();
 }
+

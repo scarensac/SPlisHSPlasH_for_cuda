@@ -19,7 +19,14 @@ namespace SPH
 		TriangleMesh m_geometry;
 
 	public:
-		StaticRigidBody() { m_zero = Vector3r::Zero(); }
+		StaticRigidBody() {
+			//init to 0 and identity rotation
+			m_x = Vector3r::Zero();
+			m_zero = Vector3r::Zero();
+			m_R <<	1, 0, 0,
+					0, 1, 0,
+					0, 0, 1;
+		}
 
 		virtual bool isDynamic() const { return false; }
 

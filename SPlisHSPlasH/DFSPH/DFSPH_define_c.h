@@ -29,6 +29,8 @@
 #define PRECOMPUTED_KERNELS_USE_CONSTANT_MEMORY
 #endif
 
+//use the bender 2019 boundaries
+#define BENDER2019_BOUNDARIES
 
 
 #endif 

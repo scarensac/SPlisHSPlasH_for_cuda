@@ -51,4 +51,8 @@ void allocate_neighbors_search_data_set(SPH::NeighborsSearchDataSet& dataSet, bo
 void release_neighbors_search_data_set(SPH::NeighborsSearchDataSet& dataSet, bool keep_result_buffers,
 	bool keep_grid_related = false, bool keep_gpu = false);
 
+
+void load_bender2019_boundaries_from_cpu(SPH::UnifiedParticleSet& container, RealCuda* V_rigids_i, Vector3d* X_rigids_i);
+
+
 #endif //DFSPH_MEMORY_MANAGEMENT_CUDA

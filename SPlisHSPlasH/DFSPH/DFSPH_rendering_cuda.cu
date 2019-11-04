@@ -13,7 +13,7 @@
 void cuda_opengl_initParticleRendering(ParticleSetRenderingData& renderingData, unsigned int numParticles,
 	Vector3d** pos, Vector3d** vel) {
 
-	read_last_error_cuda("before alloc rendering on gpu: ");
+	//read_last_error_cuda("before alloc rendering on gpu: ");
 
 	glGenVertexArrays(1, &renderingData.vao); // Créer le VAO
 	glBindVertexArray(renderingData.vao); // Lier le VAO pour l'utiliser

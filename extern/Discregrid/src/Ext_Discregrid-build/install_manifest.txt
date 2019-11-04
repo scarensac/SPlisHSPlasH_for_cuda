@@ -1,0 +1,15 @@
+C:/Users/LIRIS-CARENSAC/Documents/GitHub/SPlisHSPlasH_for_cuda/extern/install/Discregrid/lib/Discregrid.lib
+C:/Users/LIRIS-CARENSAC/Documents/GitHub/SPlisHSPlasH_for_cuda/extern/install/Discregrid/./include/Discregrid/acceleration/bounding_sphere.hpp
+C:/Users/LIRIS-CARENSAC/Documents/GitHub/SPlisHSPlasH_for_cuda/extern/install/Discregrid/./include/Discregrid/acceleration/bounding_sphere_hierarchy.hpp
+C:/Users/LIRIS-CARENSAC/Documents/GitHub/SPlisHSPlasH_for_cuda/extern/install/Discregrid/./include/Discregrid/acceleration/kd_tree.hpp
+C:/Users/LIRIS-CARENSAC/Documents/GitHub/SPlisHSPlasH_for_cuda/extern/install/Discregrid/./include/Discregrid/acceleration/kd_tree.inl
+C:/Users/LIRIS-CARENSAC/Documents/GitHub/SPlisHSPlasH_for_cuda/extern/install/Discregrid/./include/Discregrid/All
+C:/Users/LIRIS-CARENSAC/Documents/GitHub/SPlisHSPlasH_for_cuda/extern/install/Discregrid/./include/Discregrid/cubic_lagrange_discrete_grid.hpp
+C:/Users/LIRIS-CARENSAC/Documents/GitHub/SPlisHSPlasH_for_cuda/extern/install/Discregrid/./include/Discregrid/discrete_grid.hpp
+C:/Users/LIRIS-CARENSAC/Documents/GitHub/SPlisHSPlasH_for_cuda/extern/install/Discregrid/./include/Discregrid/geometry/mesh_distance.hpp
+C:/Users/LIRIS-CARENSAC/Documents/GitHub/SPlisHSPlasH_for_cuda/extern/install/Discregrid/./include/Discregrid/mesh/entity_containers.hpp
+C:/Users/LIRIS-CARENSAC/Documents/GitHub/SPlisHSPlasH_for_cuda/extern/install/Discregrid/./include/Discregrid/mesh/entity_iterators.hpp
+C:/Users/LIRIS-CARENSAC/Documents/GitHub/SPlisHSPlasH_for_cuda/extern/install/Discregrid/./include/Discregrid/mesh/halfedge.hpp
+C:/Users/LIRIS-CARENSAC/Documents/GitHub/SPlisHSPlasH_for_cuda/extern/install/Discregrid/./include/Discregrid/mesh/triangle_mesh.hpp
+C:/Users/LIRIS-CARENSAC/Documents/GitHub/SPlisHSPlasH_for_cuda/extern/install/Discregrid/./include/Discregrid/utility/lru_cache.hpp
+C:/Users/LIRIS-CARENSAC/Documents/GitHub/SPlisHSPlasH_for_cuda/extern/install/Discregrid/./include/Discregrid/utility/serialize.hpp

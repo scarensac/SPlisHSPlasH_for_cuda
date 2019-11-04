@@ -132,6 +132,11 @@ public:
     RealCuda* kappa;
     RealCuda* kappaV;
 
+	//that is for the boundaries handling with bender 2019 method
+	//for now I'll put them directly inside the fluid particles structure 
+	RealCuda* V_rigids;
+	Vector3d* X_rigids;
+
     //for dynamic object particles
     //the original particle position
     Vector3d* pos0;
@@ -225,6 +230,7 @@ public:
 
 	void getMinMaxNaive(Vector3d& min, Vector3d& max);
 
+	void loadBender2019BoundariesFromCPU(RealCuda* V_rigids_i, Vector3d* X_rigids_i);
 };
 
 
@@ -329,7 +335,8 @@ public:
     DFSPHCData(FluidModel *model);
     ~DFSPHCData();
 
-	
+	int getFluidParticlesCount() { return fluid_data->numParticles; };
+	int getFluidParticlesCountMax() { return fluid_data->numParticlesMax; };
 
     FUNCTION RealCuda getSurfaceTension(){return m_surfaceTension;}
 
@@ -389,6 +396,9 @@ public:
     SPH::Vector3d getSimulationCenter();
 
     void computeRigidBodiesParticlesMass();
+
+
+	void loadBender2019BoundariesFromCPU(RealCuda* V_rigids_i, Vector3d* X_rigids_i);
 };
 }
 

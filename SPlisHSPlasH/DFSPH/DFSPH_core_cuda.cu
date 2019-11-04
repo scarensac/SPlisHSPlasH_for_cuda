@@ -245,6 +245,21 @@ __global__ void DFSPH_divergence_warmstart_init_kernel(SPH::DFSPHCData m_data, S
 		//////////////////////////////////////////////////////////////////////////
 		// Boundary
 		//////////////////////////////////////////////////////////////////////////
+
+#ifdef BENDER2019_BOUNDARIES
+
+		const Vector3d& xj = particleSet->X_rigids[i];
+		const RealCuda mass = particleSet->V_rigids[i] * particleSet->density0;
+		density += mass * KERNEL_W(m_data, xi - xj);
+		const Vector3d grad_p_j = mass * KERNEL_GRAD_W(m_data, xi - xj);
+		sum_grad_p_k += grad_p_j.squaredNorm();
+		grad_p_i += grad_p_j;
+		//No Vj for statics boundaries
+		densityAdv += (vi).dot(grad_p_j);
+
+
+#else
+
 		ITER_NEIGHBORS_BOUNDARIES(m_data, particleSet,
 			i,
 			const Vector3d &xj = body.pos[neighborIndex];
@@ -255,6 +270,8 @@ __global__ void DFSPH_divergence_warmstart_init_kernel(SPH::DFSPHCData m_data, S
 		densityAdv += (vi - body.vel[neighborIndex]).dot(grad_p_j);
 		computeDensityChange_additional
 		);
+
+#endif
 
 		//////////////////////////////////////////////////////////////////////////
 		// Dynamic bodies
@@ -374,11 +391,20 @@ template <bool warm_start> __device__ void divergenceSolveParticle(SPH::DFSPHCDa
 		// Boundary
 		//////////////////////////////////////////////////////////////////////////
 #ifndef USE_BOUNDARIES_DYNAMIC_PROPERTiES
+
+#ifdef BENDER2019_BOUNDARIES
+		const Vector3d& xj = particleSet->X_rigids[i];
+		const RealCuda mass = particleSet->V_rigids[i] * particleSet->density0;
+		const Vector3d delta = ki * mass * KERNEL_GRAD_W(m_data, xi - xj);
+		v_i += delta;// ki already contains inverse density
+#else
 		ITER_NEIGHBORS_BOUNDARIES(m_data, particleSet,
 			i,
 			const Vector3d delta = ki * body.mass[neighborIndex] * KERNEL_GRAD_W(m_data,xi - body.pos[neighborIndex]);
 		v_i += delta;// ki already contains inverse density
 		);
+#endif
+
 #endif
 
 		//////////////////////////////////////////////////////////////////////////
@@ -493,11 +519,17 @@ __device__ void computeDensityChange(const SPH::DFSPHCData& m_data, SPH::Unified
 		//////////////////////////////////////////////////////////////////////////
 		// Boundary
 		//////////////////////////////////////////////////////////////////////////
+#ifdef BENDER2019_BOUNDARIES
+		const Vector3d& xj = particleSet->X_rigids[index];
+		const RealCuda mass = particleSet->V_rigids[index] * particleSet->density0;
+		densityAdv += mass* (vi).dot(KERNEL_GRAD_W(m_data, xi - xj));
+#else
 		ITER_NEIGHBORS_BOUNDARIES(m_data, particleSet,
 			index,
 			densityAdv += body.mass[neighborIndex] * (vi - body.vel[neighborIndex]).dot(KERNEL_GRAD_W(m_data,xi - body.pos[neighborIndex]));
 			computeDensityChange_additional
 		);
+#endif
 
 		//////////////////////////////////////////////////////////////////////////
 		// Dynamic Bodies
@@ -794,10 +826,21 @@ template <bool warm_start> __device__ void pressureSolveParticle(SPH::DFSPHCData
 		//////////////////////////////////////////////////////////////////////////
 
 #ifndef USE_BOUNDARIES_DYNAMIC_PROPERTiES
+
+#ifdef BENDER2019_BOUNDARIES
+		const Vector3d& xj = particleSet->X_rigids[i];
+		const RealCuda mass = particleSet->V_rigids[i] * particleSet->density0;
+
+		v_i += ki * mass * KERNEL_GRAD_W(m_data, xi - xj);
+
+#else
 		ITER_NEIGHBORS_BOUNDARIES(m_data, particleSet,
 			i,
 			v_i += ki * body.mass[neighborIndex] * KERNEL_GRAD_W(m_data,xi - body.pos[neighborIndex]);
 		);
+#endif
+
+
 #endif
 
 
@@ -883,10 +926,20 @@ __device__ void computeDensityAdv(SPH::DFSPHCData& m_data, SPH::UnifiedParticleS
 	//////////////////////////////////////////////////////////////////////////
 	// Boundary
 	//////////////////////////////////////////////////////////////////////////
+
+#ifdef BENDER2019_BOUNDARIES
+	const Vector3d& xj = particleSet->X_rigids[index];
+	const RealCuda mass = particleSet->V_rigids[index] * particleSet->density0;
+
+	delta += mass * (vi - xj).dot(KERNEL_GRAD_W(m_data, xi - xj));
+
+#else
+	
 	ITER_NEIGHBORS_BOUNDARIES(m_data, particleSet,
 		index,
 		delta += body.mass[neighborIndex] * (vi - body.vel[neighborIndex]).dot(KERNEL_GRAD_W(m_data,xi - body.pos[neighborIndex]));
 	);
+#endif
 
 	//////////////////////////////////////////////////////////////////////////
 	// Dynamic bodies
@@ -1160,6 +1213,22 @@ __global__ void DFSPH_applySurfaceAkinci2013SurfaceTension_kernel(SPH::DFSPHCDat
 	//////////////////////////////////////////////////////////////////////////
 	// Boundary
 	//////////////////////////////////////////////////////////////////////////
+
+#ifdef BENDER2019_BOUNDARIES
+
+	const Vector3d& xj = particleSet->X_rigids[i];
+	const RealCuda mass = particleSet->V_rigids[i] * particleSet->density0;
+	
+	Vector3d xixj = (xi - xj);
+	const Real length2 = xixj.squaredNorm();
+	if (length2 > 1.0e-9)
+	{
+		xixj = ((Real)1.0 / sqrt(length2)) * xixj;
+		ai -= k * mass * xixj * m_data.WAdhesion(xixj);
+	}
+
+#else
+
 	ITER_NEIGHBORS_BOUNDARIES(m_data, particleSet,
 		i,
 		// adhesion force
@@ -1171,6 +1240,10 @@ __global__ void DFSPH_applySurfaceAkinci2013SurfaceTension_kernel(SPH::DFSPHCDat
 		ai -= k * body.mass[neighborIndex] * xixj * m_data.WAdhesion(xixj);
 	}
 	);
+
+
+#endif
+
 
 	//////////////////////////////////////////////////////////////////////////
 	// Dynamic Bodies
@@ -1203,7 +1276,7 @@ void cuda_externalForces(SPH::DFSPHCData& data) {
 
 	//end the computations for the surface tension
 
-	//DFSPH_applySurfaceAkinci2013SurfaceTension_kernel << <numBlocks, BLOCKSIZE >> > (data, data.fluid_data[0].gpu_ptr);
+	DFSPH_applySurfaceAkinci2013SurfaceTension_kernel << <numBlocks, BLOCKSIZE >> > (data, data.fluid_data[0].gpu_ptr);
 	gpuErrchk(cudaDeviceSynchronize());
 }
 
