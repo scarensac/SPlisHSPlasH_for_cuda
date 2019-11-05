@@ -12,9 +12,7 @@
 
 namespace SPH
 {
-#ifdef BENDER2019_BOUNDARIES
 	class BoundaryModel_Bender2019;
-#endif
 
 
 class SimulationDataDFSPH;

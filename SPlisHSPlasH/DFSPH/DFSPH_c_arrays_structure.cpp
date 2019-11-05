@@ -15,21 +15,14 @@
 #include <chrono>
 #include <thread>
 #include <sstream>
+#include "Utilities/FileSystem.h"
 
 
 using namespace SPH;
 using namespace std;
 
 
-#ifdef SPLISHSPLASH_FRAMEWORK
-const std::string fluid_files_folder = "../data/save_folder/";
-#else
-const std::string fluid_files_folder = "./configuration_data/fluid_data/cdp_char_reduced/";
-//const std::string fluid_files_folder = "./configuration_data/fluid_data/cdp_char/";
-//const std::string fluid_files_folder = "./configuration_data/fluid_data/test_ball_object/";
-//const std::string fluid_files_folder = "./configuration_data/fluid_data/test_box_object/";
-//const std::string fluid_files_folder = "./configuration_data/fluid_data/test_objects/";
-#endif
+
 
 
 #define USE_WARMSTART
@@ -609,6 +602,7 @@ DFSPHCData::DFSPHCData() {
 	viscosity=0;
     m_surfaceTension=0.05;
     gridOffset=Vector3i(50);
+	dynamicWindowTotalDisplacement = Vector3d(0, 0, 0);
 
 
 	h = 0.001;
@@ -645,6 +639,21 @@ DFSPHCData::DFSPHCData() {
 
 	allocate_DFSPHCData_base_cuda(*this);
 
+	std::ostringstream oss;
+#ifdef SPLISHSPLASH_FRAMEWORK
+	oss << FileSystem::get_folder_path("data", 5);
+	oss<<  "save_folder/";
+#else
+	oss << FileSystem::get_folder_path("configuration_data", 5);
+	oss << "fluid_data/cdp_char_reduced/";
+	//oss << "fluid_data/cdp_char/";
+	//oss << "fluid_data/test_ball_object/";
+	//oss << "fluid_data/test_box_object/";
+	//oss << "fluid_data/test_objects/";
+#endif
+
+	fluid_files_folder = oss.str();
+	std::cout << "detected fluid file folder: " << fluid_files_folder << std::endl;
 }
 
 DFSPHCData::DFSPHCData(FluidModel *model): DFSPHCData()
@@ -783,6 +792,7 @@ void DFSPHCData::reset(FluidModel *model) {
 
 #ifdef SPLISHSPLASH_FRAMEWORK
 
+	dynamicWindowTotalDisplacement = Vector3d(0, 0, 0);
 
 
 
@@ -929,6 +939,8 @@ void DFSPHCData::write_fluid_to_file() {
 
 	fluid_data[0].write_to_file(file_name);
 
+	
+
 	std::cout << "saving fluid end: " << std::endl;
 }
 
@@ -948,9 +960,15 @@ void DFSPHCData::read_fluid_from_file(bool load_velocities) {
 	//init the boundaries neighbor searchs
 	//fluid_data[0].initNeighborsSearchData(this->m_kernel_precomp.getRadius(), true, false);
 
-	damp_borders = true;
-	damp_borders_steps_count = 5;
-	add_border_to_damp_planes_cuda(*this);
+	
+
+
+
+	//this damping is only needed if the simulation frequencies of the save nd load are not the same
+	//since I now export it it is fine
+	//damp_borders = true;
+	//damp_borders_steps_count = 5;
+	//add_border_to_damp_planes_cuda(*this);
 
 
     //allocate the grouped neighbor struct

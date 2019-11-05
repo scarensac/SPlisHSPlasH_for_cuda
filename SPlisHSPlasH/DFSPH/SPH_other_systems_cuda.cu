@@ -1000,7 +1000,8 @@ void move_simulation_cuda(SPH::DFSPHCData& data, Vector3d movement) {
 		//the first of the two planes need to be the source one
 		//calc the postion of the jonction planes
 		//we updata the min max so that it now considers the new borders
-		get_min_max_pos_kernel << <1, 1 >> > (data.boundaries_data->gpu_ptr, data.bmin, data.bmax, data.particleRadius);
+		(*(data.bmin)) += mov_pos;
+		(*(data.bmax)) += mov_pos;
 		gpuErrchk(cudaDeviceSynchronize());
 #ifdef SHOW_MESSAGES_IN_CUDA_FUNCTIONS
 		std::cout << "test min_max_2: " << data.bmin->x << " " << data.bmin->y << " " << data.bmin->z << " " << data.bmax->x << " " << data.bmax->y << " " << data.bmax->z << std::endl;
@@ -1052,7 +1053,7 @@ void move_simulation_cuda(SPH::DFSPHCData& data, Vector3d movement) {
 
 
 		//trigger the damping mechanism
-		data.damp_borders = true;
+		data.damp_borders = false;
 		if (data.damp_borders) {
 			data.damp_borders_steps_count = 10;
 			add_border_to_damp_planes_cuda(data);
@@ -1155,6 +1156,7 @@ void move_simulation_cuda(SPH::DFSPHCData& data, Vector3d movement) {
 
 	//we can now update the offset on the grid
 	data.gridOffset -= movement;
+	data.dynamicWindowTotalDisplacement += mov_pos;
 
 	//and we need ot updatethe neighbor structure for the static particles
 	//I'll take the easy way and just rerun the neighbor computation

@@ -1884,9 +1884,10 @@ __global__ void DFSPH_neighborsSearch_kernel(SPH::DFSPHCData data, SPH::UnifiedP
 		}
 
 		//boundaries
+#ifndef BENDER2019_BOUNDARIES
 		ITER_NEIGHBORS_FROM_STRUCTURE(data.boundaries_data_cuda[0].neighborsDataSet, data.boundaries_data_cuda[0].pos,
 			WRITTE_AND_ADVANCE_NEIGHBORS(cur_neighbor_ptr, j); nb_neighbors_boundary++; );
-
+#endif
 
 		//copy the dynamic bodies at the end
 		for (int j = 0; j<nb_neighbors_dynamic_objects; ++j) {
@@ -1906,9 +1907,10 @@ __global__ void DFSPH_neighborsSearch_kernel(SPH::DFSPHCData data, SPH::UnifiedP
 		}
 
 		//boundaries
+#ifndef BENDER2019_BOUNDARIES
 		ITER_NEIGHBORS_FROM_STRUCTURE(data.boundaries_data_cuda[0].neighborsDataSet, data.boundaries_data_cuda[0].pos,
 			if (is_fluid_container || i != j) { WRITTE_AND_ADVANCE_NEIGHBORS(cur_neighbor_ptr, j); nb_neighbors_boundary++; });
-
+#endif
 
 		if (data.numDynamicBodies > 0) {
 
@@ -2268,6 +2270,7 @@ __global__ void DFSPH_update_pos_kernel(SPH::DFSPHCData data, SPH::UnifiedPartic
 	int i = blockIdx.x * blockDim.x + threadIdx.x;
 	if (i >= particleSet->numParticles) { return; }
 
+	data.damp_borders = false;
 	if (data.damp_borders) {
 		/*
 		RealCuda max_vel_sq = (data.particleRadius / 2.0f) / data.h;

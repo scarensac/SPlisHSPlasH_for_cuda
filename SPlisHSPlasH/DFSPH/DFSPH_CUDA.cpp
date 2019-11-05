@@ -10,11 +10,10 @@
 #include <fstream>
 #include <sstream>
 
-#ifdef BENDER2019_BOUNDARIES
+// BENDER2019_BOUNDARIES includes
 #include "SPlisHSPlasH/BoundaryModel_Bender2019.h"
 #include "SPlisHSPlasH/StaticRigidBody.h"
 #include "SPlisHSPlasH/Utilities/GaussQuadrature.h"
-#endif
 /*
 #ifdef SPLISHSPLASH_FRAMEWORK
 throw("DFSPHCData::readDynamicData must not be used outside of the SPLISHSPLASH framework");
@@ -122,6 +121,7 @@ void DFSPHCUDA::step()
         //*
         cuda_neighborsSearch(m_data);
 
+
 		///TODO change the code so that the boundaries volumes and distances are conputed directly on the GPU
 #ifdef BENDER2019_BOUNDARIES
 		{
@@ -133,6 +133,7 @@ void DFSPHCUDA::step()
 			//TODO replace that by a simple read of the positions no need to update the damn model
 			m_data.readDynamicData(m_model,m_simulationData);
 
+			std::cout << m_data.dynamicWindowTotalDisplacement.x << std::endl;
 			//do the actual conputation
 			int numParticles = m_data.getFluidParticlesCount();
 			#pragma omp parallel default(shared)
@@ -142,11 +143,11 @@ void DFSPHCUDA::step()
 				{
 					computeVolumeAndBoundaryX(i);
 
-					X_rigids[i] = vector3rTo3d(m_boundaryModelBender2019->getBoundaryXj(0, i));
+					X_rigids[i] = vector3rTo3d(m_boundaryModelBender2019->getBoundaryXj(0, i))+ m_data.dynamicWindowTotalDisplacement;
 					V_rigids[i] = m_boundaryModelBender2019->getBoundaryVolume(0, i);;
 				}
 			}
-
+			
 
 			//now send that info to the GPU
 			m_data.loadBender2019BoundariesFromCPU(V_rigids,X_rigids);
@@ -1235,7 +1236,7 @@ void DFSPHCUDA::computeVolumeAndBoundaryX(const unsigned int i)
 	const Real particleRadius = m_model->getParticleRadius();
 	const Real dt = TimeManager::getCurrent()->getTimeStepSize();
 	int fluidModelIndex = 0;
-	Vector3r xi=m_model->getPosition(0,i);
+	Vector3r xi = m_model->getPosition(0, i)-vector3dTo3r(m_data.dynamicWindowTotalDisplacement);
 	//*
 
 	for (unsigned int pid = 0; pid < nBoundaries; pid++)
@@ -1306,7 +1307,9 @@ void DFSPHCUDA::computeVolumeAndBoundaryX(const unsigned int i)
 			const double nl = normal.norm();
 			if (nl > 1.0e-6)
 			{
-				throw("If this is triggered it means a particle was too close to the border so you'll need to reactivate that code I'm sure doesn't work");
+				std::string msg = "If this is triggered it means a particle was too close to the border so you'll need to reactivate that code I'm not sure works";
+				std::cout<<msg<<std::endl;
+				throw(msg);
 				/*
 				normal /= nl;
 				// project to surface
@@ -1534,6 +1537,22 @@ void DFSPHCUDA::handleDynamicBodiesPause(bool pause) {
 void DFSPHCUDA::handleSimulationSave(bool save_liquid, bool save_solids, bool save_boundaries) {
     if (save_liquid) {
         m_data.write_fluid_to_file();
+		
+		//save the others fluid data
+		std::string file_name = m_data.fluid_files_folder + "general_data.txt";
+		std::remove(file_name.c_str());
+		std::cout << "saving general data to: " << file_name << std::endl;
+
+		ofstream myfile;
+		myfile.open(file_name, std::ios_base::app);
+		if (myfile.is_open()) {
+			//the timestep
+			myfile << m_data.h;
+			myfile.close();
+		}
+		else {
+			std::cout << "failed to open file: " << file_name << "   reason: " << std::strerror(errno) << std::endl;
+		}
     }
 
     if (save_boundaries) {
@@ -1543,6 +1562,7 @@ void DFSPHCUDA::handleSimulationSave(bool save_liquid, bool save_solids, bool sa
     if (save_solids) {
         m_data.write_solids_to_file();
     }
+
 }
 
 void DFSPHCUDA::handleSimulationLoad(bool load_liquid, bool load_liquid_velocities, bool load_solids, bool load_solids_velocities, 
@@ -1565,8 +1585,35 @@ void DFSPHCUDA::handleSimulationLoad(bool load_liquid, bool load_liquid_velociti
 
     if (load_liquid) {
         m_data.read_fluid_from_file(load_liquid_velocities);
-    }
+		
+		//load the others fluid data
+		std::string file_name = m_data.fluid_files_folder + "general_data.txt";
+		std::cout << "loading general data start: " << file_name << std::endl;
 
+		ifstream myfile;
+		myfile.open(file_name);
+		if (!myfile.is_open()) {
+			std::cout << "trying to read from unexisting file: " << file_name << std::endl;
+			exit(256);
+		}
+
+		//read the first line
+		RealCuda sim_step;
+		myfile >> sim_step;
+		m_data.updateTimeStep(sim_step);
+		m_data.onSimulationStepEnd();
+		m_data.updateTimeStep(sim_step);
+		m_data.onSimulationStepEnd();
+
+	#ifdef SPLISHSPLASH_FRAMEWORK
+		TimeManager::getCurrent()->setTimeStepSize(sim_step);
+	#else
+		desired_time_step = sim_step;
+	#endif //SPLISHSPLASH_FRAMEWORK
+
+
+		std::cout << "loading general data end: " << std::endl;
+    }
 
 
 }

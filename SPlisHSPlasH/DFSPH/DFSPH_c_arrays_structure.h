@@ -280,7 +280,8 @@ public:
     RealCuda particleRadius;
     RealCuda viscosity;
     RealCuda m_surfaceTension;
-    Vector3i gridOffset;
+	Vector3i gridOffset;
+	Vector3d dynamicWindowTotalDisplacement;
 
     RealCuda h;
     RealCuda h_future;
@@ -330,6 +331,9 @@ public:
     int cancel_wave_steps_count;
     Vector3d* cancel_wave_planes;
     RealCuda cancel_wave_lowest_point;
+
+	std::string fluid_files_folder;
+
 
     DFSPHCData();
     DFSPHCData(FluidModel *model);

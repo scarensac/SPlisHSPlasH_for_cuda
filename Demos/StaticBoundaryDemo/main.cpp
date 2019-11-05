@@ -103,7 +103,7 @@ void timeStep ()
 
 
 		//load the simulation state if asked
-		sim->handleSimulationLoad(base.getLoadLiquid() || base.getLoadSimulation(), false, base.getLoadSimulation(), false, base.getLoadSimulation(), false);
+		sim->handleSimulationLoad(base.getLoadLiquid() || base.getLoadSimulation(), true, base.getLoadSimulation(), true, base.getLoadSimulation(), true);
 		//I'll handle the save as token so I need to consume them
 		base.setLoadLiquid(false);
 		base.setLoadSimulation(false);

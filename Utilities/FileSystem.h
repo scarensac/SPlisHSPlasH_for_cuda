@@ -33,6 +33,11 @@ namespace SPH
 		/** Compare an MD5 hash with the hash stored in an MD5 file.
 		*/
 		static bool checkMD5(const std::string& md5Hash, const std::string& md5File);
+
+		/** Use a lookup method to find folder in the arborescence of the exe folder
+		*/
+		static std::string get_folder_path(std::string name, int lookup_nbr, std::string delim = "/", std::string start_folder = "./");
+
 	};
 }
 

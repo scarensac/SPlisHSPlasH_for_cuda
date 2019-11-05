@@ -224,3 +224,28 @@ bool FileSystem::checkMD5(const std::string& md5Hash, const std::string& md5File
 
 	return str == md5Hash;
 }
+
+#include <sys/stat.h>
+std::string FileSystem::get_folder_path(std::string name, int lookup_nbr, std::string delim, std::string start_folder) {
+	std::stringstream oss;
+
+	struct stat st;
+	for (int i = 0; i < lookup_nbr + 1; ++i) {
+		//now the tactic will be to look at every folder and check if we find a data folder
+		std::stringstream oss2;
+		oss2 << start_folder;
+		oss2 << oss.str();
+		oss2 << name;
+		if (stat(oss2.str().c_str(), &st) == 0 && st.st_mode == 16895) {
+			oss << name << delim;
+			std::string path = oss.str();
+			return path;
+		}
+
+		oss << ".." << delim;
+	}
+	std::cout << "the configuration_data folder cannot be found" << std::endl;
+	system("pause");
+	exit(69);
+
+}
