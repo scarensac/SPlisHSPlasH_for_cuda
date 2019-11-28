@@ -1,5 +1,0 @@
-C:/Users/LIRIS-CARENSAC/Documents/GitHub/SPlisHSPlasH_for_cuda/extern/Discregrid/src/Ext_Discregrid-build/CMakeFiles/INSTALL.dir
-C:/Users/LIRIS-CARENSAC/Documents/GitHub/SPlisHSPlasH_for_cuda/extern/Discregrid/src/Ext_Discregrid-build/CMakeFiles/ALL_BUILD.dir
-C:/Users/LIRIS-CARENSAC/Documents/GitHub/SPlisHSPlasH_for_cuda/extern/Discregrid/src/Ext_Discregrid-build/CMakeFiles/ZERO_CHECK.dir
-C:/Users/LIRIS-CARENSAC/Documents/GitHub/SPlisHSPlasH_for_cuda/extern/Discregrid/src/Ext_Discregrid-build/discregrid/CMakeFiles/Discregrid.dir
-C:/Users/LIRIS-CARENSAC/Documents/GitHub/SPlisHSPlasH_for_cuda/extern/Discregrid/src/Ext_Discregrid-build/discregrid/CMakeFiles/INSTALL.dir

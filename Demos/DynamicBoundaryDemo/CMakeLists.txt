@@ -29,6 +29,17 @@ set(SIMULATION_DEPENDENCIES ${SIMULATION_DEPENDENCIES} ExternalProject_CompactNS
 link_directories(${PROJECT_PATH}/extern/install/CompactNSearch/lib)
 
 ############################################################
+# DiscreGrid
+############################################################
+include_directories(${PROJECT_PATH}/extern/install/Discregrid/include)
+set(SIMULATION_DEPENDENCIES ${SIMULATION_DEPENDENCIES} Ext_Discregrid)
+set(SIMULATION_LINK_LIBRARIES ${SIMULATION_LINK_LIBRARIES} 
+	optimized Discregrid 
+	debug Discregrid_d)
+set(SIMULATION_DEPENDENCIES ${SIMULATION_DEPENDENCIES} Ext_Discregrid)	
+link_directories(${PROJECT_PATH}/extern/install/Discregrid/lib)
+
+############################################################
 # PBD
 ############################################################
 include_directories(${PROJECT_PATH}/extern/install/PositionBasedDynamics/include)

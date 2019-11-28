@@ -1,1 +1,0 @@
-cmd='C:/Program Files/CMake/bin/cmake.exe;-DCMAKE_BUILD_TYPE:STRING=;-DCMAKE_INSTALL_PREFIX:PATH=C:/Users/LIRIS-CARENSAC/Documents/GitHub/SPlisHSPlasH_for_cuda/extern/install/Discregrid;-DBUILD_CMD_EXECUTABLE:BOOL=0;-DEIGEN3_INCLUDE_DIR:PATH=C:/Users/LIRIS-CARENSAC/Documents/GitHub/SPlisHSPlasH_for_cuda/extern/eigen;-GVisual Studio 14 2015;-Ax64;<SOURCE_DIR><SOURCE_SUBDIR>'

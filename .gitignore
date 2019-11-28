@@ -8,6 +8,7 @@ data/save_folder/
 data/models/Cache/
 extern/CompactNSearch/
 extern/PositionBasedDynamics/
+extern/Discregrid/
 extern/install/
 
 
