@@ -30,7 +30,9 @@
 #endif
 
 //use the bender 2019 boundaries
-#define BENDER2019_BOUNDARIES
+//#define BENDER2019_BOUNDARIES
 
+//juste a define to active the ocean boundaries prototype
+#define OCEAN_BOUNDARIES_PROTOTYPE
 
 #endif 

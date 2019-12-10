@@ -25,4 +25,8 @@ void move_simulation_cuda(SPH::DFSPHCData& data, Vector3d movement);
 void add_border_to_damp_planes_cuda(SPH::DFSPHCData& data);
 
 
+
+//don't call that
+void handle_fluid_boundries_cuda(SPH::DFSPHCData& data, bool loading = true);
+
 #endif //DFSPH_STATIC_VAR_STRUCT

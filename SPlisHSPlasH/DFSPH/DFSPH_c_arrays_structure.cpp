@@ -327,12 +327,27 @@ void UnifiedParticleSet::reset(T* particleObj) {
 		density0= model->getDensity0();
 		m_V= model->getMass(0) /density0;
 		
+		int NbrLoadedParticles = numParticles;
 		for (int i = 0; i < numParticles; ++i) {
+
+#ifdef OCEAN_BOUNDARIES_PROTOTYPE
+			//*
+			if (vector3rTo3d(model->getPosition(0, i)).x > (-2.0 + 4*model->getSupportRadius())) {
+				NbrLoadedParticles--;
+				continue;
+			}
+			//*/
+#endif
+
 			pos_temp[i] = vector3rTo3d(model->getPosition(0, i));
 			vel_temp[i] = vector3rTo3d(model->getVelocity(0, i));
 			mass_temp[i] = model->getMass(i);
 		}
 	
+		std::cout << "nbr of particles loaded: "<< NbrLoadedParticles << "from nbrModelParticles: "<<model->getNumActiveParticles0()<<std::endl;
+
+		updateActiveParticleNumber(NbrLoadedParticles);
+
 		load_UnifiedParticleSet_cuda(*this, pos_temp, vel_temp, mass_temp);
 
 	}
@@ -454,8 +469,9 @@ void UnifiedParticleSet::load_from_file(std::string file_path, bool load_velocit
 
 
     Vector3d min=Vector3d(1000);
-    Vector3d max=Vector3d(-1000);;
-    for (int i = 0; i < numParticles; ++i) {
+    Vector3d max=Vector3d(-1000);
+	int NbrLoadedParticles = numParticles;
+    for (int i = 0; i < NbrLoadedParticles; ++i) {
 		RealCuda mass;
 		Vector3d pos;
 		Vector3d vel = Vector3d(0, 0, 0);
@@ -473,6 +489,16 @@ void UnifiedParticleSet::load_from_file(std::string file_path, bool load_velocit
             //pos.y-=0.2;
         }
 
+#ifdef OCEAN_BOUNDARIES_PROTOTYPE
+		//*
+		if ((velocity_impacted_by_fluid_solver)&&(pos.x > (-2.0 + 4.5 * 0.1)) ){
+			NbrLoadedParticles--;
+			i--;
+			continue;
+		}
+		//*/
+#endif
+		
         mass_temp[i] = mass;
         pos_temp[i] = pos;
         vel_temp[i] = vel;
@@ -480,9 +506,15 @@ void UnifiedParticleSet::load_from_file(std::string file_path, bool load_velocit
         min.toMin(pos);
         max.toMax(pos);
 
+
+
 	}
 
 	reset(pos_temp, vel_temp, mass_temp);
+
+	std::cout << "nbr of particles loaded: " << NbrLoadedParticles << "from nbrModelParticles: " << numParticles << std::endl;
+
+	updateActiveParticleNumber(NbrLoadedParticles);
 
 	delete[] pos_temp;
 	delete[] vel_temp;
@@ -732,7 +764,8 @@ DFSPHCData::DFSPHCData(FluidModel *model): DFSPHCData()
 #endif //SPLISHSPLASH_FRAMEWORK
 
     //init the values from the model
-    reset(model);
+    //it is called in the DFSOH_CUDA constructor anyway
+	//reset(model);
 
 	read_last_error_cuda("check for errors end creation  ");
 }
@@ -768,8 +801,8 @@ void DFSPHCData::reset(FluidModel *model) {
 
 #ifdef SPLISHSPLASH_FRAMEWORK
 	if (fluid_data->numParticles != model->numActiveParticles()) {
-		std::cout << "DFSPHCData::reset: fml the nbr of fluid particles has been modified" << std::endl;
-		exit(3469);
+		std::cout << "DFSPHCData::reset: fml the nbr of fluid particles has been modified but I'll try" << std::endl;
+		//exit(3469);
 	}
 	if (boundaries_data->numParticles != model->m_particleObjects[1]->numberOfParticles()) {
 		std::cout << "DFSPHCData::reset: fml the nbr of boundaries particles has been modified" << std::endl;
@@ -1269,3 +1302,7 @@ void DFSPHCData::loadBender2019BoundariesFromCPU(RealCuda* V_rigids_i, Vector3d*
 	fluid_data->loadBender2019BoundariesFromCPU(V_rigids_i, X_rigids_i);
 }
 
+
+void DFSPHCData::handleFluidBoundries(bool loading) {
+	handle_fluid_boundries_cuda(*this, loading);
+}

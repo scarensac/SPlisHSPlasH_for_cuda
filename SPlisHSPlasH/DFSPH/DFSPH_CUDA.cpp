@@ -87,6 +87,12 @@ void DFSPHCUDA::step()
 #endif //SPLISHSPLASH_FRAMEWORK
 
 
+#ifdef OCEAN_BOUNDARIES_PROTOTYPE
+	if (count_steps == 0) {
+		m_data.handleFluidBoundries(false);
+	}
+#endif
+
     if (true) {
         m_data.destructor_activated = false;
 
@@ -290,13 +296,20 @@ void DFSPHCUDA::step()
 #endif //SPLISHSPLASH_FRAMEWORK
         //*/
 
+		//test dynamic boundary 
+#ifdef OCEAN_BOUNDARIES_PROTOTYPE
+		if ((count_steps>25)&&((count_steps % 100) == 0)) {
+			m_data.handleFluidBoundries();
+		}
+#endif
+
+
+		//code for timming informations
 
         if ((current_timepoint-1) != NB_TIME_POINTS) {
             std::cout << "the number of time points does not correspond: "<< current_timepoint<<std::endl;
             exit(325);
         }
-
-
 
         float time_iter = std::chrono::duration_cast<std::chrono::nanoseconds> (tab_timepoint[NB_TIME_POINTS] - tab_timepoint[0]).count() / 1000000.0f;
         float time_between= std::chrono::duration_cast<std::chrono::nanoseconds> (tab_timepoint[0] - end).count() / 1000000.0f;
