@@ -140,6 +140,8 @@ void UnifiedParticleSet::init() {
 	gpu_ptr = NULL;
 	d_temp_storage = NULL;
 	temp_storage_bytes = 0;
+	color = NULL;
+	has_color_buffer = false;
 
     density0=1000;//basic value
 }
@@ -148,11 +150,11 @@ UnifiedParticleSet::UnifiedParticleSet(int nbParticles, bool has_factor_computat
 	bool is_dynamic_object_i)
 	: UnifiedParticleSet()
 {
-	init( nbParticles,  has_factor_computation_i,  velocity_impacted_by_fluid_solver_i, is_dynamic_object_i);
+	init( nbParticles,  has_factor_computation_i,  velocity_impacted_by_fluid_solver_i, is_dynamic_object_i, velocity_impacted_by_fluid_solver_i);
 }
 
 void UnifiedParticleSet::init(int nbParticles, bool has_factor_computation_i, bool velocity_impacted_by_fluid_solver_i,
-	bool is_dynamic_object_i)
+	bool is_dynamic_object_i, bool need_color_buffer)
 {
 	//set default values
 	init();
@@ -163,7 +165,8 @@ void UnifiedParticleSet::init(int nbParticles, bool has_factor_computation_i, bo
 	has_factor_computation = has_factor_computation_i;
 	velocity_impacted_by_fluid_solver = velocity_impacted_by_fluid_solver_i;
 	is_dynamic_object = is_dynamic_object_i;
-	
+	has_color_buffer=need_color_buffer;
+
 	//if I have a fluid them I allocate more than the actual nbtr of particles so I can use more in the future
 	if (!velocity_impacted_by_fluid_solver) {
 		numParticlesMax *= 1.3;
@@ -172,8 +175,10 @@ void UnifiedParticleSet::init(int nbParticles, bool has_factor_computation_i, bo
 
 	//init the rendering data
 	renderingData = new ParticleSetRenderingData();
-	cuda_opengl_initParticleRendering(*renderingData, numParticlesMax, &pos, &vel);
-
+	cuda_opengl_initParticleRendering(*renderingData, numParticlesMax, &pos, &vel, has_color_buffer, &color);
+	if (has_color_buffer) {
+		resetColor();
+	}
 
 	//allocate the neighbor structure
 	neighborsDataSet = new NeighborsSearchDataSet(numParticles, numParticlesMax);
@@ -331,7 +336,7 @@ void UnifiedParticleSet::reset(T* particleObj) {
 		for (int i = 0; i < numParticles; ++i) {
 
 #ifdef OCEAN_BOUNDARIES_PROTOTYPE
-			//*
+			/*
 			if (vector3rTo3d(model->getPosition(0, i)).x > (-2.0 + 4*model->getSupportRadius())) {
 				NbrLoadedParticles--;
 				continue;
@@ -445,7 +450,7 @@ void UnifiedParticleSet::load_from_file(std::string file_path, bool load_velocit
 	//now we can initialise the structure
 	//using the attribute to store the parameter before init shoudl not cause any probelm because
 	//the call to the function will make a copy
-	init(numParticles, has_factor_computation, velocity_impacted_by_fluid_solver, is_dynamic_object);
+	init(numParticles, has_factor_computation, velocity_impacted_by_fluid_solver, is_dynamic_object, velocity_impacted_by_fluid_solver);
 	releaseDataOnDestruction = true;
 	
 
@@ -621,6 +626,10 @@ void UnifiedParticleSet::getMinMaxNaive(Vector3d& min, Vector3d& max) {
 void UnifiedParticleSet::loadBender2019BoundariesFromCPU(RealCuda* V_rigids_i, Vector3d* X_rigids_i) {
 	load_bender2019_boundaries_from_cpu(*this, V_rigids_i, X_rigids_i);
 
+}
+
+void UnifiedParticleSet::resetColor() {
+	cuda_reset_color(this);
 }
 
 DFSPHCData::DFSPHCData() {

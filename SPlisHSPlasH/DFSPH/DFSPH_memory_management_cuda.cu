@@ -24,6 +24,16 @@
 #include "basic_kernels_cuda.cuh"
 #include "SPH_other_systems_cuda.h"
 
+namespace MemoryManagementCuda
+{
+	__global__ void init_buffer_kernel(Vector3d* buff, unsigned int size, Vector3d val) {
+		int i = blockIdx.x * blockDim.x + threadIdx.x;
+		if (i >= size) { return; }
+
+		buff[i] = val;
+	}
+}
+
 
 void allocate_DFSPHCData_base_cuda(SPH::DFSPHCData& data) {
 	if (data.damp_planes == NULL) {
@@ -107,6 +117,8 @@ void allocate_UnifiedParticleSet_cuda(SPH::UnifiedParticleSet& container) {
 		cudaMalloc(&(container.F), container.numParticlesMax * sizeof(Vector3d));
 	}
 
+	
+
 	gpuErrchk(cudaDeviceSynchronize());
 }
 
@@ -159,7 +171,7 @@ void load_UnifiedParticleSet_cuda(SPH::UnifiedParticleSet& container, Vector3d* 
 	gpuErrchk(cudaMemcpy(container.mass, mass, container.numParticles * sizeof(RealCuda), cudaMemcpyHostToDevice));
 
 	if (container.is_dynamic_object) {
-		int numBlocks = (container.numParticles + BLOCKSIZE - 1) / BLOCKSIZE;
+		int numBlocks = calculateNumBlocks(container.numParticles);
 		gpuErrchk(cudaMemcpy(container.pos0, pos, container.numParticles * sizeof(Vector3d), cudaMemcpyHostToDevice));
 		DFSPH_setVector3dBufferToZero_kernel << <numBlocks, BLOCKSIZE >> > (container.F, container.numParticles);
 	}
@@ -231,7 +243,7 @@ void compute_fluid_impact_on_dynamic_body_cuda(SPH::UnifiedParticleSet& containe
 	*moment_cuda = Vector3d(0, 0, 0);
 
 
-	int numBlocks = (container.numParticles + BLOCKSIZE - 1) / BLOCKSIZE;
+	int numBlocks = calculateNumBlocks(container.numParticles);
 	compute_fluid_impact_on_dynamic_body_kernel << <numBlocks, BLOCKSIZE >> > (container.gpu_ptr,
 		container.rigidBody_cpu->position, force_cuda,
 		moment_cuda, reduction_factor);
@@ -274,7 +286,7 @@ void compute_fluid_Boyancy_on_dynamic_body_cuda(SPH::UnifiedParticleSet& contain
 	*force_cuda = Vector3d(0, 0, 0);
 	*pt_cuda = Vector3d(0, 0, 0);
 
-	int numBlocks = (container.numParticles + BLOCKSIZE - 1) / BLOCKSIZE;
+	int numBlocks = calculateNumBlocks(container.numParticles);
 	compute_fluid_boyancy_on_dynamic_body_kernel << <numBlocks, BLOCKSIZE >> > (container.gpu_ptr, force_cuda, pt_cuda);
 	gpuErrchk(cudaDeviceSynchronize());
 
@@ -485,7 +497,7 @@ void change_max_particle_number(SPH::UnifiedParticleSet& container, int numParti
 
 	//allocate new
 	container.renderingData = new ParticleSetRenderingData();
-	cuda_opengl_initParticleRendering(*container.renderingData, numParticlesMax, &container.pos, &container.vel);
+	cuda_opengl_initParticleRendering(*container.renderingData, numParticlesMax, &container.pos, &container.vel, container.has_color_buffer, &container.color);
 
 	//now we need to copy the data
 	gpuErrchk(cudaMemcpy(container.pos, dummy.pos, dummy.numParticles * sizeof(Vector3d), cudaMemcpyDeviceToDevice));
@@ -532,7 +544,7 @@ void change_max_particle_number(SPH::NeighborsSearchDataSet& dataSet, int numPar
 
 void add_particles_cuda(SPH::UnifiedParticleSet& container, int num_additional_particles, const Vector3d* pos, const Vector3d* vel) {
 	//can't use memeset for the mass so I have to make a kernel for the set
-	int numBlocks = (num_additional_particles + BLOCKSIZE - 1) / BLOCKSIZE;
+	int numBlocks = calculateNumBlocks(num_additional_particles);
 	cuda_setBufferToValue_kernel<RealCuda> << <numBlocks, BLOCKSIZE >> > (container.mass,
 		container.m_V*container.density0, container.numParticles + num_additional_particles);
 
@@ -560,7 +572,7 @@ void add_particles_cuda(SPH::UnifiedParticleSet& container, int num_additional_p
 
 template<class T> void set_buffer_to_value(T* buff, T val, int size) {
 	//can't use memeset for the mass so I have to make a kernel for the  set
-	int numBlocks = (size + BLOCKSIZE - 1) / BLOCKSIZE;
+	int numBlocks = calculateNumBlocks(size);
 	cuda_setBufferToValue_kernel<T> << <numBlocks, BLOCKSIZE >> > (buff, val, size);
 
 	cudaError_t cudaStatus = cudaDeviceSynchronize();
@@ -642,7 +654,7 @@ void allocate_neighbors_search_data_set(SPH::NeighborsSearchDataSet& dataSet, bo
 		cudaMalloc(&(dataSet.intermediate_buffer_real), dataSet.numParticlesMax * sizeof(RealCuda));
 
 		//reset the particle id
-		int numBlocks = (dataSet.numParticlesMax + BLOCKSIZE - 1) / BLOCKSIZE;
+		int numBlocks = calculateNumBlocks(dataSet.numParticlesMax);
 		DFSPH_setBufferValueToItself_kernel << <numBlocks, BLOCKSIZE >> > (dataSet.p_id, dataSet.numParticlesMax);
 		DFSPH_setBufferValueToItself_kernel << <numBlocks, BLOCKSIZE >> > (dataSet.p_id_sorted, dataSet.numParticlesMax);
 		gpuErrchk(cudaDeviceSynchronize());

@@ -151,6 +151,8 @@ public:
 
     //data for the rendering
     ParticleSetRenderingData* renderingData;
+	Vector3d* color;//not used all of the tme it's mostly a debug fonctionality
+	bool has_color_buffer;
 
     //pointer for the gpu storage (that should be a copy of this item but allocated on the gpu)
     UnifiedParticleSet* gpu_ptr;
@@ -169,7 +171,7 @@ public:
     UnifiedParticleSet(int nbParticles, bool has_factor_computation_i, bool velocity_impacted_by_fluid_solver_i,
                        bool is_dynamic_object_i);
     void init(int nbParticles, bool has_factor_computation_i, bool velocity_impacted_by_fluid_solver_i,
-              bool is_dynamic_object_i);
+              bool is_dynamic_object_i, bool need_color_buffer);
 
     //destructor
     ~UnifiedParticleSet();
@@ -231,6 +233,8 @@ public:
 	void getMinMaxNaive(Vector3d& min, Vector3d& max);
 
 	void loadBender2019BoundariesFromCPU(RealCuda* V_rigids_i, Vector3d* X_rigids_i);
+
+	void resetColor();
 };
 
 

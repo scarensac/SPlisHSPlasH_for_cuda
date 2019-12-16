@@ -8,6 +8,8 @@
 #include <cstdio>
 
 
+
+
 ////////////////////////////////////////////////////
 /////////        CUDA ERROR CHECK      /////////////
 ////////////////////////////////////////////////////
@@ -31,6 +33,18 @@ inline void gpuAssert(cudaError_t code, const char *file, int line, bool abort =
 
 #define FREE_PTR(ptr) if(ptr!=NULL){delete ptr; ptr=NULL;};
 #define CUDA_FREE_PTR(ptr) if(ptr!=NULL){cudaFree(ptr); ptr=NULL;};
+
+
+////////////////////////////////////////////////////
+/////////        get numblock for count/////////////
+////////////////////////////////////////////////////
+
+///TODO move that to a file that contain generic functions
+inline int calculateNumBlocks(int nbElems) {
+	return (nbElems + BLOCKSIZE - 1) / BLOCKSIZE;
+}
+
+
 
 ////////////////////////////////////////////////////
 /////////Kernel function constant/global////////////

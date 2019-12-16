@@ -43,6 +43,15 @@
 #include "DFSPH_define_c.h"
 #include "cuda_runtime.h"
 
+namespace CoreCuda
+{
+	__global__ void init_buffer_kernel(Vector3d* buff, unsigned int size, Vector3d val) {
+		int i = blockIdx.x * blockDim.x + threadIdx.x;
+		if (i >= size) { return; }
+
+		buff[i] = val;
+	}
+}
 
 //#include "SPH_memory_storage_precomp_kernels.cuh"
 
@@ -323,13 +332,13 @@ __global__ void DFSPH_divergence_warmstart_init_kernel(SPH::DFSPHCData m_data, S
 
 void cuda_divergence_warmstart_init(SPH::DFSPHCData& data) {
 	{//fluid
-		int numBlocks = (data.fluid_data[0].numParticles + BLOCKSIZE - 1) / BLOCKSIZE;
+		int numBlocks = calculateNumBlocks(data.fluid_data[0].numParticles);
 		DFSPH_divergence_warmstart_init_kernel<false> << <numBlocks, BLOCKSIZE >> > (data, data.fluid_data[0].gpu_ptr);
 	}
 
 	//*
 	if (data.boundaries_data[0].has_factor_computation) {//boundaries
-		int numBlocks = (data.boundaries_data[0].numParticles + BLOCKSIZE - 1) / BLOCKSIZE;
+		int numBlocks = calculateNumBlocks(data.boundaries_data[0].numParticles);
 		DFSPH_divergence_warmstart_init_kernel<false> << <numBlocks, BLOCKSIZE >> > (data, data.boundaries_data[0].gpu_ptr);
 	}
 	//*/
@@ -456,7 +465,7 @@ template<bool warmstart> __global__ void DFSPH_divergence_compute_kernel(SPH::DF
 
 template<bool warmstart> void cuda_divergence_compute(SPH::DFSPHCData& data) {
 	{//fluid
-		int numBlocks = (data.fluid_data[0].numParticles + BLOCKSIZE - 1) / BLOCKSIZE;
+		int numBlocks = calculateNumBlocks(data.fluid_data[0].numParticles);
 		DFSPH_divergence_compute_kernel<warmstart> << <numBlocks, BLOCKSIZE >> > (data, data.fluid_data[0].gpu_ptr);
 	}
 
@@ -464,7 +473,7 @@ template<bool warmstart> void cuda_divergence_compute(SPH::DFSPHCData& data) {
 
 	if (data.boundaries_data[0].has_factor_computation) {//boundaries 
 		if (!warmstart) {
-			int numBlocks = (data.boundaries_data[0].numParticles + BLOCKSIZE - 1) / BLOCKSIZE;
+			int numBlocks = calculateNumBlocks(data.boundaries_data[0].numParticles);
 			DFSPH_divergence_accumulate_kappaV_kernel << <numBlocks, BLOCKSIZE >> > (data.boundaries_data[0].gpu_ptr);
 		}
 	}
@@ -638,13 +647,13 @@ __global__ void DFSPH_divergence_init_kernel(SPH::DFSPHCData m_data, SPH::Unifie
 
 void cuda_divergence_init(SPH::DFSPHCData& data) {
 	{//fluid
-		int numBlocks = (data.fluid_data[0].numParticles + BLOCKSIZE - 1) / BLOCKSIZE;
+		int numBlocks = calculateNumBlocks(data.fluid_data[0].numParticles);
 		DFSPH_divergence_init_kernel << <numBlocks, BLOCKSIZE >> > (data, data.fluid_data[0].gpu_ptr);
 	}
 
 	//*
 	if (data.boundaries_data[0].has_factor_computation) {//boundaries 
-		int numBlocks = (data.boundaries_data[0].numParticles + BLOCKSIZE - 1) / BLOCKSIZE;
+		int numBlocks = calculateNumBlocks(data.boundaries_data[0].numParticles);
 		DFSPH_divergence_init_kernel << <numBlocks, BLOCKSIZE >> > (data, data.boundaries_data[0].gpu_ptr);
 	}
 	//*/
@@ -669,13 +678,13 @@ RealCuda cuda_divergence_loop_end(SPH::DFSPHCData& data) {
 	RealCuda* avg_density_err = SVS_CU::get()->avg_density_err;
 
 	{//fluid
-		int numBlocks = (data.fluid_data[0].numParticles + BLOCKSIZE - 1) / BLOCKSIZE;
+		int numBlocks = calculateNumBlocks(data.fluid_data[0].numParticles );
 		DFSPH_divergence_loop_end_kernel << <numBlocks, BLOCKSIZE >> > (data, data.fluid_data[0].gpu_ptr, avg_density_err);
 	}
 
 	//*
 	if (data.boundaries_data[0].has_factor_computation) {//boundaries 
-		int numBlocks = (data.boundaries_data[0].numParticles + BLOCKSIZE - 1) / BLOCKSIZE;
+		int numBlocks = calculateNumBlocks(data.boundaries_data[0].numParticles );
 		DFSPH_divergence_loop_end_kernel << <numBlocks, BLOCKSIZE >> > (data, data.boundaries_data[0].gpu_ptr, avg_density_err);
 	}
 	//*/
@@ -886,13 +895,13 @@ template<bool warmstart> __global__ void DFSPH_pressure_compute_kernel(SPH::DFSP
 
 template<bool warmstart> void cuda_pressure_compute(SPH::DFSPHCData& data) {
 	{//fluid
-		int numBlocks = (data.fluid_data[0].numParticles + BLOCKSIZE - 1) / BLOCKSIZE;
+		int numBlocks = calculateNumBlocks(data.fluid_data[0].numParticles);
 		DFSPH_pressure_compute_kernel<warmstart> << <numBlocks, BLOCKSIZE >> > (data, data.fluid_data[0].gpu_ptr);
 	}
 
 	if (data.boundaries_data[0].has_factor_computation) {//boundaries 
 		if (!warmstart) {
-			int numBlocks = (data.boundaries_data[0].numParticles + BLOCKSIZE - 1) / BLOCKSIZE;
+			int numBlocks = calculateNumBlocks(data.boundaries_data[0].numParticles);
 			DFSPH_density_accumulate_kappa_kernel << <numBlocks, BLOCKSIZE >> > (data.boundaries_data[0].gpu_ptr);
 		}
 	}
@@ -976,12 +985,12 @@ __global__ void DFSPH_pressure_init_kernel(SPH::DFSPHCData m_data, SPH::UnifiedP
 
 void cuda_pressure_init(SPH::DFSPHCData& data) {
 	{//fluid
-		int numBlocks = (data.fluid_data[0].numParticles + BLOCKSIZE - 1) / BLOCKSIZE;
+		int numBlocks = calculateNumBlocks(data.fluid_data[0].numParticles);
 		DFSPH_pressure_init_kernel << <numBlocks, BLOCKSIZE >> > (data, data.fluid_data[0].gpu_ptr);
 	}
 
 	if (data.boundaries_data[0].has_factor_computation) {//boundaries 
-		int numBlocks = (data.boundaries_data[0].numParticles + BLOCKSIZE - 1) / BLOCKSIZE;
+		int numBlocks = calculateNumBlocks(data.boundaries_data[0].numParticles);
 		DFSPH_pressure_init_kernel << <numBlocks, BLOCKSIZE >> > (data, data.boundaries_data[0].gpu_ptr);
 	}
 
@@ -1009,12 +1018,12 @@ RealCuda cuda_pressure_loop_end(SPH::DFSPHCData& data) {
 	RealCuda* avg_density_err = SVS_CU::get()->avg_density_err;
 
 	{//fluid
-		int numBlocks = (data.fluid_data[0].numParticles + BLOCKSIZE - 1) / BLOCKSIZE;
+		int numBlocks = calculateNumBlocks(data.fluid_data[0].numParticles);
 		DFSPH_pressure_loop_end_kernel << <numBlocks, BLOCKSIZE >> > (data, data.fluid_data[0].gpu_ptr, avg_density_err);
 	}
 
 	if (data.boundaries_data[0].has_factor_computation) {//boundaries 
-		int numBlocks = (data.boundaries_data[0].numParticles + BLOCKSIZE - 1) / BLOCKSIZE;
+		int numBlocks = calculateNumBlocks(data.boundaries_data[0].numParticles);
 		DFSPH_pressure_loop_end_kernel << <numBlocks, BLOCKSIZE >> > (data, data.boundaries_data[0].gpu_ptr, avg_density_err);
 	}
 
@@ -1265,7 +1274,7 @@ __global__ void DFSPH_applySurfaceAkinci2013SurfaceTension_kernel(SPH::DFSPHCDat
 
 
 void cuda_externalForces(SPH::DFSPHCData& data) {
-	int numBlocks = (data.fluid_data[0].numParticles + BLOCKSIZE - 1) / BLOCKSIZE;
+	int numBlocks = calculateNumBlocks(data.fluid_data[0].numParticles);
 	DFSPH_viscosityXSPH_kernel << <numBlocks, BLOCKSIZE >> > (data, data.fluid_data[0].gpu_ptr);
 
 	cudaError_t cudaStatus = cudaDeviceSynchronize();
@@ -1393,7 +1402,7 @@ void cuda_neighborsSearchInternal_sortParticlesId(Vector3d* pos, RealCuda kernel
 	//*/
 	std::chrono::steady_clock::time_point begin = std::chrono::steady_clock::now();
 
-	int numBlocks = (numParticles + BLOCKSIZE - 1) / BLOCKSIZE;
+	int numBlocks = calculateNumBlocks(numParticles);
 
 
 	//compute the idx of the cell for each particles
@@ -1441,7 +1450,7 @@ void cuda_neighborsSearchInternal_sortParticlesId(Vector3d* pos, RealCuda kernel
 void cuda_neighborsSearchInternal_computeCellStartEnd(int numParticles, unsigned int* cell_id_sorted,
 	unsigned int* hist, void **d_temp_storage_cumul_hist, size_t   &temp_storage_bytes_cumul_hist, unsigned int* cell_start_end) {
 	cudaError_t cudaStatus;
-	int numBlocks = (numParticles + BLOCKSIZE - 1) / BLOCKSIZE;
+	int numBlocks = calculateNumBlocks(numParticles);
 
 
 	//Now we need to determine the start and end of each cell
@@ -1548,7 +1557,7 @@ void cuda_neighborsSearchInternal_sortParticlesId(SPH::UnifiedParticleSet& parti
 
 	std::chrono::steady_clock::time_point middle1 = std::chrono::steady_clock::now();
 
-	int numBlocks = (particleSet.numParticles + BLOCKSIZE - 1) / BLOCKSIZE;
+	int numBlocks = calculateNumBlocks(particleSet.numParticles);
 
 
 	//compute the idx of the cell for each particles
@@ -1666,7 +1675,7 @@ void cuda_initNeighborsSearchDataSetGroupedDynamicBodies(SPH::DFSPHCData& data) 
 	}
 
 	// now fill itr
-	int numBlocks = (dataSet.numParticles + BLOCKSIZE - 1) / BLOCKSIZE;
+	int numBlocks = calculateNumBlocks(dataSet.numParticles);
 	DFSPH_fill_aggregated_pos_buffer_kernel << <numBlocks, BLOCKSIZE >> > (data, dataSet.numParticles);
 	gpuErrchk(cudaDeviceSynchronize());
 
@@ -1699,7 +1708,7 @@ __global__ void DFSPH_sortFromIndex_kernel(T* in, T* out, unsigned int* index, u
 void cuda_sortData(SPH::UnifiedParticleSet& particleSet, unsigned int * sort_id) {
 	//*
 	unsigned int numParticles = particleSet.neighborsDataSet->numParticles;
-	int numBlocks = (numParticles + BLOCKSIZE - 1) / BLOCKSIZE;
+	int numBlocks = calculateNumBlocks(numParticles);
 	unsigned int *p_id_sorted = sort_id;
 
 	Vector3d* intermediate_buffer_v3d = particleSet.neighborsDataSet->intermediate_buffer_v3d;
@@ -1715,10 +1724,18 @@ void cuda_sortData(SPH::UnifiedParticleSet& particleSet, unsigned int * sort_id)
 	gpuErrchk(cudaDeviceSynchronize());
 	gpuErrchk(cudaMemcpy(particleSet.vel, intermediate_buffer_v3d, numParticles * sizeof(Vector3d), cudaMemcpyDeviceToDevice));
 
+	//color
+	if (particleSet.has_color_buffer) {
+		DFSPH_sortFromIndex_kernel<Vector3d> << <numBlocks, BLOCKSIZE >> > (particleSet.color, intermediate_buffer_v3d, p_id_sorted, numParticles);
+		gpuErrchk(cudaDeviceSynchronize());
+		gpuErrchk(cudaMemcpy(particleSet.color, intermediate_buffer_v3d, numParticles * sizeof(Vector3d), cudaMemcpyDeviceToDevice));
+	}
+	
 	//mass
 	DFSPH_sortFromIndex_kernel<RealCuda> << <numBlocks, BLOCKSIZE >> > (particleSet.mass, intermediate_buffer_real, p_id_sorted, numParticles);
 	gpuErrchk(cudaDeviceSynchronize());
 	gpuErrchk(cudaMemcpy(particleSet.mass, intermediate_buffer_real, numParticles * sizeof(RealCuda), cudaMemcpyDeviceToDevice));
+
 
 	if (particleSet.has_factor_computation) {
 		//kappa
@@ -1768,7 +1785,7 @@ __global__ void generateShuffleIndex_kernel(unsigned int *shuffle_index, unsigne
 
 void cuda_shuffleData(SPH::UnifiedParticleSet& particleSet) {
 	unsigned int numParticles = particleSet.numParticles;
-	int numBlocks = (numParticles + BLOCKSIZE - 1) / BLOCKSIZE;
+	int numBlocks = calculateNumBlocks(numParticles);
 
 	//create a random sorting index
 	unsigned int* shuffle_index = SVS_CU::get()->shuffle_index;
@@ -2098,7 +2115,7 @@ void cuda_neighborsSearch(SPH::DFSPHCData& data) {
 		//*/
 
 		//cuda way
-		int numBlocks = (data.fluid_data[0].numParticles + BLOCKSIZE - 1) / BLOCKSIZE;
+		int numBlocks = calculateNumBlocks(data.fluid_data[0].numParticles);
 
 		//*
 		DFSPH_neighborsSearch_kernel<true> << <numBlocks, BLOCKSIZE >> > (data, data.fluid_data_cuda);
@@ -2253,7 +2270,7 @@ __global__ void DFSPH_update_vel_kernel(SPH::DFSPHCData m_data, SPH::UnifiedPart
 
 
 void cuda_update_vel(SPH::DFSPHCData& data) {
-	int numBlocks = (data.fluid_data[0].numParticles + BLOCKSIZE - 1) / BLOCKSIZE;
+	int numBlocks = calculateNumBlocks(data.fluid_data[0].numParticles);
 	DFSPH_update_vel_kernel << <numBlocks, BLOCKSIZE >> > (data, data.fluid_data[0].gpu_ptr);
 
 	cudaError_t cudaStatus = cudaDeviceSynchronize();
@@ -2340,7 +2357,7 @@ __global__ void DFSPH_update_pos_kernel(SPH::DFSPHCData data, SPH::UnifiedPartic
 void cuda_update_pos(SPH::DFSPHCData& data) {
 
 
-	int numBlocks = (data.fluid_data[0].numParticles + BLOCKSIZE - 1) / BLOCKSIZE;
+	int numBlocks = calculateNumBlocks(data.fluid_data[0].numParticles);
 	DFSPH_update_pos_kernel << <numBlocks, BLOCKSIZE >> > (data, data.fluid_data[0].gpu_ptr);
 
 
@@ -2455,7 +2472,7 @@ void cuda_CFL(SPH::DFSPHCData& m_data, const RealCuda minTimeStepSize, RealCuda 
 		if (temp_buff == NULL) {
 			cudaMallocManaged(&(temp_buff), m_data.fluid_data[0].numParticles * sizeof(RealCuda));
 		}
-		int numBlocks = (m_data.fluid_data[0].numParticles + BLOCKSIZE - 1) / BLOCKSIZE;
+		int numBlocks = calculateNumBlocks(m_data.fluid_data[0].numParticles);
 		DFSPH_CFLVelSquaredNorm_kernel << <numBlocks, BLOCKSIZE >> > (m_data, m_data.fluid_data[0].gpu_ptr, temp_buff);
 
 		cudaError_t cudaStatus = cudaDeviceSynchronize();
@@ -2482,7 +2499,7 @@ void cuda_CFL(SPH::DFSPHCData& m_data, const RealCuda minTimeStepSize, RealCuda 
 		cudaMalloc((void**)&d_mutex, sizeof(int));
 		cudaMemset(d_mutex, 0, sizeof(float));
 
-		int numBlocks = (m_data.fluid_data[0].numParticles + BLOCKSIZE - 1) / BLOCKSIZE;
+		int numBlocks = calculateNumBlocks(m_data.fluid_data[0].numParticles);
 		DFSPH_CFLAdvanced_kernel << < numBlocks, BLOCKSIZE >> > (m_data, out_buff, d_mutex, m_data.fluid_data[0].numParticles);
 
 		cudaError_t cudaStatus = cudaDeviceSynchronize();
@@ -2543,7 +2560,7 @@ void update_dynamicObject_UnifiedParticleSet_cuda(SPH::UnifiedParticleSet& parti
 
 
 	if (particle_set.is_dynamic_object) {
-		int numBlocks = (particle_set.numParticles + BLOCKSIZE - 1) / BLOCKSIZE;
+		int numBlocks = calculateNumBlocks(particle_set.numParticles);
 
 
 		//update the particle location and velocity
@@ -2563,6 +2580,8 @@ void update_dynamicObject_UnifiedParticleSet_cuda(SPH::UnifiedParticleSet& parti
 			exit(1369);
 		}
 	}
+
+
 }
 
 
@@ -2678,7 +2697,7 @@ __global__ void compute_boundaries_density_error_kernel(SPH::DFSPHCData data, SP
 }
 
 void compute_UnifiedParticleSet_particles_mass_cuda(SPH::DFSPHCData& data, SPH::UnifiedParticleSet& container) {
-	int numBlocks = (container.numParticles + BLOCKSIZE - 1) / BLOCKSIZE;
+	int numBlocks = calculateNumBlocks(container.numParticles);
 	
 	data.destructor_activated = false;
 

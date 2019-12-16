@@ -113,9 +113,11 @@ void DemoBase::cleanup()
 
 void DemoBase::initShaders()
 {
-	string vertFile = getDataPath() + "/shaders/vs_points.glsl";
+	//string vertFile = getDataPath() + "/shaders/vs_points.glsl";
+	string vertFile = getDataPath() + "/shaders/vs_points_manual_color.glsl";
 	//string fragFile = getDataPath() + "/shaders/fs_points_transparent.glsl";
-	string fragFile = getDataPath() + "/shaders/fs_points.glsl";
+	string fragFile = getDataPath() + "/shaders/fs_points_manual_color.glsl";
+	//string fragFile = getDataPath() + "/shaders/fs_points.glsl";
 	m_shader.compileShaderFile(GL_VERTEX_SHADER, vertFile);
 	m_shader.compileShaderFile(GL_FRAGMENT_SHADER, fragFile);
 	m_shader.createAndLinkProgram();

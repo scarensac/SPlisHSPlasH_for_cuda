@@ -23,6 +23,17 @@
 
 #include "basic_kernels_cuda.cuh"
 
+
+namespace OtherSystemsCuda
+{
+	__global__ void init_buffer_kernel(Vector3d* buff, unsigned int size, Vector3d val) {
+		int i = blockIdx.x * blockDim.x + threadIdx.x;
+		if (i >= size) { return; }
+
+		buff[i] = val;
+	}
+}
+
 void read_last_error_cuda(std::string msg) {
 	std::cout << msg << cudaGetErrorString(cudaGetLastError()) <<"  "<< std::endl;
 }
@@ -189,7 +200,7 @@ RealCuda find_fluid_height_cuda(SPH::DFSPHCData& data) {
 	//first I need the highest particle for each cell
 	RealCuda* column_max_height = SVS_CU::get()->column_max_height;
 	{
-		int numBlocks = (CELL_ROW_LENGTH*CELL_ROW_LENGTH + BLOCKSIZE - 1) / BLOCKSIZE;
+		int numBlocks = calculateNumBlocks(CELL_ROW_LENGTH*CELL_ROW_LENGTH);
 		//find_column_max_height_kernel << <numBlocks, BLOCKSIZE >> > (particleSet->gpu_ptr, column_max_height);
 		find_splashless_column_max_height_kernel << <numBlocks, BLOCKSIZE >> > (particleSet->gpu_ptr, column_max_height);
 		gpuErrchk(cudaDeviceSynchronize());
@@ -366,6 +377,7 @@ void control_fluid_height_cuda(SPH::DFSPHCData& data, RealCuda target_height) {
 
 	SPH::UnifiedParticleSet* particleSet = data.fluid_data;
 
+
 	RealCuda global_height = find_fluid_height_cuda(data);
 
 
@@ -384,7 +396,7 @@ void control_fluid_height_cuda(SPH::DFSPHCData& data, RealCuda target_height) {
 		*tagged_particles_count = 0;
 
 		unsigned int numParticles = particleSet->numParticles;
-		int numBlocks = (numParticles + BLOCKSIZE - 1) / BLOCKSIZE;
+		int numBlocks = calculateNumBlocks(numParticles);
 
 		//tag the particles and count them
 		tag_particles_above_limit_hight_kernel << <numBlocks, BLOCKSIZE >> > (particleSet->gpu_ptr, target_height, tagged_particles_count);
@@ -420,7 +432,7 @@ void control_fluid_height_cuda(SPH::DFSPHCData& data, RealCuda target_height) {
 		RealCuda* column_max_height = SVS_CU::get()->column_max_height;
 
 		{
-			int numBlocks = (CELL_ROW_LENGTH*CELL_ROW_LENGTH + BLOCKSIZE - 1) / BLOCKSIZE;
+			int numBlocks = calculateNumBlocks(CELL_ROW_LENGTH*CELL_ROW_LENGTH);
 			find_column_max_height_kernel << <numBlocks, BLOCKSIZE >> > (particleSet->gpu_ptr, column_max_height);
 			gpuErrchk(cudaDeviceSynchronize());
 		}
@@ -465,7 +477,7 @@ void control_fluid_height_cuda(SPH::DFSPHCData& data, RealCuda target_height) {
 
 
 
-		int numBlocks = (count_new_particles + BLOCKSIZE - 1) / BLOCKSIZE;
+		int numBlocks = calculateNumBlocks(count_new_particles);
 		data.destructor_activated = false;
 		Vector3d border_range = width / 3;
 		border_range.y = 0;
@@ -931,7 +943,7 @@ void move_simulation_cuda(SPH::DFSPHCData& data, Vector3d movement) {
 
 
 		unsigned int numParticles = particleSet->numParticles;
-		int numBlocks = (numParticles + BLOCKSIZE - 1) / BLOCKSIZE;
+		int numBlocks = calculateNumBlocks(numParticles);
 
 		//move the particles
 		apply_delta_to_buffer_kernel << <numBlocks, BLOCKSIZE >> > (particleSet->pos, mov_pos, numParticles);
@@ -961,7 +973,7 @@ void move_simulation_cuda(SPH::DFSPHCData& data, Vector3d movement) {
 			cudaMallocManaged(&(column_max_height), CELL_ROW_LENGTH*CELL_ROW_LENGTH * sizeof(RealCuda));
 		}
 		{
-			int numBlocks = (CELL_ROW_LENGTH*CELL_ROW_LENGTH + BLOCKSIZE - 1) / BLOCKSIZE;
+			int numBlocks = calculateNumBlocks(CELL_ROW_LENGTH*CELL_ROW_LENGTH);
 			find_column_max_height_kernel << <numBlocks, BLOCKSIZE >> > (particleSet->gpu_ptr, column_max_height);
 			gpuErrchk(cudaDeviceSynchronize());
 		}
@@ -974,7 +986,7 @@ void move_simulation_cuda(SPH::DFSPHCData& data, Vector3d movement) {
 		//the particles that I'll remove are the ones in the second layer when a linear index is used
 		//to find the second layer just take the first particle and you add 1to the cell id on the desired direction
 		unsigned int numParticles = particleSet->numParticles;
-		int numBlocks = (numParticles + BLOCKSIZE - 1) / BLOCKSIZE;
+		int numBlocks = calculateNumBlocks(numParticles);
 
 		//to remove the particles the easiest way is to attribute a huge id to the particles I want to rmv and them to
 		//sort the particles but that id followed by lowering the particle number
@@ -1242,7 +1254,7 @@ __global__ void DFSPH_reset_fluid_boundaries_remove_kernel(SPH::DFSPHCData data,
 }
 
 __global__ void DFSPH_reset_fluid_boundaries_add_kernel(SPH::DFSPHCData data, SPH::UnifiedParticleSet* particleSet,
-	Vector3d* pos, Vector3d* vel, RealCuda* mass, int numParticles) {
+	Vector3d* pos, Vector3d* vel, RealCuda* mass, Vector3d* color, int numParticles) {
 
 	int i = blockIdx.x * blockDim.x + threadIdx.x;
 	if (i >= numParticles) { return; }
@@ -1250,6 +1262,7 @@ __global__ void DFSPH_reset_fluid_boundaries_add_kernel(SPH::DFSPHCData data, SP
 	particleSet->pos[particleSet->numParticles + i] = pos[i];
 	particleSet->vel[particleSet->numParticles + i] = vel[i];
 	particleSet->mass[particleSet->numParticles + i] = mass[i];
+	particleSet->color[particleSet->numParticles + i] = color[i];
 
 }
 
@@ -1329,6 +1342,7 @@ __global__ void DFSPH_get_fluid_particles_near_plane_kernel(SPH::DFSPHCData data
 		if (particleSet->pos[i].x < (gap_pos + 0.5 * data.getKernelRadius())) {
 			int id = atomicAdd(count_particles_fluid, 1);
 			ids_near_plane_fluid[id] = i;
+			particleSet->color[i] = Vector3d(1, 0, 0);
 		}
 	}
 }
@@ -1350,11 +1364,12 @@ __global__ void DFSPH_get_buffer_particles_near_plane_kernel(SPH::DFSPHCData dat
 __global__ void DFSPH_fit_particles_simple_kernel(SPH::DFSPHCData data, SPH::UnifiedParticleSet* particleSet, Vector3d* pos_buffer,
 	int count_particles_buffer, int count_particles_fluid, int* ids_near_plane_buffer, int* ids_near_plane_fluid,
 	int count_buffer_displaced, int* ids_buffer_displaced,
-	int* nbr_displaced, RealCuda* amount_displaced) {
+	int* nbr_displaced, RealCuda* amount_displaced, int iter_nb, Vector3d* color) {
 
 	int i = blockIdx.x * blockDim.x + threadIdx.x;
 	if (i >= (count_particles_buffer)) { return; }
 	Vector3d pos_i = pos_buffer[ids_near_plane_buffer[i]];
+	color[ids_near_plane_buffer[i]] = Vector3d(0, 0, 0); 
 	
 	//first I'll only treat the rightmost particles so for anyother I just end the function
 	RealCuda dist_limit = data.particleRadius * 2 * data.particleRadius * 2;
@@ -1362,16 +1377,18 @@ __global__ void DFSPH_fit_particles_simple_kernel(SPH::DFSPHCData data, SPH::Uni
 		if (k != i) {
 			Vector3d pos_k = pos_buffer[ids_near_plane_buffer[k]];
 			if (pos_i.x < pos_k.x) {
-
-				RealCuda d_y = pos_k.y - pos_i.y;
-				RealCuda d_z = pos_k.z - pos_i.z;
-				RealCuda dist = d_y * d_y + d_z * d_z;
+				Vector3d d = pos_i - pos_k;
+				d.x = 0;
+				RealCuda dist = d.squaredNorm();
 				if (dist < dist_limit) {
 					return;
 				}
 			}
 		}
 	}
+
+
+	color[ids_near_plane_buffer[i]] = Vector3d(0.5, 0.5, 0.5);
 
 
 	//since we are he rightmost we can look for the closest particle in the fluid and put us tangent to it
@@ -1387,7 +1404,7 @@ __global__ void DFSPH_fit_particles_simple_kernel(SPH::DFSPHCData data, SPH::Uni
 
 	//also look in the particles that were previouslys displaced
 	bool closest_was_displaced = false;
-	for (int k = 0; k < count_particles_fluid; ++k) {
+	for (int k = 0; k < count_buffer_displaced; ++k) {
 		RealCuda d = (pos_i - pos_buffer[ids_buffer_displaced[k]]).squaredNorm();
 		if (d < dist) {
 			dist = d;
@@ -1412,21 +1429,134 @@ __global__ void DFSPH_fit_particles_simple_kernel(SPH::DFSPHCData data, SPH::Uni
 		RealCuda x_displaced = sqrtf(dist_limit - sq_tangent_plane_dist);
 		RealCuda d_x = d_pos.x - x_displaced;
 		d_x *= 0.75;
-		pos_buffer[ids_near_plane_buffer[i]].x += d_x;
+		//pos_buffer[ids_near_plane_buffer[i]].x += d_x;
 
 		atomicAdd(amount_displaced, d_x);
 		int id_displaced=atomicAdd(nbr_displaced, 1);
 
-		ids_buffer_displaced[count_buffer_displaced + id_displaced] = ids_near_plane_buffer[i];
+		ids_buffer_displaced[count_buffer_displaced + id_displaced] = i;
+
+		color[ids_near_plane_buffer[i]] = Vector3d(0, 1, 0); 
+			/*
+		switch (iter_nb) {
+		case 0: color[ids_near_plane_buffer[i]] = Vector3d(0, 0, 1); break;
+		case 1: color[ids_near_plane_buffer[i]] = Vector3d(0, 0, 0); break;
+		case 2: color[ids_near_plane_buffer[i]] = Vector3d(0, 0, 0); break;
+		case 3: color[ids_near_plane_buffer[i]] = Vector3d(0, 0, 0); break;
+		case 4: color[ids_near_plane_buffer[i]] = Vector3d(0, 0, 0); break;
+		}
+		//*/
+
 	}
 
 }
 
+
+__global__ void DFSPH_move_to_displaced_kernel(int* ids_near_plane_buffer, int count_particles_buffer, int* ids_buffer_displaced, 
+	int count_buffer_displaced,	int nbr_to_move) {
+	int k = blockIdx.x * blockDim.x + threadIdx.x;
+	if (k >= 1) { return; }
+	
+
+	for (int i = 0; i < nbr_to_move; ++i) {
+		int id_in_buffer = ids_buffer_displaced[count_buffer_displaced + i];
+
+		//store the actual particle id in the displaced buffer
+		ids_buffer_displaced[count_buffer_displaced + i] = ids_near_plane_buffer[id_in_buffer];
+
+		//and now we need to sort it to remove it so I switch it with the last particle
+		int last_particle_id = ids_near_plane_buffer[count_particles_buffer-1];
+		ids_near_plane_buffer[id_in_buffer] = last_particle_id;
+		
+
+		for (int k = i + 1; k < nbr_to_move; ++k) {
+			if (ids_buffer_displaced[count_buffer_displaced + k] == count_particles_buffer - 1) {
+				ids_buffer_displaced[count_buffer_displaced + k] = id_in_buffer;
+				break;
+			}
+		}
+
+		count_particles_buffer--;
+
+	}
+}
+
+__global__ void DFSPH_find_min_dist_near_plane_kernel(SPH::DFSPHCData data, SPH::UnifiedParticleSet* particleSet, Vector3d* pos_buffer, 
+	int* ids_near_plane_buffer, int count_particles_buffer, int* ids_buffer_displaced,
+	int count_buffer_displaced, int* ids_near_plane_fluid, int count_particles_fluid) {
+	int i = blockIdx.x * blockDim.x + threadIdx.x;
+	if (i >= (count_particles_buffer + count_buffer_displaced)) { return; }
+
+	RealCuda min_dist = 10000000;
+	Vector3d pos_i;
+	if (i < count_particles_buffer) {
+		pos_i = pos_buffer[ids_near_plane_buffer[i]];
+		particleSet->densityAdv[i] = min_dist; return;
+	}
+	else {
+		pos_i = pos_buffer[ids_buffer_displaced[i]];
+	}
+
+	//handle the buffer side
+	/*
+	for (int j = i + 1; j < (count_particles_buffer+count_buffer_displaced); ++j) {
+		Vector3d pos_j;
+		if (j < count_particles_buffer) {
+			pos_j = pos_buffer[ids_near_plane_buffer[j]];
+		}
+		else {
+			pos_j = pos_buffer[ids_buffer_displaced[j]];
+		}
+
+		RealCuda dist = (pos_j - pos_i).norm();
+		if (dist < min_dist) {
+			min_dist = dist;
+		}
+	}
+	//*/
+
+	//handle the fluid side
+	//*
+	for (int j = 0; j < count_particles_fluid; ++j) {
+		Vector3d pos_j= particleSet->pos[ids_near_plane_fluid[j]];
+		
+		RealCuda dist = (pos_j - pos_i).norm();
+		if (min_dist > dist ) {
+			min_dist = dist;
+		}
+	}
+	//*/
+
+	//I'll just use a curerntly unused buffer to get the valueback
+	particleSet->densityAdv[i] = min_dist;
+}
+
+__global__ void get_buffer_min_kernel(RealCuda* buffer, RealCuda* result, int nb_elem) {
+	int k = blockIdx.x * blockDim.x + threadIdx.x;
+	if (k >= 1) { return; }
+
+	RealCuda min = buffer[0];
+	//*
+	for (int i = 1; i < nb_elem; ++i) {
+		if (min > buffer[i]) {
+			min = buffer[i];
+		}
+	}
+	//*/
+	*result = min;
+}
+
+
+
+
 void handle_fluid_boundries_cuda(SPH::DFSPHCData& data, bool loading) {
 	SPH::UnifiedParticleSet* particleSet = data.fluid_data;
 
+
+
 	static Vector3d* pos_base = NULL;
 	static Vector3d* vel = NULL;
+	static Vector3d* color = NULL;
 	static RealCuda* mass = NULL;
 	static int numParticles = 0;
 	static int* countRmv = NULL;
@@ -1444,12 +1574,14 @@ void handle_fluid_boundries_cuda(SPH::DFSPHCData& data, bool loading) {
 		//I do all the allocation here since i will only be excuted once
 		cudaMallocManaged(&(pos_base), sizeof(Vector3d) * numParticles);
 		cudaMallocManaged(&(vel), sizeof(Vector3d) * numParticles);
+		cudaMallocManaged(&(color), sizeof(Vector3d) * numParticles);
 		cudaMallocManaged(&(mass), sizeof(RealCuda) * numParticles);
 		cudaMallocManaged(&(countRmv), sizeof(int));
 
 
 		gpuErrchk(cudaMemcpy(pos_base, particleSet->pos, numParticles * sizeof(Vector3d), cudaMemcpyDeviceToDevice));
 		gpuErrchk(cudaMemcpy(vel, particleSet->vel, numParticles * sizeof(Vector3d), cudaMemcpyDeviceToDevice));
+		gpuErrchk(cudaMemcpy(color, particleSet->color, numParticles * sizeof(Vector3d), cudaMemcpyDeviceToDevice));
 		gpuErrchk(cudaMemcpy(mass, particleSet->mass, numParticles * sizeof(RealCuda), cudaMemcpyDeviceToDevice));
 		return;
 	}
@@ -1461,6 +1593,8 @@ void handle_fluid_boundries_cuda(SPH::DFSPHCData& data, bool loading) {
 	}
 
 	//now when loading the boundary buffer i need first to rmv the fluid particles that are on the buffer then load the buffer
+	particleSet->resetColor();
+	set_buffer_to_value<Vector3d>(color, Vector3d(-1), numParticles);
 
 	
 
@@ -1519,11 +1653,11 @@ void handle_fluid_boundries_cuda(SPH::DFSPHCData& data, bool loading) {
 			*min_distance_fluid = 1;
 			gpuErrchk(cudaDeviceSynchronize());
 			{
-				int numBlocks = (particleSet->numParticles + BLOCKSIZE - 1) / BLOCKSIZE;
+				int numBlocks = calculateNumBlocks(particleSet->numParticles);
 				DFSPH_compute_gap_length_fluid_kernel << <numBlocks, BLOCKSIZE >> > (data, particleSet->gpu_ptr, min_distance_fluid);
 			}
 			{
-				int numBlocks = (numParticles + BLOCKSIZE - 1) / BLOCKSIZE;
+				int numBlocks = calculateNumBlocks(numParticles);
 				DFSPH_compute_gap_length_buffer_kernel << <numBlocks, BLOCKSIZE >> > (data, pos, numParticles, min_distance_buffer);
 			}
 			gpuErrchk(cudaDeviceSynchronize());
@@ -1540,7 +1674,7 @@ void handle_fluid_boundries_cuda(SPH::DFSPHCData& data, bool loading) {
 			RealCuda gap_pos = (-2.0 + GAP_PLANE_POS * data.getKernelRadius());
 			std::cout << "dsfgdfg:  " << (gap_pos - min.x) << std::endl;
 			{
-				int numBlocks = (particleSet->numParticles + BLOCKSIZE - 1) / BLOCKSIZE;
+				int numBlocks = calculateNumBlocks(particleSet->numParticles);
 				DFSPH_reduce_gap_length_kernel << <numBlocks, BLOCKSIZE >> > (data, pos, numParticles, gap_length, *min_distance_buffer, (gap_pos-min.x));
 			}
 			gpuErrchk(cudaDeviceSynchronize());
@@ -1553,11 +1687,11 @@ void handle_fluid_boundries_cuda(SPH::DFSPHCData& data, bool loading) {
 			*min_distance_fluid = 1;
 			gpuErrchk(cudaDeviceSynchronize());
 			{
-				int numBlocks = (particleSet->numParticles + BLOCKSIZE - 1) / BLOCKSIZE;
+				int numBlocks = calculateNumBlocks(particleSet->numParticles);
 				DFSPH_compute_gap_length_fluid_kernel << <numBlocks, BLOCKSIZE >> > (data, particleSet->gpu_ptr, min_distance_fluid);
 			}
 			{
-				int numBlocks = (numParticles + BLOCKSIZE - 1) / BLOCKSIZE;
+				int numBlocks = calculateNumBlocks(numParticles);
 				DFSPH_compute_gap_length_buffer_kernel << <numBlocks, BLOCKSIZE >> > (data, pos, numParticles, min_distance_buffer);
 			}
 			gpuErrchk(cudaDeviceSynchronize());
@@ -1578,43 +1712,85 @@ void handle_fluid_boundries_cuda(SPH::DFSPHCData& data, bool loading) {
 			*count_buffer_displaced = 0;
 			gpuErrchk(cudaDeviceSynchronize());
 			{
-				int numBlocks = (particleSet->numParticles + BLOCKSIZE - 1) / BLOCKSIZE;
+				int numBlocks = calculateNumBlocks(particleSet->numParticles);
 				DFSPH_get_fluid_particles_near_plane_kernel << <numBlocks, BLOCKSIZE >> > (data, particleSet->gpu_ptr, count_near_plane_fluid, ids_near_plane_fluid);
 			}
 			{
-				int numBlocks = (particleSet->numParticles + BLOCKSIZE - 1) / BLOCKSIZE;
+				int numBlocks = calculateNumBlocks(particleSet->numParticles);
 				DFSPH_get_buffer_particles_near_plane_kernel << <numBlocks, BLOCKSIZE >> > (data, pos, numParticles, count_near_plane_buffer, ids_near_plane_buffer);
 			}
 			gpuErrchk(cudaDeviceSynchronize());
 			std::cout << "count particles near plane (buffer/fluid): " << "  ( " << (*count_near_plane_buffer) <<
 				"  //  " << (*count_near_plane_fluid) << " ) " << std::endl;
+
+			//a check to see the min distance
+			{
+				int numBlocks = calculateNumBlocks(*count_near_plane_buffer+*count_buffer_displaced);
+				DFSPH_find_min_dist_near_plane_kernel << <numBlocks, BLOCKSIZE >> > (data, particleSet->gpu_ptr, pos,
+					ids_near_plane_buffer, *count_near_plane_buffer, ids_buffer_displaced, *count_buffer_displaced,
+					ids_near_plane_fluid, *count_near_plane_fluid);
+				gpuErrchk(cudaDeviceSynchronize());
+				get_buffer_min_kernel << <1, 1 >> > (particleSet->densityAdv, test_out_real, (*count_near_plane_buffer + *count_buffer_displaced));
+				gpuErrchk(cudaDeviceSynchronize());
+
+				RealCuda min_dist = (*test_out_real)/data.particleRadius;
+
+				std::cout << "detected min distance: " << min_dist << std::endl;
+
+			}
 			
 			//now refit the position of the articles from the buffer that are close to the plane to fit the gap
 			//first with a simple rule that move the particle left to fit it to the closest left particles from the right side of the plane
 			//I'll use a loop to have and iterative process (maybe use a convergence condition for now I'll only use an iteration count)
-			for (int i = 0; i < 5; ++i) {
+			//*
+			for (int i = 0; i < 1; ++i) {
 				*test_out_int = 0;
 				*test_out_real = 0;
 				gpuErrchk(cudaDeviceSynchronize());
 				{
-					int numBlocks = ((*count_near_plane_buffer)  + BLOCKSIZE - 1) / BLOCKSIZE;
+					int numBlocks = calculateNumBlocks(*count_near_plane_buffer);
 					DFSPH_fit_particles_simple_kernel << <numBlocks, BLOCKSIZE >> > (data, particleSet->gpu_ptr, pos, *count_near_plane_buffer, *count_near_plane_fluid,
-						ids_near_plane_buffer, ids_near_plane_fluid, *count_buffer_displaced, ids_buffer_displaced, test_out_int, test_out_real);
+						ids_near_plane_buffer, ids_near_plane_fluid, *count_buffer_displaced, ids_buffer_displaced, test_out_int, test_out_real, i, color);
 				}
 				gpuErrchk(cudaDeviceSynchronize());
 
 				std::cout << "iteration "<< i<<" checking actual correction total (nbr corected/ sum_dist_corrected): " << "  ( " << (*test_out_int) <<
-					"  //  " << (*test_out_real) << " ) " << std::endl;
+					"  //  " << (*test_out_real)/data.particleRadius << " ) " << std::endl;
 
-				//and augment the number of displaced particles
-				(*count_buffer_displaced) += *test_out_int;
+				//now switch to particle that I moved to the displaced buffer so I can ajust the next ones
+				int displacement_start = *count_buffer_displaced;
+				int count_to_move = *test_out_int;
+				{
+
+					DFSPH_move_to_displaced_kernel << <1, 1 >> > (ids_near_plane_buffer, *count_near_plane_buffer, ids_buffer_displaced, displacement_start, count_to_move);
+				}
+				gpuErrchk(cudaDeviceSynchronize());
+				*count_near_plane_buffer -= count_to_move;
+				*count_buffer_displaced += count_to_move;
+
+				//a check to see the min distance
+				{
+					int numBlocks = calculateNumBlocks(*count_near_plane_buffer);
+					DFSPH_find_min_dist_near_plane_kernel << <numBlocks, BLOCKSIZE >> > (data, particleSet->gpu_ptr, pos,
+						ids_near_plane_buffer, *count_near_plane_buffer, ids_buffer_displaced, *count_buffer_displaced,
+						ids_near_plane_fluid, *count_near_plane_fluid);
+					gpuErrchk(cudaDeviceSynchronize());
+					get_buffer_min_kernel << <1, 1 >> > (particleSet->densityAdv, test_out_real, (*count_near_plane_buffer+*count_buffer_displaced));
+					gpuErrchk(cudaDeviceSynchronize());
+
+					RealCuda min_dist = *test_out_real;
+
+					std::cout << "detected min distance: " << min_dist / data.particleRadius <<std::endl;
+					
+				}
 			}
+			//*/
 		}
 
 
 		//I'll save the velocity field by setting the velocity of each particle to the weighted average of the three nearest
 		{
-			int numBlocks = (numParticles + BLOCKSIZE - 1) / BLOCKSIZE;
+			int numBlocks = calculateNumBlocks(numParticles);
 			DFSPH_init_buffer_velocity_kernel << <numBlocks, BLOCKSIZE >> > (data, particleSet->gpu_ptr, pos, vel, numParticles);
 			gpuErrchk(cudaDeviceSynchronize());
 		}
@@ -1623,7 +1799,7 @@ void handle_fluid_boundries_cuda(SPH::DFSPHCData& data, bool loading) {
 		{
 
 			*countRmv = 0;
-			int numBlocks = (particleSet->numParticles + BLOCKSIZE - 1) / BLOCKSIZE;
+			int numBlocks = calculateNumBlocks(particleSet->numParticles);
 			DFSPH_reset_fluid_boundaries_remove_kernel << <numBlocks, BLOCKSIZE >> > (data, particleSet->gpu_ptr, countRmv);
 			gpuErrchk(cudaDeviceSynchronize());
 
@@ -1655,8 +1831,8 @@ void handle_fluid_boundries_cuda(SPH::DFSPHCData& data, bool loading) {
 			}
 
 			//add the particle in the simulation
-			int numBlocks = (numParticles + BLOCKSIZE - 1) / BLOCKSIZE;
-			DFSPH_reset_fluid_boundaries_add_kernel << <numBlocks, BLOCKSIZE >> > (data, particleSet->gpu_ptr, pos, vel, mass, numParticles);
+			int numBlocks = calculateNumBlocks(numParticles);
+			DFSPH_reset_fluid_boundaries_add_kernel << <numBlocks, BLOCKSIZE >> > (data, particleSet->gpu_ptr, pos, vel, mass, color, numParticles);
 			gpuErrchk(cudaDeviceSynchronize());
 
 			//and change the number
