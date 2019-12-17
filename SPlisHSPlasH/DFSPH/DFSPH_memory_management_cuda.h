@@ -15,6 +15,7 @@ void release_UnifiedParticleSet_cuda(SPH::UnifiedParticleSet& container);
 
 void load_UnifiedParticleSet_cuda(SPH::UnifiedParticleSet& container, Vector3d* pos, Vector3d* vel, RealCuda* mass);
 void read_UnifiedParticleSet_cuda(SPH::UnifiedParticleSet& container, Vector3d* pos, Vector3d* vel, RealCuda* mass, Vector3d* pos0 = NULL);
+void copy_UnifiedParticleSet_cuda(SPH::UnifiedParticleSet& dst, SPH::UnifiedParticleSet& src, bool copy_warmstart=false);
 
 void read_rigid_body_force_cuda(SPH::UnifiedParticleSet& container);
 void compute_fluid_impact_on_dynamic_body_cuda(SPH::UnifiedParticleSet& container, Vector3d& force, Vector3d& moment,

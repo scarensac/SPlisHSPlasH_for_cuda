@@ -173,6 +173,9 @@ public:
     void init(int nbParticles, bool has_factor_computation_i, bool velocity_impacted_by_fluid_solver_i,
               bool is_dynamic_object_i, bool need_color_buffer);
 
+    //copy contructor
+    UnifiedParticleSet(UnifiedParticleSet* other);
+
     //destructor
     ~UnifiedParticleSet();
     void clear();

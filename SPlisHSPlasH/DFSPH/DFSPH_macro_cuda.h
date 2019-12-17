@@ -97,14 +97,17 @@ inline int calculateNumBlocks(int nbElems) {
 
 /////////   FROM STRUCTURE       /////////////
 
-#define ITER_NEIGHBORS_INIT_FROM_STRUCTURE_BASE(data,particleSet,index)\
-	RealCuda radius_sq = data.getKernelRadius();\
-	Vector3d pos = particleSet->pos[index];\
-	Vector3d pos_cell = (pos / radius_sq) + data.gridOffset;\
+#define ITER_NEIGHBORS_INIT_CELL_COMPUTATION(position,kernelRadius,gridOffset)\
+    RealCuda radius_sq = kernelRadius;\
+	Vector3d pos = position;\
+	Vector3d pos_cell = (pos / radius_sq) + gridOffset;\
 	int x = pos_cell.x;\
 	int y = pos_cell.y;\
 	int z = pos_cell.z;\
 	radius_sq *= radius_sq;
+
+#define ITER_NEIGHBORS_INIT_FROM_STRUCTURE_BASE(data,particleSet,index)\
+	ITER_NEIGHBORS_INIT_CELL_COMPUTATION(particleSet->pos[index],data.getKernelRadius(),data.gridOffset);
 
 
 #define ITER_NEIGHBORS_FROM_STRUCTURE_BASE(neighborsDataSet,positions,code){\

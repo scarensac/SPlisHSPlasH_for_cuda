@@ -204,6 +204,22 @@ void read_UnifiedParticleSet_cuda(SPH::UnifiedParticleSet& container, Vector3d* 
 	}
 }
 
+void copy_UnifiedParticleSet_cuda(SPH::UnifiedParticleSet& dst, SPH::UnifiedParticleSet& src, bool copy_warmstart) {
+	if (dst.numParticles != src.numParticles) {
+		std::string err_mess("copy_UnifiedParticleSet_cuda: cannot copy data if the number is not the same in both structures");
+		std::cout << err_mess << std::endl;
+		throw(err_mess);
+	}
+
+	gpuErrchk(cudaMemcpy(dst.pos, src.pos, dst.numParticles * sizeof(Vector3d), cudaMemcpyDeviceToDevice));
+	
+	gpuErrchk(cudaMemcpy(dst.vel, src.vel, dst.numParticles * sizeof(Vector3d), cudaMemcpyDeviceToDevice));
+
+	gpuErrchk(cudaMemcpy(dst.mass, src.mass, dst.numParticles * sizeof(RealCuda), cudaMemcpyDeviceToDevice));
+
+	gpuErrchk(cudaMemcpy(dst.color, src.color, dst.numParticles * sizeof(Vector3d), cudaMemcpyDeviceToDevice));	
+}
+
 void read_rigid_body_force_cuda(SPH::UnifiedParticleSet& container) {
 	if (container.is_dynamic_object) {
 		if (container.F_cpu == NULL) {

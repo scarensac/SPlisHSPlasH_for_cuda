@@ -168,7 +168,7 @@ void UnifiedParticleSet::init(int nbParticles, bool has_factor_computation_i, bo
 	has_color_buffer=need_color_buffer;
 
 	//if I have a fluid them I allocate more than the actual nbtr of particles so I can use more in the future
-	if (!velocity_impacted_by_fluid_solver) {
+	if (velocity_impacted_by_fluid_solver) {
 		numParticlesMax *= 1.3;
 	}
 
@@ -190,6 +190,15 @@ void UnifiedParticleSet::init(int nbParticles, bool has_factor_computation_i, bo
 
 	//initialisation on the GPU
 	allocate_UnifiedParticleSet_cuda((*this));
+}
+
+
+UnifiedParticleSet::UnifiedParticleSet(UnifiedParticleSet* other) {
+	//allocate the memory space
+	init(other->numParticles, other->has_factor_computation, other->velocity_impacted_by_fluid_solver, other->is_dynamic_object, other->has_color_buffer);
+
+	//copy the data
+	copy_UnifiedParticleSet_cuda(*this, *other);
 }
 
 
