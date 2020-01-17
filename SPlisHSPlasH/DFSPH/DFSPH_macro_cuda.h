@@ -65,16 +65,16 @@ inline int calculateNumBlocks(int nbElems) {
 ////////////////////////////////////////////////////
 
 #ifdef BITSHIFT_INDEX_DYNAMIC_BODIES
-#define WRITTE_DYNAMIC_BODIES_PARTICLES_INDEX(body_index,particle_index) WRITTE_DYNAMIC_BODIES_PARTICLES_INDEX_BITSHIFT(body_index,particle_index)
+#define WRITE_DYNAMIC_BODIES_PARTICLES_INDEX(body_index,particle_index) WRITE_DYNAMIC_BODIES_PARTICLES_INDEX_BITSHIFT(body_index,particle_index)
 #define READ_DYNAMIC_BODIES_PARTICLES_INDEX(neighbors_ptr,body_index,particle_index) READ_DYNAMIC_BODIES_PARTICLES_INDEX_BITSHIFT(neighbors_ptr,body_index,particle_index)
 #else
-#define WRITTE_DYNAMIC_BODIES_PARTICLES_INDEX(body_index,particle_index) WRITTE_DYNAMIC_BODIES_PARTICLES_INDEX_ADDITION(body_index,particle_index)
+#define WRITE_DYNAMIC_BODIES_PARTICLES_INDEX(body_index,particle_index) WRITE_DYNAMIC_BODIES_PARTICLES_INDEX_ADDITION(body_index,particle_index)
 #define READ_DYNAMIC_BODIES_PARTICLES_INDEX(neighbors_ptr,body_index,particle_index) READ_DYNAMIC_BODIES_PARTICLES_INDEX_ADDITION(neighbors_ptr,body_index,particle_index)
 #endif
 
 //those defines are to create and read the dynamic bodies indexes
-#define WRITTE_DYNAMIC_BODIES_PARTICLES_INDEX_BITSHIFT(body_index,particle_index)  body_index + (particle_index << 0x8)
-#define WRITTE_DYNAMIC_BODIES_PARTICLES_INDEX_ADDITION(body_index,particle_index)  particle_index + (body_index * 1000000)
+#define WRITE_DYNAMIC_BODIES_PARTICLES_INDEX_BITSHIFT(body_index,particle_index)  body_index + (particle_index << 0x8)
+#define WRITE_DYNAMIC_BODIES_PARTICLES_INDEX_ADDITION(body_index,particle_index)  particle_index + (body_index * 1000000)
 
 
 //WARNING his one declare the body/particle index by itself
@@ -114,7 +114,7 @@ inline int calculateNumBlocks(int nbElems) {
     for (int k = -1; k < 2; ++k) {\
     for (int m = -1; m < 2; ++m) {\
     for (int n = -1; n < 2; ++n) {\
-    unsigned int cur_cell_id = COMPUTE_CELL_INDEX(x + n, y + k, z + m);\
+    unsigned int cur_cell_id = COMPUTE_CELL_INDEX(x + k , y + m , z + n   );\
     unsigned int end = neighborsDataSet->cell_start_end[cur_cell_id + 1];\
     for (unsigned int cur_particle = neighborsDataSet->cell_start_end[cur_cell_id]; cur_particle < end; ++cur_particle) {\
     unsigned int j = neighborsDataSet->p_id_sorted[cur_particle];\
@@ -205,12 +205,12 @@ code;\
 #define ITER_NEIGHBORS_INIT_FROM_STORAGE_BASE(data,particleSet,index) int* neighbors_ptr = particleSet->getNeighboursPtr(index); int* end_ptr = neighbors_ptr;
 
 #ifdef INTERLEAVE_NEIGHBORS
-#define WRITTE_AND_ADVANCE_NEIGHBORS(neighbors_storage_ptr_cur_pos,index) *neighbors_storage_ptr_cur_pos = index; neighbors_storage_ptr_cur_pos+=numParticles;
+#define WRITE_AND_ADVANCE_NEIGHBORS(neighbors_storage_ptr_cur_pos,index) *neighbors_storage_ptr_cur_pos = index; neighbors_storage_ptr_cur_pos+=numParticles;
 #define READ_AND_ADVANCE_NEIGHBOR(var_name,ptr_cur_pos)  const unsigned int var_name = *ptr_cur_pos; ptr_cur_pos+=numParticles;
 #define ADVANCE_END_PTR(ptr,nb_neighbors) ptr+= nb_neighbors*numParticles;
 #define ITER_NEIGHBORS_INIT_FROM_STORAGE(data,particleSet,index) ITER_NEIGHBORS_INIT_FROM_STORAGE_BASE(data,particleSet,index); int numParticles=particleSet->numParticles;
 #else
-#define WRITTE_AND_ADVANCE_NEIGHBORS(neighbors_storage_ptr_cur_pos,index) *neighbors_storage_ptr_cur_pos++ = index;
+#define WRITE_AND_ADVANCE_NEIGHBORS(neighbors_storage_ptr_cur_pos,index) *neighbors_storage_ptr_cur_pos++ = index;
 #define READ_AND_ADVANCE_NEIGHBOR(var_name,ptr_cur_pos)  const unsigned int var_name = *ptr_cur_pos++;
 #define ADVANCE_END_PTR(ptr,nb_neighbors) ptr+= nb_neighbors;
 #define ITER_NEIGHBORS_INIT_FROM_STORAGE(data,particleSet,index) ITER_NEIGHBORS_INIT_FROM_STORAGE_BASE(data,particleSet,index)

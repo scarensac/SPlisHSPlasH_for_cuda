@@ -1874,7 +1874,7 @@ __global__ void DFSPH_neighborsSearch_kernel(SPH::DFSPHCData data, SPH::UnifiedP
 #ifdef GROUP_DYNAMIC_BODIES_NEIGHBORS_SEARCH
 			ITER_NEIGHBORS_FROM_STRUCTURE(data.neighborsDataSetGroupedDynamicBodies_cuda, data.posBufferGroupedDynamicBodies,
 				if (j<data.fluid_data_cuda->numParticles) {
-					if (i != j) { WRITTE_AND_ADVANCE_NEIGHBORS(cur_neighbor_ptr, j);	nb_neighbors_fluid++; }
+					if (i != j) { WRITE_AND_ADVANCE_NEIGHBORS(cur_neighbor_ptr, j);	nb_neighbors_fluid++; }
 				}
 				else {
 					int body_id = 0; int count_particles_previous_bodies = data.fluid_data_cuda->numParticles;
@@ -1882,14 +1882,14 @@ __global__ void DFSPH_neighborsSearch_kernel(SPH::DFSPHCData data, SPH::UnifiedP
 						count_particles_previous_bodies += data.vector_dynamic_bodies_data_cuda[body_id].numParticles;
 						body_id++;
 					}
-					//*cur_neighbor_ptr++ = WRITTE_DYNAMIC_BODIES_PARTICLES_INDEX(body_id, j-count_particles_previous_bodies);
-					neighbors_solids[nb_neighbors_dynamic_objects] = WRITTE_DYNAMIC_BODIES_PARTICLES_INDEX(body_id, j - count_particles_previous_bodies);
+					//*cur_neighbor_ptr++ = WRITE_DYNAMIC_BODIES_PARTICLES_INDEX(body_id, j-count_particles_previous_bodies);
+					neighbors_solids[nb_neighbors_dynamic_objects] = WRITE_DYNAMIC_BODIES_PARTICLES_INDEX(body_id, j - count_particles_previous_bodies);
 					nb_neighbors_dynamic_objects++;
 				})
 #else
 			for (int id_body = 0; id_body < data.numDynamicBodies; ++id_body) {
 				ITER_NEIGHBORS_FROM_STRUCTURE(data.vector_dynamic_bodies_data_cuda[id_body].neighborsDataSet, data.vector_dynamic_bodies_data_cuda[id_body].pos,
-					*cur_neighbor_ptr++ = WRITTE_DYNAMIC_BODIES_PARTICLES_INDEX(id_body, j); nb_neighbors_dynamic_objects++; )
+					*cur_neighbor_ptr++ = WRITE_DYNAMIC_BODIES_PARTICLES_INDEX(id_body, j); nb_neighbors_dynamic_objects++; )
 			}
 #endif
 
@@ -1897,18 +1897,18 @@ __global__ void DFSPH_neighborsSearch_kernel(SPH::DFSPHCData data, SPH::UnifiedP
 		else {
 			//fluid
 			ITER_NEIGHBORS_FROM_STRUCTURE(data.fluid_data_cuda[0].neighborsDataSet, data.fluid_data_cuda[0].pos,
-				if (i != j) { WRITTE_AND_ADVANCE_NEIGHBORS(cur_neighbor_ptr, j);	nb_neighbors_fluid++; });
+				if (i != j) { WRITE_AND_ADVANCE_NEIGHBORS(cur_neighbor_ptr, j);	nb_neighbors_fluid++; });
 		}
 
 		//boundaries
 #ifndef BENDER2019_BOUNDARIES
 		ITER_NEIGHBORS_FROM_STRUCTURE(data.boundaries_data_cuda[0].neighborsDataSet, data.boundaries_data_cuda[0].pos,
-			WRITTE_AND_ADVANCE_NEIGHBORS(cur_neighbor_ptr, j); nb_neighbors_boundary++; );
+			WRITE_AND_ADVANCE_NEIGHBORS(cur_neighbor_ptr, j); nb_neighbors_boundary++; );
 #endif
 
 		//copy the dynamic bodies at the end
 		for (int j = 0; j<nb_neighbors_dynamic_objects; ++j) {
-			WRITTE_AND_ADVANCE_NEIGHBORS(cur_neighbor_ptr, neighbors_solids[j]);
+			WRITE_AND_ADVANCE_NEIGHBORS(cur_neighbor_ptr, neighbors_solids[j]);
 		}
 
 	}
@@ -1919,14 +1919,14 @@ __global__ void DFSPH_neighborsSearch_kernel(SPH::DFSPHCData data, SPH::UnifiedP
 		if (is_fluid_container) {
 
 			ITER_NEIGHBORS_FROM_STRUCTURE(data.fluid_data_cuda[0].neighborsDataSet, data.fluid_data_cuda[0].pos,
-				if (!is_fluid_container || i != j) { WRITTE_AND_ADVANCE_NEIGHBORS(cur_neighbor_ptr, j);	nb_neighbors_fluid++; });
+				if (!is_fluid_container || i != j) { WRITE_AND_ADVANCE_NEIGHBORS(cur_neighbor_ptr, j);	nb_neighbors_fluid++; });
 
 		}
 
 		//boundaries
 #ifndef BENDER2019_BOUNDARIES
 		ITER_NEIGHBORS_FROM_STRUCTURE(data.boundaries_data_cuda[0].neighborsDataSet, data.boundaries_data_cuda[0].pos,
-			if (is_fluid_container || i != j) { WRITTE_AND_ADVANCE_NEIGHBORS(cur_neighbor_ptr, j); nb_neighbors_boundary++; });
+			if (is_fluid_container || i != j) { WRITE_AND_ADVANCE_NEIGHBORS(cur_neighbor_ptr, j); nb_neighbors_boundary++; });
 #endif
 
 		if (data.numDynamicBodies > 0) {
@@ -1938,14 +1938,14 @@ __global__ void DFSPH_neighborsSearch_kernel(SPH::DFSPHCData data, SPH::UnifiedP
 				count_particles_previous_bodies += data.vector_dynamic_bodies_data_cuda[body_id].numParticles;
 				body_id++;
 			}
-			int neighbor_idx= WRITTE_DYNAMIC_BODIES_PARTICLES_INDEX(body_id, j - count_particles_previous_bodies);
-			WRITTE_AND_ADVANCE_NEIGHBORS(cur_neighbor_ptr, neighbor_idx);
+			int neighbor_idx= WRITE_DYNAMIC_BODIES_PARTICLES_INDEX(body_id, j - count_particles_previous_bodies);
+			WRITE_AND_ADVANCE_NEIGHBORS(cur_neighbor_ptr, neighbor_idx);
 			nb_neighbors_dynamic_objects++; })
 #else
 			for (int id_body = 0; id_body < data.numDynamicBodies; ++id_body) {
 				ITER_NEIGHBORS_FROM_STRUCTURE(data.vector_dynamic_bodies_data_cuda[id_body].neighborsDataSet, data.vector_dynamic_bodies_data_cuda[id_body].pos,
-					int neighbor_idx = WRITTE_DYNAMIC_BODIES_PARTICLES_INDEX(body_id, j - count_particles_previous_bodies);
-				WRITTE_AND_ADVANCE_NEIGHBORS(cur_neighbor_ptr, neighbor_idx); )
+					int neighbor_idx = WRITE_DYNAMIC_BODIES_PARTICLES_INDEX(body_id, j - count_particles_previous_bodies);
+				WRITE_AND_ADVANCE_NEIGHBORS(cur_neighbor_ptr, neighbor_idx); )
 			}
 #endif
 

@@ -285,6 +285,7 @@ void DFSPHCUDA::step()
 
 
 
+
         m_data.readDynamicObjectsData(m_model);
         m_data.onSimulationStepEnd();
 
