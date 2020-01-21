@@ -436,7 +436,7 @@ void UnifiedParticleSet::write_to_file(std::string file_path) {
 	}
 }
 
-void UnifiedParticleSet::load_from_file(std::string file_path, bool load_velocities, Vector3d *min_o, Vector3d *max_o) {
+void UnifiedParticleSet::load_from_file(std::string file_path, bool load_velocities, Vector3d *min_o, Vector3d *max_o, bool positions_limitations) {
     std::cout << "UnifiedParticleSet::load_from_file start: " << file_path << std::endl;
 	
 	//first we clear all the data structure
@@ -505,7 +505,11 @@ void UnifiedParticleSet::load_from_file(std::string file_path, bool load_velocit
 
 #ifdef OCEAN_BOUNDARIES_PROTOTYPE
 		//*
-		if ((velocity_impacted_by_fluid_solver)&&(pos.x > (-2.0 + 8 * 0.1)) ){
+		if ((positions_limitations)&&
+			(velocity_impacted_by_fluid_solver)&&
+			//(((pos.x > (-2.0 + 8 * 0.1))&&(pos.x<(2.0-8*0.1))) || (pos.y > 0.6))
+			((pos.y > 0.6))
+			){
 			NbrLoadedParticles--;
 			i--;
 			continue;

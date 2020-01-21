@@ -2287,7 +2287,6 @@ __global__ void DFSPH_update_pos_kernel(SPH::DFSPHCData data, SPH::UnifiedPartic
 	int i = blockIdx.x * blockDim.x + threadIdx.x;
 	if (i >= particleSet->numParticles) { return; }
 
-	data.damp_borders = false;
 	if (data.damp_borders) {
 		/*
 		RealCuda max_vel_sq = (data.particleRadius / 2.0f) / data.h;
@@ -2375,6 +2374,7 @@ void cuda_update_pos(SPH::DFSPHCData& data) {
 		data.damp_borders_steps_count--;
 		if (data.damp_borders_steps_count == 0) {
 			data.damp_borders = false;
+			data.damp_planes_count = 0;
 		}
 	}
 	if (data.cancel_wave) {

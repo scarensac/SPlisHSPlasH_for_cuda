@@ -206,7 +206,7 @@ public:
     //store a unified dataset to a file
     void write_to_file(std::string file_path);
     //load a unified dataset from a file
-    void load_from_file(std::string file_path, bool load_velocities, Vector3d* min_o=NULL, Vector3d* max_o=NULL);
+    void load_from_file(std::string file_path, bool load_velocities, Vector3d* min_o=NULL, Vector3d* max_o=NULL, bool positions_limitations=true);
 
     //store the forces to a file in case of a dynamic body
     void write_forces_to_file(std::string file_path);

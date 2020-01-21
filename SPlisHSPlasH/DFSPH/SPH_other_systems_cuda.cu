@@ -1247,7 +1247,11 @@ __global__ void DFSPH_reset_fluid_boundaries_remove_kernel(SPH::DFSPHCData data,
 	if (i >= particleSet->numParticles) { return; }
 
 	//*
-	if (particleSet->pos[i].x <= (-2.0 + GAP_PLANE_POS * data.getKernelRadius())) {
+
+	RealCuda plane_pos_inf = (-2.0 + (GAP_PLANE_POS)*data.getKernelRadius()) + data.dynamicWindowTotalDisplacement.x;
+	RealCuda plane_pos_sup = (2.0 - (GAP_PLANE_POS)*data.getKernelRadius()) + data.dynamicWindowTotalDisplacement.x;
+
+	if ((particleSet->pos[i].x <= plane_pos_inf)|| (particleSet->pos[i].x >= plane_pos_sup)) {
 		atomicAdd(countRmv, 1);
 		particleSet->neighborsDataSet->cell_id[i] = 25000000;
 	}
@@ -1662,7 +1666,7 @@ __global__ void DFSPH_evaluate_density_field_kernel(SPH::DFSPHCData data, SPH::U
 
 
 __global__ void DFSPH_evaluate_density_in_buffer_kernel(SPH::DFSPHCData data, SPH::UnifiedParticleSet* fluidSet,
-	SPH::UnifiedParticleSet* bufferSet, int* countRmv) {
+	SPH::UnifiedParticleSet* backgroundBufferSet, SPH::UnifiedParticleSet* bufferSet, int* countRmv) {
 	int i = blockIdx.x * blockDim.x + threadIdx.x;
 	if (i >= bufferSet->numParticles) { return; }
 
@@ -1670,25 +1674,26 @@ __global__ void DFSPH_evaluate_density_in_buffer_kernel(SPH::DFSPHCData data, SP
 
 	//add the gap plane position
 	//the particle radius usage is just to ingore any particle that don't interest me
-	RealCuda plane_pos = (-2.0 + GAP_PLANE_POS * data.getKernelRadius());
+	RealCuda plane_pos_inf = (-2.0 + (GAP_PLANE_POS)*data.getKernelRadius()) + data.dynamicWindowTotalDisplacement.x;
+	RealCuda plane_pos_sup = (2.0 - (GAP_PLANE_POS)*data.getKernelRadius()) + data.dynamicWindowTotalDisplacement.x;
 
 	ITER_NEIGHBORS_INIT_CELL_COMPUTATION(p_i, data.getKernelRadius(), data.gridOffset);
 
 
-	RealCuda density = 0;
-	RealCuda density_after_buffer = 0;
+	RealCuda density = bufferSet->mass[i] * data.W_zero;;
+	RealCuda density_after_buffer = density;
 
 
-
+	int count_neighbors = 0;
 	bool keep_particle = false;
 
 	//*
-	if (p_i.x < (plane_pos+ data.getKernelRadius())) {
+	if ((p_i.x < (plane_pos_inf+ data.getKernelRadius()))||(p_i.x > (plane_pos_sup - data.getKernelRadius()))) {
 		//compute the fluid contribution
 		ITER_NEIGHBORS_FROM_STRUCTURE_BASE(fluidSet->neighborsDataSet, fluidSet->pos,
 			RealCuda density_delta = fluidSet->mass[j] * KERNEL_W(data, p_i - fluidSet->pos[j]);
 		if (density_delta > 0) {
-			if (fluidSet->pos[j].x > plane_pos) {
+			if ((fluidSet->pos[j].x > plane_pos_inf)&& (fluidSet->pos[j].x < plane_pos_sup)) {
 				density_after_buffer += density_delta;
 				if (fluidSet->pos[j].y > (p_i.y)) {
 					keep_particle = true;
@@ -1699,17 +1704,22 @@ __global__ void DFSPH_evaluate_density_in_buffer_kernel(SPH::DFSPHCData data, SP
 		);
 	}
 
-	keep_particle = keep_particle||(p_i.x<plane_pos);
+	keep_particle = keep_particle || (p_i.x < plane_pos_inf) || (p_i.x > plane_pos_sup);
 	//keep_particle = true;
 	if (keep_particle) {
 		//*
 		//compute the buffer contribution
-		ITER_NEIGHBORS_FROM_STRUCTURE_BASE(bufferSet->neighborsDataSet, bufferSet->pos,
-			if (i != j) {
-				RealCuda density_delta = bufferSet->mass[j] * KERNEL_W(data, p_i - bufferSet->pos[j]);
-				if (density_delta > 0) {
-					density_after_buffer += density_delta;
-				}
+		//Note: the strange if is just here to check if p_i!=p_j but since doing this kind of operations on float
+		//		that are read from 2 files might not be that smat I did some bastard check verifying if the particle are pretty close
+		//		since the buffer we are evaluating is a subset of the background buffer, the only possibility to have particle 
+		//		that close is that they are the same particle. 
+		float limit = data.getKernelRadius() / 10.0f;
+		limit *= limit;
+		ITER_NEIGHBORS_FROM_STRUCTURE_BASE(backgroundBufferSet->neighborsDataSet, backgroundBufferSet->pos,
+			if ((p_i - backgroundBufferSet->pos[j]).squaredNorm()> (limit)) {
+				RealCuda density_delta = backgroundBufferSet->mass[j] * KERNEL_W(data, p_i - backgroundBufferSet->pos[j]);
+				density_after_buffer += density_delta;
+				count_neighbors++;
 			}
 
 		);
@@ -1730,6 +1740,7 @@ __global__ void DFSPH_evaluate_density_in_buffer_kernel(SPH::DFSPHCData data, SP
 		bufferSet->density[i] = density;
 		bufferSet->densityAdv[i] = density_after_buffer;
 		bufferSet->neighborsDataSet->cell_id[i] = 0;
+		bufferSet->color[i] = Vector3d((count_neighbors * 3)/255.0f, 0, 0);
 		
 		//that line is just an easy way to recognise the plane
 		//samples_after_buffer[i] *= (((layer_id == 0)&&(density_after_buffer>500)) ? -1 : 1);
@@ -1748,13 +1759,18 @@ __global__ void DFSPH_evaluate_density_in_buffer_kernel(SPH::DFSPHCData data, SP
 }
 
 void handle_fluid_boundries_cuda(SPH::DFSPHCData& data, bool loading) {
+	bool displace_windows = true;
 	SPH::UnifiedParticleSet* particleSet = data.fluid_data;
-
+	
 	//the structture containing the fluid buffer
 	static SPH::UnifiedParticleSet* fluidBufferSet = NULL;
 	static Vector3d* pos_base=NULL;
 	static int numParticles_base=0;
 	Vector3d min_fluid_buffer, max_fluid_buffer;
+	//this buffer contains a set a particle corresponding to a fluid at rest covering the whole simulation space
+	static SPH::UnifiedParticleSet* backgroundFluidBufferSet = NULL;
+	static Vector3d* pos_background = NULL;
+	static int numParticles_background = 0;
 
 	if (!loading) {
 		if (fluidBufferSet) {
@@ -1763,18 +1779,39 @@ void handle_fluid_boundries_cuda(SPH::DFSPHCData& data, bool loading) {
 			throw(msg);
 		}
 
-		//load the fluid buffer
-		SPH::UnifiedParticleSet* dummy = NULL;
-		fluidBufferSet = new SPH::UnifiedParticleSet(particleSet);
-		fluidBufferSet->load_from_file(data.fluid_files_folder+"fluid_buffer_file.txt",false,&min_fluid_buffer,&max_fluid_buffer);
-		//fluidBufferSet->write_to_file(data.fluid_files_folder + "fluid_buffer_file.txt");
-		allocate_and_copy_UnifiedParticleSet_vector_cuda(&dummy, fluidBufferSet, 1);
-		fluidBufferSet->initNeighborsSearchData(data, true);
-		fluidBufferSet->resetColor();
+		//load the backgroundset
+		{
+			SPH::UnifiedParticleSet* dummy = NULL;
+			backgroundFluidBufferSet = new SPH::UnifiedParticleSet();
+			backgroundFluidBufferSet->load_from_file(data.fluid_files_folder + "background_buffer_file.txt", false, &min_fluid_buffer, &max_fluid_buffer, false);
+			//fluidBufferSet->write_to_file(data.fluid_files_folder + "fluid_buffer_file.txt");
+			allocate_and_copy_UnifiedParticleSet_vector_cuda(&dummy, backgroundFluidBufferSet, 1);
+			backgroundFluidBufferSet->initNeighborsSearchData(data, true);
+			backgroundFluidBufferSet->resetColor();
+			std::cout << "retard test: " << backgroundFluidBufferSet->numParticles << std::endl;
+		
+			numParticles_background = backgroundFluidBufferSet->numParticles;
+			cudaMallocManaged(&(pos_background), sizeof(Vector3d) * numParticles_background);
+			gpuErrchk(cudaMemcpy(pos_background, backgroundFluidBufferSet->pos, numParticles_background * sizeof(Vector3d), cudaMemcpyDeviceToDevice));
+		}
 
-		numParticles_base = fluidBufferSet->numParticles;
-		cudaMallocManaged(&(pos_base), sizeof(Vector3d) * numParticles_base);
-		gpuErrchk(cudaMemcpy(pos_base, fluidBufferSet->pos, numParticles_base * sizeof(Vector3d), cudaMemcpyDeviceToDevice));
+		//create the fluid buffer
+		//it must be a sub set of the background set (enougth to dodge the kernel sampling problem at the fluid/air interface)
+		{
+			SPH::UnifiedParticleSet* dummy = NULL;
+			fluidBufferSet = new SPH::UnifiedParticleSet();
+			//particleSet->write_to_file(data.fluid_files_folder + "fluid_buffer_file.txt");
+			fluidBufferSet->load_from_file(data.fluid_files_folder+"fluid_buffer_file.txt",false,&min_fluid_buffer,&max_fluid_buffer);
+			//fluidBufferSet->write_to_file(data.fluid_files_folder + "fluid_buffer_file.txt");
+			allocate_and_copy_UnifiedParticleSet_vector_cuda(&dummy, fluidBufferSet, 1);
+			fluidBufferSet->initNeighborsSearchData(data, true);
+			fluidBufferSet->resetColor();
+			
+			numParticles_base = fluidBufferSet->numParticles;
+			cudaMallocManaged(&(pos_base), sizeof(Vector3d) * numParticles_base);
+			gpuErrchk(cudaMemcpy(pos_base, fluidBufferSet->pos, numParticles_base * sizeof(Vector3d), cudaMemcpyDeviceToDevice));
+		}
+
 
 		return;
 	}
@@ -1841,8 +1878,51 @@ void handle_fluid_boundries_cuda(SPH::DFSPHCData& data, bool loading) {
 		if (fluidBufferSet->numParticles != numParticles_base) {
 			fluidBufferSet->updateActiveParticleNumber(numParticles_base);
 		}
+
+		//reset the buffers
 		gpuErrchk(cudaMemcpy(fluidBufferSet->pos, pos_base, numParticles_base * sizeof(Vector3d), cudaMemcpyDeviceToDevice));
+		gpuErrchk(cudaMemcpy(backgroundFluidBufferSet->pos, pos_background, numParticles_background * sizeof(Vector3d), cudaMemcpyDeviceToDevice));
+
+		Vector3d movement(1, 0, 0);
+		//compute the movement on the position and the axis
+		Vector3d mov_pos = movement * data.getKernelRadius();
+		Vector3d mov_axis = (movement.abs()) / movement.norm();
+		if (displace_windows) {
+			//update the displacement offsets
+			data.dynamicWindowTotalDisplacement += mov_pos;
+			data.gridOffset -= movement;
+			
+			//first displace the boundaries
+			SPH::UnifiedParticleSet* particleSetMove = data.boundaries_data;
+			unsigned int numParticles = particleSetMove->numParticles;
+			int numBlocks = calculateNumBlocks(numParticles);
+			apply_delta_to_buffer_kernel << <numBlocks, BLOCKSIZE >> > (particleSetMove->pos, mov_pos, numParticles);
+			
+			//and the buffers
+			//carefull since they are reset you must displace them for the full displacment since the start of the simulation
+			particleSetMove = backgroundFluidBufferSet;
+			numParticles = particleSetMove->numParticles;
+			numBlocks = calculateNumBlocks(numParticles);
+			apply_delta_to_buffer_kernel << <numBlocks, BLOCKSIZE >> > (particleSetMove->pos, data.dynamicWindowTotalDisplacement, numParticles);
+
+
+			particleSetMove = fluidBufferSet;
+			numParticles = particleSetMove->numParticles;
+			numBlocks = calculateNumBlocks(numParticles);
+			apply_delta_to_buffer_kernel << <numBlocks, BLOCKSIZE >> > (particleSetMove->pos, data.dynamicWindowTotalDisplacement, numParticles);
+			
+			gpuErrchk(cudaDeviceSynchronize());
+
+			//update the boundaries neighbors
+			data.boundaries_data->initNeighborsSearchData(data, false);
+		}
+
+		//update the neighbors structures for the buffers
 		fluidBufferSet->initNeighborsSearchData(data, false);
+		backgroundFluidBufferSet->initNeighborsSearchData(data, false);
+
+		//update the neighbor structure for the fluid
+		particleSet->initNeighborsSearchData(data, false);
 
 		//first let's do a test
 		//let's compute the density on the transition plane at regular interval in the fluid 
@@ -1945,15 +2025,15 @@ void handle_fluid_boundries_cuda(SPH::DFSPHCData& data, bool loading) {
 		//I'll use a buffer too large,  évaluate the density on the buffer particles and remove the particle with density too large
 		//also no need to do it on all partilce only those close enught from the plane with the fluid end
 		{
-			
+
 			*countRmv = 0;
 			{
 				int numBlocks = calculateNumBlocks(fluidBufferSet->numParticles);
-				DFSPH_evaluate_density_in_buffer_kernel << <numBlocks, BLOCKSIZE >> > (data, particleSet->gpu_ptr, fluidBufferSet->gpu_ptr, countRmv);
+				DFSPH_evaluate_density_in_buffer_kernel << <numBlocks, BLOCKSIZE >> > (data, particleSet->gpu_ptr, backgroundFluidBufferSet->gpu_ptr ,fluidBufferSet->gpu_ptr, countRmv);
 				gpuErrchk(cudaDeviceSynchronize());
 			}
 			//write it forthe viewer
-			if (false) {
+			if (true) {
 				std::ostringstream oss;
 				int effective_count = 0;
 				for (int i = 0; i < fluidBufferSet->numParticles; ++i) {
@@ -2182,7 +2262,8 @@ void handle_fluid_boundries_cuda(SPH::DFSPHCData& data, bool loading) {
 		//I'll save the velocity field by setting the velocity of each particle to the weighted average of the three nearest
 		{
 			int numBlocks = calculateNumBlocks(fluidBufferSet->numParticles);
-			DFSPH_init_buffer_velocity_kernel << <numBlocks, BLOCKSIZE >> > (data, particleSet->gpu_ptr, fluidBufferSet->pos, fluidBufferSet->vel, fluidBufferSet->numParticles);
+			//DFSPH_init_buffer_velocity_kernel << <numBlocks, BLOCKSIZE >> > (data, particleSet->gpu_ptr, fluidBufferSet->pos, fluidBufferSet->vel, fluidBufferSet->numParticles);
+			OtherSystemsCuda::init_buffer_kernel << <numBlocks, BLOCKSIZE >> > (fluidBufferSet->vel, fluidBufferSet->numParticles, Vector3d(0,0,0));
 			gpuErrchk(cudaDeviceSynchronize());
 		}
 
@@ -2231,5 +2312,11 @@ void handle_fluid_boundries_cuda(SPH::DFSPHCData& data, bool loading) {
 			particleSet->updateActiveParticleNumber(new_num_particles);
 
 		}
+
+		//still need the damping near the borders as long as we don't implement the implicit borders
+		//with paricle boundaries 3 is the lowest number of steps that absorb nearly any visible perturbations
+		add_border_to_damp_planes_cuda(data);
+		data.damp_borders_steps_count = 3;
+		data.damp_borders = true;
 	}
 }
