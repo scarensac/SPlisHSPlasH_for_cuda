@@ -149,6 +149,7 @@ set(DRAG_SOURCE_FILES
 set(UTILS_HEADER_FILES
 	Utilities/PoissonDiskSampling.h
 	Utilities/Timing.h
+	Utilities/SegmentedTiming.h
 	Utilities/MatrixFreeSolver.h
 	Utilities/GaussQuadrature.h
 	)
@@ -157,6 +158,7 @@ set(UTILS_HEADER_FILES
 set(UTILS_SOURCE_FILES
 	Utilities/PoissonDiskSampling.cpp
 	Utilities/Timing.cpp
+	Utilities/SegmentedTiming.cpp
 	Utilities/GaussQuadrature.cpp
 	)	
 	

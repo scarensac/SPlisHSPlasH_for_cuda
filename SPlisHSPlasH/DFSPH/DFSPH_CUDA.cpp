@@ -5,6 +5,7 @@
 #endif //SPLISHSPLASH_FRAMEWORK
 #include "SPlisHSPlasH/SPHKernels.h"
 #include <iostream>
+#include "SPlisHSPlasH/Utilities/SegmentedTiming.h"
 #include "SPlisHSPlasH/Utilities/Timing.h"
 #include "DFSPH_cuda_basic.h"
 #include <fstream>
@@ -87,15 +88,15 @@ void DFSPHCUDA::step()
 #endif //SPLISHSPLASH_FRAMEWORK
 
 
+
+    if (true) {
+        m_data.destructor_activated = false;
+
 #ifdef OCEAN_BOUNDARIES_PROTOTYPE
 	if (count_steps == 0) {
 		m_data.handleFluidBoundries(false);
 	}
 #endif
-
-    if (true) {
-        m_data.destructor_activated = false;
-
         /*
         if (count_steps == 0) {
             std::vector<Vector3d> additional_pos;
@@ -109,9 +110,9 @@ void DFSPHCUDA::step()
 
         static float time_avg = 0;
         static unsigned int time_count = 0;
-#define NB_TIME_POINTS 8
+#define NB_TIME_POINTS 9
         std::chrono::steady_clock::time_point tab_timepoint[NB_TIME_POINTS+1];
-        std::string tab_name[NB_TIME_POINTS] = { "read dynamic bodies data", "neighbors","divergence", "viscosity","cfl","update vel","density","update pos" };
+        std::string tab_name[NB_TIME_POINTS] = { "read dynamic bodies data", "neighbors","divergence", "viscosity","cfl","update vel","density","update pos","dynamic_borders" };
         static float tab_avg[NB_TIME_POINTS] = { 0 };
         int current_timepoint = 0;
 
@@ -280,6 +281,18 @@ void DFSPHCUDA::step()
 
         cuda_update_pos(m_data);
 
+        tab_timepoint[current_timepoint++] = std::chrono::steady_clock::now();
+
+        //test dynamic boundary 
+#ifdef OCEAN_BOUNDARIES_PROTOTYPE
+        bool moving_borders = false;
+        static int count_moving_steps = 0;
+        if ((count_steps > 25) && ((count_steps % 30) == 0)) {
+            m_data.handleFluidBoundries();
+            moving_borders = true;
+            count_moving_steps++;
+        }
+#endif
 
         tab_timepoint[current_timepoint++] = std::chrono::steady_clock::now();
 
@@ -297,12 +310,6 @@ void DFSPHCUDA::step()
 #endif //SPLISHSPLASH_FRAMEWORK
         //*/
 
-		//test dynamic boundary 
-#ifdef OCEAN_BOUNDARIES_PROTOTYPE
-		if ((count_steps>25)&&((count_steps % 100) == 0)) {
-			m_data.handleFluidBoundries();
-		}
-#endif
 
 
 		//code for timming informations
@@ -332,7 +339,12 @@ void DFSPHCUDA::step()
             for (int i = 0; i < NB_TIME_POINTS; ++i) {
                 float time = std::chrono::duration_cast<std::chrono::nanoseconds> (tab_timepoint[i+1] - tab_timepoint[i]).count() / 1000000.0f;
                 tab_avg[i] += time;
-                std::cout << tab_name[i] << "  :"<< (tab_avg[i]/(count_steps+1))<< "  ("<<time <<")"<< std::endl ;
+                
+                if (i == 8) {
+                    std::cout << tab_name[i] << "  :" << ((count_moving_steps>0)?(tab_avg[i] / (count_moving_steps + 1)):0) << "  (" << time << ")" << std::endl;
+                } else {
+                    std::cout << tab_name[i] << "  :" << (tab_avg[i] / (count_steps + 1)) << "  (" << time << ")" << std::endl;
+                }
             }
         }
 

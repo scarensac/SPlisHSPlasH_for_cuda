@@ -505,10 +505,12 @@ void UnifiedParticleSet::load_from_file(std::string file_path, bool load_velocit
 
 #ifdef OCEAN_BOUNDARIES_PROTOTYPE
 		//*
+		float height = 1.2;
 		if ((positions_limitations)&&
 			(velocity_impacted_by_fluid_solver)&&
-			//(((pos.z > (-0.7 + 8 * 0.1))&&(pos.z<(0.7-8*0.1))) || (pos.y > 0.6))
-			((pos.y > 0.6))
+			//(((pos.x > (-2.0 + 8 * 0.1)) && (pos.x < (2.0 - 8 * 0.1))) || (pos.y > height))
+			//(((pos.z > (-0.7 + 8 * 0.1)) && (pos.z < (0.7 - 8 * 0.1))) || (pos.y > height))
+			((pos.y > height))
 			){
 			NbrLoadedParticles--;
 			i--;
