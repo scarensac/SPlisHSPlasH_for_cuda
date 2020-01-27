@@ -115,19 +115,14 @@ void DemoBase::initShaders()
 {
 	string vertFile;
 	string fragFile;
-	bool manual_color_shader = true;
 	bool transparent_shader = false;
-	if (manual_color_shader) {
+	{
 		vertFile = getDataPath() + "/shaders/vs_points_manual_color.glsl";
-		fragFile = getDataPath() + "/shaders/fs_points_manual_color.glsl";
-	}
-	else {
-		vertFile = getDataPath() + "/shaders/vs_points.glsl";
 		if (transparent_shader) {
 			fragFile = getDataPath() + "/shaders/fs_points_transparent.glsl";
 		}
 		else {
-			fragFile = getDataPath() + "/shaders/fs_points.glsl";
+			fragFile = getDataPath() + "/shaders/fs_points_manual_color.glsl";
 		}
 	}
 	m_shader.compileShaderFile(GL_VERTEX_SHADER, vertFile);

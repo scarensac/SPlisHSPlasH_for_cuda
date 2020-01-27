@@ -307,6 +307,10 @@ __global__ void DFSPH_divergence_warmstart_init_kernel(SPH::DFSPHCData m_data, S
 		particleSet->factor[i] = (-m_data.invH / (MAX_MACRO_CUDA(sum_grad_p_k, m_eps)));
 		particleSet->density[i] = density;
 
+		if (density > 1050) {
+			particleSet->color[i].y = 1;
+		}
+
 		//end the density adv computation
 #ifdef STORE_PARTICLE_NEIGHBORS
 		unsigned int numNeighbors = particleSet->getNumberOfNeighbourgs(i);
@@ -1958,6 +1962,13 @@ __global__ void DFSPH_neighborsSearch_kernel(SPH::DFSPHCData data, SPH::UnifiedP
 	particleSet->numberOfNeighbourgs[3 * i] =  nb_neighbors_fluid;
 	particleSet->numberOfNeighbourgs[3 * i + 1] = nb_neighbors_boundary;
 	particleSet->numberOfNeighbourgs[3 * i + 2] = nb_neighbors_dynamic_objects;
+	
+	/*
+	//simple splashless surface detection
+	if (((nb_neighbors_fluid+nb_neighbors_boundary) < 35)&& (nb_neighbors_fluid + nb_neighbors_boundary) >15) {
+		particleSet->color[i] = Vector3d(0, 1, 0);
+	}
+	//*/
 
 	//memcpy((neighbors_buff + i*MAX_NEIGHBOURS*2), neighbors_fluid, sizeof(int)*nb_neighbors_fluid);
 	//memcpy((neighbors_buff + i*MAX_NEIGHBOURS * 2 + MAX_NEIGHBOURS), neighbors_boundary, sizeof(int)*nb_neighbors_boundary);
@@ -2034,7 +2045,7 @@ void cuda_neighborsSearch(SPH::DFSPHCData& data) {
 	}
 	//*/
 
-	bool need_sort = false;// ((time_count % 15) == 0);
+	bool need_sort = true;// ((time_count % 15) == 0);
 
 	if (need_sort) {
 		//std::cout<<"doing full neighbor search"<<std::endl;

@@ -27,6 +27,6 @@ void add_border_to_damp_planes_cuda(SPH::DFSPHCData& data);
 
 
 //don't call that
-void handle_fluid_boundries_cuda(SPH::DFSPHCData& data, bool loading = true);
+void handle_fluid_boundries_cuda(SPH::DFSPHCData& data, bool loading = false);
 
 #endif //DFSPH_STATIC_VAR_STRUCT
