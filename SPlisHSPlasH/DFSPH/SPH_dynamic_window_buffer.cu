@@ -1,4 +1,4 @@
-#include "SPH_other_systems_cuda.h"
+#include "SPH_dynamic_window_buffer.h"
 #include "DFSPH_core_cuda.h"
 
 #include <stdio.h>
@@ -19,6 +19,7 @@
 #include "cub.cuh"
 
 #include "SPlisHSPlasH/Utilities/SegmentedTiming.h"
+#include "SPH_other_systems_cuda.h"
 
 
 #include <curand.h>
@@ -26,33 +27,44 @@
 
 #include "basic_kernels_cuda.cuh"
 
-class BufferFluidSurface
-{
-public:
-	virtual bool isInsideFluid(Vector3d p) = 0;
-	virtual RealCuda distanceToSurface(Vector3d p) = 0;
-	virtual RealCuda distanceToSurfaceSigned(Vector3d p) = 0;
-};
 
 
+//NOTE1:	seems that virtual function can't be used with managed allocation
+//			so I'll use a template to have an equivalent solution
+//			0 ==> plane, 
 //this is a variant of the surface class to define an area by one of multiples planes
 //the given normal must point otward the inside of the fluid
-class BufferFluidSurfacePlane
+//NOTE can't use the stl on every cuda version so for now I'll do it with static arrays
+template<int type>
+class BufferFluidSurfaceBase
 {
-	std::vector<Vector3d> o;
-	std::vector<Vector3d> n;
+	int count_planes;
+	Vector3d* o;
+	Vector3d* n;
 public:
-	BufferFluidSurfacePlane() {}
-	~BufferFluidSurfacePlane() {}
 
-	void addPlane(Vector3d o_i, Vector3d n_i) {
-		o.push_back(o_i);
-		n.push_back(n_i);
+	inline BufferFluidSurfaceBase() {
+		count_planes = 0;
+		cudaMallocManaged(&(o), sizeof(Vector3d) * 16);
+		cudaMallocManaged(&(n), sizeof(Vector3d) * 16);
 	}
 
-	//to know if we are on the inside of each plane we can simply use the dot product
-	bool isInsideFluid(Vector3d p) {
-		for (int i = 0; i < o.size(); ++i) {
+
+	inline ~BufferFluidSurfaceBase() {
+		CUDA_FREE_PTR(o);
+		CUDA_FREE_PTR(n);
+	}
+
+
+	FUNCTION inline void addPlane(Vector3d o_i, Vector3d n_i) {
+		o[count_planes]=o_i;
+		n[count_planes]=n_i;
+		count_planes++;
+	}
+
+	//to know if we are on the inside of each plane we can simply use the dot product*
+	FUNCTION inline bool isInsideFluid(Vector3d p) {
+		for (int i = 0; i < count_planes; ++i) {
 			Vector3d v = p - o[i];
 			if (v.dot(n[i]) < 0) {
 				return false;
@@ -61,9 +73,9 @@ public:
 		return true;
 	}
 
-	RealCuda distanceToSurface(Vector3d p) {
+	FUNCTION inline RealCuda distanceToSurface(Vector3d p) {
 		RealCuda dist = abs((p - o[0]).dot(n[0]));
-		for (int i = 1; i < o.size(); ++i) {
+		for (int i = 1; i < count_planes; ++i) {
 			Vector3d v = p - o[i];
 			RealCuda l = abs(v.dot(n[i]));
 			dist = MIN_MACRO_CUDA(dist, l);
@@ -71,10 +83,10 @@ public:
 		return dist;
 	}
 
-	RealCuda distanceToSurfaceSigned(Vector3d p) {
+	FUNCTION inline RealCuda distanceToSurfaceSigned(Vector3d p) {
 		int plane_id = 0;
 		RealCuda dist = abs((p - o[0]).dot(n[0]));
-		for (int i = 1; i < o.size(); ++i) {
+		for (int i = 1; i < count_planes; ++i) {
 			Vector3d v = p - o[i];
 			RealCuda l = abs(v.dot(n[i]));
 			if (l < dist) {
@@ -85,6 +97,8 @@ public:
 		return (p - o[plane_id]).dot(n[plane_id]);
 	}
 };
+
+using BufferFluidSurface = BufferFluidSurfaceBase<0>;
 
 
 //this macro is juste so that the expression get optimized at the compilation 
@@ -710,21 +724,45 @@ __global__ void DFSPH_compress_fluid_buffer_kernel(SPH::UnifiedParticleSet* part
 	Vector3d min, Vector3d max, RealCuda plane_inf, RealCuda plane_sup) {
 	int i = blockIdx.x * blockDim.x + threadIdx.x;
 	if (i >= particleSet->numParticles) { return; }
-	
-	float pos = VECTOR_X_MOTION(particleSet->pos[i],x_motion);
+
+	float pos = VECTOR_X_MOTION(particleSet->pos[i], x_motion);
 	//I must compre each side superior/inferior toward it's border
 	float extremity = VECTOR_X_MOTION(((pos < 0) ? min : max), x_motion);
 
 	float plane_pos = ((extremity < 0) ? plane_inf : plane_sup);
-	
+
 
 	pos -= extremity;
-	if (abs(pos) > (abs(plane_pos-extremity) / 2)) {
+	if (abs(pos) > (abs(plane_pos - extremity) / 2)) {
 		pos *= compression_coefficient;
 		pos += extremity;
 		VECTOR_X_MOTION(particleSet->pos[i], x_motion) = pos;
 	}
 
+}
+
+__global__ void DFSPH_generate_buffer_from_surface_count_particles_kernel(SPH::DFSPHCData data, SPH::UnifiedParticleSet* backgroundSet,
+	BufferFluidSurface S, int* count) {
+	int i = blockIdx.x * blockDim.x + threadIdx.x;
+	if (i >= backgroundSet->numParticles) { return; }
+
+	//ok so I'll explain that
+	//the idea is that I want the position of the particle from inside the back ground and inside the buffer to be the same
+	//for an easy handling when applying the buffer as a mask
+	//BUT I also would like that the particles stay relatively ordoned to still have pretty good memory coherency 
+	//for faster access
+	//So I manipulate the cell_id (which here is only an index for sorting the particles) to put every particle that are not
+	//inside the buffer at the end of the buffer but with a linear addition so that the relative order of the particle
+	//in each suggroups stays the same
+	//also we need to do the height with a height map but for now it wil just be a fixe height
+	//*
+	RealCuda dist = S.distanceToSurfaceSigned(backgroundSet->pos[i]);
+	if ((dist<data.getKernelRadius()&&(backgroundSet->pos[i].y<1.2))) {
+		atomicAdd(count, 1);
+	}
+	else {
+		backgroundSet->neighborsDataSet->cell_id[i] += CELL_COUNT;
+	}
 }
 
 
@@ -943,6 +981,12 @@ void handle_fluid_boundries_cuda(SPH::DFSPHCData& data, bool loading) {
 	static Vector3d* pos_background = NULL;
 	static int numParticles_background = 0;
 
+	//the object for the surface
+	static BufferFluidSurface S;
+	static SPH::UnifiedParticleSet* fluidBufferSetFromSurface = NULL;
+	static Vector3d* pos_base_from_surface = NULL;
+	static int numParticles_base_from_surface = 0;
+
 	//some variable defining the desired fluid buffer (axis and motion)
 	//note those thing should be obtained from arguments at some point
 	bool displace_windows = true;
@@ -984,8 +1028,25 @@ void handle_fluid_boundries_cuda(SPH::DFSPHCData& data, bool loading) {
 			particleSet->write_to_file(data.fluid_files_folder + "fluid_buffer_file.txt");
 		}
 
+		//define the surface
+		int surfaceType = 0;
+		if(surfaceType==0){
+			if (x_motion) {
+				S.addPlane(Vector3d(plane_pos_inf, 0, 0), Vector3d(1, 0, 0));
+				S.addPlane(Vector3d(plane_pos_sup, 0, 0), Vector3d(-1, 0, 0));
+			}
+			else {
+				S.addPlane(Vector3d(0, 0, plane_pos_inf), Vector3d(0, 0, 1));
+				S.addPlane(Vector3d(0, 0, plane_pos_sup), Vector3d(0, 0, -1));
+			}
+		}
+		else {
+			throw("the surface type need to be defined for that test");
+		}
+
+
 		//coefficient if we want to compress the buffers
-		float buffer_compression_coefficient = 1.0f;
+		float buffer_compression_coefficient = -1.0f;
 		//load the backgroundset
 		{
 			SPH::UnifiedParticleSet* dummy = NULL;
@@ -1047,44 +1108,96 @@ void handle_fluid_boundries_cuda(SPH::DFSPHCData& data, bool loading) {
 			}
 		}
 
-		//create the fluid buffers
-		//it must be a sub set of the background set (enougth to dodge the kernel sampling problem at the fluid/air interface)
+		
+		//create the buffer from the background and the surface
 		{
-			SPH::UnifiedParticleSet* dummy = NULL;
-			fluidBufferXSet = new SPH::UnifiedParticleSet();
-			fluidBufferXSet->load_from_file(data.fluid_files_folder + "fluid_buffer_x_file.txt", false, &min_fluid_buffer, &max_fluid_buffer);
-			allocate_and_copy_UnifiedParticleSet_vector_cuda(&dummy, fluidBufferXSet, 1);
-			if (buffer_compression_coefficient>0.0f) {
-				int numBlocks = calculateNumBlocks(fluidBufferXSet->numParticles);
-				DFSPH_compress_fluid_buffer_kernel<true> << <numBlocks, BLOCKSIZE >> > (fluidBufferXSet->gpu_ptr, buffer_compression_coefficient, min_fluid_buffer, max_fluid_buffer
-					, plane_pos_inf, plane_pos_sup);
+			std::cout << "generating fluid buffer from background start" << std::endl;
+			//first we count the nbr of particles and attribute the index for sorting
+			//als we will reorder the background buffer so we need to resave its state
+			int* out_int = NULL;
+			cudaMallocManaged(&(out_int), sizeof(int));
+			*out_int = 0;
+			{
+				int numBlocks = calculateNumBlocks(backgroundFluidBufferSet->numParticles);
+				DFSPH_generate_buffer_from_surface_count_particles_kernel << <numBlocks, BLOCKSIZE >> > (data, backgroundFluidBufferSet->gpu_ptr, S, out_int);
 				gpuErrchk(cudaDeviceSynchronize());
 			}
-			fluidBufferXSet->initNeighborsSearchData(data, true);
-			fluidBufferXSet->resetColor();
+			int count_inside_buffer = *out_int;
+			CUDA_FREE_PTR(out_int);
 
-			numParticles_base_x = fluidBufferXSet->numParticles;
-			cudaMallocManaged(&(pos_base_x), sizeof(Vector3d) * numParticles_base_x);
-			gpuErrchk(cudaMemcpy(pos_base_x, fluidBufferXSet->pos, numParticles_base_x * sizeof(Vector3d), cudaMemcpyDeviceToDevice));
-		}
 
-		{
+			std::cout << "reorganise background" << std::endl;
+
+			//sort the buffer
+			cub::DeviceRadixSort::SortPairs(backgroundFluidBufferSet->neighborsDataSet->d_temp_storage_pair_sort, backgroundFluidBufferSet->neighborsDataSet->temp_storage_bytes_pair_sort,
+				backgroundFluidBufferSet->neighborsDataSet->cell_id, backgroundFluidBufferSet->neighborsDataSet->cell_id_sorted,
+				backgroundFluidBufferSet->neighborsDataSet->p_id, backgroundFluidBufferSet->neighborsDataSet->p_id_sorted, backgroundFluidBufferSet->numParticles);
+			gpuErrchk(cudaDeviceSynchronize());
+
+			cuda_sortData(*backgroundFluidBufferSet, backgroundFluidBufferSet->neighborsDataSet->p_id_sorted);
+			gpuErrchk(cudaDeviceSynchronize());
+
+			//resave the background state
+			gpuErrchk(cudaMemcpy(pos_background, backgroundFluidBufferSet->pos, numParticles_background * sizeof(Vector3d), cudaMemcpyDeviceToDevice));
+
+
+			std::cout << "creating buffer" << std::endl;
+
+			//and now we can create the buffer and save the positions
 			SPH::UnifiedParticleSet* dummy = NULL;
-			fluidBufferZSet = new SPH::UnifiedParticleSet();
-			fluidBufferZSet->load_from_file(data.fluid_files_folder + "fluid_buffer_z_file.txt", false, &min_fluid_buffer, &max_fluid_buffer);
-			allocate_and_copy_UnifiedParticleSet_vector_cuda(&dummy, fluidBufferZSet, 1);
-			if (buffer_compression_coefficient > 0.0f) {
-				int numBlocks = calculateNumBlocks(fluidBufferZSet->numParticles);
-				DFSPH_compress_fluid_buffer_kernel<false> << <numBlocks, BLOCKSIZE >> > (fluidBufferZSet->gpu_ptr, buffer_compression_coefficient, min_fluid_buffer, max_fluid_buffer
-					, plane_pos_inf, plane_pos_sup);
-				gpuErrchk(cudaDeviceSynchronize());
-			}
-			fluidBufferZSet->initNeighborsSearchData(data, true);
-			fluidBufferZSet->resetColor();
+			fluidBufferSetFromSurface = new SPH::UnifiedParticleSet();
+			fluidBufferSetFromSurface->init(count_inside_buffer, true, true, false, true);
+			allocate_and_copy_UnifiedParticleSet_vector_cuda(&dummy, fluidBufferSetFromSurface, 1);
 
-			numParticles_base_z = fluidBufferZSet->numParticles;
-			cudaMallocManaged(&(pos_base_z), sizeof(Vector3d) * numParticles_base_z);
-			gpuErrchk(cudaMemcpy(pos_base_z, fluidBufferZSet->pos, numParticles_base_z * sizeof(Vector3d), cudaMemcpyDeviceToDevice));
+			std::cout << "copy to bbuffer" << std::endl;
+
+			numParticles_base_from_surface = fluidBufferSetFromSurface->numParticles;
+			cudaMallocManaged(&(pos_base_from_surface), sizeof(Vector3d) * numParticles_base_from_surface);
+			gpuErrchk(cudaMemcpy(pos_base_from_surface, pos_background, numParticles_base_from_surface * sizeof(Vector3d), cudaMemcpyDeviceToDevice));
+			gpuErrchk(cudaMemcpy(fluidBufferSetFromSurface->mass, backgroundFluidBufferSet->mass, numParticles_base_from_surface * sizeof(RealCuda), cudaMemcpyDeviceToDevice));
+
+			fluidBufferSetFromSurface->resetColor();
+
+			std::cout << "generating fluid buffer from background end" << std::endl;
+
+
+
+			if (false) {
+				Vector3d* pos = pos_base_from_surface;
+				int numParticles = numParticles_base_from_surface;
+				std::ostringstream oss;
+				int effective_count = 0;
+				for (int i = 0; i < numParticles; ++i) {
+					uint8_t density = 255;
+					uint8_t alpha = 255;
+					uint32_t txt = (((alpha << 8) + density << 8) + 0 << 8) + 0;
+
+
+					oss << pos[i].x << " " << pos[i].y << " " << pos[i].z << " "
+						<< txt << std::endl;
+					effective_count++;
+				}
+
+				std::ofstream myfile("densityCloud.pcd", std::ofstream::trunc);
+				if (myfile.is_open())
+				{
+					myfile << "VERSION 0.7" << std::endl
+						<< "FIELDS x y z rgb" << std::endl
+						<< "SIZE 4 4 4 4" << std::endl
+						<< "TYPE F F F U" << std::endl
+						<< "COUNT 1 1 1 1" << std::endl
+						<< "WIDTH " << effective_count << std::endl
+						<< "HEIGHT " << 1 << std::endl
+						<< "VIEWPOINT 0 0 0 1 0 0 0" << std::endl
+						<< "POINTS " << effective_count << std::endl
+						<< "DATA ascii" << std::endl;
+					myfile << oss.str();
+					myfile.close();
+				}
+
+				std::cout << "writting buffer to file end" << std::endl;
+
+			}
 		}
 
 
@@ -1098,14 +1211,9 @@ void handle_fluid_boundries_cuda(SPH::DFSPHCData& data, bool loading) {
 
 
 
-	SPH::UnifiedParticleSet* fluidBufferSet = fluidBufferXSet;
-	Vector3d* pos_base = pos_base_x;
-	int numParticles_base = numParticles_base_x;
-	if (!x_motion) {
-		fluidBufferSet = fluidBufferZSet;
-		pos_base = pos_base_z;
-		numParticles_base = numParticles_base_z;
-	}
+	SPH::UnifiedParticleSet* fluidBufferSet = fluidBufferSetFromSurface;
+	Vector3d* pos_base = pos_base_from_surface;
+	int numParticles_base = numParticles_base_from_surface;
 
 	if (!fluidBufferSet) {
 		std::string msg = "handle_fluid_boundries_cuda: you have to load a buffer first";
