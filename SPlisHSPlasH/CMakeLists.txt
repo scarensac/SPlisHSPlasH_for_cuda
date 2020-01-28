@@ -60,6 +60,7 @@ set(DFSPH_HEADER_FILES
 	DFSPH/DFSPH_CUDA.h
 	DFSPH/SimulationDataDFSPH.h
 	DFSPH/TimeStepDFSPH.h
+	DFSPH/SPH_dynamic_window_buffer.h
 	)
 	
 set(DFSPH_SOURCE_FILES
@@ -78,6 +79,7 @@ set(DFSPH_SOURCE_FILES
 	DFSPH/DFSPH_CUDA.cpp
 	DFSPH/SimulationDataDFSPH.cpp
 	DFSPH/TimeStepDFSPH.cpp
+	DFSPH/SPH_dynamic_window_buffer.cu
 	)	
 	
 set(PF_HEADER_FILES

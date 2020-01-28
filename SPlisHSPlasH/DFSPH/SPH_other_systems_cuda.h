@@ -4,6 +4,7 @@
 
 #include "SPlisHSPlasH\Vector.h"
 #include "DFSPH_c_arrays_structure.h"
+#include "SPH_dynamic_window_buffer.h"
 
 using namespace SPH;
 
@@ -22,11 +23,9 @@ Vector3d get_simulation_center_cuda(SPH::DFSPHCData& data);
 
 //dynamic simulation area related
 void move_simulation_cuda(SPH::DFSPHCData& data, Vector3d movement);
-void add_border_to_damp_planes_cuda(SPH::DFSPHCData& data);
+void add_border_to_damp_planes_cuda(SPH::DFSPHCData& data, bool x_displacement = true, bool z_displacement = true);
 
 
 
-//don't call that
-void handle_fluid_boundries_cuda(SPH::DFSPHCData& data, bool loading = false);
 
 #endif //DFSPH_STATIC_VAR_STRUCT
