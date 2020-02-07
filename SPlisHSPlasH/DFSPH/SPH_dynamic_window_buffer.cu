@@ -31,105 +31,228 @@
 
 //NOTE1:	seems that virtual function can't be used with managed allocation
 //			so I'll use a template to have an equivalent solution
-//			0 ==> plane, 
-//this is a variant of the surface class to define an area by one of multiples planes
-//the given normal must point otward the inside of the fluid
-//NOTE can't use the stl on every cuda version so for now I'll do it with static arrays
+//			the  template parameter allow the représentation of various shapes
+//NOTE2:	0 ==> plane: only use this for paralel planes (so max 2)
+//			it's just a fast to compute solution if you need bands of fluid near the borders of the simulation
+//			however since as soon as you get more than 2 planes the distance computation become pretty heavy
+//			it's better to use another solution to represent the same surface (in particular in the case of boxes
+//NOTE3:	1 ==> rectangular cuboid. 
+
 template<int type>
 class BufferFluidSurfaceBase
 {
+	//this is for the planes
 	int count_planes;
 	Vector3d* o;
 	Vector3d* n;
+
+	//this is for the cuboid
+	Vector3d center;
+	Vector3d halfLengths;
 public:
 	bool destructor_activated;
 
 	inline BufferFluidSurfaceBase() {
 		destructor_activated = false;
-		count_planes = 0;
-		cudaMallocManaged(&(o), sizeof(Vector3d) * 16);
-		cudaMallocManaged(&(n), sizeof(Vector3d) * 16);
+		switch (type) {
+		case 0: {
+			count_planes = 0;
+			cudaMallocManaged(&(o), sizeof(Vector3d) * 2);
+			cudaMallocManaged(&(n), sizeof(Vector3d) * 2);
+			break;
+		}
+		case 1: {break; }
+		default: {; }//it should NEVER reach here
+		}
 	}
 
 
 	inline ~BufferFluidSurfaceBase() {
 		if (destructor_activated) {
-			CUDA_FREE_PTR(o);
-			CUDA_FREE_PTR(n);
+			switch (type) {
+			case 0: {
+				CUDA_FREE_PTR(o);
+				CUDA_FREE_PTR(n);
+				break;
+			}
+			case 1: {break; }
+			default: {; }//it should NEVER reach here
+			};
 		}
 	}
 
 
-	FUNCTION inline void addPlane(Vector3d o_i, Vector3d n_i) {
-		o[count_planes]=o_i;
-		n[count_planes]=n_i;
+	inline int addPlane(Vector3d o_i, Vector3d n_i) {
+		if (type != 0) {
+			return -1;
+		}
+		if (count_planes >= 2) {
+			return 1;
+		}
+		o[count_planes] = o_i;
+		n[count_planes] = n_i;
 		count_planes++;
+		return 0;
 	}
+
+	inline int setCuboid(Vector3d c_i, Vector3d hl_i) {
+		if (type != 1) {
+			return -1;
+		}
+		center = c_i;
+		halfLengths = hl_i;
+		return 0;
+	}
+
+	inline void copy (const BufferFluidSurfaceBase& o) {
+		switch (type) {
+		case 0: {
+			count_planes = 0;
+			for (int i = 0; i < o.count_planes; ++i) {
+				addPlane(o.o[i], o.n[i]);
+			}
+			break;
+		}
+		case 1: {
+			center = o.center;
+			halfLengths = o.halfLengths;
+			break; 
+		}
+		default: {; }//it should NEVER reach here
+		};
+	}
+
+	inline void move(const Vector3d& d) {
+		switch (type) {
+		case 0: {
+			for (int i = 0; i < count_planes; ++i) {
+				o[i]+=d;
+			}
+			break;
+		}
+		case 1: {
+			center += d;
+			break; 
+		}
+		default: {; }//it should NEVER reach here
+		};
+	}
+
+	std::string toString() {
+		std::ostringstream oss;
+
+		switch (type) {
+		case 0: {
+			if (count_planes > 0) {
+				for (int i = 0; i < count_planes; ++i) {
+					oss << "plane " << i << " (o,n)  " << o[i].x << "   " << o[i].y << "   " << o[i].z << 
+						"   " << n[i].x << "   " << n[i].y << "   " << n[i].z<< std::endl;
+				}
+			}
+			else {
+				oss << "No planes" << std::endl;
+			}
+			break;
+		}
+		case 1: {
+			oss << "Cuboid center: " <<center.toString()<<"   halfLengths: "<<	halfLengths.toString()	<< std::endl;
+			break; 
+		}
+		default: {; }//it should NEVER reach here
+		};
+
+		return oss.str();
+	}
+
+
 
 	//to know if we are on the inside of each plane we can simply use the dot product*
 	FUNCTION inline bool isInsideFluid(Vector3d p) {
-		for (int i = 0; i < count_planes; ++i) {
-			Vector3d v = p - o[i];
-			if (v.dot(n[i]) < 0) {
-				return false;
+		switch (type) {
+		case 0: {
+			for (int i = 0; i < count_planes; ++i) {
+				Vector3d v = p - o[i];
+				if (v.dot(n[i]) < 0) {
+					return false;
+				}
 			}
+			break;
+		}
+		case 1: {
+			Vector3d v = p - center ;
+			v.toAbs();
+			return (v.x<halfLengths.x) && (v.y < halfLengths.y) && (v.z < halfLengths.z);
+			break; 
+		}
+		default: {; }//it should NEVER reach here
 		}
 		return true;
 	}
 
 	FUNCTION inline RealCuda distanceToSurface(Vector3d p) {
-		RealCuda dist = abs((p - o[0]).dot(n[0]));
-		for (int i = 1; i < count_planes; ++i) {
-			Vector3d v = p - o[i];
-			RealCuda l = abs(v.dot(n[i]));
-			dist = MIN_MACRO_CUDA(dist, l);
+		RealCuda dist;
+
+		switch (type) {
+		case 0: {
+			dist = abs((p - o[0]).dot(n[0]));
+			for (int i = 1; i < count_planes; ++i) {
+				Vector3d v = p - o[i];
+				RealCuda l = abs(v.dot(n[i]));
+				dist = MIN_MACRO_CUDA(dist, l);
+			}
+			break;
 		}
+		case 1: {
+			
+			Vector3d v = p - center;
+			Vector3d v2 = v;
+			if (v.x < -halfLengths.x) { v.x = -halfLengths.x; }
+			else if (v.x > halfLengths.x) { v.x = halfLengths.x; }
+			if (v.y < -halfLengths.y) { v.y = -halfLengths.y; }
+			else if (v.y > halfLengths.y) { v.y = halfLengths.y; }
+			if (v.z < -halfLengths.z) { v.z = -halfLengths.z; }
+			else if (v.z > halfLengths.z) { v.z = halfLengths.z; }
+			dist = (v - v2).norm();
+			
+			break; 
+		}
+		default: {; }//it should NEVER reach here
+		}
+
 		return dist;
 	}
 
 	FUNCTION inline RealCuda distanceToSurfaceSigned(Vector3d p) {
-		int plane_id = 0;
-		RealCuda dist = abs((p - o[0]).dot(n[0]));
-		for (int i = 1; i < count_planes; ++i) {
-			Vector3d v = p - o[i];
-			RealCuda l = abs(v.dot(n[i]));
-			if (l < dist) {
-				dist = 0;
-				plane_id = i;
+		RealCuda dist;
+		switch (type) {
+		case 0: {
+			int plane_id = 0;
+			dist = abs((p - o[0]).dot(n[0]));
+			for (int i = 1; i < count_planes; ++i) {
+				Vector3d v = p - o[i];
+				RealCuda l = abs(v.dot(n[i]));
+				if (l < dist) {
+					dist = 0;
+					plane_id = i;
+				}
 			}
+			dist = (p - o[plane_id]).dot(n[plane_id]);
+			break;
 		}
-		return (p - o[plane_id]).dot(n[plane_id]);
+		case 1: {
+			dist = distanceToSurface(p) * ((isInsideFluid(p))?1:-1);
+			break;
+		}
+		default: {; }//it should NEVER reach here
+		}
+
+		return dist;
 	}
 
-	FUNCTION inline void copy (const BufferFluidSurfaceBase& o) {
-		count_planes = 0;
-		for (int i = 0; i < o.count_planes; ++i) {
-			addPlane(o.o[i], o.n[i]);
-		}
-	}
-
-	FUNCTION inline void move(const Vector3d& d) {
-		for (int i = 0; i < count_planes; ++i) {
-			o[i]+=d;
-		}
-	}
-
-	std::string toString() {
-		std::ostringstream oss;
-		if (count_planes > 0) {
-			for (int i = 0; i < count_planes; ++i) {
-				oss << "plane " << i << " (o,n)  " << o[i].x << "   " << o[i].y << "   " << o[i].z << 
-					"   " << n[i].x << "   " << n[i].y << "   " << n[i].z<< std::endl;
-			}
-		}
-		else {
-			oss << "No planes" << std::endl;
-		}
-		return oss.str();
-	}
 };
 
-using BufferFluidSurface = BufferFluidSurfaceBase<0>;
+constexpr int surfaceType = 1;
+using BufferFluidSurface = BufferFluidSurfaceBase<surfaceType>;
 
 
 //this macro is juste so that the expression get optimized at the compilation 
@@ -970,11 +1093,19 @@ __global__ void DFSPH_evaluate_particle_concentration_kernel(SPH::DFSPHCData dat
 		}
 	);
 
+	//supose that the density of boundaries particles is the rest density
+	ITER_NEIGHBORS_FROM_STRUCTURE_BASE(data.boundaries_data_cuda->neighborsDataSet, data.boundaries_data_cuda->pos,
+		RealCuda concentration_delta = (data.boundaries_data_cuda->mass[j] / data.density0) * KERNEL_W(data, p_i - data.boundaries_data_cuda->pos[j]);
+	concentration += concentration_delta;
+	count_neighbors++;
+	);
+
+
 	fluidSet->densityAdv[i] = concentration;
 }
 
 __global__ void DFSPH_particle_shifting_base_kernel(SPH::DFSPHCData data, SPH::UnifiedParticleSet* fluidSet, RealCuda displacement_coefficient,
-	BufferFluidSurface S) {
+	BufferFluidSurface S, int* count_affected, RealCuda* total_abs_displacement) {
 	int i = blockIdx.x * blockDim.x + threadIdx.x;
 	if (i >= fluidSet->numParticles) { return; }
 
@@ -1014,13 +1145,24 @@ __global__ void DFSPH_particle_shifting_base_kernel(SPH::DFSPHCData data, SPH::U
 		}
 	);
 
+	//as long as I make so that the surface is more than 1 kernel radius from the boundaries those computation are fine no need to iterate on the boundaries
+	//so I'll prevent shifting the particles that are even remotely clse from the boundary
 	int count_neighbors_b = 0;
 	ITER_NEIGHBORS_FROM_STRUCTURE_BASE(data.boundaries_data_cuda->neighborsDataSet, data.boundaries_data_cuda->pos,
 		count_neighbors_b++;
 	);
 
 	displacement *= -displacement_coefficient;
+	//we cap the displacement like in the papers
+	RealCuda disp_norm = displacement.norm();
+	if (disp_norm > (0.2 * data.getKernelRadius())) {
+		displacement *= (0.2 * data.getKernelRadius()) / disp_norm;
+	}
+
 	displacement *= scaling * scaling;
+	
+	atomicAdd(count_affected, 1);
+	atomicAdd(total_abs_displacement, displacement.norm());
 
 	if (count_neighbors_b ==0) {
 		fluidSet->pos[i]+=displacement;
@@ -1089,7 +1231,6 @@ void handle_fluid_boundries_cuda(SPH::DFSPHCData& data, bool loading) {
 		}
 
 		//define the surface
-		int surfaceType = 0;
 		if(surfaceType==0){
 			if (x_motion) {
 				S_initial.addPlane(Vector3d(plane_pos_inf, 0, 0), Vector3d(1, 0, 0));
@@ -1100,7 +1241,19 @@ void handle_fluid_boundries_cuda(SPH::DFSPHCData& data, bool loading) {
 				S_initial.addPlane(Vector3d(0, 0, plane_pos_sup), Vector3d(0, 0, -1));
 			}
 		}
-		else {
+		else if (surfaceType == 1) {
+			Vector3d center(0, 0, 0);
+			Vector3d halfLength(100);
+			if (x_motion) {
+				halfLength.x = plane_pos_sup-0.1;
+			}
+			else {
+				halfLength.z = plane_pos_sup-0.1;
+			}
+			halfLength.z = 0.7 - 0.1;
+			S_initial.setCuboid(center, halfLength);
+
+		}else {
 			throw("the surface type need to be defined for that test");
 		}
 
@@ -1275,10 +1428,12 @@ void handle_fluid_boundries_cuda(SPH::DFSPHCData& data, bool loading) {
 		//we could use the neighbo structure to have a faster access but for now let's just brute force it	
 		static int* countRmv = NULL;
 		static int* countRmv2 = NULL;
+		static RealCuda* realcuda_ptr = NULL;
 
 		if (!countRmv) {
 			cudaMallocManaged(&(countRmv), sizeof(int));
 			cudaMallocManaged(&(countRmv2), sizeof(int));
+			cudaMallocManaged(&(realcuda_ptr), sizeof(RealCuda));
 		}
 
 		//reset the buffers
@@ -1320,6 +1475,7 @@ void handle_fluid_boundries_cuda(SPH::DFSPHCData& data, bool loading) {
 			//and move the surface
 			//wtf for some reason I can't seem to execute that line before the synchronize
 			S.move(data.dynamicWindowTotalDisplacement);
+			std::cout<<S.toString()<<std::endl;
 
 			//update the boundaries neighbors
 			data.boundaries_data->initNeighborsSearchData(data, false);
@@ -1670,7 +1826,10 @@ void handle_fluid_boundries_cuda(SPH::DFSPHCData& data, bool loading) {
 		}
 
 		//now we need to use a particle shifting to remove the density spikes and gap
-		{
+		// particle shifting from particle concentration
+		// Formula found in the fllowing paper (though it's when they explain the earlier works)
+		// A multi - phase particle shifting algorithm for SPHsimulations of violent hydrodynamics with a largenumber of particles
+		if(true){
 			RealCuda diffusion_coefficient = 1000*0.5* data.getKernelRadius()* data.getKernelRadius()/data.density0;
 			particleSet->initNeighborsSearchData(data, false);
 
@@ -1687,9 +1846,13 @@ void handle_fluid_boundries_cuda(SPH::DFSPHCData& data, bool loading) {
 			}
 
 			{
+				*countRmv = 0;
+				*realcuda_ptr = 0;
 				int numBlocks = calculateNumBlocks(particleSet->numParticles);
-				DFSPH_particle_shifting_base_kernel << <numBlocks, BLOCKSIZE >> > (data, particleSet->gpu_ptr, diffusion_coefficient, S);
+				DFSPH_particle_shifting_base_kernel << <numBlocks, BLOCKSIZE >> > (data, particleSet->gpu_ptr, diffusion_coefficient, S, countRmv, realcuda_ptr);
 				gpuErrchk(cudaDeviceSynchronize());
+
+				std::cout << "count particles shifted: " << *countRmv << "   for a total displacement: " << *realcuda_ptr << std::endl;
 			}
 
 
@@ -1703,9 +1866,11 @@ void handle_fluid_boundries_cuda(SPH::DFSPHCData& data, bool loading) {
 
 		//still need the damping near the borders as long as we don't implement the implicit borders
 		//with paricle boundaries 3 is the lowest number of steps that absorb nearly any visible perturbations
+		/*/
 		add_border_to_damp_planes_cuda(data, x_motion, !x_motion);
 		data.damp_borders_steps_count = 3;
 		data.damp_borders = true;
+		//*/
 	}
 
 	//here is a test to see what does the density filed looks like at the interface

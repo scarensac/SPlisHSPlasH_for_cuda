@@ -2,6 +2,7 @@
 #define __Vector_h__
 
 #include <cmath>
+#include <string>
 #include "SPlisHSPlasH\BasicTypes.h"
 
 #ifdef __NVCC__
@@ -111,9 +112,12 @@ namespace SPH
         template<typename T2>
         FUNCTION inline Vector3& toMin(const Vector3<T2> &o) { if (x > o.x)x = o.x; if (y > o.y)y = o.y; if (z > o.z)z = o.z; return *this; }
 
-        template<typename T2>
-        FUNCTION inline Vector3& toMax(const Vector3<T2> &o) { if (x < o.x)x = o.x; if (y < o.y)y = o.y; if (z < o.z)z = o.z; return *this; }
+		template<typename T2>
+		FUNCTION inline Vector3& toMax(const Vector3<T2>& o) { if (x < o.x)x = o.x; if (y < o.y)y = o.y; if (z < o.z)z = o.z; return *this; }
 
+
+		//host only functions
+		inline std::string toString() { return std::to_string(x) + " " + std::to_string(y) + " " + std::to_string(z); }
 
 	};
 
