@@ -93,9 +93,20 @@ void DFSPHCUDA::step()
         m_data.destructor_activated = false;
 
 #ifdef OCEAN_BOUNDARIES_PROTOTYPE
+    bool moving_borders = false;
+    static int count_moving_steps = 0;
+        //*
 	if (count_steps == 0) {
 		m_data.handleFluidBoundries(true);
 	}
+
+    //test dynamic boundary 
+    if ((count_steps > 5) && ((count_steps % 15) == 0))
+    {
+        m_data.handleFluidBoundries();
+        moving_borders = true;
+        count_moving_steps++;
+    }//*/
 #endif
         /*
         if (count_steps == 0) {
@@ -282,17 +293,7 @@ void DFSPHCUDA::step()
 
         tab_timepoint[current_timepoint++] = std::chrono::steady_clock::now();
 
-        //test dynamic boundary 
-#ifdef OCEAN_BOUNDARIES_PROTOTYPE
-        bool moving_borders = false;
-        static int count_moving_steps = 0;
-        if ((count_steps > 5) && ((count_steps % 15) == 0))
-        {
-            m_data.handleFluidBoundries();
-            moving_borders = true;
-            count_moving_steps++;
-        }
-#endif
+
 
         tab_timepoint[current_timepoint++] = std::chrono::steady_clock::now();
 

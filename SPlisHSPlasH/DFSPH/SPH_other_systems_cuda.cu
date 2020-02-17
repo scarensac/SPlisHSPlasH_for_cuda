@@ -26,65 +26,6 @@
 
 #include "basic_kernels_cuda.cuh"
 
-class BufferFluidSurface
-{
-public:
-	virtual bool isInsideFluid(Vector3d p) = 0;
-	virtual RealCuda distanceToSurface(Vector3d p) = 0;
-	virtual RealCuda distanceToSurfaceSigned(Vector3d p) = 0;
-};
-
-
-//this is a variant of the surface class to define an area by one of multiples planes
-//the given normal must point otward the inside of the fluid
-class BufferFluidSurfacePlane
-{
-	std::vector<Vector3d> o;
-	std::vector<Vector3d> n;
-public:
-	BufferFluidSurfacePlane() {}
-	~BufferFluidSurfacePlane() {}
-
-	void addPlane(Vector3d o_i, Vector3d n_i) {
-		o.push_back(o_i);
-		n.push_back(n_i);
-	}
-
-	//to know if we are on the inside of each plane we can simply use the dot product
-	bool isInsideFluid(Vector3d p) {
-		for (int i = 0; i < o.size(); ++i) {
-			Vector3d v = p - o[i];
-			if (v.dot(n[i]) < 0) {
-				return false;
-			}
-		}
-		return true;
-	}
-
-	RealCuda distanceToSurface(Vector3d p) {
-		RealCuda dist = abs((p - o[0]).dot(n[0]));
-		for (int i = 1; i < o.size(); ++i) {
-			Vector3d v = p - o[i];
-			RealCuda l = abs(v.dot(n[i]));
-			dist = MIN_MACRO_CUDA(dist, l);
-		}
-		return dist;
-	}
-
-	RealCuda distanceToSurfaceSigned(Vector3d p) {
-		int plane_id = 0;
-		RealCuda dist = abs((p - o[0]).dot(n[0]));
-		for (int i = 1; i < o.size(); ++i) {
-			Vector3d v = p - o[i];
-			RealCuda l = abs(v.dot(n[i]));
-			if (l < dist) {
-				dist = 0;
-				plane_id = i;
-			}
-		}
-		return (p - o[plane_id]).dot(n[plane_id]);
-	}
-};
 
 
 //this macro is juste so that the expression get optimized at the compilation 

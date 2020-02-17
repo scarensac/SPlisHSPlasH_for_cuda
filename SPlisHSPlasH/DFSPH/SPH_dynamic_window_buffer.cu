@@ -49,6 +49,9 @@ class BufferFluidSurfaceBase
 	//this is for the cuboid
 	Vector3d center;
 	Vector3d halfLengths;
+
+	//this for radius based geometries
+	RealCuda radius;
 public:
 	bool destructor_activated;
 
@@ -62,6 +65,7 @@ public:
 			break;
 		}
 		case 1: {break; }
+		case 2: {break; }
 		default: {; }//it should NEVER reach here
 		}
 	}
@@ -76,6 +80,7 @@ public:
 				break;
 			}
 			case 1: {break; }
+			case 2: {break; }
 			default: {; }//it should NEVER reach here
 			};
 		}
@@ -104,6 +109,16 @@ public:
 		return 0;
 	}
 
+	inline int setCylinder(Vector3d c_i, RealCuda half_h, RealCuda r) {
+		if (type != 2) {
+			return -1;
+		}
+		center = c_i;
+		halfLengths = Vector3d(0,half_h,0);
+		radius = r;
+		return 0;
+	}
+
 	inline void copy (const BufferFluidSurfaceBase& o) {
 		switch (type) {
 		case 0: {
@@ -116,7 +131,13 @@ public:
 		case 1: {
 			center = o.center;
 			halfLengths = o.halfLengths;
-			break; 
+			break;
+		}
+		case 2: {
+			center = o.center;
+			halfLengths = o.halfLengths;
+			radius = o.radius;
+			break;
 		}
 		default: {; }//it should NEVER reach here
 		};
@@ -132,7 +153,11 @@ public:
 		}
 		case 1: {
 			center += d;
-			break; 
+			break;
+		}
+		case 2: {
+			center += d;
+			break;
 		}
 		default: {; }//it should NEVER reach here
 		};
@@ -140,7 +165,7 @@ public:
 
 	std::string toString() {
 		std::ostringstream oss;
-
+		//*
 		switch (type) {
 		case 0: {
 			if (count_planes > 0) {
@@ -155,12 +180,16 @@ public:
 			break;
 		}
 		case 1: {
-			oss << "Cuboid center: " <<center.toString()<<"   halfLengths: "<<	halfLengths.toString()	<< std::endl;
-			break; 
+			oss << "Cuboid center: " << center.toString() << "   halfLengths: " << halfLengths.toString() << std::endl;
+			break;
+		}
+		case 2: {
+			oss << "Cylinder center: " << center.toString() << "  radius: "<<radius<<"   height: " << halfLengths.y << std::endl;
+			break;
 		}
 		default: {; }//it should NEVER reach here
 		};
-
+		//*/
 		return oss.str();
 	}
 
@@ -168,6 +197,7 @@ public:
 
 	//to know if we are on the inside of each plane we can simply use the dot product*
 	FUNCTION inline bool isInsideFluid(Vector3d p) {
+		//*
 		switch (type) {
 		case 0: {
 			for (int i = 0; i < count_planes; ++i) {
@@ -179,19 +209,28 @@ public:
 			break;
 		}
 		case 1: {
-			Vector3d v = p - center ;
+			Vector3d v = p - center;
 			v.toAbs();
-			return (v.x<halfLengths.x) && (v.y < halfLengths.y) && (v.z < halfLengths.z);
-			break; 
+			return (v.x < halfLengths.x) && (v.y < halfLengths.y) && (v.z < halfLengths.z);
+			break;
+		}
+		case 2: {
+			Vector3d v = p - center;
+			if (abs(v.y) > halfLengths.y) { return false; }
+
+			v.y = 0;
+			return (v.norm()< radius);
+			break;
 		}
 		default: {; }//it should NEVER reach here
 		}
+		//*/
 		return true;
 	}
 
 	FUNCTION inline RealCuda distanceToSurface(Vector3d p) {
 		RealCuda dist;
-
+		//*
 		switch (type) {
 		case 0: {
 			dist = abs((p - o[0]).dot(n[0]));
@@ -203,55 +242,62 @@ public:
 			break;
 		}
 		case 1: {
-			
 			Vector3d v = p - center;
-			Vector3d v2 = v;
-			if (v.x < -halfLengths.x) { v.x = -halfLengths.x; }
-			else if (v.x > halfLengths.x) { v.x = halfLengths.x; }
-			if (v.y < -halfLengths.y) { v.y = -halfLengths.y; }
-			else if (v.y > halfLengths.y) { v.y = halfLengths.y; }
-			if (v.z < -halfLengths.z) { v.z = -halfLengths.z; }
-			else if (v.z > halfLengths.z) { v.z = halfLengths.z; }
-			dist = (v - v2).norm();
-			
-			break; 
+			if (isInsideFluid(p)) {
+				v.toAbs();
+
+				dist = MIN_MACRO_CUDA(MIN_MACRO_CUDA((halfLengths.x - v.x), (halfLengths.y - v.y)), (halfLengths.z - v.z));
+
+			}
+			else {
+				///TODO I'm nearly sure I can simply use the abs here but it would not realy impact the globals performances
+				///		so I won't take the risk
+				Vector3d v2 = v;
+				if (v.x < -halfLengths.x) { v.x = -halfLengths.x; }
+				else if (v.x > halfLengths.x) { v.x = halfLengths.x; }
+				if (v.y < -halfLengths.y) { v.y = -halfLengths.y; }
+				else if (v.y > halfLengths.y) { v.y = halfLengths.y; }
+				if (v.z < -halfLengths.z) { v.z = -halfLengths.z; }
+				else if (v.z > halfLengths.z) { v.z = halfLengths.z; }
+				dist = (v - v2).norm();
+			}
+
+			break;
+		}
+		case 2: {
+			Vector3d v = p - center;
+			v.toAbs();
+			if (isInsideFluid(p)) {
+
+				//faster to compute that waty but you cound express it the same way as for the outside distance
+				dist = halfLengths.y - v.y;
+				v.y = 0;
+
+				dist = MIN_MACRO_CUDA(dist,radius-v.norm());
+
+			}
+			else {
+				Vector3d temp_v(v.x, 0, v.z);
+				temp_v = Vector3d(MAX_MACRO_CUDA(temp_v.norm()-radius,0),MAX_MACRO_CUDA(v.y-halfLengths.y,0),0);
+				dist = temp_v.norm();
+			}
+
+			break;
 		}
 		default: {; }//it should NEVER reach here
 		}
-
+		//*/
 		return dist;
 	}
 
 	FUNCTION inline RealCuda distanceToSurfaceSigned(Vector3d p) {
-		RealCuda dist;
-		switch (type) {
-		case 0: {
-			int plane_id = 0;
-			dist = abs((p - o[0]).dot(n[0]));
-			for (int i = 1; i < count_planes; ++i) {
-				Vector3d v = p - o[i];
-				RealCuda l = abs(v.dot(n[i]));
-				if (l < dist) {
-					dist = 0;
-					plane_id = i;
-				}
-			}
-			dist = (p - o[plane_id]).dot(n[plane_id]);
-			break;
-		}
-		case 1: {
-			dist = distanceToSurface(p) * ((isInsideFluid(p))?1:-1);
-			break;
-		}
-		default: {; }//it should NEVER reach here
-		}
-
-		return dist;
+		//you could most likely optimize the implementation for some of the types but it's not critical so why bother
+		return  distanceToSurface(p) * ((isInsideFluid(p)) ? 1 : -1);;
 	}
 
 };
 
-constexpr int surfaceType = 1;
+constexpr int surfaceType = 2;
 using BufferFluidSurface = BufferFluidSurfaceBase<surfaceType>;
 
 
@@ -744,7 +790,7 @@ __global__ void DFSPH_evaluate_density_field_kernel(SPH::DFSPHCData data, SPH::U
 // I set those optimisations statically so that the related ifs get optimized
 __global__ void DFSPH_evaluate_density_in_buffer_kernel(SPH::DFSPHCData data, SPH::UnifiedParticleSet* fluidSet,
 	SPH::UnifiedParticleSet* backgroundBufferSet, SPH::UnifiedParticleSet* bufferSet, int* countRmv, 
-	BufferFluidSurface S, int iter=0) {
+	BufferFluidSurface S, RealCuda limit_density ) {
 	int i = blockIdx.x * blockDim.x + threadIdx.x;
 	if (i >= bufferSet->numParticles) { return; }
 
@@ -844,8 +890,6 @@ __global__ void DFSPH_evaluate_density_in_buffer_kernel(SPH::DFSPHCData data, SP
 		//that line is just an easy way to recognise the plane
 		//samples_after_buffer[i] *= (((layer_id == 0)&&(density_after_buffer>500)) ? -1 : 1);
 
-		int limit_density = 1500 -50 * iter;
-
 
 		keep_particle = (density_after_buffer) < limit_density;
 		
@@ -908,7 +952,7 @@ __global__ void DFSPH_generate_buffer_from_surface_count_particles_kernel(SPH::D
 	//also we need to do the height with a height map but for now it wil just be a fixe height
 	//*
 	RealCuda dist = S.distanceToSurfaceSigned(backgroundSet->pos[i]);
-	if ((dist<data.particleRadius)&&(backgroundSet->pos[i].y<1.2)) {
+	if ((dist<data.particleRadius)&&(backgroundSet->pos[i].y<0.8)) {
 		atomicAdd(count, 1);
 	}
 	else {
@@ -1159,6 +1203,7 @@ __global__ void DFSPH_particle_shifting_base_kernel(SPH::DFSPHCData data, SPH::U
 		displacement *= (0.2 * data.getKernelRadius()) / disp_norm;
 	}
 
+	//a scaling so that the particle that are the most displaced are those near the plane
 	displacement *= scaling * scaling;
 	
 	atomicAdd(count_affected, 1);
@@ -1208,12 +1253,13 @@ void handle_fluid_boundries_cuda(SPH::DFSPHCData& data, bool loading) {
 	//define the jonction planes
 	RealCuda plane_pos_inf = -2.0;
 	RealCuda plane_pos_sup = 2.0;
+
 	if (!x_motion) {
 		plane_pos_inf = -0.7;
 		plane_pos_sup = 0.7;
 	}
-	plane_pos_inf += (GAP_PLANE_POS)*data.getKernelRadius() + VECTOR_X_MOTION(data.dynamicWindowTotalDisplacement, x_motion);
-	plane_pos_sup += -(GAP_PLANE_POS)*data.getKernelRadius() + VECTOR_X_MOTION(data.dynamicWindowTotalDisplacement, x_motion);
+	plane_pos_inf += (GAP_PLANE_POS)*data.getKernelRadius();
+	plane_pos_sup += -(GAP_PLANE_POS)*data.getKernelRadius();
 
 
 
@@ -1245,18 +1291,31 @@ void handle_fluid_boundries_cuda(SPH::DFSPHCData& data, bool loading) {
 			Vector3d center(0, 0, 0);
 			Vector3d halfLength(100);
 			if (x_motion) {
-				halfLength.x = plane_pos_sup-0.1;
+				halfLength.x = plane_pos_sup - 0.1;
 			}
 			else {
-				halfLength.z = plane_pos_sup-0.1;
+				halfLength.z = plane_pos_sup - 0.1;
 			}
-			halfLength.z = 0.7 - 0.1;
+			//halfLength.z = 0.7 - 0.1;
 			S_initial.setCuboid(center, halfLength);
 
-		}else {
+		}
+		else if (surfaceType == 2) {
+			Vector3d center(0, 2.2, 0);
+			S_initial.setCylinder(center, 2, 1.3-0.1);
+
+
+		}
+		else {
 			throw("the surface type need to be defined for that test");
 		}
+		std::cout << "Initial surface description: " << S_initial.toString() << std::endl;
 
+		//test the distance computation
+		Vector3d test_pt(0, 0, 0);
+		std::cout << "distance to surface: " << S_initial.distanceToSurface(test_pt) << "   " << S_initial.distanceToSurfaceSigned(test_pt) << std::endl; 
+		test_pt=Vector3d(40, 40, 40);
+		std::cout << "distance to surface: " << S_initial.distanceToSurface(test_pt) << "   " << S_initial.distanceToSurfaceSigned(test_pt) << std::endl;
 
 		//load the backgroundset
 		{
@@ -1447,6 +1506,7 @@ void handle_fluid_boundries_cuda(SPH::DFSPHCData& data, bool loading) {
 
 		timings.time_next_point();
 
+
 		//we need to move the positions of the particles inside the buffer if we want the window to be dynamic
 		if (displace_windows) {
 
@@ -1480,6 +1540,8 @@ void handle_fluid_boundries_cuda(SPH::DFSPHCData& data, bool loading) {
 			//update the boundaries neighbors
 			data.boundaries_data->initNeighborsSearchData(data, false);
 		}
+
+
 
 		//update the neighbors structures for the buffers
 		fluidBufferSet->initNeighborsSearchData(data, false);
@@ -1601,7 +1663,7 @@ void handle_fluid_boundries_cuda(SPH::DFSPHCData& data, bool loading) {
 
 			//now the buffer
 			{
-				UnifiedParticleSet* pset = backgroundFluidBufferSet;
+				UnifiedParticleSet* pset = fluidBufferSet;
 				int count_to_rmv = *countRmv2;
 				cub::DeviceRadixSort::SortPairs(pset->neighborsDataSet->d_temp_storage_pair_sort, pset->neighborsDataSet->temp_storage_bytes_pair_sort,
 					pset->neighborsDataSet->cell_id, pset->neighborsDataSet->cell_id_sorted,
@@ -1612,7 +1674,7 @@ void handle_fluid_boundries_cuda(SPH::DFSPHCData& data, bool loading) {
 				gpuErrchk(cudaDeviceSynchronize());
 
 				int new_num_particles = pset->numParticles - count_to_rmv;
-				std::cout << "handle_fluid_boundries_cuda: ligthening the background to: " << new_num_particles << "   nb removed : " << count_to_rmv << std::endl;
+				std::cout << "handle_fluid_boundries_cuda: ligthening the fluid buffer to: " << new_num_particles << "   nb removed : " << count_to_rmv << std::endl;
 				pset->updateActiveParticleNumber(new_num_particles);
 
 				//we need to reinit the neighbors struct for the fluidbuffer since we removed some particles
@@ -1633,7 +1695,7 @@ void handle_fluid_boundries_cuda(SPH::DFSPHCData& data, bool loading) {
 				int numBlocks = calculateNumBlocks(fluidBufferSet->numParticles);
 				
 				DFSPH_evaluate_density_in_buffer_kernel << <numBlocks, BLOCKSIZE >> > (data, particleSet->gpu_ptr, backgroundFluidBufferSet->gpu_ptr, fluidBufferSet->gpu_ptr,
-						countRmv, S);
+						countRmv, S, 1500);
 
 				gpuErrchk(cudaDeviceSynchronize());
 			}
@@ -1725,15 +1787,17 @@ void handle_fluid_boundries_cuda(SPH::DFSPHCData& data, bool loading) {
 
 			timings.time_next_point();
 
-			for (int i = 4; i < 8;++i){
+			for (int i = 4; i < 17;++i){
 				//we need to reinit the neighbors struct for the fluidbuffer since we removed some particles
 				fluidBufferSet->initNeighborsSearchData(data, false);
+
+				RealCuda target_density = 1500 - i * 25;
 
 				*countRmv = 0;
 				{
 					int numBlocks = calculateNumBlocks(fluidBufferSet->numParticles);
 					DFSPH_evaluate_density_in_buffer_kernel << <numBlocks, BLOCKSIZE >> > (data, particleSet->gpu_ptr, backgroundFluidBufferSet->gpu_ptr, fluidBufferSet->gpu_ptr,
-							countRmv, S, i);
+							countRmv, S, target_density);
 					
 					gpuErrchk(cudaDeviceSynchronize());
 				}
