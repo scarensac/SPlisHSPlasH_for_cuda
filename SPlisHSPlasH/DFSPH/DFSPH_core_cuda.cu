@@ -1323,7 +1323,7 @@ __global__ void DFSPH_fill_aggregated_pos_buffer_kernel(SPH::DFSPHCData data, un
 	//find the current dynamic body
 	int count_particles_previous_bodies = (data.is_fluid_aggregated) ? data.fluid_data_cuda->numParticles : 0;
 	int body_id = 0;
-	while ((count_particles_previous_bodies + data.vector_dynamic_bodies_data_cuda[body_id].numParticles)<i) {
+	while ((count_particles_previous_bodies + data.vector_dynamic_bodies_data_cuda[body_id].numParticles)<=i) {
 		count_particles_previous_bodies += data.vector_dynamic_bodies_data_cuda[body_id].numParticles;
 		body_id++;
 	}
@@ -1886,7 +1886,7 @@ __global__ void DFSPH_neighborsSearch_kernel(SPH::DFSPHCData data, SPH::UnifiedP
 				}
 				else {
 					int body_id = 0; int count_particles_previous_bodies = data.fluid_data_cuda->numParticles;
-					while ((count_particles_previous_bodies + data.vector_dynamic_bodies_data_cuda[body_id].numParticles)<j) {
+					while ((count_particles_previous_bodies + data.vector_dynamic_bodies_data_cuda[body_id].numParticles)<=j) {
 						count_particles_previous_bodies += data.vector_dynamic_bodies_data_cuda[body_id].numParticles;
 						body_id++;
 					}
@@ -1942,7 +1942,7 @@ __global__ void DFSPH_neighborsSearch_kernel(SPH::DFSPHCData data, SPH::UnifiedP
 #ifdef GROUP_DYNAMIC_BODIES_NEIGHBORS_SEARCH
 			ITER_NEIGHBORS_FROM_STRUCTURE(data.neighborsDataSetGroupedDynamicBodies_cuda, data.posBufferGroupedDynamicBodies,
 			{ int body_id = 0; int count_particles_previous_bodies = 0;
-			while ((count_particles_previous_bodies + data.vector_dynamic_bodies_data_cuda[body_id].numParticles)<j) {
+			while ((count_particles_previous_bodies + data.vector_dynamic_bodies_data_cuda[body_id].numParticles)<=j) {
 				count_particles_previous_bodies += data.vector_dynamic_bodies_data_cuda[body_id].numParticles;
 				body_id++;
 			}
