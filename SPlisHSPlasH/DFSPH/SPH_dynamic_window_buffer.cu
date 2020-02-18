@@ -1216,7 +1216,7 @@ __global__ void DFSPH_particle_shifting_base_kernel(SPH::DFSPHCData data, SPH::U
 }
 
 
-void handle_fluid_boundries_cuda(SPH::DFSPHCData& data, bool loading) {
+void handle_fluid_boundries_cuda(SPH::DFSPHCData& data, bool loading, Vector3d) {
 	SPH::UnifiedParticleSet* particleSet = data.fluid_data;
 
 	Vector3d min_fluid_buffer, max_fluid_buffer;

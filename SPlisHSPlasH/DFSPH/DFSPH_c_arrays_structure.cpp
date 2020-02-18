@@ -910,6 +910,23 @@ void DFSPHCData::initGridOffset() {
 	std::cout << "new grid offset(x y z): " << gridOffset.x << " " << gridOffset.y << " " << gridOffset.z << std::endl;
 }
 
+void DFSPHCData::updateTimeStep(RealCuda h_fut) {
+	h_future = h_fut;
+	invH_future = 1.0 / h_future;
+	invH2_future = 1.0 / (h_future * h_future);
+	h_ratio_to_past = h / h_future;
+	h_ratio_to_past2 = (h * h) / (h_future * h_future);
+}
+
+void DFSPHCData::onSimulationStepEnd() {
+	h_past = h;
+	invH_past = invH;
+	invH2_past = invH2;
+	h = h_future;
+	invH = invH_future;
+	invH2 = invH2_future;
+}
+
 void DFSPHCData::readDynamicData(FluidModel *model, SimulationDataDFSPH& data) {
 
 #ifdef SPLISHSPLASH_FRAMEWORK
@@ -1327,6 +1344,6 @@ void DFSPHCData::loadBender2019BoundariesFromCPU(RealCuda* V_rigids_i, Vector3d*
 }
 
 
-void DFSPHCData::handleFluidBoundries(bool loading) {
-	handle_fluid_boundries_cuda(*this, loading);
+void DFSPHCData::handleFluidBoundries(bool loading, Vector3d movement) {
+	handle_fluid_boundries_cuda(*this, loading, movement);
 }
