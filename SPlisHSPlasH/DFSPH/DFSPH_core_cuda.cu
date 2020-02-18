@@ -1104,6 +1104,7 @@ int cuda_pressureSolve(SPH::DFSPHCData& m_data, const unsigned int m_maxIteratio
 	float time_3_2 = 0;
 	while (((avg_density_err > eta) || (m_iterations < 2)) && (m_iterations < m_maxIterations))
 	{
+
 		std::chrono::steady_clock::time_point p0 = std::chrono::steady_clock::now();
 		cuda_pressure_compute<false>(m_data);
 		std::chrono::steady_clock::time_point p1 = std::chrono::steady_clock::now();
@@ -1115,6 +1116,9 @@ int cuda_pressureSolve(SPH::DFSPHCData& m_data, const unsigned int m_maxIteratio
 
 		time_3_1 += std::chrono::duration_cast<std::chrono::nanoseconds> (p1 - p0).count() / 1000000.0f;
 		time_3_2 += std::chrono::duration_cast<std::chrono::nanoseconds> (p2 - p1).count() / 1000000.0f;
+
+		
+		
 	}
 	/*
 	std::chrono::steady_clock::time_point end = std::chrono::steady_clock::now();
@@ -1289,7 +1293,7 @@ void cuda_externalForces(SPH::DFSPHCData& data) {
 
 	//end the computations for the surface tension
 
-	DFSPH_applySurfaceAkinci2013SurfaceTension_kernel << <numBlocks, BLOCKSIZE >> > (data, data.fluid_data[0].gpu_ptr);
+	//DFSPH_applySurfaceAkinci2013SurfaceTension_kernel << <numBlocks, BLOCKSIZE >> > (data, data.fluid_data[0].gpu_ptr);
 	gpuErrchk(cudaDeviceSynchronize());
 }
 
@@ -2289,7 +2293,8 @@ void cuda_update_vel(SPH::DFSPHCData& data) {
 		fprintf(stderr, "cuda_update_vel failed: %d\n", (int)cudaStatus);
 		exit(1598);
 	}
-
+	
+	
 
 }
 

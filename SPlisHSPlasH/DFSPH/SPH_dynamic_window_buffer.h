@@ -8,6 +8,6 @@
 using namespace SPH;
 
 //don't call that
-void handle_fluid_boundries_cuda(SPH::DFSPHCData& data, bool loading = false);
+void handle_fluid_boundries_cuda(SPH::DFSPHCData& data, bool loading = false, Vector3d movement=Vector3d(0,0,0));
 
 #endif //DFSPH_STATIC_VAR_STRUCT

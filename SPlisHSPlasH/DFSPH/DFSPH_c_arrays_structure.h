@@ -359,22 +359,9 @@ public:
     void reset(FluidModel *model);
 	void initGridOffset();
 
-    inline void updateTimeStep(RealCuda h_fut) {
-        h_future = h_fut;
-        invH_future = 1.0 / h_future;
-        invH2_future = 1.0 / (h_future*h_future);
-        h_ratio_to_past = h / h_future;
-        h_ratio_to_past2 = (h*h) / (h_future*h_future);
-    }
+	void updateTimeStep(RealCuda h_fut); 
 
-    inline void onSimulationStepEnd() {
-        h_past = h;
-        invH_past = invH;
-        invH2_past = invH2;
-        h = h_future;
-        invH = invH_future;
-        invH2 = invH2_future;
-    }
+	void onSimulationStepEnd(); 
 
     inline RealCuda get_current_timestep(){return h;}
 
@@ -412,7 +399,7 @@ public:
 	void loadBender2019BoundariesFromCPU(RealCuda* V_rigids_i, Vector3d* X_rigids_i);
 
 	//don't call that ...
-	void handleFluidBoundries(bool loading = false);
+	void handleFluidBoundries(bool loading = false, Vector3d movement=Vector3d(0,0,0));
 };
 }
 
