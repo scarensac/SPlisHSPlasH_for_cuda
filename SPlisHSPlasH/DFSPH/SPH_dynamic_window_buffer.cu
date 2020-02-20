@@ -320,7 +320,7 @@ public:
 
 };
 
-constexpr int surfaceType = 2;
+constexpr int surfaceType = 1;
 using BufferFluidSurface = BufferFluidSurfaceBase<surfaceType>;
 
 
@@ -1350,11 +1350,12 @@ __global__ void DFSPH_particle_shifting_base_kernel(SPH::DFSPHCData data, SPH::U
 
 	surface_factor /= data.W_zero;
 	surface_factor = MAX_MACRO_CUDA(surface_factor, 1);
+	surface_factor = 1 - surface_factor;
 
 
 	//a scaling so that the particle that are the most displaced are those near the plane
 	displacement *= scaling * scaling;
-	displacement.y *= surface_factor * surface_factor;
+	//displacement.y *= surface_factor ;
 	
 	atomicAdd(count_affected, 1);
 	atomicAdd(total_abs_displacement, displacement.norm());
@@ -1388,19 +1389,11 @@ void DynamicWindow::init(DFSPHCData& data) {
 	}
 	else if (surfaceType == 1) {
 
-		std::ostringstream oss;
-		oss << "DynamicWindow::init The initialization for this type of surface has not been defined (type=" << surfaceType << std::endl;
-		throw(oss.str());
-		/*
+		//*
 		Vector3d center(0, 0, 0);
 		Vector3d halfLength(100);
-		if (x_motion) {
-			halfLength.x = plane_pos_sup - 0.1;
-		}
-		else {
-			halfLength.z = plane_pos_sup - 0.1;
-		}
-		//halfLength.z = 0.7 - 0.1;
+		halfLength.x = 1.6;
+		//halfLength.z = plane_pos_sup - 0.1;
 		S_initial.setCuboid(center, halfLength);
 		//*/
 	}
@@ -2039,10 +2032,10 @@ void DynamicWindow::handleFluidBoundaries(SPH::DFSPHCData& data, Vector3d moveme
 
 		//still need the damping near the borders as long as we don't implement the implicit borders
 		//with paricle boundaries 3 is the lowest number of steps that absorb nearly any visible perturbations
-		/*
+		//*
 		if (surfaceType < 2) {
-			add_border_to_damp_planes_cuda(data, x_motion, !x_motion);
-			data.damp_borders_steps_count = 3;
+			add_border_to_damp_planes_cuda(data, abs(movement.x)>0.5, abs(movement.z)>0.5);
+			data.damp_borders_steps_count = 5;
 			data.damp_borders = true;
 		}
 		//*/
