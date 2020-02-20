@@ -399,7 +399,7 @@ public:
 	void loadBender2019BoundariesFromCPU(RealCuda* V_rigids_i, Vector3d* X_rigids_i);
 
 	//don't call that ...
-	void handleFluidBoundries(bool loading = false, Vector3d movement=Vector3d(0,0,0));
+	void handleFluidBoundries(Vector3d movement=Vector3d(0,0,0));
 };
 }
 

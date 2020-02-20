@@ -1344,6 +1344,9 @@ void DFSPHCData::loadBender2019BoundariesFromCPU(RealCuda* V_rigids_i, Vector3d*
 }
 
 
-void DFSPHCData::handleFluidBoundries(bool loading, Vector3d movement) {
-	handle_fluid_boundries_cuda(*this, loading, movement);
+void DFSPHCData::handleFluidBoundries( Vector3d movement) {
+	if (!DynamicWindowInterface::isInitialized()) {
+		DynamicWindowInterface::initDynamicWindow(*this);
+	}
+	DynamicWindowInterface::handleFluidBoundaries(*this, movement);
 }

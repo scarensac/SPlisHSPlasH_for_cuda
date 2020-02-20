@@ -32,6 +32,9 @@ void release_UnifiedParticleSet_vector_cuda(SPH::UnifiedParticleSet** vector, in
 
 template<class T> void update_active_particle_number_cuda(T& container);
 
+//this function remove the "nb_to_remove" particles with the highest score
+//NOTE: the score must be given in a gpu allocated array
+void remove_particles(SPH::UnifiedParticleSet* particleSet, unsigned int* score_gpu_ptr, int nb_to_remove);
 
 void change_fluid_max_particle_number(SPH::DFSPHCData& data, int numParticlesMax);
 void change_max_particle_number(SPH::UnifiedParticleSet& container, int numParticlesMax);

@@ -96,14 +96,12 @@ void DFSPHCUDA::step()
     bool moving_borders = false;
     static int count_moving_steps = 0;
         //*
-	if (count_steps == 0) {
-		m_data.handleFluidBoundries(true);
-	}
+
 
     //test dynamic boundary 
     if ((count_steps > 5) && ((count_steps % 15) == 0))
     {
-        m_data.handleFluidBoundries(false,Vector3d(1,0,0));
+        handleSimulationMovement(Vector3d(1,0,0));
         moving_borders = true;
         count_moving_steps++;
     }//*/
@@ -1649,7 +1647,7 @@ void DFSPHCUDA::handleSimulationLoad(bool load_liquid, bool load_liquid_velociti
 void DFSPHCUDA::handleSimulationMovement(Vector3d movement) {
     if (movement.norm() > 0.5) {
 
-        m_data.handleFluidBoundries(false,movement);
+        m_data.handleFluidBoundries(movement);
     }
 }
 

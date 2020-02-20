@@ -23,6 +23,7 @@
 
 #include "basic_kernels_cuda.cuh"
 #include "SPH_other_systems_cuda.h"
+#include "DFSPH_core_cuda.h"
 
 namespace MemoryManagementCuda
 {
@@ -471,6 +472,25 @@ template<class T> void update_active_particle_number_cuda(T& container) {
 }
 template void update_active_particle_number_cuda<SPH::UnifiedParticleSet>(SPH::UnifiedParticleSet& container);
 template void update_active_particle_number_cuda<SPH::NeighborsSearchDataSet>(SPH::NeighborsSearchDataSet& container);
+
+
+
+void remove_particles(SPH::UnifiedParticleSet* particleSet, unsigned int* score_gpu_ptr, int nb_to_remove) {
+
+	//remove the tagged particle from the buffer (all yhe ones that have a density that is too high)
+	//now we can remove the partices from the simulation
+	// use the same process as when creating the neighbors structure to put the particles to be removed at the end
+	cub::DeviceRadixSort::SortPairs(particleSet->neighborsDataSet->d_temp_storage_pair_sort, particleSet->neighborsDataSet->temp_storage_bytes_pair_sort,
+		score_gpu_ptr, particleSet->neighborsDataSet->cell_id_sorted,
+		particleSet->neighborsDataSet->p_id, particleSet->neighborsDataSet->p_id_sorted, particleSet->numParticles);
+	gpuErrchk(cudaDeviceSynchronize());
+
+	cuda_sortData(*particleSet, particleSet->neighborsDataSet->p_id_sorted);
+	gpuErrchk(cudaDeviceSynchronize());
+
+	int new_num_particles = particleSet->numParticles - nb_to_remove;
+	particleSet->updateActiveParticleNumber(new_num_particles);
+}
 
 void change_fluid_max_particle_number(SPH::DFSPHCData& data, int numParticlesMax) {
 	//update the fluid dataset
