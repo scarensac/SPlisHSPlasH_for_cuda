@@ -1237,6 +1237,7 @@ __global__ void DFSPH_evaluate_density_kernel(SPH::DFSPHCData data, SPH::Unified
 	fluidSet->neighborsDataSet->cell_id[i] = 0;
 	if ((count_neighbors) < 30) {
 		fluidSet->neighborsDataSet->cell_id[i] = 100;
+
 	}
 
 	fluidSet->density[i] = density;
@@ -1288,6 +1289,7 @@ __global__ void DFSPH_particle_shifting_base_kernel(SPH::DFSPHCData data, SPH::U
 	BufferFluidSurface S, int* count_affected, RealCuda* total_abs_displacement) {
 	int i = blockIdx.x * blockDim.x + threadIdx.x;
 	if (i >= fluidSet->numParticles) { return; }
+
 
 
 	bool x_motion = true;
