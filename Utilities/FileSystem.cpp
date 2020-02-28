@@ -1,4 +1,6 @@
 #include "FileSystem.h"
+
+#include "SPlisHSPlasH/Common.h"
 #include "StringTools.h"
 #include "extern/md5/md5.h"
 #include <vector>

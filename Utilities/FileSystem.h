@@ -1,7 +1,7 @@
 #ifndef __FileSystem_h__
 #define __FileSystem_h__
 
-#include "SPlisHSPlasH/Common.h"
+#include <string>
 
 namespace SPH
 {

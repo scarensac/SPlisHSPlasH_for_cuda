@@ -115,7 +115,7 @@ void DemoBase::initShaders()
 {
 	string vertFile;
 	string fragFile;
-	bool transparent_shader = true;
+	bool transparent_shader = false;
 	{
 		vertFile = getDataPath() + "/shaders/vs_points_manual_color.glsl";
 		if (transparent_shader) {
@@ -958,6 +958,23 @@ bool DemoBase::isDFSPH() {
 
 void DemoBase::renderFluid(int type_renderer)
 {
+	static bool first_time = true;
+	if (first_time) {
+		int width = glutGet(GLUT_WINDOW_WIDTH);
+		int height = glutGet(GLUT_WINDOW_HEIGHT);
+
+		if (m_simulationMethod.simulationMethod == SimulationMethods::DFSPH_CUDA)
+		{
+			DFSPHCUDA* sim = dynamic_cast<DFSPHCUDA*>(m_simulationMethod.simulation);
+			sim->initAdvancedRendering(width, height);
+
+			std::cout << "yolo" << std::endl;
+
+			first_time = false;
+		}
+
+	}
+
 	// Draw simulation model
 	MiniGL::drawTime(TimeManager::getCurrent()->getTime());
 	const unsigned int nParticles = m_simulationMethod.model.numActiveParticles();

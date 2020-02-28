@@ -925,6 +925,9 @@ void DFSPHCData::onSimulationStepEnd() {
 	h = h_future;
 	invH = invH_future;
 	invH2 = invH2_future;
+
+	runAdvancedRendering(Vector3d(3, 3, 3), Vector3d(0, 0, 0));
+
 }
 
 void DFSPHCData::readDynamicData(FluidModel *model, SimulationDataDFSPH& data) {
@@ -1349,4 +1352,14 @@ void DFSPHCData::handleFluidBoundries( Vector3d movement) {
 		DynamicWindowInterface::initDynamicWindow(*this);
 	}
 	DynamicWindowInterface::handleFluidBoundaries(*this, movement);
+}
+
+void DFSPHCData::initAdvancedRendering(int width, int height) {
+	advancedRenderingData = new AdvancedRenderingData();
+	advancedRenderingData->init(width, height);
+}
+
+
+void DFSPHCData::runAdvancedRendering(Vector3d eye, Vector3d lookAt) {
+	advancedRenderingData->computeDepthBuffer(this, eye, lookAt);
 }

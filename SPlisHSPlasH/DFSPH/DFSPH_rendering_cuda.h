@@ -3,6 +3,8 @@
 
 #include <GL/glew.h>
 #include <cuda_gl_interop.h>
+#include "SPlisHSPlasH/Vector.h"
+
 
 class ParticleSetRenderingData {
 public:
@@ -21,6 +23,36 @@ public:
 		vel_buffer=-1;
 		color_buffer=-1;
 	}
+};
+
+namespace SPH{
+	class Shader;
+	class DFSPHCData;
+}
+class AdvancedRenderingData {
+public:
+	GLuint FramebufferName = 0;
+	GLuint renderedTexture;
+	GLuint depthRenderbuffer;
+	GLuint rgbaRenderbuffer;
+	SPH::Vector3d eye, lookAt;
+	int w, h;
+	SPH::Shader* shader;
+
+	AdvancedRenderingData() {
+		FramebufferName = 0;
+		renderedTexture = -1;
+		depthRenderbuffer = -1;
+		rgbaRenderbuffer = -1;
+		w = -1;
+		h = -1;
+		shader = NULL;
+	}
+
+	void init(int width, int height);
+
+	void computeDepthBuffer(SPH::DFSPHCData* data, SPH::Vector3d eye_i, SPH::Vector3d lookAt_i);
+
 };
 
 #include "SPlisHSPlasH\Vector.h"

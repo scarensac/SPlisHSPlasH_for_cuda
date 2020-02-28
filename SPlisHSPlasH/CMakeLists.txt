@@ -154,6 +154,7 @@ set(UTILS_HEADER_FILES
 	Utilities/SegmentedTiming.h
 	Utilities/MatrixFreeSolver.h
 	Utilities/GaussQuadrature.h
+	Utilities/ImgWriter.h
 	)
 	
 	
@@ -162,10 +163,17 @@ set(UTILS_SOURCE_FILES
 	Utilities/Timing.cpp
 	Utilities/SegmentedTiming.cpp
 	Utilities/GaussQuadrature.cpp
+	Utilities/ImgWriter.cpp
 	)	
 	
 find_package( Eigen3 REQUIRED )
 include_directories( ${EIGEN3_INCLUDE_DIR} )
+
+############################################################
+# GLM
+############################################################
+include_directories(${PROJECT_PATH}/extern/glm/include)
+
 
 ############################################################
 # CompactNSearch

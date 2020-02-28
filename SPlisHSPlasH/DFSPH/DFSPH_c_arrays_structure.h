@@ -13,6 +13,7 @@
 #include "SPH_kernels.h"
 
 class ParticleSetRenderingData;
+class AdvancedRenderingData;
 
 namespace SPH
 {
@@ -341,6 +342,8 @@ public:
 
 	std::string fluid_files_folder;
 
+    AdvancedRenderingData* advancedRenderingData;
+
 
     DFSPHCData();
     DFSPHCData(FluidModel *model);
@@ -398,8 +401,11 @@ public:
 
 	void loadBender2019BoundariesFromCPU(RealCuda* V_rigids_i, Vector3d* X_rigids_i);
 
-	//don't call that ...
+
 	void handleFluidBoundries(Vector3d movement=Vector3d(0,0,0));
+
+    void initAdvancedRendering(int width, int height);
+    void runAdvancedRendering(Vector3d eye, Vector3d lookAt);
 };
 }
 

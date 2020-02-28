@@ -99,6 +99,7 @@ void DFSPHCUDA::step()
 
 
     //test dynamic boundary 
+    /*
     if ((count_steps > 5) && ((count_steps % 15) == 0))
     {
         handleSimulationMovement(Vector3d(1,0,0));
@@ -300,6 +301,7 @@ void DFSPHCUDA::step()
 
         m_data.readDynamicObjectsData(m_model);
         m_data.onSimulationStepEnd();
+
 
         // Compute new time
 
@@ -1705,4 +1707,10 @@ void DFSPHCUDA::getFluidBoyancyOnDynamicBodies(std::vector<SPH::Vector3d>& force
 SPH::Vector3d DFSPHCUDA::getSimulationCenter(){
     return m_data.getSimulationCenter();
 }
+
+
+void DFSPHCUDA::initAdvancedRendering(int width, int height) {
+    m_data.initAdvancedRendering(width, height);
+}
+
 

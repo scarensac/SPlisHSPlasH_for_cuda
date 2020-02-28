@@ -138,6 +138,7 @@ public:
     SPH::Vector3d getSimulationCenter();
 
 
+    void initAdvancedRendering(int width, int height);
 };
 }
 
