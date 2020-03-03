@@ -1279,9 +1279,7 @@ __global__ void DFSPH_applySurfaceAkinci2013SurfaceTension_kernel(SPH::DFSPHCDat
 
 	particleSet->acc[i] += ai;
 
-	if (ai.norm() > 0.01) {
-		particleSet->color[i] = Vector3d(0.5);
-	}
+
 }
 
 
@@ -1297,7 +1295,7 @@ void cuda_externalForces(SPH::DFSPHCData& data) {
 
 	//end the computations for the surface tension
 
-	DFSPH_applySurfaceAkinci2013SurfaceTension_kernel << <numBlocks, BLOCKSIZE >> > (data, data.fluid_data[0].gpu_ptr);
+	//DFSPH_applySurfaceAkinci2013SurfaceTension_kernel << <numBlocks, BLOCKSIZE >> > (data, data.fluid_data[0].gpu_ptr);
 	gpuErrchk(cudaDeviceSynchronize());
 }
 

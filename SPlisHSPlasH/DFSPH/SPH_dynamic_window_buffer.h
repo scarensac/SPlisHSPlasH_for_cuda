@@ -21,10 +21,10 @@ namespace SPH {
 
 		static void clearDynamicWindow();
 
+		static void handleOceanBoundariesTest(SPH::DFSPHCData& data);
+
 	};
 
 }
-
-//don't call that
 
 #endif //DFSPH_STATIC_VAR_STRUCT

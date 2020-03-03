@@ -23,4 +23,7 @@ using curandState = struct curandStateXORWOW;
 template<class T>
 __global__ void fillRandom_kernel(unsigned int *buff, unsigned int nbElements, T min, T max, curandState *state);
 
+
+
+
 #endif //BASIC_KERNELSs

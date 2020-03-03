@@ -45,10 +45,14 @@ void SegmentedTiming::time_next_point(){
 void SegmentedTiming::end_step(){
 	if (active) {
 		if(cur_point!=timepoints.size()){
-			throw("SegmentedTiming::end_step nbr of registered sampling do not fit the nbr of call");
+			std::string msg("SegmentedTiming::end_step nbr of registered sampling do not fit the nbr of call");
+			std::cout << msg << std::endl;
+			throw(msg);
 		}
 		if(cur_point<2){
-			throw("SegmentedTiming::end_step no timing points have been registered");
+			std::string msg("SegmentedTiming::end_step no timing points have been registered");
+			std::cout << msg << std::endl;
+			throw(msg);
 		}
 	
 		//read the times and update the avgs
@@ -79,7 +83,9 @@ void SegmentedTiming::add_timestamp(std::string name){
 void SegmentedTiming::recap_timings(){
 	if (active) {
 		if(saving){
-			throw("SegmentedTiming::recap_timmings() you must call end_step() before trying to print result once init_step() has been called");
+			std::string msg("SegmentedTiming::recap_timmings() you must call end_step() before trying to print result once init_step() has been called");
+			std::cout << msg << std::endl;
+			throw(msg);
 		}
 	
 		std::cout << " timer " << timer_name <<"  iter:  "<< count_steps<<"  total: " << (cumul_time.back() / count_steps) << "  (" << time.back() << ")" << std::endl;

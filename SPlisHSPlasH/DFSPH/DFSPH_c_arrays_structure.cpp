@@ -505,7 +505,7 @@ void UnifiedParticleSet::load_from_file(std::string file_path, bool load_velocit
 
 #ifdef OCEAN_BOUNDARIES_PROTOTYPE
 		//*
-		float height = 0.8;
+		float height = 1.6;
 		if ((positions_limitations)&&
 			(velocity_impacted_by_fluid_solver)&&
 			//(((pos.x > (-2.0 + 8 * 0.1)) && (pos.x < (2.0 - 8 * 0.1))) || (pos.y > height))
@@ -1352,6 +1352,14 @@ void DFSPHCData::handleFluidBoundries( Vector3d movement) {
 		DynamicWindowInterface::initDynamicWindow(*this);
 	}
 	DynamicWindowInterface::handleFluidBoundaries(*this, movement);
+}
+
+
+void DFSPHCData::handleBoundariesHeightTest() {
+	if (!DynamicWindowInterface::isInitialized()) {
+		DynamicWindowInterface::initDynamicWindow(*this);
+	}
+	DynamicWindowInterface::handleOceanBoundariesTest(*this);
 }
 
 void DFSPHCData::initAdvancedRendering(int width, int height) {

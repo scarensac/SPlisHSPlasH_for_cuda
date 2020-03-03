@@ -97,6 +97,9 @@ void DFSPHCUDA::step()
     static int count_moving_steps = 0;
         //*
 
+    //test boundries height control
+    m_data.handleBoundariesHeightTest();
+
 
     //test dynamic boundary 
     /*

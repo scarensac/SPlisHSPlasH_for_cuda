@@ -147,7 +147,7 @@ void AdvancedRenderingData::init(int width, int height)
 
 
 void AdvancedRenderingData::computeDepthBuffer(SPH::DFSPHCData* data, SPH::Vector3d eye_i, SPH::Vector3d lookAt_i) {
-	
+	return;
 
 	if (data->fluid_data == NULL) {
 		return;

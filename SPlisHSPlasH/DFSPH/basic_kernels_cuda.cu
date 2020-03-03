@@ -58,3 +58,4 @@ __global__ void fillRandom_kernel(unsigned int *buff, unsigned int nbElements, T
 	}
 	*state = localState;
 }
+
