@@ -52,7 +52,7 @@ DFSPHCUDA::DFSPHCUDA(FluidModel *model) :
     m_iterationsV = 0;
     m_enableDivergenceSolver = true;
     is_dynamic_bodies_paused = false;
-    show_fluid_timings=false;
+    show_fluid_timings=true;
 
 #ifdef BENDER2019_BOUNDARIES
 	m_boundaryModelBender2019 = new BoundaryModel_Bender2019();
@@ -98,7 +98,7 @@ void DFSPHCUDA::step()
         //*
 
     //test boundries height control
-    m_data.handleBoundariesHeightTest();
+    //m_data.handleBoundariesHeightTest();
 
 
     //test dynamic boundary 

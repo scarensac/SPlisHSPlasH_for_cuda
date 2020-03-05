@@ -920,6 +920,163 @@ template void cuda_pressure_compute<true>(SPH::DFSPHCData& data);
 template void cuda_pressure_compute<false>(SPH::DFSPHCData& data);
 
 
+__global__ void DFSPH_pressure_compute_p1_kernel(SPH::DFSPHCData m_data, SPH::UnifiedParticleSet* particleSet) {
+	int i = blockIdx.x * blockDim.x + threadIdx.x;
+	if (i >= particleSet->numParticles) { return; }
+
+
+	{
+		//////////////////////////////////////////////////////////////////////////
+		// Compute gradient dp_i/dx_j * (1/k)  and dp_j/dx_j * (1/k)
+		//////////////////////////////////////////////////////////////////////////
+		const Vector3d& xi = particleSet->pos[i];
+		const Vector3d& vi = particleSet->vel[i];
+
+		RealCuda density = particleSet->mass[i] * m_data.W_zero;
+
+		//////////////////////////////////////////////////////////////////////////
+		// Fluid
+		//////////////////////////////////////////////////////////////////////////
+		ITER_NEIGHBORS_INIT(m_data, particleSet, i);
+
+		ITER_NEIGHBORS_FLUID(m_data, particleSet,
+			i,
+			const Vector3d & xj = body.pos[neighborIndex];
+		density += body.mass[neighborIndex] * KERNEL_W(m_data, xi - xj);
+			);
+
+
+		//////////////////////////////////////////////////////////////////////////
+		// Boundary
+		//////////////////////////////////////////////////////////////////////////
+		ITER_NEIGHBORS_BOUNDARIES(m_data, particleSet,
+			i,
+			const Vector3d & xj = body.pos[neighborIndex];
+		density += body.mass[neighborIndex] * KERNEL_W(m_data, xi - xj);
+			);
+
+
+		//////////////////////////////////////////////////////////////////////////
+		// Dynamic bodies
+		//////////////////////////////////////////////////////////////////////////
+		//*
+		ITER_NEIGHBORS_SOLIDS(m_data, particleSet,
+			i,
+			const Vector3d & xj = body.pos[neighborIndex];
+		density += body.mass[neighborIndex] * KERNEL_W(m_data, xi - xj);
+			);
+		//*/
+
+
+		//////////////////////////////////////////////////////////////////////////
+		// Compute pressure stiffness denominator
+		//////////////////////////////////////////////////////////////////////////
+		particleSet->density[i] = density;
+		RealCuda C = density / m_data.density0 - 1;
+		RealCuda lambda = 0;
+		if (C > 0) {
+			lambda = m_data.density0 * m_data.density0 * particleSet->factor[i] * C * m_data.h_future* m_data.h_future;
+		}
+
+		//let's store it in the density adv for now
+		particleSet->densityAdv[i] = lambda;
+		
+	}
+
+}
+
+__global__ void DFSPH_pressure_compute_p2_kernel(SPH::DFSPHCData m_data, SPH::UnifiedParticleSet* particleSet) {
+	int i = blockIdx.x * blockDim.x + threadIdx.x;
+	if (i >= particleSet->numParticles) { return; }
+
+	Vector3d dx(0, 0, 0);
+	const Vector3d& xi = particleSet->pos[i];
+	RealCuda lambda_i = particleSet->densityAdv[i];
+	{
+		//////////////////////////////////////////////////////////////////////////
+		// Fluid
+		//////////////////////////////////////////////////////////////////////////
+		ITER_NEIGHBORS_INIT(m_data, particleSet, i);
+
+		ITER_NEIGHBORS_FLUID(m_data, particleSet,
+			i,
+			const Vector3d & xj = body.pos[neighborIndex];
+		RealCuda lambda_sum = lambda_i + particleSet->densityAdv[neighborIndex];
+			dx += body.mass[neighborIndex] * lambda_sum * KERNEL_GRAD_W(m_data, xi - xj);
+		);
+
+
+		//////////////////////////////////////////////////////////////////////////
+		// Boundary
+		//////////////////////////////////////////////////////////////////////////
+		ITER_NEIGHBORS_BOUNDARIES(m_data, particleSet,
+			i,
+			const Vector3d & xj = body.pos[neighborIndex];
+		RealCuda lambda_sum = lambda_i + particleSet->densityAdv[neighborIndex];
+			dx += body.mass[neighborIndex] * lambda_sum * KERNEL_GRAD_W(m_data, xi - xj);
+		);
+
+
+		//////////////////////////////////////////////////////////////////////////
+		// Dynamic bodies
+		//////////////////////////////////////////////////////////////////////////
+		//*
+		ITER_NEIGHBORS_SOLIDS(m_data, particleSet,
+			i,
+			const Vector3d & xj = body.pos[neighborIndex];
+		RealCuda lambda_sum = lambda_i + particleSet->densityAdv[neighborIndex];
+			dx += body.mass[neighborIndex] * lambda_sum * KERNEL_GRAD_W(m_data, xi - xj);
+		);
+		//*/
+
+	}
+	dx /= m_data.density0;
+	m_data.posBufferGroupedDynamicBodies[i]=dx;
+
+}
+
+__global__ void DFSPH_pressure_compute_p3_kernel(SPH::DFSPHCData data, SPH::UnifiedParticleSet* particleSet) {
+	int i = blockIdx.x * blockDim.x + threadIdx.x;
+	if (i >= particleSet->numParticles) { return; }
+
+	particleSet->pos[i] += data.posBufferGroupedDynamicBodies[i];
+
+}
+
+//this is the position based condition
+//paper: Physics - Based Simulation of Ocean Scenes in Marine Simulator Visual System
+void cuda_pressure_compute_v2(SPH::DFSPHCData& data) {
+	//comp the necessary values
+	{
+		int numBlocks = calculateNumBlocks(data.fluid_data[0].numParticles);
+		DFSPH_pressure_compute_p1_kernel << <numBlocks, BLOCKSIZE >> > (data, data.fluid_data[0].gpu_ptr);
+		gpuErrchk(cudaDeviceSynchronize());
+	}
+
+	//comp the particle displacement
+	{
+		int numBlocks = calculateNumBlocks(data.fluid_data[0].numParticles);
+		DFSPH_pressure_compute_p2_kernel << <numBlocks, BLOCKSIZE >> > (data, data.fluid_data[0].gpu_ptr);
+		gpuErrchk(cudaDeviceSynchronize());
+	}
+
+	//affect the displacmeent
+	{
+		int numBlocks = calculateNumBlocks(data.fluid_data[0].numParticles);
+		DFSPH_pressure_compute_p3_kernel << <numBlocks, BLOCKSIZE >> > (data, data.fluid_data[0].gpu_ptr);
+		gpuErrchk(cudaDeviceSynchronize());
+	}
+
+	/*
+	RealCuda displacement = 0;
+	for (int i = 0; i < data.fluid_data->numParticles; ++i) {
+		displacement += data.posBufferGroupedDynamicBodies[i].norm();
+	}
+	std::cout << "total displacmeent: " << displacement << std::endl;
+	//*/
+
+}
+
 __device__ void computeDensityAdv(SPH::DFSPHCData& m_data, SPH::UnifiedParticleSet* particleSet, const unsigned int index) {
 	const Vector3d xi = particleSet->pos[index];
 	const Vector3d vi = particleSet->vel[index];
@@ -966,8 +1123,8 @@ __device__ void computeDensityAdv(SPH::DFSPHCData& m_data, SPH::UnifiedParticleS
 
 
 #ifdef USE_WARMSTART
-	particleSet->kappa[index] += (particleSet->densityAdv[index])*particleSet->factor[index];
-
+	particleSet->kappa[index] += (particleSet->densityAdv[index]) * particleSet->factor[index];
+	//particleSet->kappa[index] = 0;
 #endif
 }
 
@@ -986,6 +1143,9 @@ __global__ void DFSPH_pressure_init_kernel(SPH::DFSPHCData m_data, SPH::UnifiedP
 
 
 }
+
+
+
 
 void cuda_pressure_init(SPH::DFSPHCData& data) {
 	{//fluid
@@ -1013,6 +1173,7 @@ __global__ void DFSPH_pressure_loop_end_kernel(SPH::DFSPHCData m_data, SPH::Unif
 
 	computeDensityAdv(m_data, particleSet, i);
 	//atomicAdd(avg_density_err, m_data.densityAdv[i]);
+	//particleSet->densityAdv[i] = particleSet->density[i] - m_data.density0;
 }
 
 RealCuda cuda_pressure_loop_end(SPH::DFSPHCData& data) {
@@ -1107,6 +1268,7 @@ int cuda_pressureSolve(SPH::DFSPHCData& m_data, const unsigned int m_maxIteratio
 
 		std::chrono::steady_clock::time_point p0 = std::chrono::steady_clock::now();
 		cuda_pressure_compute<false>(m_data);
+		//cuda_pressure_compute_v2(m_data);
 		std::chrono::steady_clock::time_point p1 = std::chrono::steady_clock::now();
 		avg_density_err = cuda_pressure_loop_end(m_data);
 		std::chrono::steady_clock::time_point p2 = std::chrono::steady_clock::now();
@@ -1118,7 +1280,7 @@ int cuda_pressureSolve(SPH::DFSPHCData& m_data, const unsigned int m_maxIteratio
 		time_3_2 += std::chrono::duration_cast<std::chrono::nanoseconds> (p2 - p1).count() / 1000000.0f;
 
 		
-		
+		//std::cout << "presure solve out: " << m_iterations << "   " << avg_density_err << std::endl;
 	}
 	/*
 	std::chrono::steady_clock::time_point end = std::chrono::steady_clock::now();

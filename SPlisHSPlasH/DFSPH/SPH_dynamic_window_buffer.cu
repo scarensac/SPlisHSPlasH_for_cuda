@@ -2208,9 +2208,9 @@ public:
 		cudaMallocManaged(&(waveVelocityField), cellCount.x * cellCount.y * sizeof(Vector3d));
 		cudaMallocManaged(&(waveVelocityFieldCount), cellCount.x * cellCount.y * sizeof(int));
 
-		a = 0.1;
-		k = 2 * CR_CUDART_PI / 2.0;
-		omega = 2 * CR_CUDART_PI / 1.0;
+		a = 0.2;
+		k = 2 * CR_CUDART_PI / 4.0;
+		omega = 2 * CR_CUDART_PI / 2.0;
 
 		overSampling = 4;
 	}
@@ -2310,7 +2310,7 @@ public:
 		pos_out = computeSamplePos(pos, t);
 
 		//let's use the central finit difference for the velocity
-		vel_out = computeSamplePos(pos, t + dt / 2.0f) - computeSamplePos(pos, t - dt / 2.0f);
+		vel_out = (computeSamplePos(pos, t + dt / 2.0f) - computeSamplePos(pos, t - dt / 2.0f))/dt;
 	}
 
 	FUNCTION inline bool isInsideDomain(Vector3d pos) {
@@ -2499,7 +2499,8 @@ __global__ void DFSPH_tag_above_desired_free_surface_kernel(SPH::DFSPHCData data
 		}
 
 		//I'll do the velocity control here
-		if (!checkFreeSurfaceForAll) {
+		//if (!checkFreeSurfaceForAll) 
+		{
 			Vector3d vel;
 			waveGenerator.getvel(pos, vel);
 			particleSet->vel[i]=vel;
@@ -2568,7 +2569,7 @@ void DynamicWindow::handleOceanBoundariesTest(SPH::DFSPHCData& data) {
 
 
 
-	waveGenerator.computeWaveState(time, 0.6, 0.003, data.particleRadius/4.0);
+	waveGenerator.computeWaveState(time, 0.8, 0.003, data.particleRadius/4.0);
 
 	timings.time_next_point();
 

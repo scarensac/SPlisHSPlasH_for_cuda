@@ -372,8 +372,9 @@ void allocate_grouped_neighbors_struct_cuda(SPH::DFSPHCData& data) {
 
 		//ok so I need the grouped buffer because I reuse it for external forces computation
 		//note if I want to rmv that restriction I only have to use the one 
+		//also used in the position based pressure solver bttw lol
 		//TODO apply that modification
-		cudaMalloc(&(data.posBufferGroupedDynamicBodies), data.fluid_data->numParticlesMax * sizeof(Vector3d));
+		cudaMallocManaged(&(data.posBufferGroupedDynamicBodies), data.fluid_data->numParticlesMax * sizeof(Vector3d));
 
 		return;
 	}

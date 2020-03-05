@@ -9,7 +9,7 @@
 #define CELL_COUNT CELL_ROW_LENGTH*CELL_ROW_LENGTH*CELL_ROW_LENGTH
 
 //use warm start
-#define USE_WARMSTART //for density
+//#define USE_WARMSTART //for density
 #define USE_WARMSTART_V //for divergence
 
 //apply physics values for static boundaries particles
