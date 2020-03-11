@@ -25,8 +25,6 @@ throw("DFSPHCData::readDynamicData must not be used outside of the SPLISHSPLASH 
 using namespace SPH;
 using namespace std;
 
-#define USE_WARMSTART
-#define USE_WARMSTART_V
 
 
 
@@ -290,8 +288,8 @@ void DFSPHCUDA::step()
 
         tab_timepoint[current_timepoint++] = std::chrono::steady_clock::now();
 
-
         cuda_update_pos(m_data);
+
 
         tab_timepoint[current_timepoint++] = std::chrono::steady_clock::now();
 
@@ -393,7 +391,7 @@ void DFSPHCUDA::step()
 		}
 
         end = std::chrono::steady_clock::now();
-
+        //m_data.fluid_data->resetColor();
         m_data.destructor_activated = true;
 
     }

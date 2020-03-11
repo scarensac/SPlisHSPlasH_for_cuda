@@ -539,7 +539,7 @@ __global__ void DFSPH_reset_fluid_boundaries_remove_kernel(SPH::DFSPHCData data,
 	particleSet->neighborsDataSet->cell_id[i] = 0;
 	bool keep = S.isInsideFluid(particleSet->pos[i]);
 	keep = (keep_inside) ? keep : (!keep);
-	if (!keep_inside) {
+	if (!keep) {
 		atomicAdd(countRmv, 1);
 		particleSet->neighborsDataSet->cell_id[i] = 25000000;
 	}
@@ -1091,7 +1091,7 @@ __global__ void DFSPH_generate_buffer_from_surface_count_particles_kernel(SPH::D
 	//also we need to do the height with a height map but for now it wil just be a fixe height
 	//*
 	RealCuda dist = S.distanceToSurfaceSigned(backgroundSet->pos[i]);
-	if ((dist<data.particleRadius)&&(backgroundSet->pos[i].y<1.6)) {
+	if ((dist<data.particleRadius)&&(backgroundSet->pos[i].y<0.8)) {
 		atomicAdd(count, 1);
 	}
 	else {
@@ -1398,7 +1398,7 @@ void DynamicWindow::init(DFSPHCData& data) {
 		Vector3d center(0, 0, 0);
 		Vector3d halfLength(100);
 		halfLength.x = 1.6;
-		halfLength.z = 0.5;
+		//halfLength.z = 0.5;
 		S_initial.setCuboid(center, halfLength);
 		//*/
 	}
@@ -1916,7 +1916,7 @@ void DynamicWindow::addFluidBufferToSimulation(DFSPHCData& data) {
 
 
 		int new_num_particles = particleSet->numParticles - *countRmv;
-		std::cout << "handle_fluid_boundries_cuda: changing num particles: " << new_num_particles << "   nb removed : " << *countRmv << std::endl;
+		std::cout << "handle_fluid_boundries_cuda: removing fluid inside buffer area changing num particles: " << new_num_particles << "   nb removed : " << *countRmv << std::endl;
 		particleSet->updateActiveParticleNumber(new_num_particles);
 		//*/
 
@@ -1936,7 +1936,7 @@ void DynamicWindow::addFluidBufferToSimulation(DFSPHCData& data) {
 		gpuErrchk(cudaDeviceSynchronize());
 
 		//and change the number
-		std::cout << "handle_fluid_boundries_cuda: changing num particles: " << new_num_particles << "   nb added : " << fluidBufferSet->numParticles << std::endl;
+		std::cout << "handle_fluid_boundries_cuda: adding buffer particles to fluid changing num particles: " << new_num_particles << "   nb added : " << fluidBufferSet->numParticles << std::endl;
 		particleSet->updateActiveParticleNumber(new_num_particles);
 
 	}

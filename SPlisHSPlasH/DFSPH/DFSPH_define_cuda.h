@@ -9,7 +9,7 @@
 #define CELL_COUNT CELL_ROW_LENGTH*CELL_ROW_LENGTH*CELL_ROW_LENGTH
 
 //use warm start
-//#define USE_WARMSTART //for density
+#define USE_WARMSTART //for density
 #define USE_WARMSTART_V //for divergence
 
 //apply physics values for static boundaries particles
@@ -28,5 +28,9 @@
 
 //print debug messages in cuda functions (may not activate /deactivate all messages)
 //#define SHOW_MESSAGES_IN_CUDA_FUNCTIONS
+
+//use the position based formalism for the density contraint
+//NOTE: does not seems to work if the desired density error is realy low
+//#define USE_POSITION_BASED_DENSITY_CONTRAINT 
 
 #endif 

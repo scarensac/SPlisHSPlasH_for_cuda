@@ -11,9 +11,6 @@
 using namespace SPH;
 using namespace std;
 
-#define USE_WARMSTART
-#define USE_WARMSTART_V
-
 TimeStepDFSPH::TimeStepDFSPH(FluidModel *model) :
 	TimeStep(model),
 	m_simulationData()

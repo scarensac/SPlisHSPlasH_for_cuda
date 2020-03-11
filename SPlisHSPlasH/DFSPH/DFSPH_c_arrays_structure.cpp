@@ -25,10 +25,6 @@ using namespace std;
 
 
 
-#define USE_WARMSTART
-#define USE_WARMSTART_V
-
-
 NeighborsSearchDataSet::NeighborsSearchDataSet() 
 {
 	numParticles=0;
@@ -505,7 +501,7 @@ void UnifiedParticleSet::load_from_file(std::string file_path, bool load_velocit
 
 #ifdef OCEAN_BOUNDARIES_PROTOTYPE
 		//*
-		float height = 1.6;
+		float height = 0.8;
 		if ((positions_limitations)&&
 			(velocity_impacted_by_fluid_solver)&&
 			//(((pos.x > (-2.0 + 8 * 0.1)) && (pos.x < (2.0 - 8 * 0.1))) || (pos.y > height))
