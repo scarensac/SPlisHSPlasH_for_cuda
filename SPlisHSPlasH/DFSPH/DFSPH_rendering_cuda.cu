@@ -34,6 +34,25 @@ namespace RenderingCuda
 	}
 }
 
+
+
+ParticleSetRenderingData::ParticleSetRenderingData() {
+	vao = -1;
+	pos_buffer = -1;
+	vel_buffer = -1;
+	color_buffer = -1;
+}
+
+AdvancedRenderingData::AdvancedRenderingData() {
+	FramebufferName = 0;
+	renderedTexture = -1;
+	depthRenderbuffer = -1;
+	rgbaRenderbuffer = -1;
+	w = -1;
+	h = -1;
+	shader = NULL;
+}
+
 void AdvancedRenderingData::init(int width, int height)
 {
 	w = width;

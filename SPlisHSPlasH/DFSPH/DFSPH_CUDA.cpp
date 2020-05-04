@@ -50,7 +50,7 @@ DFSPHCUDA::DFSPHCUDA(FluidModel *model) :
     m_iterationsV = 0;
     m_enableDivergenceSolver = true;
     is_dynamic_bodies_paused = false;
-    show_fluid_timings=true;
+    show_fluid_timings=false;
 
 #ifdef BENDER2019_BOUNDARIES
 	m_boundaryModelBender2019 = new BoundaryModel_Bender2019();
@@ -96,7 +96,7 @@ void DFSPHCUDA::step()
         //*
 
     //test boundries height control
-    //m_data.handleBoundariesHeightTest();
+    m_data.handleBoundariesHeightTest();
 
 
     //test dynamic boundary 
@@ -790,7 +790,7 @@ void  DFSPHCUDA::pressureSolveParticle(const unsigned int i) {
         if (fabs(kSum) > m_eps)
         {
             // ki, kj already contain inverse density
-            v_i += kSum * m_data.mass[neighborIndex] * m_data.gradW(xi - m_data.posFluid[neighborIndex]);
+            v_i += kSum * m_data.getMass(neighborIndex) * m_data.gradW(xi - m_data.posFluid[neighborIndex]);
         }
     }
 
@@ -1047,7 +1047,7 @@ void DFSPHCUDA::divergenceSolveParticle(const unsigned int i) {
         if (fabs(kSum) > m_eps)
         {
             // ki, kj already contain inverse density
-            v_i += kSum *  m_data.mass[neighborIndex] * m_data.gradW(xi - m_data.posFluid[neighborIndex]);
+            v_i += kSum *  m_data.getMass(neighborIndex) * m_data.gradW(xi - m_data.posFluid[neighborIndex]);
         }
     }
 

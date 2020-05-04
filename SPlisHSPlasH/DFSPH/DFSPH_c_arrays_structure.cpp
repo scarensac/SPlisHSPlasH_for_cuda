@@ -138,6 +138,7 @@ void UnifiedParticleSet::init() {
 	temp_storage_bytes = 0;
 	color = NULL;
 	has_color_buffer = false;
+	mass_flow = NULL;
 
     density0=1000;//basic value
 }
@@ -455,7 +456,7 @@ void UnifiedParticleSet::load_from_file(std::string file_path, bool load_velocit
 	//now we can initialise the structure
 	//using the attribute to store the parameter before init shoudl not cause any probelm because
 	//the call to the function will make a copy
-	init(numParticles, has_factor_computation, velocity_impacted_by_fluid_solver, is_dynamic_object, velocity_impacted_by_fluid_solver);
+	init(numParticles, has_factor_computation, velocity_impacted_by_fluid_solver, is_dynamic_object, true);// velocity_impacted_by_fluid_solver);
 	releaseDataOnDestruction = true;
 	
 
@@ -584,6 +585,7 @@ void UnifiedParticleSet::write_forces_to_file(std::string file_path) {
 		std::cout << "failed to open file: " << file_path << "   reason: " << std::strerror(errno) << std::endl;
 	}
 }
+
 
 
 void UnifiedParticleSet::updateActiveParticleNumber(unsigned int val) {

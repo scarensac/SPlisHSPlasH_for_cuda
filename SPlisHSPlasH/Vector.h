@@ -36,6 +36,7 @@ namespace SPH
 		FUNCTION ~Vector3() {}
 
 		FUNCTION inline void setZero() { x = 0; y = 0; z = 0; }
+		FUNCTION inline bool isZero() { return (x == 0) && (y == 0) && (z == 0); }
 		FUNCTION inline static Vector3 Zero() { return Vector3(0, 0, 0); }
 
 		template<typename T2>

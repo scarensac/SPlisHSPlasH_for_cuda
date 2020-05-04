@@ -368,7 +368,7 @@ __global__ void place_additional_particles_right_above_kernel(SPH::DFSPHCData da
 	pos_f += pos_local;
 
 	int global_id = effective_id + particleSet->numParticles;
-	particleSet->mass[global_id] = particleSet->mass[0];
+	particleSet->mass[global_id] = particleSet->getMass(0);
 	particleSet->pos[global_id] = pos_f;
 	particleSet->vel[global_id] = Vector3d(0, 0, 0);
 	particleSet->kappa[global_id] = 0;

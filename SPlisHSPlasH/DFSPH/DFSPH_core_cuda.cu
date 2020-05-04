@@ -231,7 +231,7 @@ __global__ void DFSPH_divergence_warmstart_init_kernel(SPH::DFSPHCData m_data, S
 		Vector3d grad_p_i;
 		grad_p_i.setZero();
 
-		RealCuda density =  particleSet->mass[i] * m_data.W_zero;
+		RealCuda density =  particleSet->getMass(i) * m_data.W_zero;
 		RealCuda densityAdv = 0;
 
 		//////////////////////////////////////////////////////////////////////////
@@ -242,8 +242,8 @@ __global__ void DFSPH_divergence_warmstart_init_kernel(SPH::DFSPHCData m_data, S
 		ITER_NEIGHBORS_FLUID(m_data, particleSet,
 			i,
 			const Vector3d &xj = body.pos[neighborIndex];
-		density += body.mass[neighborIndex] * KERNEL_W(m_data,xi - xj);
-		const Vector3d grad_p_j = body.mass[neighborIndex] * KERNEL_GRAD_W(m_data,xi - xj);
+		density += body.getMass(neighborIndex) * KERNEL_W(m_data,xi - xj);
+		const Vector3d grad_p_j = body.getMass(neighborIndex) * KERNEL_GRAD_W(m_data,xi - xj);
 		sum_grad_p_k += grad_p_j.squaredNorm();
 		grad_p_i += grad_p_j;
 		densityAdv += (vi - body.vel[neighborIndex]).dot(grad_p_j);
@@ -272,8 +272,8 @@ __global__ void DFSPH_divergence_warmstart_init_kernel(SPH::DFSPHCData m_data, S
 		ITER_NEIGHBORS_BOUNDARIES(m_data, particleSet,
 			i,
 			const Vector3d &xj = body.pos[neighborIndex];
-		density += body.mass[neighborIndex] * KERNEL_W(m_data,xi - xj);
-		const Vector3d grad_p_j = body.mass[neighborIndex] * KERNEL_GRAD_W(m_data,xi - xj);
+		density += body.getMass(neighborIndex) * KERNEL_W(m_data,xi - xj);
+		const Vector3d grad_p_j = body.getMass(neighborIndex) * KERNEL_GRAD_W(m_data,xi - xj);
 		sum_grad_p_k += grad_p_j.squaredNorm();
 		grad_p_i += grad_p_j;
 		densityAdv += (vi - body.vel[neighborIndex]).dot(grad_p_j);
@@ -289,8 +289,8 @@ __global__ void DFSPH_divergence_warmstart_init_kernel(SPH::DFSPHCData m_data, S
 		ITER_NEIGHBORS_SOLIDS(m_data, particleSet,
 			i,
 			const Vector3d &xj = body.pos[neighborIndex];
-		density += body.mass[neighborIndex] * KERNEL_W(m_data,xi - xj);
-		const Vector3d grad_p_j = body.mass[neighborIndex] * KERNEL_GRAD_W(m_data,xi - xj);
+		density += body.getMass(neighborIndex) * KERNEL_W(m_data,xi - xj);
+		const Vector3d grad_p_j = body.getMass(neighborIndex) * KERNEL_GRAD_W(m_data,xi - xj);
 		sum_grad_p_k += grad_p_j.squaredNorm();
 		grad_p_i += grad_p_j;
 		densityAdv += (vi - body.vel[neighborIndex]).dot(grad_p_j);
@@ -376,7 +376,7 @@ template <bool warm_start> __device__ void divergenceSolveParticle(SPH::DFSPHCDa
 	if (fabs(kSum) > m_eps)
 	{
 		// ki, kj already contain inverse density
-		v_i += kSum *  body.mass[neighborIndex] * KERNEL_GRAD_W(m_data,xi - body.pos[neighborIndex]);
+		v_i += kSum *  body.getMass(neighborIndex) * KERNEL_GRAD_W(m_data,xi - body.pos[neighborIndex]);
 	}
 	);
 
@@ -387,7 +387,7 @@ template <bool warm_start> __device__ void divergenceSolveParticle(SPH::DFSPHCDa
 	if (fabs(kSum) > m_eps)
 	{
 		// ki, kj already contain inverse density
-		v_i += kSum *  body.mass[neighborIndex] * KERNEL_GRAD_W(m_data,xi - body.pos[neighborIndex]);
+		v_i += kSum *  body.getMass(neighborIndex) * KERNEL_GRAD_W(m_data,xi - body.pos[neighborIndex]);
 	}
 	);
 #endif
@@ -408,7 +408,7 @@ template <bool warm_start> __device__ void divergenceSolveParticle(SPH::DFSPHCDa
 #else
 		ITER_NEIGHBORS_BOUNDARIES(m_data, particleSet,
 			i,
-			const Vector3d delta = ki * body.mass[neighborIndex] * KERNEL_GRAD_W(m_data,xi - body.pos[neighborIndex]);
+			const Vector3d delta = ki * body.getMass(neighborIndex) * KERNEL_GRAD_W(m_data,xi - body.pos[neighborIndex]);
 		v_i += delta;// ki already contains inverse density
 		);
 #endif
@@ -421,11 +421,11 @@ template <bool warm_start> __device__ void divergenceSolveParticle(SPH::DFSPHCDa
 
 		ITER_NEIGHBORS_SOLIDS(m_data, particleSet,
 			i,
-			Vector3d delta = ki * body.mass[neighborIndex] * KERNEL_GRAD_W(m_data,xi - body.pos[neighborIndex]);
+			Vector3d delta = ki * body.getMass(neighborIndex) * KERNEL_GRAD_W(m_data,xi - body.pos[neighborIndex]);
 		v_i += delta;// ki already contains inverse density
 
 					 //we apply the force to the body particle (no invH since it has been fatorized at the end)
-		delta *= -particleSet->mass[i];
+		delta *= -particleSet->getMass(i);
 		atomicAdd(&(body.F[neighborIndex].x), delta.x);
 		atomicAdd(&(body.F[neighborIndex].y), delta.y);
 		atomicAdd(&(body.F[neighborIndex].z), delta.z);
@@ -521,7 +521,7 @@ __device__ void computeDensityChange(const SPH::DFSPHCData& m_data, SPH::Unified
 
 		ITER_NEIGHBORS_FLUID(m_data, particleSet,
 			index,
-			densityAdv += body.mass[neighborIndex] * (vi - body.vel[neighborIndex]).dot(KERNEL_GRAD_W(m_data,xi - body.pos[neighborIndex]));
+			densityAdv += body.getMass(neighborIndex) * (vi - body.vel[neighborIndex]).dot(KERNEL_GRAD_W(m_data,xi - body.pos[neighborIndex]));
 			computeDensityChange_additional
 		);
 		//////////////////////////////////////////////////////////////////////////
@@ -534,7 +534,7 @@ __device__ void computeDensityChange(const SPH::DFSPHCData& m_data, SPH::Unified
 #else
 		ITER_NEIGHBORS_BOUNDARIES(m_data, particleSet,
 			index,
-			densityAdv += body.mass[neighborIndex] * (vi - body.vel[neighborIndex]).dot(KERNEL_GRAD_W(m_data,xi - body.pos[neighborIndex]));
+			densityAdv += body.getMass(neighborIndex) * (vi - body.vel[neighborIndex]).dot(KERNEL_GRAD_W(m_data,xi - body.pos[neighborIndex]));
 			computeDensityChange_additional
 		);
 #endif
@@ -544,7 +544,7 @@ __device__ void computeDensityChange(const SPH::DFSPHCData& m_data, SPH::Unified
 		//////////////////////////////////////////////////////////////////////////
 		ITER_NEIGHBORS_SOLIDS(m_data, particleSet,
 			index,
-			densityAdv += body.mass[neighborIndex] * (vi - body.vel[neighborIndex]).dot(KERNEL_GRAD_W(m_data,xi - body.pos[neighborIndex]));
+			densityAdv += body.getMass(neighborIndex) * (vi - body.vel[neighborIndex]).dot(KERNEL_GRAD_W(m_data,xi - body.pos[neighborIndex]));
 			computeDensityChange_additional
 		);
 
@@ -585,7 +585,7 @@ __global__ void DFSPH_divergence_init_kernel(SPH::DFSPHCData m_data, SPH::Unifie
 			Vector3d grad_p_i;
 			grad_p_i.setZero();
 
-			RealCuda density = particleSet->mass[i] * m_data.W_zero;
+			RealCuda density = particleSet->getMass(i) * m_data.W_zero;
 
 			//////////////////////////////////////////////////////////////////////////
 			// Fluid
@@ -595,8 +595,8 @@ __global__ void DFSPH_divergence_init_kernel(SPH::DFSPHCData m_data, SPH::Unifie
 			ITER_NEIGHBORS_FLUID(m_data, particleSet,
 				i,
 				const Vector3d &xj = body.pos[neighborIndex];
-			density += body.mass[neighborIndex] * KERNEL_W(m_data,xi - xj);
-			const Vector3d grad_p_j = body.mass[neighborIndex] * KERNEL_GRAD_W(m_data,xi - xj);
+			density += body.getMass(neighborIndex) * KERNEL_W(m_data,xi - xj);
+			const Vector3d grad_p_j = body.getMass(neighborIndex) * KERNEL_GRAD_W(m_data,xi - xj);
 			sum_grad_p_k += grad_p_j.squaredNorm();
 			grad_p_i += grad_p_j;
 			);
@@ -607,8 +607,8 @@ __global__ void DFSPH_divergence_init_kernel(SPH::DFSPHCData m_data, SPH::Unifie
 			ITER_NEIGHBORS_BOUNDARIES(m_data, particleSet,
 				i,
 				const Vector3d &xj = body.pos[neighborIndex];
-			density += body.mass[neighborIndex] * KERNEL_W(m_data,xi - xj);
-			const Vector3d grad_p_j = body.mass[neighborIndex] * KERNEL_GRAD_W(m_data,xi - xj);
+			density += body.getMass(neighborIndex) * KERNEL_W(m_data,xi - xj);
+			const Vector3d grad_p_j = body.getMass(neighborIndex) * KERNEL_GRAD_W(m_data,xi - xj);
 			sum_grad_p_k += grad_p_j.squaredNorm();
 			grad_p_i += grad_p_j;
 			);
@@ -620,8 +620,8 @@ __global__ void DFSPH_divergence_init_kernel(SPH::DFSPHCData m_data, SPH::Unifie
 			ITER_NEIGHBORS_SOLIDS(m_data, particleSet,
 				i,
 				const Vector3d &xj = body.pos[neighborIndex];
-			density += body.mass[neighborIndex] * KERNEL_W(m_data,xi - xj);
-			const Vector3d grad_p_j = body.mass[neighborIndex] * KERNEL_GRAD_W(m_data,xi - xj);
+			density += body.getMass(neighborIndex) * KERNEL_W(m_data,xi - xj);
+			const Vector3d grad_p_j = body.getMass(neighborIndex) * KERNEL_GRAD_W(m_data,xi - xj);
 			sum_grad_p_k += grad_p_j.squaredNorm();
 			grad_p_i += grad_p_j;
 			);
@@ -811,7 +811,7 @@ template <bool warm_start> __device__ void pressureSolveParticle(SPH::DFSPHCData
 	if (fabs(kSum) > m_eps)
 	{
 		// ki, kj already contain inverse density
-		v_i += kSum * body.mass[neighborIndex] * KERNEL_GRAD_W(m_data,xi - body.pos[neighborIndex]);
+		v_i += kSum * body.getMass(neighborIndex) * KERNEL_GRAD_W(m_data,xi - body.pos[neighborIndex]);
 	}
 	);
 
@@ -822,7 +822,7 @@ template <bool warm_start> __device__ void pressureSolveParticle(SPH::DFSPHCData
 	if (fabs(kSum) > m_eps)
 	{
 		// ki, kj already contain inverse density
-		v_i += kSum * body.mass[neighborIndex] * KERNEL_GRAD_W(m_data,xi - body.pos[neighborIndex]);
+		v_i += kSum * body.getMass(neighborIndex) * KERNEL_GRAD_W(m_data,xi - body.pos[neighborIndex]);
 	}
 	);
 #endif
@@ -844,7 +844,7 @@ template <bool warm_start> __device__ void pressureSolveParticle(SPH::DFSPHCData
 #else
 		ITER_NEIGHBORS_BOUNDARIES(m_data, particleSet,
 			i,
-			v_i += ki * body.mass[neighborIndex] * KERNEL_GRAD_W(m_data,xi - body.pos[neighborIndex]);
+			v_i += ki * body.getMass(neighborIndex) * KERNEL_GRAD_W(m_data,xi - body.pos[neighborIndex]);
 		);
 #endif
 
@@ -857,11 +857,11 @@ template <bool warm_start> __device__ void pressureSolveParticle(SPH::DFSPHCData
 		//////////////////////////////////////////////////////////////////////////
 		ITER_NEIGHBORS_SOLIDS(m_data, particleSet,
 			i,
-			Vector3d delta = ki * body.mass[neighborIndex] * KERNEL_GRAD_W(m_data,xi - body.pos[neighborIndex]);
+			Vector3d delta = ki * body.getMass(neighborIndex) * KERNEL_GRAD_W(m_data,xi - body.pos[neighborIndex]);
 		v_i += delta;// ki already contains inverse density
 
 					 //we apply the force to the body particle (no invH since it has been fatorized at the end)
-		delta *= -particleSet->mass[i];
+		delta *= -particleSet->getMass(i);
 		atomicAdd(&(body.F[neighborIndex].x), delta.x);
 		atomicAdd(&(body.F[neighborIndex].y), delta.y);
 		atomicAdd(&(body.F[neighborIndex].z), delta.z);
@@ -927,7 +927,7 @@ __global__ void DFSPH_pressure_compute_p1_kernel(SPH::DFSPHCData m_data, SPH::Un
 		const Vector3d& xi = particleSet->pos[i];
 		const Vector3d& vi = particleSet->vel[i];
 
-		RealCuda density = particleSet->mass[i] * m_data.W_zero;
+		RealCuda density = particleSet->getMass(i) * m_data.W_zero;
 
 		//////////////////////////////////////////////////////////////////////////
 		// Fluid
@@ -937,7 +937,7 @@ __global__ void DFSPH_pressure_compute_p1_kernel(SPH::DFSPHCData m_data, SPH::Un
 		ITER_NEIGHBORS_FLUID(m_data, particleSet,
 			i,
 			const Vector3d & xj = body.pos[neighborIndex];
-		density += body.mass[neighborIndex] * KERNEL_W(m_data, xi - xj);
+		density += body.getMass(neighborIndex) * KERNEL_W(m_data, xi - xj);
 			);
 
 
@@ -947,7 +947,7 @@ __global__ void DFSPH_pressure_compute_p1_kernel(SPH::DFSPHCData m_data, SPH::Un
 		ITER_NEIGHBORS_BOUNDARIES(m_data, particleSet,
 			i,
 			const Vector3d & xj = body.pos[neighborIndex];
-		density += body.mass[neighborIndex] * KERNEL_W(m_data, xi - xj);
+		density += body.getMass(neighborIndex) * KERNEL_W(m_data, xi - xj);
 			);
 
 
@@ -958,7 +958,7 @@ __global__ void DFSPH_pressure_compute_p1_kernel(SPH::DFSPHCData m_data, SPH::Un
 		ITER_NEIGHBORS_SOLIDS(m_data, particleSet,
 			i,
 			const Vector3d & xj = body.pos[neighborIndex];
-		density += body.mass[neighborIndex] * KERNEL_W(m_data, xi - xj);
+		density += body.getMass(neighborIndex) * KERNEL_W(m_data, xi - xj);
 			);
 		//*/
 
@@ -999,7 +999,7 @@ __global__ void DFSPH_pressure_compute_p2_kernel(SPH::DFSPHCData m_data, SPH::Un
 			RealCuda lambda_sum = lambda_i + body.densityAdv[neighborIndex];
 			if (fabs(lambda_sum) > m_eps) 
 			{
-				dx += body.mass[neighborIndex] * lambda_sum * KERNEL_GRAD_W(m_data, xi - xj);
+				dx += body.getMass(neighborIndex) * lambda_sum * KERNEL_GRAD_W(m_data, xi - xj);
 			}
 		);
 
@@ -1011,7 +1011,7 @@ __global__ void DFSPH_pressure_compute_p2_kernel(SPH::DFSPHCData m_data, SPH::Un
 			ITER_NEIGHBORS_BOUNDARIES(m_data, particleSet,
 				i,
 				const Vector3d & xj = body.pos[neighborIndex];
-				dx += body.mass[neighborIndex] * lambda_i * KERNEL_GRAD_W(m_data, xi - xj);
+				dx += body.getMass(neighborIndex) * lambda_i * KERNEL_GRAD_W(m_data, xi - xj);
 			);
 
 
@@ -1022,7 +1022,7 @@ __global__ void DFSPH_pressure_compute_p2_kernel(SPH::DFSPHCData m_data, SPH::Un
 			ITER_NEIGHBORS_SOLIDS(m_data, particleSet,
 				i,
 				const Vector3d & xj = body.pos[neighborIndex];
-				dx += body.mass[neighborIndex] * lambda_i * KERNEL_GRAD_W(m_data, xi - xj);
+				dx += body.getMass(neighborIndex) * lambda_i * KERNEL_GRAD_W(m_data, xi - xj);
 			);
 			//*/
 		}
@@ -1088,7 +1088,7 @@ __device__ void computeDensityAdv(SPH::DFSPHCData& m_data, SPH::UnifiedParticleS
 
 	ITER_NEIGHBORS_FLUID(m_data, particleSet,
 		index,
-		delta += body.mass[neighborIndex] * (vi - body.vel[neighborIndex]).dot(KERNEL_GRAD_W(m_data,xi - body.pos[neighborIndex]));
+		delta += body.getMass(neighborIndex) * (vi - body.vel[neighborIndex]).dot(KERNEL_GRAD_W(m_data,xi - body.pos[neighborIndex]));
 	);
 
 	//////////////////////////////////////////////////////////////////////////
@@ -1105,7 +1105,7 @@ __device__ void computeDensityAdv(SPH::DFSPHCData& m_data, SPH::UnifiedParticleS
 	
 	ITER_NEIGHBORS_BOUNDARIES(m_data, particleSet,
 		index,
-		delta += body.mass[neighborIndex] * (vi - body.vel[neighborIndex]).dot(KERNEL_GRAD_W(m_data,xi - body.pos[neighborIndex]));
+		delta += body.getMass(neighborIndex) * (vi - body.vel[neighborIndex]).dot(KERNEL_GRAD_W(m_data,xi - body.pos[neighborIndex]));
 	);
 #endif
 
@@ -1114,7 +1114,7 @@ __device__ void computeDensityAdv(SPH::DFSPHCData& m_data, SPH::UnifiedParticleS
 	//////////////////////////////////////////////////////////////////////////
 	ITER_NEIGHBORS_SOLIDS(m_data, particleSet,
 		index,
-		delta += body.mass[neighborIndex] * (vi - body.vel[neighborIndex]).dot(KERNEL_GRAD_W(m_data,xi - body.pos[neighborIndex]));
+		delta += body.getMass(neighborIndex) * (vi - body.vel[neighborIndex]).dot(KERNEL_GRAD_W(m_data,xi - body.pos[neighborIndex]));
 	)
 
 		particleSet->densityAdv[index] = MAX_MACRO_CUDA(particleSet->density[index] + m_data.h_future*delta - m_data.density0, 0.0);
@@ -1326,7 +1326,7 @@ __global__ void DFSPH_viscosityXSPH_kernel(SPH::DFSPHCData m_data, SPH::UnifiedP
 	ITER_NEIGHBORS_FLUID(m_data, particleSet,
 		i,
 		Vector3d xixj = xi - body.pos[neighborIndex];
-	RealCuda mass_div_density = body.mass[neighborIndex] / body.density[neighborIndex];
+	RealCuda mass_div_density = body.getMass(neighborIndex) / body.density[neighborIndex];
 	ai -= m_data.invH * m_data.viscosity * (mass_div_density) * (vi - body.vel[neighborIndex]) * KERNEL_W(m_data,xixj);
 	ni += mass_div_density * KERNEL_GRAD_W(m_data,xixj);
 	)
@@ -1335,7 +1335,7 @@ __global__ void DFSPH_viscosityXSPH_kernel(SPH::DFSPHCData m_data, SPH::UnifiedP
 		//viscosity only
 		ITER_NEIGHBORS_FLUID(
 		i,
-		ai -= m_data.invH * m_data.viscosity * (body.mass[neighborIndex] / body.density[neighborIndex]) *
+		ai -= m_data.invH * m_data.viscosity * (body.getMass(neighborIndex) / body.density[neighborIndex]) *
 		(vi - body.vel[neighborIndex]) * KERNEL_W(m_data,xi - body.pos[neighborIndex]);
 
 		)//*/
@@ -1385,7 +1385,7 @@ __global__ void DFSPH_applySurfaceAkinci2013SurfaceTension_kernel(SPH::DFSPHCDat
 	if (length2 > 1.0e-9)
 	{
 		xixj = ((Real) 1.0 / sqrt(length2)) * xixj;
-		accel -= k * body.mass[neighborIndex] * xixj * m_data.WCohesion(xixj);
+		accel -= k * body.getMass(neighborIndex) * xixj * m_data.WCohesion(xixj);
 	}
 
 	// Curvature
@@ -1421,7 +1421,7 @@ __global__ void DFSPH_applySurfaceAkinci2013SurfaceTension_kernel(SPH::DFSPHCDat
 	if (length2 > 1.0e-9)
 	{
 		xixj = ((Real) 1.0 / sqrt(length2)) * xixj;
-		ai -= k * body.mass[neighborIndex] * xixj * m_data.WAdhesion(xixj);
+		ai -= k * body.getMass(neighborIndex) * xixj * m_data.WAdhesion(xixj);
 	}
 	);
 
@@ -1440,7 +1440,7 @@ __global__ void DFSPH_applySurfaceAkinci2013SurfaceTension_kernel(SPH::DFSPHCDat
 	if (length2 > 1.0e-9)
 	{
 		xixj = ((Real) 1.0 / sqrt(length2)) * xixj;
-		ai -= k * body.mass[neighborIndex] * xixj * m_data.WAdhesion(xixj);
+		ai -= k * body.getMass(neighborIndex) * xixj * m_data.WAdhesion(xixj);
 	}
 	);
 
@@ -2811,7 +2811,7 @@ __global__ void compute_dynamic_body_particle_mass_kernel(SPH::DFSPHCData data, 
 
 	const Real volume = 1.0 / delta;
 	particleSet->mass[i] = particleSet->density0 * volume;
-	particleSet->mass[i] = data.fluid_data_cuda->mass[0];
+	particleSet->mass[i] = data.fluid_data_cuda->getMass(0);
 }
 
 
@@ -2821,7 +2821,7 @@ __global__ void refine_dynamic_body_particle_mass_kernel(SPH::DFSPHCData data, S
 	if (i >= particleSet->numParticles) { return; }
 
 	//the factor is due to the fact that we compensate only a part of the error (proportional to the importance of the mass in the density
-	//particleSet->mass[i] += (particleSet->mass[i] * data.W_zero / particleSet->density[i])*(data.density0 - particleSet->density[i]) / (data.W_zero);
+	//particleSet->getMass(i) += (particleSet->getMass(i) * data.W_zero / particleSet->density[i])*(data.density0 - particleSet->density[i]) / (data.W_zero);
 	particleSet->mass[i] += (0.3)*(data.density0 - particleSet->density[i]) / (data.W_zero);
 }
 
@@ -2830,7 +2830,7 @@ __global__ void compute_boundaries_density_error_kernel(SPH::DFSPHCData data, SP
 	int i = blockIdx.x * blockDim.x + threadIdx.x;
 	if (i >= particleSet->numParticles) { return; }
 
-	RealCuda density = particleSet->mass[i] * data.W_zero;
+	RealCuda density = particleSet->getMass(i) * data.W_zero;
 
 	//*
 	ITER_NEIGHBORS_INIT(data, particleSet, i);
@@ -2840,7 +2840,7 @@ __global__ void compute_boundaries_density_error_kernel(SPH::DFSPHCData data, SP
 	//////////////////////////////////////////////////////////////////////////
 	ITER_NEIGHBORS_BOUNDARIES(data, particleSet,
 		i,
-		density += body.mass[neighborIndex] * KERNEL_W(data,particleSet->pos[i] - body.pos[neighborIndex]);
+		density += body.getMass(neighborIndex) * KERNEL_W(data,particleSet->pos[i] - body.pos[neighborIndex]);
 	);
 	//*/
 	/*
@@ -2868,7 +2868,7 @@ __global__ void compute_boundaries_density_error_kernel(SPH::DFSPHCData data, SP
 			for (unsigned int cur_particle = body.neighborsDataSet->cell_start_end[cur_cell_id]; cur_particle < end; ++cur_particle) {
 				unsigned int j = body.neighborsDataSet->p_id_sorted[cur_particle];
 				if ((pos - body.pos[j]).squaredNorm() < radius_sq) {
-					if (i != j) { density += particleSet->mass[j] * KERNEL_W(data,pos - body.pos[j]); }
+					if (i != j) { density += particleSet->getMass(j) * KERNEL_W(data,pos - body.pos[j]); }
 				}
 			}
 		}

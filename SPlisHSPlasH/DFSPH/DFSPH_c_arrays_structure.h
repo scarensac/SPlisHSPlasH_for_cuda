@@ -163,6 +163,9 @@ public:
     void     *d_temp_storage;
     size_t   temp_storage_bytes;
 
+	//for the openboundaries
+	RealCuda* mass_flow;
+
 
     //base contructor (set every array to null and the nb of particles to 0
     UnifiedParticleSet();
@@ -181,6 +184,9 @@ public:
     ~UnifiedParticleSet();
     void clear();
 
+
+
+	
     //this function should only be used for the rigid bodies
     void computeParticlesMass(DFSPHCData *data);
 
@@ -211,6 +217,10 @@ public:
 
     //store the forces to a file in case of a dynamic body
     void write_forces_to_file(std::string file_path);
+
+	FUNCTION inline RealCuda getMass(int particle_id) const {
+		return mass[particle_id] + ((mass_flow == NULL) ? 0 : mass_flow[particle_id]);
+	}
 
     FUNCTION inline int* getNeighboursPtr(int particle_id) {
 #ifdef INTERLEAVE_NEIGHBORS

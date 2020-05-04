@@ -438,6 +438,11 @@ namespace SPH {
 		// NOTE: the goal is to not have a reset in the function so that the simulation stays realistic
 		void handleOceanBoundariesTest(SPH::DFSPHCData& data);
 
+		//this one uses the kassotis method
+		//does not work simply by hacking the boundaries particles mass
+		//I guess you'd need to implement the god damned full implicit boundaries method...
+		void handleOceanBoundariesTest2(SPH::DFSPHCData& data);
+
 
 		BufferFluidSurface& getSurface() {
 			return S;
@@ -554,7 +559,7 @@ __global__ void DFSPH_reset_fluid_boundaries_add_kernel(SPH::DFSPHCData data, SP
 
 	particleSet->pos[particleSet->numParticles + i] = fluidBufferSet->pos[i];
 	particleSet->vel[particleSet->numParticles + i] = fluidBufferSet->vel[i];
-	particleSet->mass[particleSet->numParticles + i] = fluidBufferSet->mass[i];
+	particleSet->mass[particleSet->numParticles + i] = fluidBufferSet->getMass(i);
 	particleSet->color[particleSet->numParticles + i] = fluidBufferSet->color[i];
 
 }
@@ -867,7 +872,7 @@ __global__ void DFSPH_evaluate_density_field_kernel(SPH::DFSPHCData data, SPH::U
 	//*
 	//compute the fluid contribution
 	ITER_NEIGHBORS_FROM_STRUCTURE_BASE(fluidSet->neighborsDataSet, fluidSet->pos,
-		RealCuda density_delta = fluidSet->mass[j] * KERNEL_W(data, sampling_point - fluidSet->pos[j]);
+		RealCuda density_delta = fluidSet->getMass(j) * KERNEL_W(data, sampling_point - fluidSet->pos[j]);
 		if (density_delta>0){
 			if (fluidSet->pos[j].x > plane_pos) {
 				density_after_buffer += density_delta;
@@ -889,7 +894,7 @@ __global__ void DFSPH_evaluate_density_field_kernel(SPH::DFSPHCData data, SPH::U
 	//*
 	//compute the buffer contribution
 	ITER_NEIGHBORS_FROM_STRUCTURE_BASE(bufferSet->neighborsDataSet, bufferSet->pos,
-		RealCuda density_delta = bufferSet->mass[j] * KERNEL_W(data, sampling_point - bufferSet->pos[j]);
+		RealCuda density_delta = bufferSet->getMass(j) * KERNEL_W(data, sampling_point - bufferSet->pos[j]);
 		if (density_delta > 0) {
 			density_after_buffer += density_delta;
 			near_buffer = true;
@@ -902,7 +907,7 @@ __global__ void DFSPH_evaluate_density_field_kernel(SPH::DFSPHCData data, SPH::U
 	//*
 	if ((density > 100) || (density_after_buffer > 100)) {
 		ITER_NEIGHBORS_FROM_STRUCTURE_BASE(data.boundaries_data_cuda->neighborsDataSet, data.boundaries_data_cuda->pos,
-			RealCuda density_delta = data.boundaries_data_cuda->mass[j] * KERNEL_W(data, sampling_point - data.boundaries_data_cuda->pos[j]);
+			RealCuda density_delta = data.boundaries_data_cuda->getMass(j) * KERNEL_W(data, sampling_point - data.boundaries_data_cuda->pos[j]);
 			density_after_buffer += density_delta;
 			density += density_delta;
 		);
@@ -938,7 +943,7 @@ __global__ void DFSPH_evaluate_density_in_buffer_kernel(SPH::DFSPHCData data, SP
 	ITER_NEIGHBORS_INIT_CELL_COMPUTATION(p_i, data.getKernelRadius(), data.gridOffset);
 
 
-	RealCuda density_after_buffer = bufferSet->mass[i] * data.W_zero;
+	RealCuda density_after_buffer = bufferSet->getMass(i) * data.W_zero;
 	RealCuda density = 0;
 	
 	int count_neighbors = 0;
@@ -950,7 +955,7 @@ __global__ void DFSPH_evaluate_density_in_buffer_kernel(SPH::DFSPHCData data, SP
 
 	//compute the fluid contribution
 	ITER_NEIGHBORS_FROM_STRUCTURE_BASE(fluidSet->neighborsDataSet, fluidSet->pos,
-		RealCuda density_delta = fluidSet->mass[j] * KERNEL_W(data, p_i - fluidSet->pos[j]);
+		RealCuda density_delta = fluidSet->getMass(j) * KERNEL_W(data, p_i - fluidSet->pos[j]);
 	if (density_delta > 0) {
 		if (S.isInsideFluid(fluidSet->pos[j])) {
 			density += density_delta;
@@ -981,7 +986,7 @@ __global__ void DFSPH_evaluate_density_in_buffer_kernel(SPH::DFSPHCData data, SP
 			limit *= limit;
 			ITER_NEIGHBORS_FROM_STRUCTURE_BASE(backgroundBufferSet->neighborsDataSet, backgroundBufferSet->pos,
 				if ((p_i - backgroundBufferSet->pos[j]).squaredNorm()> (limit)) {
-					RealCuda density_delta = backgroundBufferSet->mass[j] * KERNEL_W(data, p_i - backgroundBufferSet->pos[j]);
+					RealCuda density_delta = backgroundBufferSet->getMass(j) * KERNEL_W(data, p_i - backgroundBufferSet->pos[j]);
 					density_after_buffer += density_delta;
 					count_neighbors++;
 				}
@@ -992,7 +997,7 @@ __global__ void DFSPH_evaluate_density_in_buffer_kernel(SPH::DFSPHCData data, SP
 			//on the following passes I do the computations using the neighbors from the buffer
 			ITER_NEIGHBORS_FROM_STRUCTURE_BASE(bufferSet->neighborsDataSet, bufferSet->pos,
 				if (i!=j) {
-					RealCuda density_delta = bufferSet->mass[j] * KERNEL_W(data, p_i - bufferSet->pos[j]);
+					RealCuda density_delta = bufferSet->getMass(j) * KERNEL_W(data, p_i - bufferSet->pos[j]);
 					density_after_buffer += density_delta;
 					count_neighbors++;
 				}
@@ -1000,7 +1005,7 @@ __global__ void DFSPH_evaluate_density_in_buffer_kernel(SPH::DFSPHCData data, SP
 
 			//also has to iterate over the background buffer that now represent the air
 			ITER_NEIGHBORS_FROM_STRUCTURE_BASE(backgroundBufferSet->neighborsDataSet, backgroundBufferSet->pos,
-				RealCuda density_delta = backgroundBufferSet->mass[j] * KERNEL_W(data, p_i - backgroundBufferSet->pos[j]);
+				RealCuda density_delta = backgroundBufferSet->getMass(j) * KERNEL_W(data, p_i - backgroundBufferSet->pos[j]);
 				density_after_buffer += density_delta;
 				count_neighbors++;
 			);
@@ -1011,7 +1016,7 @@ __global__ void DFSPH_evaluate_density_in_buffer_kernel(SPH::DFSPHCData data, SP
 		//*
 		if ((density > 100) || (density_after_buffer > 100)) {
 			ITER_NEIGHBORS_FROM_STRUCTURE_BASE(data.boundaries_data_cuda->neighborsDataSet, data.boundaries_data_cuda->pos,
-				RealCuda density_delta = data.boundaries_data_cuda->mass[j] * KERNEL_W(data, p_i - data.boundaries_data_cuda->pos[j]);
+				RealCuda density_delta = data.boundaries_data_cuda->getMass(j) * KERNEL_W(data, p_i - data.boundaries_data_cuda->pos[j]);
 			density += density_delta;
 			);
 		}
@@ -1091,7 +1096,7 @@ __global__ void DFSPH_generate_buffer_from_surface_count_particles_kernel(SPH::D
 	//also we need to do the height with a height map but for now it wil just be a fixe height
 	//*
 	RealCuda dist = S.distanceToSurfaceSigned(backgroundSet->pos[i]);
-	if ((dist<data.particleRadius)&&(backgroundSet->pos[i].y<0.8)) {
+	if ((dist<data.particleRadius)&&(backgroundSet->pos[i].y<1.2)) {
 		atomicAdd(count, 1);
 	}
 	else {
@@ -1223,13 +1228,13 @@ __global__ void DFSPH_evaluate_density_kernel(SPH::DFSPHCData data, SPH::Unified
 	RealCuda sq_diameter = data.particleRadius * 2;
 	sq_diameter *= sq_diameter;
 	int count_neighbors = 0;
-	RealCuda density = fluidSet->mass[i] * data.W_zero;
+	RealCuda density = fluidSet->getMass(i) * data.W_zero;
 
 	//check if there is any fluid particle above us
 	ITER_NEIGHBORS_FROM_STRUCTURE_BASE(fluidSet->neighborsDataSet, fluidSet->pos,
 		if (i != j) {
 			//RealCuda density_delta = (fluidSet->pos[j]-p_i).norm();
-			RealCuda density_delta = fluidSet->mass[j] * KERNEL_W(data, p_i - fluidSet->pos[j]);
+			RealCuda density_delta = fluidSet->getMass(j) * KERNEL_W(data, p_i - fluidSet->pos[j]);
 			density += density_delta;
 			count_neighbors++;
 		}
@@ -1237,7 +1242,7 @@ __global__ void DFSPH_evaluate_density_kernel(SPH::DFSPHCData data, SPH::Unified
 
 	//*
 	ITER_NEIGHBORS_FROM_STRUCTURE_BASE(data.boundaries_data_cuda->neighborsDataSet, data.boundaries_data_cuda->pos,
-		RealCuda density_delta = data.boundaries_data_cuda->mass[j] * KERNEL_W(data, p_i - data.boundaries_data_cuda->pos[j]);
+		RealCuda density_delta = data.boundaries_data_cuda->getMass(j) * KERNEL_W(data, p_i - data.boundaries_data_cuda->pos[j]);
 		density += density_delta;
 		count_neighbors++;
 	);
@@ -1276,7 +1281,7 @@ __global__ void DFSPH_evaluate_particle_concentration_kernel(SPH::DFSPHCData dat
 	//check if there is any fluid particle above us
 	ITER_NEIGHBORS_FROM_STRUCTURE_BASE(fluidSet->neighborsDataSet, fluidSet->pos,
 		if (i != j) {
-			RealCuda concentration_delta = (fluidSet->mass[j]/ fluidSet->density[j])* KERNEL_W(data, p_i - fluidSet->pos[j]);
+			RealCuda concentration_delta = (fluidSet->getMass(j)/ fluidSet->density[j])* KERNEL_W(data, p_i - fluidSet->pos[j]);
 			concentration += concentration_delta;
 			count_neighbors++;
 		}
@@ -1284,7 +1289,7 @@ __global__ void DFSPH_evaluate_particle_concentration_kernel(SPH::DFSPHCData dat
 
 	//supose that the density of boundaries particles is the rest density
 	ITER_NEIGHBORS_FROM_STRUCTURE_BASE(data.boundaries_data_cuda->neighborsDataSet, data.boundaries_data_cuda->pos,
-		RealCuda concentration_delta = (data.boundaries_data_cuda->mass[j] / data.density0) * KERNEL_W(data, p_i - data.boundaries_data_cuda->pos[j]);
+		RealCuda concentration_delta = (data.boundaries_data_cuda->getMass(j) / data.density0) * KERNEL_W(data, p_i - data.boundaries_data_cuda->pos[j]);
 	concentration += concentration_delta;
 	count_neighbors++;
 	);
@@ -1330,7 +1335,7 @@ __global__ void DFSPH_particle_shifting_base_kernel(SPH::DFSPHCData data, SPH::U
 	//check if there is any fluid particle above us
 	ITER_NEIGHBORS_FROM_STRUCTURE_BASE(fluidSet->neighborsDataSet, fluidSet->pos,
 		if (i != j) {
-			Vector3d displacement_delta = (fluidSet->densityAdv[j]- fluidSet->densityAdv[i])* (fluidSet->mass[j] / fluidSet->density[j]) * KERNEL_GRAD_W(data, p_i - fluidSet->pos[j]);
+			Vector3d displacement_delta = (fluidSet->densityAdv[j]- fluidSet->densityAdv[i])* (fluidSet->getMass(j) / fluidSet->density[j]) * KERNEL_GRAD_W(data, p_i - fluidSet->pos[j]);
 			/*
 			Vector3d nj = fluidSet->pos[j] - p_i;
 			nj.toUnit();
@@ -1395,10 +1400,10 @@ void DynamicWindow::init(DFSPHCData& data) {
 	else if (surfaceType == 1) {
 
 		//*
-		Vector3d center(0, 0, 0);
+		Vector3d center(1, 0, 0);
 		Vector3d halfLength(100);
-		halfLength.x = 1.6;
-		//halfLength.z = 0.5;
+		halfLength.x = 2.6;
+		//halfLength.z = 0.4;
 		S_initial.setCuboid(center, halfLength);
 		//*/
 	}
@@ -2576,7 +2581,8 @@ void DynamicWindow::handleOceanBoundariesTest(SPH::DFSPHCData& data) {
 	static bool first_time = true;
 	if (first_time) {
 
-		{
+		//start the simulation with a realistic ocean state
+		if(false){
 
 
 			*countRmv = 0;
@@ -2737,4 +2743,172 @@ void DynamicWindow::handleOceanBoundariesTest(SPH::DFSPHCData& data) {
 	timings.time_next_point();
 	timings.end_step();
 	timings.recap_timings();
+}
+
+
+__global__ void DFSPH_compute_boundaries_normals_kernel(SPH::DFSPHCData data, SPH::UnifiedParticleSet* particleSet, Vector3d* normals) {
+	int i = blockIdx.x * blockDim.x + threadIdx.x;
+	if (i >= particleSet->numParticles) { return; }
+
+	Vector3d ni;
+	Vector3d pos = particleSet->pos[i];
+
+	//yeah Im' hard coding it for now
+	RealCuda dist_limit = (data.particleRadius * 2);
+	if (pos.y > dist_limit) {
+		if (abs(pos.x - (-1))<dist_limit) {
+			ni.x = 1;
+		}
+		if (abs(pos.x - (1))<dist_limit) {
+			ni.x = -1;
+		}
+		if (abs(pos.z - (-0.5))<dist_limit) {
+			ni.z = 1;
+		}
+		if (abs(pos.z - (0.5))<dist_limit) {
+			ni.z = -1;
+		}
+	}
+	
+	if (!ni.isZero()) {
+		ni /= ni.norm();	
+	}
+	normals[i] = ni;
+
+	particleSet->color[i] = ni.abs();
+	particleSet->mass_flow[i] = 0;
+}
+
+__global__ void DFSPH_handle_flow_kernel(SPH::DFSPHCData data, SPH::UnifiedParticleSet* particleSet, Vector3d* normals) {
+	int i = blockIdx.x * blockDim.x + threadIdx.x;
+	if (i >= particleSet->numParticles) { return; }
+
+	Vector3d ni;
+	Vector3d pos = particleSet->pos[i];
+
+	if (particleSet->pos[i].y > 0.8) {
+		return;
+	}
+
+	//yeah Im' hard coding it for now, it should be a function of the normal in the future
+	//ok so for the flux calculation I need the area, but I don't have it the closest thing I have is the volume
+	//of the boundaries particles. so from the volume I'll get the circular area and compute the flow from it
+	//4/3*pi/r^3 ==> pi*r^2
+	//A= V*3/4*r
+	RealCuda flux_vel = 0.25; //m/s
+	if (normals[i].x > 0.8) {
+		RealCuda radius = particleSet->mass[i] * 3 / (4 * M_PI);
+		radius = cbrtf(radius);
+
+		RealCuda area = radius * radius*M_PI;
+
+		RealCuda F = area * flux_vel;
+		RealCuda dm = F * data.h;
+
+		particleSet->mass_flow[i] += dm;
+	}
+}
+
+
+__global__ void DFSPH_handle_fluid_creation_kernel(SPH::DFSPHCData data, SPH::UnifiedParticleSet* particleSet,
+	SPH::UnifiedParticleSet* boundariesSet, Vector3d* normals, int* countAdded) {
+	int i = blockIdx.x * blockDim.x + threadIdx.x;
+	if (i >= boundariesSet->numParticles) { return; }
+
+	Vector3d ni;
+
+	if (boundariesSet->mass_flow[i]>(particleSet->getMass(0)*1)){
+		boundariesSet->mass_flow[i] -= (particleSet->getMass(0) * 1);
+
+		int addedId=atomicAdd(countAdded, 1);
+		addedId += particleSet->numParticles;
+
+
+		Vector3d pos = boundariesSet->pos[i] + normals[i] * data.particleRadius * 2;
+		
+		particleSet->pos[addedId] = pos;
+		particleSet->mass[addedId] = particleSet->getMass(0);
+		particleSet->vel[addedId] = Vector3d(0,0,0);
+		particleSet->kappa[addedId] = 0;
+		particleSet->kappaV[addedId] = 0;
+		particleSet->color[addedId] = Vector3d(0,1,0);
+	}
+}
+
+
+
+void DynamicWindow::handleOceanBoundariesTest2(SPH::DFSPHCData& data) {
+	UnifiedParticleSet* particleSet = data.fluid_data;
+	static int* countRmv = NULL;
+	static Vector3d* boundaries_normals = NULL;
+	static StokesWaveGenerator waveGenerator;
+	static RealCuda time = 0;
+	time += 0.003;
+
+	if (!countRmv) {
+		cudaMallocManaged(&(countRmv), sizeof(int));
+
+		//I don't need the z component
+		waveGenerator.init(data.particleRadius * 2, Vector3d(-2.0, 0, 0), Vector3d(2.0, 2.0, 0));
+
+		if (false) {
+			std::remove("yolo.csv");
+			std::ofstream myfile("yolo.csv", std::ofstream::app);
+			if (myfile.is_open())
+			{
+				/*
+				myfile << "t" << "  ";
+				for (int i = 0; i < waveGenerator.cellCount.x; ++i) {
+				myfile << waveGenerator.minPos.x + i*waveGenerator.cellSize << "  ";
+				}
+				myfile << std::endl;
+				//*/
+			}
+
+		}
+
+
+		cudaMallocManaged(&(boundaries_normals), sizeof(Vector3d)*data.boundaries_data->numParticles);
+
+		{
+			int numBlocks = calculateNumBlocks(data.boundaries_data->numParticles);
+			DFSPH_compute_boundaries_normals_kernel << <numBlocks, BLOCKSIZE >> > (data, data.boundaries_data->gpu_ptr, boundaries_normals);
+			gpuErrchk(cudaDeviceSynchronize());
+		}
+
+		data.fluid_data->changeMaxParticleNumber(data.fluid_data->numParticlesMax*10);
+		data.fluid_data->resetColor();
+		std::cout << "init that" << std::endl;
+		
+	}
+
+	//I'll ttry using the kassotis method
+	//add the mass for imput particles
+	{
+		int numBlocks = calculateNumBlocks(data.boundaries_data->numParticles);
+		DFSPH_handle_flow_kernel << <numBlocks, BLOCKSIZE >> > (data, data.boundaries_data->gpu_ptr, boundaries_normals);
+		gpuErrchk(cudaDeviceSynchronize());
+	}
+
+	{
+		//create the new fluid particles
+		*countRmv = 0;
+		int numBlocks = calculateNumBlocks(data.boundaries_data->numParticles);
+		DFSPH_handle_fluid_creation_kernel << <numBlocks, BLOCKSIZE >> > (data, data.fluid_data->gpu_ptr, data.boundaries_data->gpu_ptr,
+			boundaries_normals, countRmv);
+		gpuErrchk(cudaDeviceSynchronize());
+		
+		std::cout << "check mass: "  <<data.boundaries_data->mass_flow[3865] << std::endl;
+
+		//updte the fluid particle count
+		if ((*countRmv) > 0) {
+			std::cout << "added a particle: " << *countRmv << std::endl;
+
+			data.fluid_data->updateActiveParticleNumber(data.fluid_data->numParticles + (*countRmv));
+
+			if (data.fluid_data->numParticlesMax < (data.fluid_data->numParticles*1.5)) {
+				data.fluid_data->changeMaxParticleNumber(data.fluid_data->numParticles*1.5);
+			}
+		}
+	}
 }

@@ -74,7 +74,7 @@ void allocate_UnifiedParticleSet_cuda(SPH::UnifiedParticleSet& container) {
 
 	//cudaMalloc(&(container.pos), container.numParticles * sizeof(Vector3d)); //use opengl buffer with cuda interop
 	//cudaMalloc(&(container.vel), container.numParticles * sizeof(Vector3d)); //use opengl buffer with cuda interop
-	cudaMalloc(&(container.mass), container.numParticlesMax * sizeof(RealCuda));
+	cudaMallocManaged(&(container.mass), container.numParticlesMax * sizeof(RealCuda));
 
 
 	if (container.has_factor_computation) {
@@ -111,6 +111,9 @@ void allocate_UnifiedParticleSet_cuda(SPH::UnifiedParticleSet& container) {
 		}
 		//*/
 
+	}
+	else {
+		cudaMallocManaged(&(container.mass_flow), container.numParticlesMax * sizeof(RealCuda));
 	}
 
 	if (container.is_dynamic_object) {
@@ -150,6 +153,10 @@ void release_UnifiedParticleSet_cuda(SPH::UnifiedParticleSet& container) {
 		}
 		//*/
 
+	}
+	else {
+
+		CUDA_FREE_PTR(container.mass_flow);
 	}
 
 	if (container.is_dynamic_object) {
