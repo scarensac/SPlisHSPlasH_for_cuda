@@ -96,7 +96,10 @@ void DFSPHCUDA::step()
         //*
 
     //test boundries height control
-    m_data.handleBoundariesHeightTest();
+	//if (TimeManager::getCurrent()->getTime() < 1.5) 
+	{
+		//m_data.handleBoundariesHeightTest();
+	}
 
 
     //test dynamic boundary 
@@ -389,6 +392,8 @@ void DFSPHCUDA::step()
 				}
 			}
 		}
+
+		std::cout << "fluid level: " << getFluidLevel() << std::endl;
 
         end = std::chrono::steady_clock::now();
         //m_data.fluid_data->resetColor();

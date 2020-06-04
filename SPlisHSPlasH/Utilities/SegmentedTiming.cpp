@@ -3,6 +3,8 @@
 using namespace SPH;
 
 
+#ifdef ACTIVATE_SEGMENTED_TIMING
+
 SegmentedTiming::SegmentedTiming(std::string timer_name_i, bool set_active) {
 	active = set_active;
 	if (active) {
@@ -94,3 +96,5 @@ void SegmentedTiming::recap_timings(){
 		}
 	}
 }
+
+#endif

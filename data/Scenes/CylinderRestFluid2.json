@@ -24,11 +24,11 @@
 	},
 	"RigidBodies": [
 		{
-			"geometryFile": "../models/UnitBox.obj",
+			"geometryFile": "../models/cylinderv3.obj",
 			"translation": [0,1.5,0],
 			"rotationAxis": [1, 0, 0],
 			"rotationAngle": 0,
-			"scale": [2, 3, 1],
+			"scale": [8, 3, 8],
 			"color": [0.1, 0.4, 0.6, 1.0], 
 			"isDynamic": false,
 			"isWall": true,
@@ -40,8 +40,8 @@
 	"FluidBlocks": [
 		{
 			"denseMode": 0,
-			"start": [-1, 0.0, -0.5],
-			"end": [0.5, 1.5, 0.5],
+			"start": [-2.8, 0.0, -2.8],
+			"end": [2.8, 2.8, 2.8],
 			"translation": [0.0, 0.0, 0.0],
 			"scale": [1, 1, 1]
 		}

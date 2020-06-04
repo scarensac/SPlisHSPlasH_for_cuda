@@ -502,7 +502,7 @@ void UnifiedParticleSet::load_from_file(std::string file_path, bool load_velocit
 
 #ifdef OCEAN_BOUNDARIES_PROTOTYPE
 		//*
-		float height = 0.8;
+		float height = 0.5;
 		if ((positions_limitations)&&
 			(velocity_impacted_by_fluid_solver)&&
 			//(((pos.x > (-2.0 + 8 * 0.1)) && (pos.x < (2.0 - 8 * 0.1))) || (pos.y > height))
@@ -818,6 +818,8 @@ DFSPHCData::~DFSPHCData() {
 #endif
     }
 }
+
+
 
 void DFSPHCData::reset(FluidModel *model) {
 

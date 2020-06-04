@@ -82,14 +82,13 @@ __device__ void atomicToMax(float* addr, float value)
 //			it's better to use another solution to represent the same surface (in particular in the case of boxes
 //NOTE3:	1 ==> rectangular cuboid. 
 
-
 template<int type>
 class BufferFluidSurfaceBase
 {
+
 	//this is for the planes
-	int count_planes;
-	Vector3d* o;
-	Vector3d* n;
+	Vector3d o;
+	Vector3d n;
 
 	//this is for the cuboid
 	Vector3d center;
@@ -100,7 +99,7 @@ class BufferFluidSurfaceBase
 public:
 	bool destructor_activated;
 
-	inline BufferFluidSurfaceBase() {
+	inline BufferFluidSurface() {
 		destructor_activated = false;
 		switch (type) {
 		case 0: {
@@ -116,7 +115,7 @@ public:
 	}
 
 
-	inline ~BufferFluidSurfaceBase() {
+	inline ~BufferFluidSurface() {
 		if (destructor_activated) {
 			switch (type) {
 			case 0: {
@@ -133,7 +132,7 @@ public:
 
 
 	inline int addPlane(Vector3d o_i, Vector3d n_i) {
-		if (type != 0) {
+		if (type == -1) {
 			return -1;
 		}
 		if (count_planes >= 2) {
@@ -241,7 +240,7 @@ public:
 
 
 	//to know if we are on the inside of each plane we can simply use the dot product*
-	FUNCTION inline bool isInsideFluid(Vector3d p) {
+	FUNCTION inline bool isinside(Vector3d p) {
 		//*
 		switch (type) {
 		case 0: {
@@ -288,7 +287,7 @@ public:
 		}
 		case 1: {
 			Vector3d v = p - center;
-			if (isInsideFluid(p)) {
+			if (isinside(p)) {
 				v.toAbs();
 
 				dist = MIN_MACRO_CUDA(MIN_MACRO_CUDA((halfLengths.x - v.x), (halfLengths.y - v.y)), (halfLengths.z - v.z));
@@ -312,7 +311,7 @@ public:
 		case 2: {
 			Vector3d v = p - center;
 			v.toAbs();
-			if (isInsideFluid(p)) {
+			if (isinside(p)) {
 
 				//faster to compute that waty but you cound express it the same way as for the outside distance
 				dist = halfLengths.y - v.y;
@@ -337,13 +336,10 @@ public:
 
 	FUNCTION inline RealCuda distanceToSurfaceSigned(Vector3d p) {
 		//you could most likely optimize the implementation for some of the types but it's not critical so why bother
-		return  distanceToSurface(p) * ((isInsideFluid(p)) ? 1 : -1);;
+		return  distanceToSurface(p) * ((isinside(p)) ? 1 : -1);;
 	}
 
 };
-
-constexpr int surfaceType = 1;
-using BufferFluidSurface = BufferFluidSurfaceBase<surfaceType>;
 
 
 namespace SPH {
@@ -436,7 +432,12 @@ namespace SPH {
 
 		// this function will handle to control of the y component of the dynamic buffer when there is no ovement specified
 		// NOTE: the goal is to not have a reset in the function so that the simulation stays realistic
+		// It's is suposed the use a procedural wave to control the boundaries but it's not working properly yet
 		void handleOceanBoundariesTest(SPH::DFSPHCData& data);
+
+		
+		//same as abovebut this one will work on simple currents
+		void handleOceanBoundariesTestCurrent(SPH::DFSPHCData& data);
 
 		//this one uses the kassotis method
 		//does not work simply by hacking the boundaries particles mass
@@ -479,7 +480,8 @@ void DynamicWindowInterface::clearDynamicWindow() {
 
 
 void DynamicWindowInterface::handleOceanBoundariesTest(SPH::DFSPHCData& data) {
-	DynamicWindow::getStructure().handleOceanBoundariesTest(data);
+	//DynamicWindow::getStructure().handleOceanBoundariesTest(data); 
+	DynamicWindow::getStructure().handleOceanBoundariesTestCurrent(data);
 }
 
 
@@ -542,7 +544,7 @@ __global__ void DFSPH_reset_fluid_boundaries_remove_kernel(SPH::DFSPHCData data,
 
 	//*
 	particleSet->neighborsDataSet->cell_id[i] = 0;
-	bool keep = S.isInsideFluid(particleSet->pos[i]);
+	bool keep = S.isinside(particleSet->pos[i]);
 	keep = (keep_inside) ? keep : (!keep);
 	if (!keep) {
 		atomicAdd(countRmv, 1);
@@ -957,7 +959,7 @@ __global__ void DFSPH_evaluate_density_in_buffer_kernel(SPH::DFSPHCData data, SP
 	ITER_NEIGHBORS_FROM_STRUCTURE_BASE(fluidSet->neighborsDataSet, fluidSet->pos,
 		RealCuda density_delta = fluidSet->getMass(j) * KERNEL_W(data, p_i - fluidSet->pos[j]);
 	if (density_delta > 0) {
-		if (S.isInsideFluid(fluidSet->pos[j])) {
+		if (S.isinside(fluidSet->pos[j])) {
 			density += density_delta;
 			count_neighbors++;
 			if (fluidSet->pos[j].y > (p_i.y)) {
@@ -967,7 +969,7 @@ __global__ void DFSPH_evaluate_density_in_buffer_kernel(SPH::DFSPHCData data, SP
 	}
 	);
 
-	keep_particle = keep_particle || (!S.isInsideFluid(p_i));
+	keep_particle = keep_particle || (!S.isinside(p_i));
 	
 
 	//keep_particle = true;
@@ -1096,7 +1098,7 @@ __global__ void DFSPH_generate_buffer_from_surface_count_particles_kernel(SPH::D
 	//also we need to do the height with a height map but for now it wil just be a fixe height
 	//*
 	RealCuda dist = S.distanceToSurfaceSigned(backgroundSet->pos[i]);
-	if ((dist<data.particleRadius)&&(backgroundSet->pos[i].y<1.2)) {
+	if ((dist<data.particleRadius)&&(backgroundSet->pos[i].y<30)) {
 		atomicAdd(count, 1);
 	}
 	else {
@@ -1156,7 +1158,7 @@ __global__ void DFSPH_lighten_buffers_kernel(SPH::DFSPHCData data, SPH::UnifiedP
 			//		it from the background
 			ITER_NEIGHBORS_FROM_STRUCTURE_BASE(fluidSet->neighborsDataSet, fluidSet->pos,
 				if (!is_buffer_particle_under_fluid) {
-					if (S.isInsideFluid(fluidSet->pos[j])) {
+					if (S.isinside(fluidSet->pos[j])) {
 						if (keep_particle_buffer) {
 							if (fluidSet->pos[j].y > (p_i.y)) {
 								is_buffer_particle_under_fluid = true;
@@ -1394,7 +1396,7 @@ void DynamicWindow::init(DFSPHCData& data) {
 		oss << "DynamicWindow::init The initialization for this type of surface has not been defined (type=" << surfaceType << std::endl;
 		throw(oss.str());
 		//*/
-		S_initial.addPlane(Vector3d(-1.5, 0, 0), Vector3d(1, 0, 0));
+		S_initial.addPlane(Vector3d(-7.8, 0, 0), Vector3d(1, 0, 0));
 		
 	}
 	else if (surfaceType == 1) {
@@ -2213,7 +2215,7 @@ public:
 		cudaMallocManaged(&(waveVelocityField), cellCount.x * cellCount.y * sizeof(Vector3d));
 		cudaMallocManaged(&(waveVelocityFieldCount), cellCount.x * cellCount.y * sizeof(int));
 
-		a = 0.2;
+		a = 0.15;
 		k = 2 * CR_CUDART_PI / 4.0;
 		omega = 2 * CR_CUDART_PI / 2.0;
 
@@ -2377,7 +2379,7 @@ void StokesWaveGenerator::computeWaveState(RealCuda t, RealCuda h0, RealCuda dt_
 	countSampling.x = (maxPos.x - minPos.x) / samplingSpacing + overSampling*2;
 	countSampling.y = (surfaceHeight - minPos.y) / samplingSpacing + 1;
 
-	std::cout << "sampling count: (x y)" << countSampling.toString() << std::endl;
+	//std::cout << "sampling count: (x y)" << countSampling.toString() << std::endl;
 
 	//I need first to reset the structure
 	{
@@ -2400,13 +2402,18 @@ void StokesWaveGenerator::computeWaveState(RealCuda t, RealCuda h0, RealCuda dt_
 
 template <bool use_neighbor_structure>
 __global__ void DFSPH_tag_buffer_to_add_kernel(SPH::DFSPHCData data, SPH::UnifiedParticleSet* particleSet, SPH::UnifiedParticleSet* bufferSet, 
-	StokesWaveGenerator waveGenerator, int* count) {
+	StokesWaveGenerator waveGenerator, BufferFluidSurface S_border, int* count) {
 	int i = blockIdx.x * blockDim.x + threadIdx.x;
 	if (i >= bufferSet->numParticles) { return; }
 
 	Vector3d pos_i = bufferSet->pos[i];
 	bufferSet->neighborsDataSet->cell_id[i] = 0;
 	
+	if (S_border.isinside(pos_i)) {
+		return;
+	}
+
+
 	RealCuda h;
 	waveGenerator.getHeight(pos_i, h);
 
@@ -2457,6 +2464,7 @@ __global__ void DFSPH_tag_buffer_to_add_kernel(SPH::DFSPHCData data, SPH::Unifie
 }
 
 
+
 __global__ void DFSPH_buffer_mimic_stockes_waves_kernel(SPH::DFSPHCData data, SPH::UnifiedParticleSet* bufferSet, StokesWaveGenerator waveGenerator, int* count) {
 	int i = blockIdx.x * blockDim.x + threadIdx.x;
 	if (i >= bufferSet->numParticles) { return; }
@@ -2491,24 +2499,30 @@ __global__ void DFSPH_tag_above_desired_free_surface_kernel(SPH::DFSPHCData data
 	Vector3d pos = particleSet->pos[i];
 	particleSet->neighborsDataSet->cell_id[i] = 0;
 
-	if ((!S.isInsideFluid(particleSet->pos[i]))|| checkFreeSurfaceForAll) {
+	if ((!S.isinside(particleSet->pos[i]))|| checkFreeSurfaceForAll) {
 
 		RealCuda h;
 		waveGenerator.getHeight(pos, h);
 
-
 		if (pos.y > h) {
+		//*
 			atomicAdd(count, 1);
 			particleSet->neighborsDataSet->cell_id[i] = 25000000;
 			return;
+		//*/
 		}
 
 		//I'll do the velocity control here
+		//I need a smooth transition from the existing velocity to the wave one
+		//it will depend on the size of the buffer so in all technicity I'll need to store that value in the structure, let's say 0.25 for now
 		//if (!checkFreeSurfaceForAll) 
 		{
 			Vector3d vel;
+			RealCuda buffer_length = 0.25;
+			RealCuda coef= MIN_MACRO_CUDA(1.0, S.distanceToSurface(pos) / buffer_length);
+			//coef = 0.005;
 			waveGenerator.getvel(pos, vel);
-			particleSet->vel[i]=vel;
+			particleSet->vel[i]=vel*coef+ particleSet->vel[i]*(1-coef);
 		}
 	}
 	//*/
@@ -2541,6 +2555,8 @@ void DynamicWindow::handleOceanBoundariesTest(SPH::DFSPHCData& data) {
 	static StokesWaveGenerator waveGenerator;
 	static RealCuda time = 0;
 	time += 0.003;
+	static BufferFluidSurface S_border;
+	static BufferFluidSurface S_outflow;
 
 	if (!countRmv) {
 		cudaMallocManaged(&(countRmv), sizeof(int));
@@ -2564,17 +2580,19 @@ void DynamicWindow::handleOceanBoundariesTest(SPH::DFSPHCData& data) {
 
 		}
 
+		//define the border area that is used to add the particles
+		S_border.addPlane(Vector3d(-1.9, 0, 0), Vector3d(1, 0, 0));
 	}
 
 	std::vector<std::string> timing_names{ "compute wave properties","first init","init step","copy velocities","clean fluid",
 	"tag buffer to add","add tagged buffer"};
-	static SPH::SegmentedTiming timings("DynamicWindow::handleOceanBoundariesTest", timing_names, true);
+	static SPH::SegmentedTiming timings("DynamicWindow::handleOceanBoundariesTest", timing_names, false);
 	timings.init_step();
 
 
 
 
-	waveGenerator.computeWaveState(time, 0.8, 0.003, data.particleRadius/4.0);
+	waveGenerator.computeWaveState(time, 0.6, 0.003, data.particleRadius/4.0);
 
 	timings.time_next_point();
 
@@ -2582,7 +2600,7 @@ void DynamicWindow::handleOceanBoundariesTest(SPH::DFSPHCData& data) {
 	if (first_time) {
 
 		//start the simulation with a realistic ocean state
-		if(false){
+		if(true){
 
 
 			*countRmv = 0;
@@ -2714,7 +2732,8 @@ void DynamicWindow::handleOceanBoundariesTest(SPH::DFSPHCData& data) {
 		*countRmv = 0;
 		{
 			int numBlocks = calculateNumBlocks(fluidBufferSet->numParticles);
-			DFSPH_tag_buffer_to_add_kernel<true> << <numBlocks, BLOCKSIZE >> > (data, particleSet->gpu_ptr, fluidBufferSet->gpu_ptr, waveGenerator,countRmv);
+			DFSPH_tag_buffer_to_add_kernel<true> << <numBlocks, BLOCKSIZE >> > (data, particleSet->gpu_ptr, fluidBufferSet->gpu_ptr,
+				waveGenerator,S_border,countRmv);
 			gpuErrchk(cudaDeviceSynchronize());
 		}
 
@@ -2723,7 +2742,7 @@ void DynamicWindow::handleOceanBoundariesTest(SPH::DFSPHCData& data) {
 
 	//std::cout << "handleOceanBoundariesTest: detected I could add: "<<*countRmv<<"  particles  (nbr particles in buffer: " << fluidBufferSet->numParticles<<")"<<std::endl;
 
-	//let's add the taged particles for debugging
+	//let's add the taged particles
 	int newNbrParticles = particleSet->numParticles + *countRmv;
 	if (newNbrParticles > particleSet->numParticlesMax) {
 		particleSet->changeMaxParticleNumber(newNbrParticles * 1.25);
@@ -2745,170 +2764,603 @@ void DynamicWindow::handleOceanBoundariesTest(SPH::DFSPHCData& data) {
 	timings.recap_timings();
 }
 
+class BorderHeightMap {
+public:
+	int samplingCount;
+	Vector3d* samplingPositions;
+	RealCuda* heights;
 
-__global__ void DFSPH_compute_boundaries_normals_kernel(SPH::DFSPHCData data, SPH::UnifiedParticleSet* particleSet, Vector3d* normals) {
-	int i = blockIdx.x * blockDim.x + threadIdx.x;
-	if (i >= particleSet->numParticles) { return; }
+	BorderHeightMap() {}
 
-	Vector3d ni;
-	Vector3d pos = particleSet->pos[i];
+	void init(SPH::DFSPHCData& data) {
+		//I'll hardcode it for now
+		//so the simu domain is -2;2  -0.5;0.5
 
-	//yeah Im' hard coding it for now
-	RealCuda dist_limit = (data.particleRadius * 2);
-	if (pos.y > dist_limit) {
-		if (abs(pos.x - (-1))<dist_limit) {
-			ni.x = 1;
+		Vector3d points[4];
+		points[0] = Vector3d(-2, 0, -0.5);
+		points[1] = Vector3d(2, 0, -0.5);
+		points[2] = Vector3d(2, 0, 0.5);
+		points[3] = Vector3d(-2, 0, 0.5);
+
+		//count the nbr of points and allocate
+		//space between sampling will be the particle radius
+		samplingCount = 0;
+		RealCuda samplingSpacing = data.particleRadius;
+		Vector3d startPt = points[3];
+		for (int i = 0; i < 4; ++i) {
+			Vector3d endPt = points[i];
+
+			RealCuda length = (endPt - startPt).norm();
+			samplingCount += floorf(length / samplingSpacing);
+
+			startPt = endPt;
 		}
-		if (abs(pos.x - (1))<dist_limit) {
-			ni.x = -1;
-		}
-		if (abs(pos.z - (-0.5))<dist_limit) {
-			ni.z = 1;
-		}
-		if (abs(pos.z - (0.5))<dist_limit) {
-			ni.z = -1;
+		samplingCount += 4;//to add the 4 anchor points
+
+		cudaMallocManaged(&(samplingPositions), sizeof(Vector3d)*samplingCount);
+		cudaMallocManaged(&(heights), sizeof(RealCuda)*samplingCount);
+
+		//and now we can set the values
+		startPt = points[3];
+		int count = 0;
+		for (int i = 0; i < 4; ++i) {
+			Vector3d endPt = points[i];
+
+
+			Vector3d delta = endPt - startPt;
+			RealCuda length = delta.norm();
+			delta *= samplingSpacing / length;
+			int localCount = floorf(length / samplingSpacing);
+
+			Vector3d pos = startPt;
+			samplingPositions[count] = pos;
+			heights[count] = 0.47;
+			count++;
+			for (int j = 0; j < localCount; ++j) {
+				pos += delta;
+
+				samplingPositions[count] = pos;
+				heights[count] = 0.47;
+				count++;
+			}
+
+			startPt = endPt;
 		}
 	}
-	
-	if (!ni.isZero()) {
-		ni /= ni.norm();	
+
+	FUNCTION RealCuda getHeight(Vector3d pos) {
+		//let's do a basic way: check all the position and keep the closest
+		/// TODO CODE an acceleration structure so I don't have to explore every points, 
+		///			you can use a structure similar to the one for the neightbors sice you won't have to rebuild it
+		/// BTW I can use a similar structure to  handel the normal map for complexborders
+		RealCuda distSq = (pos - samplingPositions[0]).squaredNorm();
+		RealCuda height = heights[0];
+		for (int i = 1; i < samplingCount; ++i) {
+			RealCuda localDistSq = (pos - samplingPositions[i]).squaredNorm();
+			if (localDistSq < distSq) {
+				distSq = localDistSq;
+				height = heights[i];
+			}
+		}
+
+		return height;
 	}
-	normals[i] = ni;
+};
 
-	particleSet->color[i] = ni.abs();
-	particleSet->mass_flow[i] = 0;
-}
 
-__global__ void DFSPH_handle_flow_kernel(SPH::DFSPHCData data, SPH::UnifiedParticleSet* particleSet, Vector3d* normals) {
+__global__ void DFSPH_handle_inflow_kernel(SPH::DFSPHCData data, SPH::UnifiedParticleSet* particleSet, SPH::UnifiedParticleSet* bufferSet,
+	BufferFluidSurface S_border, BorderHeightMap borderHeightMap, int* count) {
 	int i = blockIdx.x * blockDim.x + threadIdx.x;
-	if (i >= particleSet->numParticles) { return; }
+	if (i >= bufferSet->numParticles) { return; }
 
-	Vector3d ni;
-	Vector3d pos = particleSet->pos[i];
 
-	if (particleSet->pos[i].y > 0.8) {
+	if (!S_border.isinside(bufferSet->pos[i])) {
 		return;
 	}
 
-	//yeah Im' hard coding it for now, it should be a function of the normal in the future
-	//ok so for the flux calculation I need the area, but I don't have it the closest thing I have is the volume
-	//of the boundaries particles. so from the volume I'll get the circular area and compute the flow from it
-	//4/3*pi/r^3 ==> pi*r^2
-	//A= V*3/4*r
-	RealCuda flux_vel = 0.25; //m/s
-	if (normals[i].x > 0.8) {
-		RealCuda radius = particleSet->mass[i] * 3 / (4 * M_PI);
-		radius = cbrtf(radius);
-
-		RealCuda area = radius * radius*M_PI;
-
-		RealCuda F = area * flux_vel;
-		RealCuda dm = F * data.h;
-
-		particleSet->mass_flow[i] += dm;
+	//only add particle if we are below the ocean level
+	Vector3d p_temp = bufferSet->pos[i];
+	if (p_temp.y > borderHeightMap.getHeight(p_temp)) {
+		return;
 	}
+
+	
+	//let's brute force it for now
+	//and my condition will bee if we are far enougth from any fluid particle that mean i cna be added to the simulation
+	//note since the buffer is as a configuration of a rest fluid that mean even I I add mutples particles at the same time I won't hav any problem
+	//we save the velocities and distance of the n closests
+	RealCuda limit_dist = data.particleRadius * 2 ;
+	limit_dist *= limit_dist;
+	//*
+
+	int countn = 0;
+	ITER_NEIGHBORS_INIT_FROM_STRUCTURE(data, bufferSet, i);
+	ITER_NEIGHBORS_FROM_STRUCTURE(particleSet->neighborsDataSet, particleSet->pos,
+		{
+			countn++;
+			RealCuda cur_dist = (pos - particleSet->pos[j]).squaredNorm();
+	if (cur_dist < limit_dist) {
+		return;
+	}
+		}
+	);
+	
+//*/
+	//if we reach here it means we need to add the particle into the simulation
+	//we need a velocity forthe particle, so we will set it's velocity to the average velocity of neighbor particles
+	//for that we will use the same approximation as ferrand 2012
+	//though since all fluid particles have the same density if can be slightly simplified as simply a weigth equivalent to the kernel value
+	RealCuda totalWeight = 0;
+	Vector3d weightedSum(0,0,0);
+	
+	ITER_NEIGHBORS_FROM_STRUCTURE(particleSet->neighborsDataSet, particleSet->pos,
+		{
+			RealCuda weight =  KERNEL_W(data,pos - particleSet->pos[j]);
+			weightedSum += particleSet->vel[j] * weight;
+			totalWeight += weight;
+		}
+	);
+
+	//don't create a particle if there is a flow toward the outside of the simulation space
+	Vector3d normal(1, 0, 0);
+	if (normal.dot(weightedSum) < 0) {
+		return;
+	}
+
+	if (totalWeight != 0) {
+		weightedSum /= totalWeight;
+	}
+	//we have to lower the vertical component or keeping the velocity will accumulate acceleration on the vertical component
+	//I think we could lower it by the aceleration but for now I'll just won't consider the vertical velocity
+	weightedSum.y = 0;
+	if (pos.y < 0.1) {
+	//	printf("test velocity: %f %f %f // %f %f %f // %d %f \n", pos.x, pos.y, pos.z, weightedSum.x, weightedSum.y, weightedSum.z, countn, totalWeight);
+	}
+
+//reaching here means we have to add the particle
+int local_id = atomicAdd(count, 1);
+particleSet->pos[particleSet->numParticles + local_id] = pos;
+particleSet->mass[particleSet->numParticles + local_id] = particleSet->mass[0];
+particleSet->vel[particleSet->numParticles + local_id] = weightedSum;//Vector3d(0, 0, 0);
+particleSet->color[particleSet->numParticles + local_id] = Vector3d(1,0,0);
+//we need to make sure they are not tagged for removal
+particleSet->neighborsDataSet->cell_id[i] = 0;
 }
 
-
-__global__ void DFSPH_handle_fluid_creation_kernel(SPH::DFSPHCData data, SPH::UnifiedParticleSet* particleSet,
-	SPH::UnifiedParticleSet* boundariesSet, Vector3d* normals, int* countAdded) {
+template<int surfaceType>
+__global__ void DFSPH_apply_current_kernel(SPH::DFSPHCData data, SPH::UnifiedParticleSet* particleSet,
+	BufferFluidSurfaceBase<surfaceType> S_current, Vector3d current_velocity, RealCuda transition_length) {
 	int i = blockIdx.x * blockDim.x + threadIdx.x;
-	if (i >= boundariesSet->numParticles) { return; }
+	if (i >= particleSet->numParticles) { return; }
 
-	Vector3d ni;
-
-	if (boundariesSet->mass_flow[i]>(particleSet->getMass(0)*1)){
-		boundariesSet->mass_flow[i] -= (particleSet->getMass(0) * 1);
-
-		int addedId=atomicAdd(countAdded, 1);
-		addedId += particleSet->numParticles;
-
-
-		Vector3d pos = boundariesSet->pos[i] + normals[i] * data.particleRadius * 2;
-		
-		particleSet->pos[addedId] = pos;
-		particleSet->mass[addedId] = particleSet->getMass(0);
-		particleSet->vel[addedId] = Vector3d(0,0,0);
-		particleSet->kappa[addedId] = 0;
-		particleSet->kappaV[addedId] = 0;
-		particleSet->color[addedId] = Vector3d(0,1,0);
+	//inside the surface I know the velocity 
+	if (S_current.isinside(particleSet->pos[i])) {
+		particleSet->vel[i].x = current_velocity.x;
 	}
+	/*
+	//and around the surfa I'll set a transition area
+	RealCuda dist = S_current.distanceToSurface(particleSet->pos[i]);
+
+	if (dist > transition_length) {
+		return;
+	}
+
+	RealCuda coef = dist / transition_length;
+	particleSet->vel[i] = particleSet->vel[i] * coef + current_velocity * (1.0 - coef);
+	//*/
 }
 
+template<int surfaceType>
+__global__ void DFSPH_handle_outflow_kernel(SPH::DFSPHCData data, SPH::UnifiedParticleSet* particleSet,
+	BufferFluidSurfaceBase<surfaceType> S_fluidInterior, BorderHeightMap borderHeightMap, int* count,
+	RealCuda* massDeltas) {
+	int i = blockIdx.x * blockDim.x + threadIdx.x;
+	if (i >= particleSet->numParticles) { return; }
+
+	Vector3d pos_i = particleSet->pos[i];
 
 
-void DynamicWindow::handleOceanBoundariesTest2(SPH::DFSPHCData& data) {
-	UnifiedParticleSet* particleSet = data.fluid_data;
-	static int* countRmv = NULL;
-	static Vector3d* boundaries_normals = NULL;
-	static StokesWaveGenerator waveGenerator;
-	static RealCuda time = 0;
-	time += 0.003;
 
-	if (!countRmv) {
-		cudaMallocManaged(&(countRmv), sizeof(int));
+	//only affect the border
+	if (S_fluidInterior.isinside(pos_i)) {
+		particleSet->neighborsDataSet->cell_id[i] = 0;
+		return;
+	}
 
-		//I don't need the z component
-		waveGenerator.init(data.particleRadius * 2, Vector3d(-2.0, 0, 0), Vector3d(2.0, 2.0, 0));
+	
 
-		if (false) {
-			std::remove("yolo.csv");
-			std::ofstream myfile("yolo.csv", std::ofstream::app);
-			if (myfile.is_open())
-			{
-				/*
-				myfile << "t" << "  ";
-				for (int i = 0; i < waveGenerator.cellCount.x; ++i) {
-				myfile << waveGenerator.minPos.x + i*waveGenerator.cellSize << "  ";
+	//by default a particles is tagged as to be removed
+	int tag = 250000000;
+	//the easy case is if there is no ocean reference I remove the particle
+	RealCuda ocean_height = borderHeightMap.getHeight(pos_i);
+	
+	if (pos_i.y < ocean_height) 
+	{
+		//if we are below he ocean surface I do an estimation of the current to see if the particle should be removed
+		//for now instead of taking the actual particle velocity,
+		//I'll use an estimation of the velocity by taking a virtual position that is inside the fluid (similar to tafuni)
+		//My reson is that I dont want that velocity estimation to be perturbated by the boundary particles
+		Vector3d pos_virt = pos_i;
+		///TODO you have to apply the normal of the surface to get the virtual position
+		RealCuda factor = 1;
+		if (pos_virt.x < 0) {
+			factor = -1;
+		}
+		pos_virt.x -= factor*data.getKernelRadius();
+		
+
+		//estimate the velocity at that point in space
+		Vector3d vel_virt(0, 0, 0);
+		{
+			//sadly my macros are not made to check the neighborhood of a random position in space so I have to do some manual initialisation
+			ITER_NEIGHBORS_INIT_CELL_COMPUTATION(pos_virt, data.getKernelRadius(), data.gridOffset);
+			unsigned int successive_cells_count = (x > 0) ? 3 : 2;
+			x = (x > 0) ? x - 1 : x;
+
+			//do the actual velocity estimation
+			RealCuda  total_weight = 0;
+			ITER_NEIGHBORS_FROM_STRUCTURE(particleSet->neighborsDataSet, particleSet->pos,
+				{
+					RealCuda weight = data.W(pos_virt - particleSet->pos[j]);
+					total_weight += weight;
+					vel_virt += weight * particleSet->vel[j];
 				}
-				myfile << std::endl;
-				//*/
+			);
+			vel_virt /= total_weight;
+		}
+		///TODO you have to apply the normal of the surface to get the actual velocity
+		RealCuda limit_vel = 0.4;
+		RealCuda surface_vel = vel_virt.x*factor;
+		if (surface_vel < limit_vel) {
+			//change the tag to keep the particle
+			tag = 0;
+		}
+		if (false) {
+			surface_vel = particleSet->vel[i].x*factor;
+			if (surface_vel < limit_vel) {
+				//change the tag to keep the particle
+				tag = 0;
 			}
-
 		}
 
+		if (tag != 0) {
+			//We need to distribute the mass to the neighboring boundaries to not have a "hole" in the fluid 
 
-		cudaMallocManaged(&(boundaries_normals), sizeof(Vector3d)*data.boundaries_data->numParticles);
+			//for that I'll distribute the wiegth between the 3 closest boundaries particles
+			int idxs[3];
+			RealCuda dists[3];
+			for (int l = 0; (l < 3); ++l) {
+				dists[l] = 1000;//just a huge base value so the algo is generic
+			}
 
+			ITER_NEIGHBORS_INIT(data, particleSet, i);
+			neighbors_ptr += particleSet->getNumberOfNeighbourgs(i)*numParticles;
+			end_ptr = neighbors_ptr;
+			ITER_NEIGHBORS_BOUNDARIES(data, particleSet, i, 
+				{
+					//printf("test: %d,  %f , %f,  %f \n", i, pos_i.x , body.pos[neighborIndex].x ,data.boundaries_data_cuda->pos[neighborIndex].x);
+					int idx = neighborIndex;
+					RealCuda dist = (pos_i-body.pos[neighborIndex]).norm();
+					if (dist < dists[2]) {
+
+						idxs[2] = idx;
+						dists[2] = dist;
+						for (int l = 2; l>0; --l) {
+							if (dists[l] < dists[l - 1]) {
+								idx = idxs[l - 1];
+								dist = dists[l - 1];
+								idxs[l - 1] = idxs[l];
+								dists[l - 1] = dists[l];
+								idxs[l] = idx;
+								dists[l] = dist;
+							}
+						}
+					}
+
+				}
+			);
+
+			//now we can distriute the mass, the weight I use are the kernel function distance
+			RealCuda totalWeight = 0;
+			for (int l = 0; (l < 3); ++l) {
+				if (dists[l] < 999) {
+					//printf("test: %d,  %f , %f,  %f \n", i,  dists[l], pos_i.x ,data.boundaries_data_cuda->pos[idxs[l]].x);
+					dists[l]=data.W(dists[l]);
+					totalWeight += dists[l];
+				}
+			}
+			//and then add it
+			RealCuda amplification_factor = 5;
+			for (int l = 0; (l < 3); ++l) {
+				if (dists[l] < 999) {
+					//printf("test: %d,  %f * %f / %f = %f\n", i, particleSet->mass[i] , dists[l] , totalWeight,
+					//	particleSet->mass[i] * dists[l] / totalWeight);
+					atomicAdd(&(massDeltas[idxs[l]]), particleSet->mass[i] * amplification_factor * dists[l] / totalWeight);
+				}
+			}
+		}
+
+	}
+
+	//and tag the particle if it needs to be removed
+	particleSet->neighborsDataSet->cell_id[i] = tag;
+	if (tag != 0) {
+		atomicAdd(count, 1);
+	}
+}
+
+__global__ void load_wave_to_height_map_kernel(BorderHeightMap borderHeightMap, StokesWaveGenerator waveGenerator) {
+	int i = blockIdx.x * blockDim.x + threadIdx.x;
+	if (i >= borderHeightMap.samplingCount) { return; }
+
+	//only apply the wave on the left side
+	Vector3d pos_i = borderHeightMap.samplingPositions[i];
+	if(pos_i.x > 1.85){
+		return;
+	}
+
+	RealCuda height = 0;
+	waveGenerator.getHeight(pos_i, height);
+	borderHeightMap.heights[i] = height;
+}
+
+
+template<int surfaceType>
+__global__ void apply_wave_velocities_kernel(SPH::DFSPHCData data, SPH::UnifiedParticleSet* particleSet, 
+	StokesWaveGenerator waveGenerator, BufferFluidSurfaceBase<surfaceType> S_oceanBorder, RealCuda transitionLength) {
+	int i = blockIdx.x * blockDim.x + threadIdx.x;
+	if (i >= particleSet->numParticles) { return; }
+		
+	Vector3d pos_i = particleSet->pos[i];
+	RealCuda dist = S_oceanBorder.distanceToSurfaceSigned(pos_i);
+	//if (dist<-transitionLength) {return;}
+	if (!S_oceanBorder.isinside(pos_i)) { return; }
+
+	//now we still have a huge problem: what happens if there is a particle above the procedural wave surface
+	//I have no answer for that hopefully it doesn't realy happens but for now I'll just apply the velocity that is observed at
+	//the wave surface verticaly
+	//hum try to leacve the particles above the surface free
+	RealCuda height;
+	waveGenerator.getHeight(pos_i, height);
+	if (height < pos_i.y) {
+		pos_i.y = height;
+		//return;
+	}
+
+	Vector3d vel;
+	waveGenerator.getvel(pos_i, vel);
+
+	//2 cases if we are inside the surface I apply the full velocity
+	//but if it's on the other side I only apply part of it proportionaly to the distance to the surface
+	if (dist < 0) {
+		RealCuda coef = MIN_MACRO_CUDA(1.0, (-dist) / transitionLength);
+		vel = vel * (1 - coef) + particleSet->vel[i] * coef;
+	}
+
+	//and apply
+	particleSet->vel[i].x = vel.x;
+	
+	//particleSet->vel[i].z = vel.z;
+}
+
+__global__ void rmv_mass_delta_kernel(SPH::UnifiedParticleSet* particleSet, RealCuda* massDeltas) {
+	int i = blockIdx.x * blockDim.x + threadIdx.x;
+	if (i >= particleSet->numParticles) { return; }
+
+	particleSet->mass[i] -= massDeltas[i];
+
+	//let's do a 5% decay
+	massDeltas[i] *= 0.99;
+}
+
+__global__ void add_mass_delta_kernel(SPH::UnifiedParticleSet* particleSet, RealCuda* massDeltas) {
+	int i = blockIdx.x * blockDim.x + threadIdx.x;
+	if (i >= particleSet->numParticles) { return; }
+
+
+	particleSet->mass[i] += massDeltas[i];
+}
+
+void DynamicWindow::handleOceanBoundariesTestCurrent(SPH::DFSPHCData& data) {
+	UnifiedParticleSet* particleSet = data.fluid_data;
+	
+	//just to be surre I have the necessary space to manipulate the particle number
+	if (particleSet->numParticles > (particleSet->numParticlesMax*0.75)) {
+		particleSet->changeMaxParticleNumber(particleSet->numParticlesMax*1.25);
+	}
+
+	//currents are less compliated
+	//just define the input area and set the velocity
+	static BufferFluidSurface S_inflow;
+	static BufferFluidSurfaceRect S_current;
+	//this is the lengtharound the current to do the velocity transition
+	RealCuda transition_length = 0.10;
+	Vector3d current_velocity = Vector3d(3.0,0,0);
+
+	static int* int_ptr = NULL;
+
+	//this is to handle the outflow
+	//the first one define the area where particle are considerated to leave the simulation
+	//And I need a fast structure to define the ocean profile
+	static BufferFluidSurfaceRect S_fluidInterior;
+
+	static BorderHeightMap borderHeightMap;
+
+	static RealCuda time = 0;
+	time += 0.003;	
+	static StokesWaveGenerator waveGenerator;
+
+	//another surfece I use to apply the wave velocity
+	static BufferFluidSurfacePlane S_borderWaveVelocity;
+
+	//trying to handle the outflow kassotis style,
+	//I'll need to store the mass deltas
+	static RealCuda* massDeltas;
+
+	Vector3d sim_min(-8, 0, 0.5);
+	Vector3d sim_max(8, 7, 0.5);
+
+	static bool first_time = true;
+	if (first_time) {
+		first_time = false;
+
+		/*
+		for (int i = 0; i < 40; ++i) {
+			RealCuda coef = 1 + i * 0.1;
+			std::cout <<"kernel study: "<< coef<<"  //   " <<data.W((coef)*data.particleRadius) << std::endl;
+
+		}//*/
+
+
+		//define the border area that is used to add the particles
+		S_inflow.addPlane(Vector3d(sim_min.x+0.075, 0, 0), Vector3d(-1, 0, 0));
+		std::cout << "inflow surface: " << S_inflow.toString() << std::endl;
+
+		//and the surface for the current
+		S_current.setCuboid(Vector3d(sim_min.x, 0.0, 0),Vector3d(0.5,10,10));
+		std::cout << "current surface: " << S_current.toString() << std::endl;
+
+
+		S_fluidInterior.setCuboid(Vector3d(-1.0, 0.0, 0.0), Vector3d(sim_max.x +1 - 0.075, 100, 100));
+		//S_fluidInterior.addPlane(Vector3d(1.9, 0, 0), Vector3d(-1, 0, 0));
+
+		cudaMallocManaged(&(int_ptr), sizeof(int));
+		
+		//for the ocean height comunication
+		borderHeightMap.init(data);
+
+		//wave model (might need to be changed the current one is way slow
+		waveGenerator.init(data.particleRadius, Vector3d(-sim_min.x, 0, 0), Vector3d(sim_min.x+2, 2.0, 0));
+
+		//just some other parameters
+		S_borderWaveVelocity.addPlane(Vector3d(sim_min.x-1,0,0), Vector3d(-1, 0, 0));
+
+		cudaMallocManaged(&(massDeltas), sizeof(RealCuda)*data.boundaries_data->numParticles);
 		{
 			int numBlocks = calculateNumBlocks(data.boundaries_data->numParticles);
-			DFSPH_compute_boundaries_normals_kernel << <numBlocks, BLOCKSIZE >> > (data, data.boundaries_data->gpu_ptr, boundaries_normals);
+			cuda_setBufferToValue_kernel<RealCuda> << <numBlocks, BLOCKSIZE >> > (massDeltas,0,data.boundaries_data->numParticles);
 			gpuErrchk(cudaDeviceSynchronize());
 		}
-
-		data.fluid_data->changeMaxParticleNumber(data.fluid_data->numParticlesMax*10);
-		data.fluid_data->resetColor();
-		std::cout << "init that" << std::endl;
-		
 	}
 
-	//I'll ttry using the kassotis method
-	//add the mass for imput particles
-	{
+	//init everything for now
+	initStep(data, Vector3d(0, 0, 0), false, false);
+	//particleSet->initNeighborsSearchData(data, false, false);
+	//full neighbor search for now
+	cuda_neighborsSearch(data);
+	particleSet->resetColor();
+
+	bool use_stokes_wave = false;
+
+	//if we use a wave we have to initialize the system
+	if (use_stokes_wave) {
+		waveGenerator.computeWaveState(time, 0.47, 0.003, data.particleRadius / 4.0);
+	}
+
+	//first we have to define the ocean height profile at the fluid border
+	if (use_stokes_wave) {
+		
+		int numBlocks = borderHeightMap.samplingCount;
+		load_wave_to_height_map_kernel << <numBlocks, BLOCKSIZE >> > (borderHeightMap, waveGenerator);
+		gpuErrchk(cudaDeviceSynchronize());
+		
+
+	}
+	
+	//we need to remove the mass deltas
+	if(true){
 		int numBlocks = calculateNumBlocks(data.boundaries_data->numParticles);
-		DFSPH_handle_flow_kernel << <numBlocks, BLOCKSIZE >> > (data, data.boundaries_data->gpu_ptr, boundaries_normals);
+		rmv_mass_delta_kernel << <numBlocks, BLOCKSIZE >> > (data.boundaries_data->gpu_ptr, massDeltas);
 		gpuErrchk(cudaDeviceSynchronize());
 	}
 
+	//the order of operation is to firsttag the particle to be removed
+	//the chekc if particles need to be added before actually removeing them
+	//then removing the tagged particles
+	//and we finish by controling the velocity where needed
+
+	//so tag the particles to remove
+	*int_ptr = 0;
 	{
-		//create the new fluid particles
-		*countRmv = 0;
-		int numBlocks = calculateNumBlocks(data.boundaries_data->numParticles);
-		DFSPH_handle_fluid_creation_kernel << <numBlocks, BLOCKSIZE >> > (data, data.fluid_data->gpu_ptr, data.boundaries_data->gpu_ptr,
-			boundaries_normals, countRmv);
+		int numBlocks = calculateNumBlocks(particleSet->numParticles);
+		DFSPH_handle_outflow_kernel<1> << <numBlocks, BLOCKSIZE >> > (data, particleSet->gpu_ptr, S_fluidInterior, borderHeightMap, 
+			int_ptr, massDeltas);
 		gpuErrchk(cudaDeviceSynchronize());
-		
-		std::cout << "check mass: "  <<data.boundaries_data->mass_flow[3865] << std::endl;
+	}
+	int count_particles_to_remove = *int_ptr;
+	
 
-		//updte the fluid particle count
-		if ((*countRmv) > 0) {
-			std::cout << "added a particle: " << *countRmv << std::endl;
+	
 
-			data.fluid_data->updateActiveParticleNumber(data.fluid_data->numParticles + (*countRmv));
+	//add the particles at inflow
+	*int_ptr = 0;
+	if(true){
+		int numBlocks = calculateNumBlocks(fluidBufferSet->numParticles);
+		DFSPH_handle_inflow_kernel << <numBlocks, BLOCKSIZE >> > (data, particleSet->gpu_ptr, fluidBufferSet->gpu_ptr, S_inflow, 
+			borderHeightMap,int_ptr);
+		gpuErrchk(cudaDeviceSynchronize());
+	}
 
-			if (data.fluid_data->numParticlesMax < (data.fluid_data->numParticles*1.5)) {
-				data.fluid_data->changeMaxParticleNumber(data.fluid_data->numParticles*1.5);
+	int count_new_particles = *int_ptr;
+
+	if (count_new_particles > 0) {
+		std::cout << "handleOceanBoundariesTestCurrent adding particles: " << count_new_particles << std::endl;
+		particleSet->updateActiveParticleNumber(particleSet->numParticles+count_new_particles);
+	}
+
+	//remove the particles that have been tagged
+	if (count_particles_to_remove > 0) {
+		std::cout << "handleOceanBoundariesTestCurrent removing particles particles: " << count_particles_to_remove << std::endl;
+
+		/*
+		for (int i = 0; i < data.boundaries_data->numParticles; ++i) {
+			if (massDeltas[i] > 0) {
+				std::cout << "massdelta on particle: " << i << std::endl;
 			}
-		}
+			massDeltas[i] = 0;
+		}//*/
+
+		//*
+		//now use the same process as when creating the neighbors structure to put the particles to be removed at the end
+		cub::DeviceRadixSort::SortPairs(particleSet->neighborsDataSet->d_temp_storage_pair_sort, particleSet->neighborsDataSet->temp_storage_bytes_pair_sort,
+			particleSet->neighborsDataSet->cell_id, particleSet->neighborsDataSet->cell_id_sorted,
+			particleSet->neighborsDataSet->p_id, particleSet->neighborsDataSet->p_id_sorted, particleSet->numParticles);
+		gpuErrchk(cudaDeviceSynchronize());
+
+		cuda_sortData(*particleSet, particleSet->neighborsDataSet->p_id_sorted);
+		gpuErrchk(cudaDeviceSynchronize());
+
+		//and now you can update the number of particles
+		int new_num_particles = particleSet->numParticles - count_particles_to_remove;
+		particleSet->updateActiveParticleNumber(new_num_particles);
+		//*/
 	}
+
+
+
+	//Now we have to set the velocities at to simulate the current
+	if (time<0.5){
+		int numBlocks = calculateNumBlocks(particleSet->numParticles);
+		DFSPH_apply_current_kernel<1> << <numBlocks, BLOCKSIZE >> > (data, particleSet->gpu_ptr, S_current, current_velocity, transition_length);
+		gpuErrchk(cudaDeviceSynchronize());
+	}
+
+	//we need to qpply the zqve velocities
+	if (use_stokes_wave) {
+		//load the information in the ocean height structure
+		int numBlocks = calculateNumBlocks(particleSet->numParticles);
+		apply_wave_velocities_kernel<0> << <numBlocks, BLOCKSIZE >> > (data, particleSet->gpu_ptr, waveGenerator,
+			S_borderWaveVelocity, 0);
+
+		gpuErrchk(cudaDeviceSynchronize());
+	}
+
+	//we apply the mass deltas
+	if(true){
+		int numBlocks = calculateNumBlocks(data.boundaries_data->numParticles);
+		add_mass_delta_kernel << <numBlocks, BLOCKSIZE >> > (data.boundaries_data->gpu_ptr, massDeltas);
+		gpuErrchk(cudaDeviceSynchronize());
+	}
+
 }
+

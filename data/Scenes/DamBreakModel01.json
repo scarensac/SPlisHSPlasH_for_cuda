@@ -2,7 +2,7 @@
 	"Configuration": 
 	{
 		"timeStepSize": 0.003,
-		"particleRadius": 0.025, 
+		"particleRadius": 0.01, 
 		"density0": 1000, 
 		"simulationMethod": 4,
 		"viscosity": 0.01,

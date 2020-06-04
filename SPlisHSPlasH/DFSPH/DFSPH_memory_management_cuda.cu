@@ -412,7 +412,7 @@ void allocate_grouped_neighbors_struct_cuda(SPH::DFSPHCData& data) {
 	//now it's like the normal neighbor search excapt that we have to iterate on all the solid particles
 	//instead of just one buffer
 	//the easiest way is to build a new pos array that contains all the dynamic particles
-	cudaMalloc(&(data.posBufferGroupedDynamicBodies), numParticlesMax * sizeof(Vector3d));
+	cudaMallocManaged(&(data.posBufferGroupedDynamicBodies), numParticlesMax * sizeof(Vector3d));
 
 }
 
