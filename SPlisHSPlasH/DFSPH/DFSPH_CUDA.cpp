@@ -102,8 +102,8 @@ void DFSPHCUDA::step()
 	}
 
 
-    //test dynamic boundary 
-    /*
+    //test dynamic window
+    //*
     if ((count_steps > 5) && ((count_steps % 15) == 0))
     {
         handleSimulationMovement(Vector3d(1,0,0));
@@ -393,7 +393,7 @@ void DFSPHCUDA::step()
 			}
 		}
 
-		std::cout << "fluid level: " << getFluidLevel() << std::endl;
+		//std::cout << "fluid level: " << getFluidLevel() << std::endl;
 
         end = std::chrono::steady_clock::now();
         //m_data.fluid_data->resetColor();
