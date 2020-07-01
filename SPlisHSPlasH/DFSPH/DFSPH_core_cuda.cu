@@ -1508,6 +1508,9 @@ template<unsigned int grid_size, bool z_curve>
 __global__ void DFSPH_computeGridIdx_kernel(Vector3d* in, unsigned int* out, RealCuda kernel_radius, unsigned int num_particles,
 	Vector3i gridOffset) {
 
+#ifndef INDEX_NEIGHBORS_CELL_FROM_STORAGE
+
+
 	int i = blockIdx.x * blockDim.x + threadIdx.x;
 	//i *= 4;
 	if (i >= num_particles) { return; }
@@ -1534,6 +1537,9 @@ __global__ void DFSPH_computeGridIdx_kernel(Vector3d* in, unsigned int* out, Rea
 		out[i + 3] = COMPUTE_CELL_INDEX(pos.x, pos.y, pos.z);
 		//*/
 	}
+
+
+#endif // !INDEX_NEIGHBORS_CELL_FROM_STORAGE
 }
 
 
@@ -1544,6 +1550,10 @@ void cuda_neighborsSearchInternal_sortParticlesId(Vector3d* pos, RealCuda kernel
 	unsigned int* cell_id, unsigned int* cell_id_sorted,
 	unsigned int* p_id, unsigned int* p_id_sorted) {
 	cudaError_t cudaStatus;
+
+#ifdef INDEX_NEIGHBORS_CELL_FROM_STORAGE
+	exit(2563);
+#endif // INDEX_NEIGHBORS_CELL_FROM_STORAGE
 
 
 	/*
@@ -1660,15 +1670,14 @@ void cuda_neighborsSearchInternal_computeCellStartEnd(int numParticles, unsigned
 
 
 
-__global__ void DFSPH_computeGridIdx_kernel(SPH::UnifiedParticleSet* particleSet, RealCuda kernel_radius,
-	Vector3i gridOffset) {
+__global__ void DFSPH_computeGridIdx_kernel(SPH::DFSPHCData data, SPH::UnifiedParticleSet* particleSet) {
 
 	int i = blockIdx.x * blockDim.x + threadIdx.x;
 	if (i >= particleSet->numParticles) { return; }
 
 
 	//the offset is used to be able to use a small grid bu placing the simulation correctly inside it
-	Vector3d pos = (particleSet->pos[i] / kernel_radius) + gridOffset;
+	Vector3d pos = (particleSet->pos[i] / data.getKernelRadius()) + data.gridOffset;
 	pos.toFloor();
 	particleSet->neighborsDataSet->cell_id[i] = COMPUTE_CELL_INDEX(pos.x, pos.y, pos.z);
 		
@@ -1691,6 +1700,27 @@ __global__ void DFSPH_CountingSortIds_kernel(SPH::UnifiedParticleSet* particleSe
 void cuda_neighborsSearchInternal_sortParticlesId(SPH::UnifiedParticleSet& particleSet, SPH::NeighborsSearchDataSet& dataSet, SPH::DFSPHCData& data) {
 	cudaError_t cudaStatus;
 
+	//for (int i = 0; i < particleSet.numParticles; ++i)
+	/*
+	std::cout << "test" << std::endl;
+	for (int i = 0; i < particleSet.numParticles; ++i)
+	{
+		if (particleSet.neighborsDataSet->cell_id[i] >= CELL_COUNT) {
+			std::cout << "cell id too high" << std::endl;
+		}
+		
+		if (particleSet.neighborsDataSet->cell_id[i] < 0) {
+		std::cout << "cell id negative" << std::endl;
+		}
+		if (particleSet.neighborsDataSet->cell_id_sorted[i] >= CELL_COUNT) {
+		std::cout << "cell id sorted too high" << std::endl;
+		}
+		if (particleSet.neighborsDataSet->cell_id_sorted[i] < 0) {
+		std::cout << "cell id sorted negative" << std::endl;
+		}
+	}
+	//std::cout << "test2" << std::endl;
+	//*/
 
 	/*
 	//some test for the definition domain (it is just for debugging purposes)
@@ -1738,8 +1768,7 @@ void cuda_neighborsSearchInternal_sortParticlesId(SPH::UnifiedParticleSet& parti
 
 
 	//compute the idx of the cell for each particles
-	DFSPH_computeGridIdx_kernel << <numBlocks, BLOCKSIZE >> > (particleSet.gpu_ptr,
-		data.getKernelRadius(), data.gridOffset);
+	DFSPH_computeGridIdx_kernel << <numBlocks, BLOCKSIZE >> > (data, particleSet.gpu_ptr);
 	gpuErrchk(cudaDeviceSynchronize());
 
 	std::chrono::steady_clock::time_point middle2 = std::chrono::steady_clock::now();
@@ -1750,6 +1779,8 @@ void cuda_neighborsSearchInternal_sortParticlesId(SPH::UnifiedParticleSet& parti
 	cub::DeviceScan::ExclusiveSum(particleSet.neighborsDataSet->d_temp_storage_cumul_hist, particleSet.neighborsDataSet->temp_storage_bytes_cumul_hist, 
 		particleSet.neighborsDataSet->hist, particleSet.neighborsDataSet->cell_start_end, (CELL_COUNT + 1));
 	gpuErrchk(cudaDeviceSynchronize());
+
+	
 
 	DFSPH_CountingSortIds_kernel << <numBlocks, BLOCKSIZE >> > (particleSet.gpu_ptr);
 	gpuErrchk(cudaDeviceSynchronize());
@@ -2884,6 +2915,7 @@ __global__ void compute_boundaries_density_error_kernel(SPH::DFSPHCData data, SP
 void compute_UnifiedParticleSet_particles_mass_cuda(SPH::DFSPHCData& data, SPH::UnifiedParticleSet& container) {
 	int numBlocks = calculateNumBlocks(container.numParticles);
 	
+	bool old_destructor_status = data.destructor_activated;
 	data.destructor_activated = false;
 
 	container.initNeighborsSearchData(data, false, false);
@@ -2970,7 +3002,7 @@ void compute_UnifiedParticleSet_particles_mass_cuda(SPH::DFSPHCData& data, SPH::
 		CUDA_FREE_PTR(err);
 		CUDA_FREE_PTR(err_max);
 	}
-	data.destructor_activated = true;
+	data.destructor_activated = old_destructor_status;
 }
 
 

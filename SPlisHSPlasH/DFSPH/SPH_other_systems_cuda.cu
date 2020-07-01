@@ -142,7 +142,7 @@ void get_UnifiedParticleSet_min_max_naive_cuda(SPH::UnifiedParticleSet& particle
 //this mean the actual height willbbe slightly higher but it's a good tradeoff
 //the problem with this method is that it can't handle realy low valumes of fluid...
 ///TODO find a better way ... maybe just keeping the highest is fine since I'll take the median of every columns anyway ...
-__global__ void find_splashless_column_max_height_kernel(SPH::UnifiedParticleSet* particleSet, RealCuda* column_max_height) {
+__global__ void find_splashless_column_max_height_kernel(SPH::DFSPHCData data, SPH::UnifiedParticleSet* particleSet, RealCuda* column_max_height) {
 	int i = blockIdx.x * blockDim.x + threadIdx.x;
 	if (i >= CELL_ROW_LENGTH*CELL_ROW_LENGTH) { return; }
 
@@ -210,7 +210,7 @@ RealCuda find_fluid_height_cuda(SPH::DFSPHCData& data) {
 	{
 		int numBlocks = calculateNumBlocks(CELL_ROW_LENGTH*CELL_ROW_LENGTH);
 		//find_column_max_height_kernel << <numBlocks, BLOCKSIZE >> > (particleSet->gpu_ptr, column_max_height);
-		find_splashless_column_max_height_kernel << <numBlocks, BLOCKSIZE >> > (particleSet->gpu_ptr, column_max_height);
+		find_splashless_column_max_height_kernel << <numBlocks, BLOCKSIZE >> > (data, particleSet->gpu_ptr, column_max_height);
 		gpuErrchk(cudaDeviceSynchronize());
 	}
 
@@ -277,7 +277,7 @@ __global__ void get_min_max_pos_kernel(SPH::UnifiedParticleSet* particleSet, Vec
 }
 
 
-__global__ void find_column_max_height_kernel(SPH::UnifiedParticleSet* particleSet, RealCuda* column_max_height) {
+__global__ void find_column_max_height_kernel(SPH::DFSPHCData data, SPH::UnifiedParticleSet* particleSet, RealCuda* column_max_height) {
 	int i = blockIdx.x * blockDim.x + threadIdx.x;
 	if (i >= CELL_ROW_LENGTH*CELL_ROW_LENGTH) { return; }
 
@@ -441,7 +441,7 @@ void control_fluid_height_cuda(SPH::DFSPHCData& data, RealCuda target_height) {
 
 		{
 			int numBlocks = calculateNumBlocks(CELL_ROW_LENGTH*CELL_ROW_LENGTH);
-			find_column_max_height_kernel << <numBlocks, BLOCKSIZE >> > (particleSet->gpu_ptr, column_max_height);
+			find_column_max_height_kernel << <numBlocks, BLOCKSIZE >> > (data, particleSet->gpu_ptr, column_max_height);
 			gpuErrchk(cudaDeviceSynchronize());
 		}
 
@@ -486,6 +486,7 @@ void control_fluid_height_cuda(SPH::DFSPHCData& data, RealCuda target_height) {
 
 
 		int numBlocks = calculateNumBlocks(count_new_particles);
+		bool old_destructor_status = data.destructor_activated;
 		data.destructor_activated = false;
 		Vector3d border_range = width / 3;
 		border_range.y = 0;
@@ -501,7 +502,7 @@ void control_fluid_height_cuda(SPH::DFSPHCData& data, RealCuda target_height) {
 
 
 		gpuErrchk(cudaDeviceSynchronize());
-		data.destructor_activated = true;
+		data.destructor_activated = old_destructor_status;
 
 
 		//and now you can update the number of particles
@@ -982,7 +983,7 @@ void move_simulation_cuda(SPH::DFSPHCData& data, Vector3d movement) {
 		}
 		{
 			int numBlocks = calculateNumBlocks(CELL_ROW_LENGTH*CELL_ROW_LENGTH);
-			find_column_max_height_kernel << <numBlocks, BLOCKSIZE >> > (particleSet->gpu_ptr, column_max_height);
+			find_column_max_height_kernel << <numBlocks, BLOCKSIZE >> > (data, particleSet->gpu_ptr, column_max_height);
 			gpuErrchk(cudaDeviceSynchronize());
 		}
 
@@ -1127,6 +1128,8 @@ void move_simulation_cuda(SPH::DFSPHCData& data, Vector3d movement) {
 		gpuErrchk(cudaMemset(count_possible_particles, 0, sizeof(int)));
 		gpuErrchk(cudaMemset(count_moved_particles, 0, sizeof(int)));
 		gpuErrchk(cudaMemset(count_invalid_position, 0, sizeof(int)));
+
+		bool old_destructor_status=data.destructor_activated;
 		data.destructor_activated = false;
 		translate_borderline_particles_kernel << <numBlocks, BLOCKSIZE >> > (data, particleSet->gpu_ptr, column_max_height,
 			count_moved_particles,
@@ -1134,7 +1137,7 @@ void move_simulation_cuda(SPH::DFSPHCData& data, Vector3d movement) {
 			movement, count_possible_pos, count_remaining_pos,
 			height_near_min, height_near_max);
 		gpuErrchk(cudaDeviceSynchronize());
-		data.destructor_activated = true;
+		data.destructor_activated = old_destructor_status;
 
 
 #ifdef SHOW_MESSAGES_IN_CUDA_FUNCTIONS

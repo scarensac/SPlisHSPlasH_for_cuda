@@ -36,6 +36,156 @@ namespace MemoryManagementCuda
 }
 
 
+//+++++++++++++++++++++++++++ PUBLIC-DOMAIN SOFTWARE ++++++++++++++++++++++++++
+// Functions: TransposetoAxes AxestoTranspose
+// Purpose: Transform in-place between Hilbert transpose and geometrical axes
+// Example: b=5 bits for each of n=3 coordinates.
+// 15-bit Hilbert integer = A B C D E F G H I J K L M N O is stored
+// as its Transpose
+// X[0] = A D G J M X[2]|
+// X[1] = B E H K N <-------> | /X[1]
+// X[2] = C F I L O axes |/
+// high low 0------ X[0]
+// Axes are stored conventially as b-bit integers.
+// Author: John Skilling 20 Apr 2001 to 11 Oct 2003
+//-----------------------------------------------------------------------------
+typedef unsigned int coord_t; // char,short,int for up to 8,16,32 bits per word
+FUNCTION void transposetoAxes(coord_t* X, int b, int n) // position, #bits, dimension
+{
+	coord_t N = 2 << (b - 1), P, Q, t;
+	int i;
+	// Gray decode by H ^ (H/2)
+	t = X[n - 1] >> 1;
+	for (i = n - 1; i > 0; i--) X[i] ^= X[i - 1];
+	X[0] ^= t;
+	// Undo excess work
+	for (Q = 2; Q != N; Q <<= 1) {
+		P = Q - 1;
+		for (i = n - 1; i >= 0; i--)
+			if (X[i] & Q) X[0] ^= P; // invert
+			else { t = (X[0] ^ X[i]) & P; X[0] ^= t; X[i] ^= t; }
+	} // exchange
+}
+FUNCTION void axestoTranspose(coord_t* X, int b, int n) // position, #bits, dimension
+{
+	coord_t M = 1 << (b - 1), P, Q, t;
+	int i;
+	// Inverse undo
+	for (Q = M; Q > 1; Q >>= 1) {
+		P = Q - 1;
+		for (i = 0; i < n; i++)
+			if (X[i] & Q) X[0] ^= P; // invert
+			else { t = (X[0] ^ X[i]) & P; X[0] ^= t; X[i] ^= t; }
+	} // exchange
+	  // Gray encode
+	for (i = 1; i < n; i++) X[i] ^= X[i - 1];
+	t = 0;
+	for (Q = M; Q > 1; Q >>= 1)
+		if (X[n - 1] & Q) t ^= Q - 1;
+	for (i = 0; i < n; i++) X[i] ^= t;
+}
+
+FUNCTION int getHilbertIndex(coord_t* X){
+	
+	int nbBits = 0;
+	int val = 1;
+	do {
+		nbBits++;
+		val *= 2;
+	} while (val < CELL_ROW_LENGTH);
+	//printf("%i\n", nbBits);
+
+	int hilbertNbr = 0;
+	int bitShift = 0;
+
+	axestoTranspose(X, nbBits, 3);
+
+	for (int j = 0; j < nbBits; ++j) {
+		for (int i = 2; i > -1; --i) {
+			hilbertNbr += (X[i] >> j & 1) << (bitShift);
+			//printf("%i << %i  = %d \n", (X[i] >> j & 1), bitShift, (X[i] >> j & 1) << (bitShift));
+			bitShift++;
+		}
+	}
+
+	return hilbertNbr;
+}
+
+void hilbertIndexTest()
+{
+	coord_t X[3] = { 5,10,20 }; // any position in 32x32x32 cube
+	axestoTranspose(X, 5, 3); // Hilbert transpose for 5 bits and 3 dimensions
+
+	printf("Hilbert1 integer = %d%d%d%d%d%d%d%d%d%d%d%d%d%d%d = 7865 check\n",
+		X[0] >> 4 & 1, X[1] >> 4 & 1, X[2] >> 4 & 1,
+		X[0] >> 3 & 1, X[1] >> 3 & 1, X[2] >> 3 & 1,
+		X[0] >> 2 & 1, X[1] >> 2 & 1, X[2] >> 2 & 1,
+		X[0] >> 1 & 1, X[1] >> 1 & 1, X[2] >> 1 & 1,
+		X[0] >> 0 & 1, X[1] >> 0 & 1, X[2] >> 0 & 1);
+
+	int cellId=0;
+	int nbBits = 5;
+	int bitShift = 0;
+
+	for (int j = 0; j < nbBits; ++j) {
+		for (int i = 2; i > -1; --i) {
+
+			cellId += (X[i] >> j & 1) << (bitShift);
+			printf("%i << %i  = %d \n", (X[i] >> j & 1), bitShift, (X[i] >> j & 1) << (bitShift));
+			bitShift++;
+		}
+	}
+
+	printf("Hilbert2 integer = %i = 7865 check\n", cellId); 
+
+
+	coord_t X2[3] = { 5,10,20 }; // any position in 32x32x32 cube
+	printf("Hilbert3 integer = %i = 7865 check\n", getHilbertIndex(X2));
+}
+
+__global__ void init_precomputed_cell_index_kernel(unsigned int* precomputedCellIndex) {
+	int i = blockIdx.x * blockDim.x + threadIdx.x;
+	if (i >= CELL_COUNT) { return; }
+
+	int i2 = i;
+	int x = 0;
+	int y = 0;
+	int z = 0;
+
+	while (i2>(CELL_ROW_LENGTH*CELL_ROW_LENGTH)) {
+		y++;
+		i2 -= CELL_ROW_LENGTH * CELL_ROW_LENGTH;
+	}
+
+	while (i2>(CELL_ROW_LENGTH)) {
+		z++;
+		i2 -= CELL_ROW_LENGTH;
+	}
+
+	x = i2;
+
+#if defined(LINEAR_INDEX_NEIGHBORS_CELL)
+
+	precomputedCellIndex[i] = COMPUTE_LINEAR_INDEX(x, y, z);
+
+#elif defined(MORTON_INDEX_NEIGHBORS_CELL)
+
+	precomputedCellIndex[i] = compute_morton_magic_numbers(x, y, z);
+
+
+#elif defined(HILBERT_INDEX_NEIGHBORS_CELL)
+	coord_t pos[3];
+	pos[0] = x;
+	pos[1] = y;
+	pos[2] = z;
+	precomputedCellIndex[i] = getHilbertIndex(pos);
+#else
+#error "No cell index type has been selected"
+#endif
+	
+
+}
+
 void allocate_DFSPHCData_base_cuda(SPH::DFSPHCData& data) {
 	if (data.damp_planes == NULL) {
 		cudaMallocManaged(&(data.damp_planes), sizeof(Vector3d) * 10);
@@ -52,6 +202,30 @@ void allocate_DFSPHCData_base_cuda(SPH::DFSPHCData& data) {
 
 	//alloc static variables
 	SVS_CU::get();
+
+	//allocate and initialise the precomputed cell index if needed
+#ifdef INDEX_NEIGHBORS_CELL_FROM_STORAGE
+	//hilbertIndexTest();
+	//exit(0);
+
+	cudaMallocManaged(&(data.precomputedCellIndex), sizeof(unsigned int)*CELL_COUNT);
+
+	if(true){
+		int numBlocks = calculateNumBlocks(CELL_COUNT);
+		init_precomputed_cell_index_kernel << <numBlocks, BLOCKSIZE >> > (data.precomputedCellIndex);
+		gpuErrchk(cudaDeviceSynchronize());
+	}
+
+	//let's verify for linear index
+	/*
+	for (int i = 0; i < CELL_COUNT; ++i) {
+		if (i != data.precomputedCellIndex[i]) {
+			std::cout << "incorrect id: " << i << "   " << data.precomputedCellIndex[i] << std::endl;
+		}
+	}
+	//*/
+
+#endif
 }
 
 void free_DFSPHCData_base_cuda(SPH::DFSPHCData& data) {
@@ -690,7 +864,7 @@ void allocate_neighbors_search_data_set(SPH::NeighborsSearchDataSet& dataSet, bo
 	//allocate the mem for fluid particles
 	if (!result_buffers_only) {
 		cudaMallocManaged(&(dataSet.cell_id), dataSet.numParticlesMax * sizeof(unsigned int));
-		cudaMalloc(&(dataSet.cell_id_sorted), dataSet.numParticlesMax * sizeof(unsigned int));
+		cudaMallocManaged(&(dataSet.cell_id_sorted), dataSet.numParticlesMax * sizeof(unsigned int));
 		cudaMalloc(&(dataSet.local_id), dataSet.numParticlesMax * sizeof(unsigned int));
 		cudaMalloc(&(dataSet.p_id), dataSet.numParticlesMax * sizeof(unsigned int));
 

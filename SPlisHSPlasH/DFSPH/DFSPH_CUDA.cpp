@@ -98,12 +98,12 @@ void DFSPHCUDA::step()
     //test boundries height control
 	//if (TimeManager::getCurrent()->getTime() < 1.5) 
 	{
-		//m_data.handleBoundariesHeightTest();
+	//	m_data.handleBoundariesHeightTest();
 	}
 
 
     //test dynamic window
-    //*
+    /*
     if ((count_steps > 5) && ((count_steps % 15) == 0))
     {
         handleSimulationMovement(Vector3d(1,0,0));

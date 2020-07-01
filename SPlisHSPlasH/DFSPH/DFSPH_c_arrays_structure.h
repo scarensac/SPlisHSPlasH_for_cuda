@@ -354,6 +354,9 @@ public:
 
     AdvancedRenderingData* advancedRenderingData;
 
+	//this is a structure to store a precomputed index for the neighbor cells
+	unsigned int* precomputedCellIndex;
+
 
     DFSPHCData();
     DFSPHCData(FluidModel *model);

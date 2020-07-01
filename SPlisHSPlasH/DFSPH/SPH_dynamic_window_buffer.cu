@@ -310,6 +310,88 @@ public:
 
 };
 
+class BorderHeightMap {
+public:
+	int samplingCount;
+	Vector3d* samplingPositions;
+	RealCuda* heights;
+
+	BorderHeightMap() {}
+
+	void init(SPH::DFSPHCData& data) {
+		//I'll hardcode it for now
+		//so the simu domain is -2;2  -0.5;0.5
+
+		Vector3d points[4];
+		points[0] = Vector3d(-2, 0, -0.5);
+		points[1] = Vector3d(2, 0, -0.5);
+		points[2] = Vector3d(2, 0, 0.5);
+		points[3] = Vector3d(-2, 0, 0.5);
+
+		//count the nbr of points and allocate
+		//space between sampling will be the particle radius
+		samplingCount = 0;
+		RealCuda samplingSpacing = data.particleRadius;
+		Vector3d startPt = points[3];
+		for (int i = 0; i < 4; ++i) {
+			Vector3d endPt = points[i];
+
+			RealCuda length = (endPt - startPt).norm();
+			samplingCount += floorf(length / samplingSpacing);
+
+			startPt = endPt;
+		}
+		samplingCount += 4;//to add the 4 anchor points
+
+		cudaMallocManaged(&(samplingPositions), sizeof(Vector3d)*samplingCount);
+		cudaMallocManaged(&(heights), sizeof(RealCuda)*samplingCount);
+
+		//and now we can set the values
+		startPt = points[3];
+		int count = 0;
+		for (int i = 0; i < 4; ++i) {
+			Vector3d endPt = points[i];
+
+
+			Vector3d delta = endPt - startPt;
+			RealCuda length = delta.norm();
+			delta *= samplingSpacing / length;
+			int localCount = floorf(length / samplingSpacing);
+
+			Vector3d pos = startPt;
+			samplingPositions[count] = pos;
+			heights[count] = 0.47;
+			count++;
+			for (int j = 0; j < localCount; ++j) {
+				pos += delta;
+
+				samplingPositions[count] = pos;
+				heights[count] = 1;// 0.47;
+				count++;
+			}
+
+			startPt = endPt;
+		}
+	}
+
+	FUNCTION RealCuda getHeight(Vector3d pos) {
+		//let's do a basic way: check all the position and keep the closest
+		/// TODO CODE an acceleration structure so I don't have to explore every points, 
+		///			you can use a structure similar to the one for the neightbors sice you won't have to rebuild it
+		/// BTW I can use a similar structure to  handel the normal map for complexborders
+		RealCuda distSq = (pos - samplingPositions[0]).squaredNorm();
+		RealCuda height = heights[0];
+		for (int i = 1; i < samplingCount; ++i) {
+			RealCuda localDistSq = (pos - samplingPositions[i]).squaredNorm();
+			if (localDistSq < distSq) {
+				distSq = localDistSq;
+				height = heights[i];
+			}
+		}
+
+		return height;
+	}
+};
 
 namespace SPH {
 	class DynamicWindow {
@@ -336,6 +418,8 @@ namespace SPH {
 		BufferFluidSurface S_initial;
 		BufferFluidSurface S;
 
+		//to represent the state of the ocean
+		BorderHeightMap borderHeightMap;
 	
 	public:
 		DynamicWindow() {
@@ -900,6 +984,12 @@ __global__ void DFSPH_evaluate_density_in_buffer_kernel(SPH::DFSPHCData data, SP
 	int i = blockIdx.x * blockDim.x + threadIdx.x;
 	if (i >= bufferSet->numParticles) { return; }
 
+	//do not do useless computation on particles that have already been taged for removal
+	int removal_tag = 25000000;
+	if (bufferSet->neighborsDataSet->cell_id[i] == removal_tag) {
+		return;
+	}
+
 	Vector3d p_i=bufferSet->pos[i];
 
 	ITER_NEIGHBORS_INIT_CELL_COMPUTATION(p_i, data.getKernelRadius(), data.gridOffset);
@@ -957,11 +1047,14 @@ __global__ void DFSPH_evaluate_density_in_buffer_kernel(SPH::DFSPHCData data, SP
 		}
 		else {
 			//on the following passes I do the computations using the neighbors from the buffer
+			//ze need to ingore pqrticles that have been tagged for removal
 			ITER_NEIGHBORS_FROM_STRUCTURE_BASE(bufferSet->neighborsDataSet, bufferSet->pos,
 				if (i!=j) {
-					RealCuda density_delta = bufferSet->getMass(j) * KERNEL_W(data, p_i - bufferSet->pos[j]);
-					density_after_buffer += density_delta;
-					count_neighbors++;
+					if (bufferSet->neighborsDataSet->cell_id[j] != removal_tag) {
+						RealCuda density_delta = bufferSet->getMass(j) * KERNEL_W(data, p_i - bufferSet->pos[j]);
+						density_after_buffer += density_delta;
+						count_neighbors++;
+					}
 				}
 			);
 
@@ -1002,7 +1095,7 @@ __global__ void DFSPH_evaluate_density_in_buffer_kernel(SPH::DFSPHCData data, SP
 		
 		if (!keep_particle) {
 			atomicAdd(countRmv, 1);
-			bufferSet->neighborsDataSet->cell_id[i] = 25000000;
+			bufferSet->neighborsDataSet->cell_id[i] = removal_tag;
 		}
 		else {
 			bufferSet->neighborsDataSet->cell_id[i] = 0;
@@ -1016,7 +1109,7 @@ __global__ void DFSPH_evaluate_density_in_buffer_kernel(SPH::DFSPHCData data, SP
 		}
 
 		atomicAdd(countRmv, 1);
-		bufferSet->neighborsDataSet->cell_id[i] = 25000000;
+		bufferSet->neighborsDataSet->cell_id[i] = removal_tag;
 	}
 }
 
@@ -1074,7 +1167,7 @@ __global__ void DFSPH_generate_buffer_from_surface_count_particles_kernel(SPH::D
 //			Specificaly it needs to be composed of the first particles of the background and the orders of the particles must be the same 
 __global__ void DFSPH_lighten_buffers_kernel(SPH::DFSPHCData data, SPH::UnifiedParticleSet* fluidSet,
 	SPH::UnifiedParticleSet* backgroundBufferSet, SPH::UnifiedParticleSet* bufferSet, int* countRmvBackground,
-	int* countRmvBuffer, BufferFluidSurface S) {
+	int* countRmvBuffer, BufferFluidSurface S, BorderHeightMap borderHeightMap) {
 	int i = blockIdx.x * blockDim.x + threadIdx.x;
 	if (i >= backgroundBufferSet->numParticles) { return; }
 
@@ -1142,12 +1235,21 @@ __global__ void DFSPH_lighten_buffers_kernel(SPH::DFSPHCData data, SPH::UnifiedP
 					}
 				}
 			);
-
+			
 			//if it's a buffer particle only keep it if it  is under the fluid
 			keep_particle_buffer &= is_buffer_particle_under_fluid;
 
 		}
 
+	}
+	else {
+		//if the particle position is inside the area that is occupied by buffer particle at the end of the procedure
+		//we need to know if it is above the ocean elevation(in wich case it will be removed)
+		if (keep_particle_buffer) {
+			if (p_i.y > borderHeightMap.getHeight(p_i)) {
+				keep_particle_buffer = false;
+			}
+		}
 	}
 
 	//if we keep it in the buffer it must be removed from the background
@@ -1349,7 +1451,7 @@ void DynamicWindow::init(DFSPHCData& data) {
 		throw("DynamicWindow::init the structure has already been initialized");
 	}
 
-	int surfaceType = 1;
+	int surfaceType = 0;
 	//define the surface
 	if (surfaceType == 0) {
 		/*
@@ -1357,8 +1459,8 @@ void DynamicWindow::init(DFSPHCData& data) {
 		oss << "DynamicWindow::init The initialization for this type of surface has not been defined (type=" << surfaceType << std::endl;
 		throw(oss.str());
 		//*/
-		S_initial.setPlane(Vector3d(-1.8, 0, 0), Vector3d(1, 0, 0));
-		//S_initial.setPlane(Vector3d(-7.8, 0, 0), Vector3d(1, 0, 0));
+		//S_initial.setPlane(Vector3d(-1.8, 0, 0), Vector3d(1, 0, 0));
+		S_initial.setPlane(Vector3d(-7.8, 0, 0), Vector3d(1, 0, 0));
 		
 	}
 	else if (surfaceType == 1) {
@@ -1372,8 +1474,8 @@ void DynamicWindow::init(DFSPHCData& data) {
 		//*/
 	}
 	else if (surfaceType == 2) {
-		Vector3d center(0, 2.2, 0);
-		S_initial.setCylinder(center, 2, 1.3 - 0.1);
+		Vector3d center(0, 0, 0);
+		S_initial.setCylinder(center, 10, 2-0.2);
 	}
 	else {
 		std::ostringstream oss;
@@ -1534,7 +1636,10 @@ void DynamicWindow::init(DFSPHCData& data) {
 		}
 	}
 
-
+	//init the struture used to define the elevation of the ocean
+	{
+		borderHeightMap.init(data);
+	}
 
 
 	initialized = true;
@@ -1630,7 +1735,7 @@ void DynamicWindow::lightenBuffers(DFSPHCData& data) {
 
 	int numBlocks = calculateNumBlocks(backgroundFluidBufferSet->numParticles);
 	DFSPH_lighten_buffers_kernel << <numBlocks, BLOCKSIZE >> > (data, particleSet->gpu_ptr, backgroundFluidBufferSet->gpu_ptr, fluidBufferSet->gpu_ptr,
-		countRmv, countRmv2, S);
+		countRmv, countRmv2, S, borderHeightMap);
 
 	gpuErrchk(cudaDeviceSynchronize());
 
@@ -1752,10 +1857,10 @@ void DynamicWindow::fitFluidBuffer(DFSPHCData& data) {
 		cudaMallocManaged(&(countRmv), sizeof(int));
 	}
 
-
-	for (int i = 4; i < 17; ++i) {
-		//we need to reinit the neighbors struct for the fluidbuffer since we removed some particles
-		fluidBufferSet->initNeighborsSearchData(data, false);
+	//we need to reinit the neighbors struct for the fluidbuffer since we removed some particles
+	fluidBufferSet->initNeighborsSearchData(data, false);
+	int cumulative_countRmv = 0;
+	for (int i = 4; i < 19; ++i) {
 
 		RealCuda target_density = 1500 - i * 25;
 
@@ -1767,6 +1872,11 @@ void DynamicWindow::fitFluidBuffer(DFSPHCData& data) {
 
 			gpuErrchk(cudaDeviceSynchronize());
 		}
+		cumulative_countRmv += *countRmv;
+
+
+		std::cout << "handle_fluid_boundries_cuda: (iter: " << i << ") changing num particles in the buffer: " << fluidBufferSet->numParticles <<
+			"   nb removed total (this step): " << cumulative_countRmv << "  (" << *countRmv << ")" << std::endl;
 
 		//write it forthe viewer
 		if (false) {
@@ -1830,13 +1940,12 @@ void DynamicWindow::fitFluidBuffer(DFSPHCData& data) {
 		}
 
 
+
+	}
 		//remove the tagged particle from the buffer (all yhe ones that have a density that is too high)
 		//now we can remove the partices from the simulation
 		// use the same process as when creating the neighbors structure to put the particles to be removed at the end
-		remove_particles(fluidBufferSet, fluidBufferSet->neighborsDataSet->cell_id, *countRmv);
-		std::cout << "handle_fluid_boundries_cuda: (iter: " << i << ") changing num particles in the buffer: " << fluidBufferSet->numParticles << "   nb removed : " << *countRmv << std::endl;
-
-	}
+		remove_particles(fluidBufferSet, fluidBufferSet->neighborsDataSet->cell_id, cumulative_countRmv);
 
 }
 
@@ -1970,6 +2079,7 @@ void DynamicWindow::handleFluidBoundaries(SPH::DFSPHCData& data, Vector3d moveme
 
 
 	timings.time_next_point();
+	//movement = Vector3d(0, 0, 0);
 
 
 	{
@@ -2511,88 +2621,7 @@ __global__ void DFSPH_add_tagged_particles_to_fluid_kernel(SPH::DFSPHCData data,
 }
 
 
-class BorderHeightMap {
-public:
-	int samplingCount;
-	Vector3d* samplingPositions;
-	RealCuda* heights;
 
-	BorderHeightMap() {}
-
-	void init(SPH::DFSPHCData& data) {
-		//I'll hardcode it for now
-		//so the simu domain is -2;2  -0.5;0.5
-
-		Vector3d points[4];
-		points[0] = Vector3d(-2, 0, -0.5);
-		points[1] = Vector3d(2, 0, -0.5);
-		points[2] = Vector3d(2, 0, 0.5);
-		points[3] = Vector3d(-2, 0, 0.5);
-
-		//count the nbr of points and allocate
-		//space between sampling will be the particle radius
-		samplingCount = 0;
-		RealCuda samplingSpacing = data.particleRadius;
-		Vector3d startPt = points[3];
-		for (int i = 0; i < 4; ++i) {
-			Vector3d endPt = points[i];
-
-			RealCuda length = (endPt - startPt).norm();
-			samplingCount += floorf(length / samplingSpacing);
-
-			startPt = endPt;
-		}
-		samplingCount += 4;//to add the 4 anchor points
-
-		cudaMallocManaged(&(samplingPositions), sizeof(Vector3d)*samplingCount);
-		cudaMallocManaged(&(heights), sizeof(RealCuda)*samplingCount);
-
-		//and now we can set the values
-		startPt = points[3];
-		int count = 0;
-		for (int i = 0; i < 4; ++i) {
-			Vector3d endPt = points[i];
-
-
-			Vector3d delta = endPt - startPt;
-			RealCuda length = delta.norm();
-			delta *= samplingSpacing / length;
-			int localCount = floorf(length / samplingSpacing);
-
-			Vector3d pos = startPt;
-			samplingPositions[count] = pos;
-			heights[count] = 0.47;
-			count++;
-			for (int j = 0; j < localCount; ++j) {
-				pos += delta;
-
-				samplingPositions[count] = pos;
-				heights[count] = 0.47;
-				count++;
-			}
-
-			startPt = endPt;
-		}
-	}
-
-	FUNCTION RealCuda getHeight(Vector3d pos) {
-		//let's do a basic way: check all the position and keep the closest
-		/// TODO CODE an acceleration structure so I don't have to explore every points, 
-		///			you can use a structure similar to the one for the neightbors sice you won't have to rebuild it
-		/// BTW I can use a similar structure to  handel the normal map for complexborders
-		RealCuda distSq = (pos - samplingPositions[0]).squaredNorm();
-		RealCuda height = heights[0];
-		for (int i = 1; i < samplingCount; ++i) {
-			RealCuda localDistSq = (pos - samplingPositions[i]).squaredNorm();
-			if (localDistSq < distSq) {
-				distSq = localDistSq;
-				height = heights[i];
-			}
-		}
-
-		return height;
-	}
-};
 
 
 __global__ void DFSPH_handle_inflow_kernel(SPH::DFSPHCData data, SPH::UnifiedParticleSet* particleSet, SPH::UnifiedParticleSet* bufferSet,
@@ -2928,7 +2957,6 @@ void DynamicWindow::handleOceanBoundariesTestCurrent(SPH::DFSPHCData& data) {
 	//And I need a fast structure to define the ocean profile
 	static BufferFluidSurface S_fluidInterior;
 
-	static BorderHeightMap borderHeightMap;
 
 	static RealCuda time = 0;
 	time += 0.003;	
@@ -2943,6 +2971,8 @@ void DynamicWindow::handleOceanBoundariesTestCurrent(SPH::DFSPHCData& data) {
 
 	Vector3d sim_min(-8, 0, 0.5);
 	Vector3d sim_max(8, 7, 0.5);
+
+	BorderHeightMap;
 
 	static bool first_time = true;
 	if (first_time) {
@@ -2969,9 +2999,6 @@ void DynamicWindow::handleOceanBoundariesTestCurrent(SPH::DFSPHCData& data) {
 		//S_fluidInterior.addPlane(Vector3d(1.9, 0, 0), Vector3d(-1, 0, 0));
 
 		cudaMallocManaged(&(int_ptr), sizeof(int));
-		
-		//for the ocean height comunication
-		borderHeightMap.init(data);
 
 		//wave model (might need to be changed the current one is way slow
 		waveGenerator.init(data.particleRadius, Vector3d(-sim_min.x, 0, 0), Vector3d(sim_min.x+2, 2.0, 0));
@@ -3012,7 +3039,7 @@ void DynamicWindow::handleOceanBoundariesTestCurrent(SPH::DFSPHCData& data) {
 	}
 	
 	//we need to remove the mass deltas
-	if(true){
+	if(false){
 		int numBlocks = calculateNumBlocks(data.boundaries_data->numParticles);
 		rmv_mass_delta_kernel << <numBlocks, BLOCKSIZE >> > (data.boundaries_data->gpu_ptr, massDeltas);
 		gpuErrchk(cudaDeviceSynchronize());
@@ -3100,7 +3127,7 @@ void DynamicWindow::handleOceanBoundariesTestCurrent(SPH::DFSPHCData& data) {
 	}
 
 	//we apply the mass deltas
-	if(true){
+	if(false){
 		int numBlocks = calculateNumBlocks(data.boundaries_data->numParticles);
 		add_mass_delta_kernel << <numBlocks, BLOCKSIZE >> > (data.boundaries_data->gpu_ptr, massDeltas);
 		gpuErrchk(cudaDeviceSynchronize());

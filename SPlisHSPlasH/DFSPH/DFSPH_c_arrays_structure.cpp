@@ -502,7 +502,7 @@ void UnifiedParticleSet::load_from_file(std::string file_path, bool load_velocit
 
 #ifdef OCEAN_BOUNDARIES_PROTOTYPE
 		//*
-		float height = 0.5;
+		float height = 1;
 		if ((positions_limitations)&&
 			(velocity_impacted_by_fluid_solver)&&
 			//(((pos.x > (-2.0 + 8 * 0.1)) && (pos.x < (2.0 - 8 * 0.1))) || (pos.y > height))
@@ -713,7 +713,6 @@ DFSPHCData::DFSPHCData() {
 DFSPHCData::DFSPHCData(FluidModel *model): DFSPHCData()
 {
 
-	destructor_activated = true;
 
 #ifdef SPLISHSPLASH_FRAMEWORK
     particleRadius = model->getParticleRadius();
@@ -790,6 +789,9 @@ DFSPHCData::DFSPHCData(FluidModel *model): DFSPHCData()
 	//reset(model);
 
 	read_last_error_cuda("check for errors end creation  ");
+
+	std::cout << "here" << std::endl;
+	destructor_activated = true;
 }
 
 DFSPHCData::~DFSPHCData() {
@@ -822,6 +824,8 @@ DFSPHCData::~DFSPHCData() {
 
 
 void DFSPHCData::reset(FluidModel *model) {
+	bool old_destructor_status = destructor_activated;
+	destructor_activated = false;
 
 #ifdef SPLISHSPLASH_FRAMEWORK
 	if (fluid_data->numParticles != model->numActiveParticles()) {
@@ -888,6 +892,7 @@ void DFSPHCData::reset(FluidModel *model) {
 
 #endif //SPLISHSPLASH_FRAMEWORK
 
+	destructor_activated = old_destructor_status;
 }
 
 void DFSPHCData::initGridOffset() {

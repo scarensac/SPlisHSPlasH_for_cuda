@@ -272,19 +272,15 @@ code;\
 /////////NEIGHBORS STRUCT CONSTRUCTION /////////////
 ////////////////////////////////////////////////////
 
-#ifdef BITSHIFT_INDEX_NEIGHBORS_CELL
 
-#ifndef USE_COMPLETE
-#define USE_COMPLETE
-#endif
 
-__device__ void interleave_2_bits_magic_numbers(unsigned int& x) {
+__device__ inline void interleave_2_bits_magic_numbers(unsigned int& x) {
 	x = (x | (x << 16)) & 0x030000FF;
 	x = (x | (x << 8)) & 0x0300F00F;
 	x = (x | (x << 4)) & 0x030C30C3;
 	x = (x | (x << 2)) & 0x09249249;
 }
-__device__ unsigned int compute_morton_magic_numbers(unsigned int x, unsigned int y, unsigned int z) {
+__device__ inline unsigned int compute_morton_magic_numbers(unsigned int x, unsigned int y, unsigned int z) {
 	interleave_2_bits_magic_numbers(x);
 	interleave_2_bits_magic_numbers(y);
 	interleave_2_bits_magic_numbers(z);
@@ -292,10 +288,36 @@ __device__ unsigned int compute_morton_magic_numbers(unsigned int x, unsigned in
 	return x | (y << 1) | (z << 2);
 }
 
+#define COMPUTE_LINEAR_INDEX(x,y,z) (x)+(z)*CELL_ROW_LENGTH+(y)*CELL_ROW_LENGTH*CELL_ROW_LENGTH
+
+
+#ifdef INDEX_NEIGHBORS_CELL_FROM_STORAGE
+
+#ifndef USE_COMPLETE
+#define USE_COMPLETE
+#endif
+
+#define COMPUTE_CELL_INDEX(x,y,z) data.precomputedCellIndex[static_cast<int>(COMPUTE_LINEAR_INDEX(x,y,z))]
+
+#elif defined(LINEAR_INDEX_NEIGHBORS_CELL)
+
+#define COMPUTE_CELL_INDEX(x,y,z) COMPUTE_LINEAR_INDEX(x,y,z)
+
+#elif defined(MORTON_INDEX_NEIGHBORS_CELL)
+
+#ifndef USE_COMPLETE
+#define USE_COMPLETE
+#endif
+
 #define COMPUTE_CELL_INDEX(x,y,z) compute_morton_magic_numbers(x,y,z)
 
-#else
-#define COMPUTE_CELL_INDEX(x,y,z) (x)+(z)*CELL_ROW_LENGTH+(y)*CELL_ROW_LENGTH*CELL_ROW_LENGTH
+
+#elif defined(HILBERT_INDEX_NEIGHBORS_CELL)
+
+#error "Hilbert with direct computation should be so heavy that it is useless"
+
+#else 
+#error "No cell index type has been selected"
 #endif
 
 #endif //DFSPH_MACRO_CUDA
