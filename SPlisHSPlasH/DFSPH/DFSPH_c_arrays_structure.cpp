@@ -355,7 +355,7 @@ void UnifiedParticleSet::reset(T* particleObj) {
 			mass_temp[i] = model->getMass(i);
 		}
 	
-		std::cout << "nbr of particles loaded: "<< NbrLoadedParticles << "from nbrModelParticles: "<<model->getNumActiveParticles0()<<std::endl;
+		std::cout << "nbr of particles loaded: "<< NbrLoadedParticles << "    from nbrModelParticles: "<<model->getNumActiveParticles0()<<std::endl;
 
 		updateActiveParticleNumber(NbrLoadedParticles);
 
@@ -501,7 +501,7 @@ void UnifiedParticleSet::load_from_file(std::string file_path, bool load_velocit
         }
 
 #ifdef OCEAN_BOUNDARIES_PROTOTYPE
-		//*
+		/*
 		float height = 1;
 		if ((positions_limitations)&&
 			(velocity_impacted_by_fluid_solver)&&
@@ -529,7 +529,7 @@ void UnifiedParticleSet::load_from_file(std::string file_path, bool load_velocit
 
 	reset(pos_temp, vel_temp, mass_temp);
 
-	std::cout << "nbr of particles loaded: " << NbrLoadedParticles << "from nbrModelParticles: " << numParticles << std::endl;
+	std::cout << "nbr of particles loaded: " << NbrLoadedParticles << "    from nbrModelParticles: " << numParticles << std::endl;
 
 	updateActiveParticleNumber(NbrLoadedParticles);
 
@@ -659,7 +659,7 @@ DFSPHCData::DFSPHCData() {
 	dynamicWindowTotalDisplacement = Vector3d(0, 0, 0);
 
 
-	h = 0.001;
+	h = 0.003;
 	invH = 1.0 / h;
 	invH2 = 1.0 / (h*h);
 	updateTimeStep(h);
@@ -895,10 +895,14 @@ void DFSPHCData::reset(FluidModel *model) {
 	destructor_activated = old_destructor_status;
 }
 
-void DFSPHCData::initGridOffset() {
-	Vector3d min, max;
+void DFSPHCData::initGridOffset(bool readInput, Vector3d min, Vector3d max) {
 
-	boundaries_data->getMinMaxNaive(min, max);
+	if (!readInput) {
+		boundaries_data->getMinMaxNaive(min, max);
+	}
+
+	boundingBoxMin = min;
+	boundingBoxMax = max;
 
 	Vector3i required_grid_size = ((max - min) / getKernelRadius()).toFloor();
 
@@ -906,6 +910,29 @@ void DFSPHCData::initGridOffset() {
 		"     max:(x y z): " << max.x << " " << max.y << " " << max.z <<
 		"     required grid size:(x y z): " << required_grid_size.x << " " << required_grid_size.y << " " << required_grid_size.z <<
 		std::endl;
+
+	//check if the simulation is actually possible
+	Vector3i temp = required_grid_size;
+	temp.toMin(CELL_ROW_LENGTH-2);
+
+	if (temp != required_grid_size) {
+		temp = Vector3i(CELL_ROW_LENGTH-2);
+		std::cout << "DFSPHCData::initGridOffset grid size insufficient for the desired simulation for at least one axe" << std::endl;
+		std::cout << "required grid size:(x y z): " << required_grid_size.toString() << std::endl;
+		std::cout << "maximum grid size:(x y z):  " << temp.toString() << std::endl;
+		exit(198);
+	}
+
+	//a second check to see if we are close to the limit
+	temp = required_grid_size;
+	temp.toMin(CELL_ROW_LENGTH - 10);
+
+	if (temp != required_grid_size) {
+		temp = Vector3i(CELL_ROW_LENGTH - 2);
+		std::cout << "DFSPHCData::initGridOffset the required grid size is close to the maximum possible, augmenting the grid size might be recommended" << std::endl;
+		std::cout << "required grid size:(x y z): " << required_grid_size.toString() << std::endl;
+		std::cout << "maximum grid size:(x y z):  " << temp.toString() << std::endl;
+	}
 
 	//compute the offset
 	//just take the id of the min minus 1 (the minus 2 is just to be safe ad be compatible when the dynamic area is used)
@@ -1027,6 +1054,9 @@ void DFSPHCData::write_fluid_to_file() {
 }
 
 void DFSPHCData::read_fluid_from_file(bool load_velocities) {
+
+	destructor_activated = false;
+
 	std::cout << "loading fluid start: " << load_velocities << std::endl;
 	//reset the data strucure
 	clear_fluid_data();
@@ -1059,6 +1089,9 @@ void DFSPHCData::read_fluid_from_file(bool load_velocities) {
 #endif
 
     std::cout << "loading fluid end" << std::endl;
+
+
+	destructor_activated = true;
 }
 
 void DFSPHCData::write_boundaries_to_file() {
@@ -1075,6 +1108,8 @@ void DFSPHCData::write_boundaries_to_file() {
 
 void DFSPHCData::read_boundaries_from_file(bool load_velocities) {
 
+	destructor_activated = false;
+
 	std::cout << "loading boundaries start: " << load_velocities << std::endl;
 	//reset the data strucure
 	clear_boundaries_data();
@@ -1086,19 +1121,9 @@ void DFSPHCData::read_boundaries_from_file(bool load_velocities) {
     Vector3d min,max;
     boundaries_data[0].load_from_file(file_name, load_velocities, &min, &max);
 
-    Vector3i required_grid_size=((max-min)/getKernelRadius()).toFloor();
-
-    std::cout<<"detected min(x y z): "<<min.x<<" "<<min.y<<" "<<min.z<<
-               "     max:(x y z): "<<max.x<<" "<<max.y<<" "<<max.z <<
-               "     required grid size:(x y z): "<<required_grid_size.x<<" "<<required_grid_size.y<<" "<<required_grid_size.z <<
-               std::endl;
-
-    //compute the offset
-    //just take the id of the min minus 1 (the minus 2 is just to be safe ad be compatible when the dynamic area is used)
-    //of course you need to take the negative of the result...
-    gridOffset=((min/getKernelRadius()).toFloor()-2)*-1;
-
-    std::cout<<"new grid offset(x y z): "<<gridOffset.x<<" "<<gridOffset.y<<" "<<gridOffset.z<<std::endl;
+	//init the grid offset
+	initGridOffset(true,min,max);
+	
 
 	//init gpu struct
 	allocate_and_copy_UnifiedParticleSet_vector_cuda(&boundaries_data_cuda, boundaries_data, 1);
@@ -1107,6 +1132,9 @@ void DFSPHCData::read_boundaries_from_file(bool load_velocities) {
     boundaries_data[0].initNeighborsSearchData(*this, false, false);
 
 	std::cout << "loading boundaries end" << std::endl;
+
+
+	destructor_activated = true;
 }
 
 void DFSPHCData::write_solids_to_file() {
@@ -1137,6 +1165,9 @@ void DFSPHCData::write_solids_to_file() {
 }
 
 void DFSPHCData::read_solids_from_file(bool load_velocities) {
+
+	destructor_activated = false;
+
 	std::cout << "loading solids start: " << load_velocities << std::endl;
 	//clear the gpu strucure
 	clear_solids_data();
@@ -1164,6 +1195,8 @@ void DFSPHCData::read_solids_from_file(bool load_velocities) {
 
 	std::cout << "loading solids end" << std::endl;
 
+
+	destructor_activated = true;
 }
 
 
@@ -1375,4 +1408,9 @@ void DFSPHCData::initAdvancedRendering(int width, int height) {
 
 void DFSPHCData::runAdvancedRendering(Vector3d eye, Vector3d lookAt) {
 	advancedRenderingData->computeDepthBuffer(this, eye, lookAt);
+}
+
+
+void DFSPHCData::checkParticlesPositions(int mode, bool report) {
+	check_particles_positions_cuda(*this, mode, report);
 }

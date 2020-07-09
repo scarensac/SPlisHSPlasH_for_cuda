@@ -5,7 +5,7 @@
 
 #define BLOCKSIZE 128
 #define m_eps 1.0e-5
-#define CELL_ROW_LENGTH 128
+#define CELL_ROW_LENGTH 256
 #define CELL_COUNT CELL_ROW_LENGTH*CELL_ROW_LENGTH*CELL_ROW_LENGTH
 
 //use warm start
@@ -33,6 +33,13 @@
 //activating this will read the index from memory, the actual index is chosen from the earlier define
 #define INDEX_NEIGHBORS_CELL_FROM_STORAGE
 
+//activating this will read the index from memory, the actual index is chosen from the earlier define
+///!!!WARNING!!! currently this REQUIRES having the interleaved neighbors
+#define SORT_NEIGHBORS
+
+//if activated this will create ranges when expliring the neighbor structure so that
+//when neighbors are registered they are already sorted
+#define NEIGHBORS_RANGE_EXPLORATION
 
 
 //print debug messages in cuda functions (may not activate /deactivate all messages)

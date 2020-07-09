@@ -1206,3 +1206,79 @@ void add_border_to_damp_planes_cuda(SPH::DFSPHCData& data, bool x_displacement, 
 	data.damp_planes[data.damp_planes_count++] = Vector3d(0, (abs(data.bmin->y) > min_plane_precision) ? data.bmin->y : min_plane_precision, 0);
 
 }
+
+
+__global__ void tag_particles_outside_bounding_box_kernel(SPH::DFSPHCData data, SPH::UnifiedParticleSet* particleSet, int* countDetection,
+	bool report, bool tagForRemoval){
+	int i = blockIdx.x * blockDim.x + threadIdx.x;
+	if (i >= particleSet->numParticles) { return; }
+
+	Vector3d pos = particleSet->pos[i];
+
+
+	if ((pos > data.boundingBoxMax) || (pos < data.boundingBoxMin)) {
+		atomicAdd(countDetection, 1);
+		
+		if (report) {
+			printf("check_particles_positions_cuda: Error particle %i is outside the bounding box // particle pos: %f %f %f // bounding box min/max: %f %f %f / %f %f %f\n", i, 
+				pos.x, pos.y, pos.z, 
+				data.boundingBoxMin.x, data.boundingBoxMin.y, data.boundingBoxMin.z, 
+				data.boundingBoxMax.x, data.boundingBoxMax.y, data.boundingBoxMax.z);
+		}
+		
+		if (tagForRemoval) {
+			particleSet->neighborsDataSet->cell_id[i] = 25000000;
+		}
+	}
+	else if (tagForRemoval) {	
+		particleSet->neighborsDataSet->cell_id[i] = 0;
+	}
+
+	
+}
+
+void check_particles_positions_cuda(SPH::DFSPHCData& data, int mode, bool report) {
+
+	//static bool* errorDetected = NULL;
+	static int* countDetection = NULL;
+	//static int* detectedIds = NULL;
+
+	if (countDetection == NULL) {
+		//cudaMallocManaged(&(errorDetected), sizeof(bool));
+		cudaMallocManaged(&(countDetection), sizeof(int));
+		//cudaMallocManaged(&(detectedIds), 100 * sizeof(int));
+	}
+
+	*countDetection = 0;
+	//*errorDetected = false;
+
+	{
+		int numBlocks = calculateNumBlocks(data.fluid_data->numParticles);
+		tag_particles_outside_bounding_box_kernel << <numBlocks, BLOCKSIZE >> > (data, data.fluid_data->gpu_ptr, countDetection, report, (mode==2));
+		gpuErrchk(cudaDeviceSynchronize());
+	}
+
+	if ((*countDetection)>0) {
+		if (mode == 1) {
+			exit(0);
+		}
+
+		if (mode == 2) {
+			//*
+			UnifiedParticleSet* particleSet = data.fluid_data;
+			//now use the same process as when creating the neighbors structure to put the particles to be removed at the end
+			cub::DeviceRadixSort::SortPairs(particleSet->neighborsDataSet->d_temp_storage_pair_sort, particleSet->neighborsDataSet->temp_storage_bytes_pair_sort,
+				particleSet->neighborsDataSet->cell_id, particleSet->neighborsDataSet->cell_id_sorted,
+				particleSet->neighborsDataSet->p_id, particleSet->neighborsDataSet->p_id_sorted, particleSet->numParticles);
+			gpuErrchk(cudaDeviceSynchronize());
+
+			cuda_sortData(*particleSet, particleSet->neighborsDataSet->p_id_sorted);
+			gpuErrchk(cudaDeviceSynchronize());
+
+			//and now you can update the number of particles
+			int new_num_particles = particleSet->numParticles - *countDetection;
+			particleSet->updateActiveParticleNumber(new_num_particles);
+			//*/
+		}
+	}
+}

@@ -1701,26 +1701,7 @@ void cuda_neighborsSearchInternal_sortParticlesId(SPH::UnifiedParticleSet& parti
 	cudaError_t cudaStatus;
 
 	//for (int i = 0; i < particleSet.numParticles; ++i)
-	/*
-	std::cout << "test" << std::endl;
-	for (int i = 0; i < particleSet.numParticles; ++i)
-	{
-		if (particleSet.neighborsDataSet->cell_id[i] >= CELL_COUNT) {
-			std::cout << "cell id too high" << std::endl;
-		}
-		
-		if (particleSet.neighborsDataSet->cell_id[i] < 0) {
-		std::cout << "cell id negative" << std::endl;
-		}
-		if (particleSet.neighborsDataSet->cell_id_sorted[i] >= CELL_COUNT) {
-		std::cout << "cell id sorted too high" << std::endl;
-		}
-		if (particleSet.neighborsDataSet->cell_id_sorted[i] < 0) {
-		std::cout << "cell id sorted negative" << std::endl;
-		}
-	}
-	//std::cout << "test2" << std::endl;
-	//*/
+	
 
 	/*
 	//some test for the definition domain (it is just for debugging purposes)
@@ -2125,16 +2106,158 @@ __global__ void DFSPH_neighborsSearch_kernel(SPH::DFSPHCData data, SPH::UnifiedP
 		//uses the standart version
 		//fluid
 		if (is_fluid_container) {
-
+#ifndef NEIGHBORS_RANGE_EXPLORATION
 			ITER_NEIGHBORS_FROM_STRUCTURE(data.fluid_data_cuda[0].neighborsDataSet, data.fluid_data_cuda[0].pos,
 				if (!is_fluid_container || i != j) { WRITE_AND_ADVANCE_NEIGHBORS(cur_neighbor_ptr, j);	nb_neighbors_fluid++; });
+#else
+			//*
+			if (true) {
+				//here is a code that can explore chains of cells for hilber index
+				bool found_none = true;
+				int8_t count_analysed = 0;
+				int last = -1;
+				int min = 0;
+				do {
+					found_none = true;
+					//get the minimum of the remainings
+					int8_t k_min, m_min, n_min;
+					for (int8_t k = -1; k < 2; ++k) {
+						for (int8_t m = -1; m < 2; ++m) {
+							for (int8_t n = -1; n < 2; ++n) {
+								int id = COMPUTE_CELL_INDEX(x + n, y + k, z + m);
+								if (id > last) {
+									if (found_none) {
+										min = id;
+										found_none = false;
+									}
+									else if (id < min) {
+										min = id;
+									}
+								}
+							}
+						}
+					}
 
+					if (!found_none) {
+						last = min;
+					}
+
+					unsigned int end = data.fluid_data_cuda->neighborsDataSet->cell_start_end[min + 1];
+					for (unsigned int cur_particle = data.fluid_data_cuda->neighborsDataSet->cell_start_end[min]; cur_particle < end; ++cur_particle) {
+						unsigned int j = data.fluid_data_cuda->neighborsDataSet->p_id_sorted[cur_particle];
+						if ((pos - data.fluid_data_cuda->pos[j]).squaredNorm() < radius_sq) {
+							if (!is_fluid_container || i != j) { WRITE_AND_ADVANCE_NEIGHBORS(cur_neighbor_ptr, j);	nb_neighbors_fluid++; };
+						}
+					}
+
+					count_analysed++;;
+
+					//printf("count analysed // count contiguous: %i // %i\n", count_analysed, count_contiguous + 1);
+				} while (count_analysed != 27);
+
+
+					/*
+					int count_found = 0;
+					ITER_NEIGHBORS_FROM_STRUCTURE(data.fluid_data_cuda[0].neighborsDataSet, data.fluid_data_cuda[0].pos,
+						if (!is_fluid_container || i != j) { count_found++; });
+
+					if (nb_neighbors_fluid != count_found) {
+						//printf("FLUID pb when storing neighbors old/new: %i // %i \n", count_found, nb_neighbors_fluid);
+
+						int count_duplicate = 0;
+						for (int k = 0; k < nb_neighbors_fluid; ++k) {
+							int* neighbors_ptr = particleSet->getNeighboursPtr(i);
+							if (neighbors_ptr[k*numParticles] == i) {
+								printf("FLUID particle %i is inside it's own neighbors", i);
+							}
+
+							for (int l = k+1; l < nb_neighbors_fluid; ++l) {
+								if (neighbors_ptr[k*numParticles] == neighbors_ptr[l*numParticles]) {
+									count_duplicate++;
+								}
+							}
+						}
+						if (count_duplicate > 0) {
+							printf("FLUID particle %i has duplicates inside it's neighboors, count: %i\n", i, count_duplicate);
+						}
+					}
+					//*/
+			}else {
+				ITER_NEIGHBORS_FROM_STRUCTURE(data.fluid_data_cuda[0].neighborsDataSet, data.fluid_data_cuda[0].pos,
+					if (!is_fluid_container || i != j) { WRITE_AND_ADVANCE_NEIGHBORS(cur_neighbor_ptr, j);	nb_neighbors_fluid++; });
+
+			}
+#endif
 		}
 
 		//boundaries
 #ifndef BENDER2019_BOUNDARIES
+
+#ifndef NEIGHBORS_RANGE_EXPLORATION
 		ITER_NEIGHBORS_FROM_STRUCTURE(data.boundaries_data_cuda[0].neighborsDataSet, data.boundaries_data_cuda[0].pos,
 			if (is_fluid_container || i != j) { WRITE_AND_ADVANCE_NEIGHBORS(cur_neighbor_ptr, j); nb_neighbors_boundary++; });
+#else
+		{
+			//here is a code that can explore chains of cells for hilber index
+			bool found_none = true;
+			int8_t count_analysed = 0;
+			int last = -1;
+			int min = 0;
+			do {
+				found_none = true;
+				//get the minimum of the remainings
+				int8_t k_min, m_min, n_min;
+				for (int8_t k = -1; k < 2; ++k) {
+					for (int8_t m = -1; m < 2; ++m) {
+						for (int8_t n = -1; n < 2; ++n) {
+							int id = COMPUTE_CELL_INDEX(x + n, y + k, z + m);
+
+
+							if (id > last) {
+								if (found_none) {
+									min = id;
+									found_none = false;
+								}
+								else if (id < min) {
+									min = id;
+								}
+							}
+						}
+					}
+				}
+
+				if (!found_none) {
+					last = min ;
+				}
+
+				unsigned int end = data.boundaries_data_cuda->neighborsDataSet->cell_start_end[min + 1];
+				for (unsigned int cur_particle = data.boundaries_data_cuda->neighborsDataSet->cell_start_end[min]; cur_particle < end; ++cur_particle) {
+					unsigned int j = data.boundaries_data_cuda->neighborsDataSet->p_id_sorted[cur_particle];
+					if ((pos - data.boundaries_data_cuda->pos[j]).squaredNorm() < radius_sq) {
+						if (is_fluid_container || i != j) { WRITE_AND_ADVANCE_NEIGHBORS(cur_neighbor_ptr, j); nb_neighbors_boundary++; };
+					}
+				}
+
+				count_analysed ++;
+
+				//printf("count analysed // count contiguous: %i // %i\n", count_analysed, count_contiguous + 1);
+			} while (count_analysed != 27);
+
+			/*
+			//do a check
+			int count_found = 0;
+			ITER_NEIGHBORS_FROM_STRUCTURE(data.boundaries_data_cuda[0].neighborsDataSet, data.boundaries_data_cuda[0].pos,
+				if (is_fluid_container || i != j) { count_found++; });
+
+			if (nb_neighbors_boundary != count_found) {
+				printf("BOUNDARIES pb when storing neighbors old/new: %i // %i \n", count_found, nb_neighbors_boundary);
+			}
+			//*/
+
+		}
+
+#endif
+
 #endif
 
 		if (data.numDynamicBodies > 0) {
@@ -2160,6 +2283,41 @@ __global__ void DFSPH_neighborsSearch_kernel(SPH::DFSPHCData data, SPH::UnifiedP
 		}
 
 	}
+
+#ifdef SORT_NEIGHBORS
+	//let's use an insertion sort
+	//and for now i'll only sort the fluid and boundarries neighbors
+
+	//the fluid
+	int* neighbors_ptr = particleSet->getNeighboursPtr(i);
+	for (int k = 1; k < nb_neighbors_fluid; ++k) {
+		if (neighbors_ptr[k*numParticles] < neighbors_ptr[(k - 1)*numParticles]) {
+			int stored_idx = neighbors_ptr[k*numParticles];
+			int l = k;
+			do {
+				neighbors_ptr[l*numParticles] = neighbors_ptr[(l - 1)*numParticles];
+				l--;
+			} while ((l > 0) && (stored_idx < neighbors_ptr[(l - 1)*numParticles]));
+			neighbors_ptr[l*numParticles] = stored_idx;
+		}
+	}
+
+	//and the boundaries
+	//*
+	neighbors_ptr += nb_neighbors_fluid* numParticles;
+	for (int k = 1; k < nb_neighbors_boundary; ++k) {
+		if (neighbors_ptr[k*numParticles] < neighbors_ptr[(k - 1)*numParticles]) {
+			int stored_idx = neighbors_ptr[k*numParticles];
+			int l = k;
+			do {
+				neighbors_ptr[l*numParticles] = neighbors_ptr[(l - 1)*numParticles];
+				l--;
+			} while ((l > 0) && (stored_idx < neighbors_ptr[(l - 1)*numParticles]));
+			neighbors_ptr[l*numParticles] = stored_idx;
+		}
+	}//*/
+
+#endif // SORT_NEIGHBORS
 
 
 
@@ -2235,6 +2393,13 @@ __global__ void DFSPH_neighborsSearchBasic_kernel(unsigned int numFluidParticles
 
 
 void cuda_neighborsSearch(SPH::DFSPHCData& data) {
+
+	static unsigned int* precomputedIndexPtr = NULL;
+
+	if (precomputedIndexPtr == NULL) {
+		precomputedIndexPtr = data.precomputedCellIndex;
+	}
+	data.precomputedCellIndex = precomputedIndexPtr;
 
 	//std::chrono::steady_clock::time_point begin_global = std::chrono::steady_clock::now();
 	static unsigned int time_count = 0;
@@ -2452,7 +2617,7 @@ void cuda_neighborsSearch(SPH::DFSPHCData& data) {
 		data.is_fluid_aggregated = true;
 	}
 
-
+	data.precomputedCellIndex = NULL;
 
 	/*
 	std::chrono::steady_clock::time_point end = std::chrono::steady_clock::now();

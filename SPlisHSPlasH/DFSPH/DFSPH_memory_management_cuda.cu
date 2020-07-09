@@ -152,12 +152,12 @@ __global__ void init_precomputed_cell_index_kernel(unsigned int* precomputedCell
 	int y = 0;
 	int z = 0;
 
-	while (i2>(CELL_ROW_LENGTH*CELL_ROW_LENGTH)) {
+	while (i2>=(CELL_ROW_LENGTH*CELL_ROW_LENGTH)) {
 		y++;
 		i2 -= CELL_ROW_LENGTH * CELL_ROW_LENGTH;
 	}
 
-	while (i2>(CELL_ROW_LENGTH)) {
+	while (i2>=(CELL_ROW_LENGTH)) {
 		z++;
 		i2 -= CELL_ROW_LENGTH;
 	}
@@ -167,6 +167,7 @@ __global__ void init_precomputed_cell_index_kernel(unsigned int* precomputedCell
 #if defined(LINEAR_INDEX_NEIGHBORS_CELL)
 
 	precomputedCellIndex[i] = COMPUTE_LINEAR_INDEX(x, y, z);
+	
 
 #elif defined(MORTON_INDEX_NEIGHBORS_CELL)
 
@@ -185,6 +186,83 @@ __global__ void init_precomputed_cell_index_kernel(unsigned int* precomputedCell
 	
 
 }
+
+__global__ void init_precomputed_cell_index_chain_kernel(SPH::DFSPHCData data) {
+	int i = blockIdx.x * blockDim.x + threadIdx.x;
+	if (i >= CELL_COUNT) { return; }
+
+	//unsigned int* precomputedCellIndex, int8_t* precomputedCellIndexChain
+
+	int i2 = i;
+	int x = 0;
+	int y = 0;
+	int z = 0;
+
+	while (i2>=(CELL_ROW_LENGTH*CELL_ROW_LENGTH)) {
+		y++;
+		i2 -= CELL_ROW_LENGTH * CELL_ROW_LENGTH;
+	}
+
+	while (i2>=(CELL_ROW_LENGTH)) {
+		z++;
+		i2 -= CELL_ROW_LENGTH;
+	}
+
+	x = i2;
+
+	unsigned int cur_cell_id =  data.precomputedCellIndex[i];
+	for (int k = -1; k < 2; ++k) {
+		for (int m = -1; m < 2; ++m) {
+			for (int n = -1; n < 2; ++n) {
+				int x2 = x + n;
+				int y2 = y + k;
+				int z2 = z + m;
+				
+
+
+				if ((x2 < 0 || x2 >= CELL_ROW_LENGTH) || (y2 < 0 || y2 >= CELL_ROW_LENGTH) || (z2 < 0 || z2 >= CELL_ROW_LENGTH)) {
+					continue;
+				}
+				int id = COMPUTE_CELL_INDEX(x2, y2, z2);
+					
+				if (id == (cur_cell_id + 1)) {
+					int8_t deltas = 0;
+					if (n > -1) {
+						deltas |= n;
+					}
+					else {
+						deltas |= 2;
+					}
+					if (k > -1) {
+						deltas |= k<<2;
+					}
+					else {
+						deltas |= 2<<2;
+					}
+					if (m > -1) {
+						deltas |= m<<4;
+					}
+					else {
+						deltas |= 2<<4;
+					}
+
+					
+
+					data.precomputedCellIndexChain[cur_cell_id] = deltas;
+					return;
+				}
+
+
+			}
+		}
+	}
+
+	if (x != 255 && y != 0 && z != 0) {
+		printf("init_precomputed_cell_index_chain_kernel failed to find the next cell for the particle %i  (x,y,z) %i %i %i \n", i,x,y,z);
+	}
+}
+
+
 
 void allocate_DFSPHCData_base_cuda(SPH::DFSPHCData& data) {
 	if (data.damp_planes == NULL) {
@@ -209,10 +287,14 @@ void allocate_DFSPHCData_base_cuda(SPH::DFSPHCData& data) {
 	//exit(0);
 
 	cudaMallocManaged(&(data.precomputedCellIndex), sizeof(unsigned int)*CELL_COUNT);
+	cudaMallocManaged(&(data.precomputedCellIndexChain), sizeof(int8_t)*CELL_COUNT);
 
 	if(true){
 		int numBlocks = calculateNumBlocks(CELL_COUNT);
 		init_precomputed_cell_index_kernel << <numBlocks, BLOCKSIZE >> > (data.precomputedCellIndex);
+		gpuErrchk(cudaDeviceSynchronize());
+
+		init_precomputed_cell_index_chain_kernel << <numBlocks, BLOCKSIZE >> > (data);
 		gpuErrchk(cudaDeviceSynchronize());
 	}
 
@@ -224,6 +306,132 @@ void allocate_DFSPHCData_base_cuda(SPH::DFSPHCData& data) {
 		}
 	}
 	//*/
+
+	
+		
+	if (false) {
+		int x = 2;
+		int y = 2;
+		int z = 2;
+
+		if (false) {
+			//simple check to see if the chain is correctly built for the central cell
+			
+			int central_id= COMPUTE_CELL_INDEX(x , y , z );
+			printf("central cell id: %i \n", central_id);
+			for (int8_t k = -1; k < 2; ++k) {
+				for (int8_t m = -1; m < 2; ++m) {
+					for (int8_t n = -1; n < 2; ++n) {
+						int id = COMPUTE_CELL_INDEX(x + n, y + k, z + m);
+						if (id == central_id + 1) {
+							printf("read   n k m //  cell index : %i %i %i // %i \n", n, k, m, id);
+
+							int8_t k_min, m_min, n_min;
+							int8_t deltas = data.precomputedCellIndexChain[central_id];
+							n_min = ((deltas & 2) == 0) ? (deltas & 1) : -1;
+							deltas = deltas >> 2;
+							k_min = ((deltas & 2) == 0) ? (deltas & 1) : -1;
+							deltas = deltas >> 2;
+							m_min = ((deltas & 2) == 0) ? (deltas & 1) : -1;
+							printf("stored n k m //  cell index : %i %i %i // %i \n", n_min, k_min, m_min, COMPUTE_CELL_INDEX(x + n_min, y + k_min, z + m_min));
+						}
+					}
+				}
+			}
+			
+		}
+
+		//here is a code that can explore chains of cells for hilber index
+		//this advanced version will check the number of chain necessary to explore the 27 cells
+		//and will return the max number of chain
+		//you can limit the chain length
+		int max_cell_chains_count = 0;
+		int max_cell_chain_length = 3;
+
+		for (x = 2; x < CELL_ROW_LENGTH-2; ++x) {
+			for (y = 2; y < CELL_ROW_LENGTH-2; ++y) {
+				for (z = 2; z < CELL_ROW_LENGTH-2; ++z) {
+
+					int cur_cell_chains_count = 0;
+					bool found_none = true;
+					int8_t count_analysed = 0;
+					int8_t count_contiguous = 0;
+					int last = -1;
+					int min = 0;
+					do {
+						count_contiguous = 0;
+						found_none = true;
+						//get the minimum of the remainings
+						int8_t k_min, m_min, n_min;
+						for (int8_t k = -1; k < 2; ++k) {
+							for (int8_t m = -1; m < 2; ++m) {
+								for (int8_t n = -1; n < 2; ++n) {
+									int id = COMPUTE_CELL_INDEX(x + n, y + k, z + m);
+
+
+									if (id > last) {
+										if (found_none) {
+											min = id;
+											k_min = k; m_min = m; n_min = n;
+											found_none = false;
+										}
+										else if (id < min) {
+											min = id;
+											k_min = k; m_min = m; n_min = n;
+										}
+									}
+								}
+							}
+						}
+
+						if (!found_none) {
+
+#ifdef HILBERT_INDEX_NEIGHBORS_CELL
+
+							do {
+								int8_t deltas = data.precomputedCellIndexChain[COMPUTE_CELL_INDEX(x + n_min, y + k_min, z + m_min)];
+								n_min += ((deltas & 2) == 0) ? (deltas & 1) : -1;
+								deltas = deltas >> 2;
+								k_min += ((deltas & 2) == 0) ? (deltas & 1) : -1;
+								deltas = deltas >> 2;
+								m_min += ((deltas & 2) == 0) ? (deltas & 1) : -1;
+								//printf("n k m //  cell index // count contiguous: %i %i %i // %i // %i\n", n_min, k_min, m_min, COMPUTE_CELL_INDEX(x + n_min, y + k_min, z + m_min) ,count_contiguous);
+								if ((n_min < -1 || n_min>1) || (k_min < -1 || k_min>1) || (m_min < -1 || m_min>1)) {
+									break;
+								}
+								count_contiguous++;
+								if (count_contiguous == max_cell_chain_length) {
+									break;
+								}
+							} while (true);
+
+
+#endif
+
+							last = min + count_contiguous;
+
+							//printf("last: %i\n", last);
+
+						}
+
+						count_analysed += count_contiguous + 1;
+						cur_cell_chains_count++;
+						//printf("count analysed // count contiguous: %i // %i\n", count_analysed, count_contiguous + 1);
+					} while (count_analysed!=27);
+
+
+					if (max_cell_chains_count < cur_cell_chains_count) {
+						max_cell_chains_count = cur_cell_chains_count;
+
+						printf("new maximum: %i\n", max_cell_chains_count);
+					}
+				}
+			}
+		}
+
+		printf("the maximum number of chains necessary is: %i\n", max_cell_chains_count);
+
+	}
 
 #endif
 }

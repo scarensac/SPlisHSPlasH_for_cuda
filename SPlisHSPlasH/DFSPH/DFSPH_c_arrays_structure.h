@@ -355,8 +355,12 @@ public:
     AdvancedRenderingData* advancedRenderingData;
 
 	//this is a structure to store a precomputed index for the neighbor cells
-	unsigned int* precomputedCellIndex;
+	unsigned int* precomputedCellIndex; 
+	int8_t* precomputedCellIndexChain;
 
+	//this is a debug functionality
+	Vector3d boundingBoxMin;
+	Vector3d boundingBoxMax;
 
     DFSPHCData();
     DFSPHCData(FluidModel *model);
@@ -373,7 +377,7 @@ public:
     void readDynamicObjectsData(FluidModel *model);
 
     void reset(FluidModel *model);
-	void initGridOffset();
+	void initGridOffset(bool readInput=false, Vector3d min=Vector3d(-1), Vector3d max=Vector3d(-1));
 
 	void updateTimeStep(RealCuda h_fut); 
 
@@ -422,6 +426,14 @@ public:
 
     void initAdvancedRendering(int width, int height);
     void runAdvancedRendering(Vector3d eye, Vector3d lookAt);
+
+	//this function will check if there are particle that tunneld throught the boundary box
+	//3 possible modes:
+	//	0: just report
+	//	1: end simulaton if tunneled detected
+	//	2: rmv particles that have tunneled
+	void checkParticlesPositions(int mode=0, bool report=true);
+
 };
 }
 

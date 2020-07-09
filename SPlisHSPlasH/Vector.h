@@ -52,35 +52,44 @@ namespace SPH
 
 		template<typename T2>
 		FUNCTION inline Vector3& operator-= (const Vector3<T2> &o) { x -= o.x; y -= o.y; z -= o.z; return *this; }
+		FUNCTION inline Vector3& operator-= (const T val) { x -= val; y -= val; z -= val; return *this; }
 		template<typename T2>
 		FUNCTION inline friend Vector3 operator- (const Vector3& v1, const Vector3<T2> &v2) { return Vector3(v1.x - v2.x, v1.y - v2.y, v1.z - v2.z); }
-		FUNCTION inline Vector3& operator-= (const T val) { x -= val; y -= val; z -= val; return *this; }
 		FUNCTION inline friend Vector3 operator- (const Vector3& v1, const T val) { return Vector3(v1.x - val, v1.y - val, v1.z - val); }
 		FUNCTION inline friend Vector3 operator- (const T val, const Vector3& v1) { return Vector3(v1.x - val, v1.y - val, v1.z - val); }
 
 		template<typename T2>
 		FUNCTION inline Vector3& operator+= (const Vector3<T2> &o) { x += o.x; y += o.y; z += o.z; return *this; }
+		FUNCTION inline Vector3& operator+= (const T val) { x += val; y += val; z += val; return *this; }
 		template<typename T2>
 		FUNCTION inline friend Vector3 operator+ (const Vector3& v1, const Vector3<T2> &v2) { return Vector3(v1.x + v2.x, v1.y + v2.y, v1.z + v2.z); }
-		FUNCTION inline Vector3& operator+= (const T val) { x += val; y += val; z += val; return *this; }
 		FUNCTION inline friend Vector3 operator+ (const Vector3& v1, const T val) { return Vector3(v1.x + val, v1.y + val, v1.z + val); }
 		FUNCTION inline friend Vector3 operator+ (const T val, const Vector3& v1) { return Vector3(v1.x + val, v1.y + val, v1.z + val); }
 
 		template<typename T2>
 		FUNCTION inline Vector3& operator*= (const Vector3<T2> &o) { x *= o.x; y *= o.y; z *= o.z; return *this; }
+		FUNCTION inline Vector3& operator*= (const T val) { x *= val; y *= val; z *= val; return *this; }
 		template<typename T2>
 		FUNCTION inline friend Vector3 operator* (const Vector3& v1, const Vector3<T2> &v2) { return Vector3(v1.x * v2.x, v1.y * v2.y, v1.z * v2.z); }
-		FUNCTION inline Vector3& operator*= (const T val) { x *= val; y *= val; z *= val; return *this; }
 		FUNCTION inline friend Vector3 operator* (const Vector3& v1, const T val) { return Vector3(v1.x * val, v1.y * val, v1.z * val); }
 		FUNCTION inline friend Vector3 operator* (const T val, const Vector3& v1) { return Vector3(v1.x * val, v1.y * val, v1.z * val); }
 
 		template<typename T2>
 		FUNCTION inline Vector3& operator/= (const Vector3<T2> &o) { x /= o.x; y /= o.y; z /= o.z; return *this; }
+		FUNCTION inline Vector3& operator/= (const T val) { x /= val; y /= val; z /= val; return *this; }
 		template<typename T2>
 		FUNCTION inline friend Vector3 operator/ (const Vector3& v1, const Vector3<T2> &v2) { return Vector3(v1.x / v2.x, v1.y / v2.y, v1.z / v2.z); }
-		FUNCTION inline Vector3& operator/= (const T val) { x /= val; y /= val; z /= val; return *this; }
 		FUNCTION inline friend Vector3 operator/ (const Vector3& v1, const T val) { return Vector3(v1.x / val, v1.y / val, v1.z / val); }
 		FUNCTION inline friend Vector3 operator/ (const T val, const Vector3& v1) { return Vector3(v1.x / val, v1.y / val, v1.z / val); }
+
+
+		template<typename T2>
+		FUNCTION inline friend bool operator < (const Vector3& lhs, const Vector3<T2>& rhs) { return (lhs.x < rhs.x) || (lhs.y < rhs.y) || (lhs.z < rhs.z); }
+		FUNCTION inline friend bool operator < (const Vector3& lhs, const T val) { return (lhs.x < val) || (lhs.y < val) || (lhs.z < val); }
+		template<typename T2>
+		FUNCTION inline friend bool operator > (const Vector3& lhs, const Vector3<T2>& rhs) { return (lhs.x > rhs.x) || (lhs.y > rhs.y) || (lhs.z > rhs.z); }
+		FUNCTION inline friend bool operator > (const Vector3& lhs, const T val) { return (lhs.x > val) || (lhs.y > val) || (lhs.z > val); }
+
 
 		FUNCTION inline T squaredNorm() { return x*x + y*y + z*z; }
 		FUNCTION inline T squaredNorm() const { return x*x + y*y + z*z; }
@@ -100,19 +109,17 @@ namespace SPH
 		FUNCTION inline Vector3 abs() { return Vector3((x > 0) ? x : -x, (y > 0) ? y : -y, (z > 0) ? z : -z); }
 		FUNCTION inline Vector3& toAbs() { if (x < 0)x *= -1; if (y < 0)y *= -1; if (z < 0)z *= -1; return *this; }
 
-        //those two function are in fact just a to max, it would be better to not use them
-		FUNCTION inline Vector3& clampTo(const T val) { if (x < val)x = val; if (y < val)y = val; if (z < val)z = val; return *this; }
-		template<typename T2>
-		FUNCTION inline Vector3& clampTo(const Vector3<T2> &o) { if (x < o.x)x = o.x; if (y < o.y)y = o.y; if (z < o.z)z = o.z; return *this; }
-
-
+   
 
         FUNCTION inline Vector3& toFloor() { x = (int)x - ((((int)x)!=x)?(x < 0):0); y = (int)y - ((((int)y)!=y)?(y < 0):0);
                                              z = (int)z - ((((int)z)!=z)?(z < 0):0); return *this; }
 
-        template<typename T2>
+		FUNCTION inline Vector3& toMin(const T val) { if (x > val)x = val; if (y > val)y = val; if (z > val)z = val; return *this; }
+		template<typename T2>
         FUNCTION inline Vector3& toMin(const Vector3<T2> &o) { if (x > o.x)x = o.x; if (y > o.y)y = o.y; if (z > o.z)z = o.z; return *this; }
 
+
+		FUNCTION inline Vector3& toMax(const T val) { if (x < val)x = val; if (y < val)y = val; if (z < val)z = val; return *this; }
 		template<typename T2>
 		FUNCTION inline Vector3& toMax(const Vector3<T2>& o) { if (x < o.x)x = o.x; if (y < o.y)y = o.y; if (z < o.z)z = o.z; return *this; }
 

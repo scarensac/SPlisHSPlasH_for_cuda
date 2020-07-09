@@ -26,6 +26,14 @@ void move_simulation_cuda(SPH::DFSPHCData& data, Vector3d movement);
 void add_border_to_damp_planes_cuda(SPH::DFSPHCData& data, bool x_displacement = true, bool z_displacement = true);
 
 
+//error checking
+
+//this function will check if there are particle that tunneld throught the boundary box
+//3 possible modes:
+//	0: just report
+//	1: end simulaton if tunneled detected
+//	2: rmv particles that have tunneled
+void check_particles_positions_cuda(SPH::DFSPHCData& data, int mode=0, bool report=true);
 
 
 #endif //DFSPH_STATIC_VAR_STRUCT

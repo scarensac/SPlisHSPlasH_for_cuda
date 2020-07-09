@@ -117,7 +117,7 @@ inline int calculateNumBlocks(int nbElems) {
     for (int k = -1; k < 2; ++k) {\
     for (int m = -1; m < 2; ++m) {\
     for (int n = -1; n < 2; ++n) {\
-    unsigned int cur_cell_id = COMPUTE_CELL_INDEX(x + k , y + m , z + n   );\
+    unsigned int cur_cell_id = COMPUTE_CELL_INDEX(x + n , y + k , z + m   );\
     unsigned int end = neighborsDataSet->cell_start_end[cur_cell_id + 1];\
     for (unsigned int cur_particle = neighborsDataSet->cell_start_end[cur_cell_id]; cur_particle < end; ++cur_particle) {\
     unsigned int j = neighborsDataSet->p_id_sorted[cur_particle];\
