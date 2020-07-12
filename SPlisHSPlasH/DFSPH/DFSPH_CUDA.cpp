@@ -344,13 +344,47 @@ void DFSPHCUDA::step()
             for (int i = 0; i < NB_TIME_POINTS; ++i) {
                 float time = std::chrono::duration_cast<std::chrono::nanoseconds> (tab_timepoint[i+1] - tab_timepoint[i]).count() / 1000000.0f;
                 tab_avg[i] += time;
-                
+				std::cout << i << "  ";
                 if (i == 8) {
                     std::cout << tab_name[i] << "  :" << ((count_moving_steps>0)?(tab_avg[i] / (count_moving_steps + 1)):0) << "  (" << time << ")" << std::endl;
                 } else {
                     std::cout << tab_name[i] << "  :" << (tab_avg[i] / (count_steps + 1)) << "  (" << time << ")" << std::endl;
                 }
             }
+
+
+			int end_step = 2000;
+			if (end_step > 0 && (count_steps+1) == end_step ) {
+				float desired_recap = 0;
+				for (int i = 0; i < NB_TIME_POINTS; ++i) {
+					if (i == 0) { //don't consider the neighbor search
+						continue;
+					}
+
+					float time = tab_avg[i] / (count_steps + 1);
+					
+					//viscosity
+					//the +1 is for the warm start iteration
+					if (i == 3) {
+						std::cout << time << "  ";
+						time *= 3 / (((iter_divergence_avg ) / (count_steps + 1))+1);
+						std::cout << time << "  "<< ((iter_divergence_avg + 1) / (count_steps + 1)) << "  " << i << "  " << std::endl;
+					}
+
+					//density
+					//the +1 is for the warm start iteration
+					if (i == 6) {
+						std::cout << time << "  ";
+						time *= 13 / (((iter_pressure_avg) / (count_steps + 1))+1);
+						std::cout << time << "  " << ((iter_pressure_avg + 1) / (count_steps + 1)) << "  " << i << "  " << std::endl;
+					}
+
+					desired_recap += time;
+				}
+				std::cout << "recap result: " << desired_recap << std::endl;
+				exit(0);
+
+			}
         }
 
 		if (true) {

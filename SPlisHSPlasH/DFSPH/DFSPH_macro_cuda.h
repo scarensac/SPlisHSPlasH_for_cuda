@@ -299,6 +299,8 @@ __device__ inline unsigned int compute_morton_magic_numbers(unsigned int x, unsi
 
 #define COMPUTE_CELL_INDEX(x,y,z) data.precomputedCellIndex[static_cast<int>(COMPUTE_LINEAR_INDEX(x,y,z))]
 
+
+
 #elif defined(LINEAR_INDEX_NEIGHBORS_CELL)
 
 #define COMPUTE_CELL_INDEX(x,y,z) COMPUTE_LINEAR_INDEX(x,y,z)
