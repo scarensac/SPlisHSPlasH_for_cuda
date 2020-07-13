@@ -2138,9 +2138,10 @@ __global__ void DFSPH_neighborsSearch_kernel(SPH::DFSPHCData data, SPH::UnifiedP
 						}
 					}
 
-					if (!found_none) {
-						last = min;
+					if (found_none) {
+						break;
 					}
+					last = min;
 
 					unsigned int end = data.fluid_data_cuda->neighborsDataSet->cell_start_end[min + 1];
 					for (unsigned int cur_particle = data.fluid_data_cuda->neighborsDataSet->cell_start_end[min]; cur_particle < end; ++cur_particle) {
@@ -2226,9 +2227,10 @@ __global__ void DFSPH_neighborsSearch_kernel(SPH::DFSPHCData data, SPH::UnifiedP
 					}
 				}
 
-				if (!found_none) {
-					last = min ;
+				if (found_none) {
+					break;
 				}
+				last = min;
 
 				unsigned int end = data.boundaries_data_cuda->neighborsDataSet->cell_start_end[min + 1];
 				for (unsigned int cur_particle = data.boundaries_data_cuda->neighborsDataSet->cell_start_end[min]; cur_particle < end; ++cur_particle) {

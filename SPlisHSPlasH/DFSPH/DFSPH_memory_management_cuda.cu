@@ -286,16 +286,16 @@ void allocate_DFSPHCData_base_cuda(SPH::DFSPHCData& data) {
 	//hilbertIndexTest();
 	//exit(0);
 
-	cudaMallocManaged(&(data.precomputedCellIndex), sizeof(unsigned int)*CELL_COUNT);
-	cudaMallocManaged(&(data.precomputedCellIndexChain), sizeof(int8_t)*CELL_COUNT);
 
 	if(true){
+		cudaMallocManaged(&(data.precomputedCellIndex), sizeof(unsigned int)*CELL_COUNT);
 		int numBlocks = calculateNumBlocks(CELL_COUNT);
 		init_precomputed_cell_index_kernel << <numBlocks, BLOCKSIZE >> > (data.precomputedCellIndex);
 		gpuErrchk(cudaDeviceSynchronize());
 
-		init_precomputed_cell_index_chain_kernel << <numBlocks, BLOCKSIZE >> > (data);
-		gpuErrchk(cudaDeviceSynchronize());
+		//cudaMallocManaged(&(data.precomputedCellIndexChain), sizeof(int8_t)*CELL_COUNT);
+		//init_precomputed_cell_index_chain_kernel << <numBlocks, BLOCKSIZE >> > (data);
+		//gpuErrchk(cudaDeviceSynchronize());
 	}
 
 	//let's verify for linear index

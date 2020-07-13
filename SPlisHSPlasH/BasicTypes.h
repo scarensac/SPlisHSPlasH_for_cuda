@@ -36,8 +36,8 @@ typedef float Real;
 #ifdef USE_DOUBLE_CUDA
 typedef double RealCuda;
 
-#define MAX_MACRO_CUDA(x,y) fmax(x,y)
-#define MIN_MACRO_CUDA(x,y) fmin(x,y)
+#define MAX_MACRO_CUDA(x,y) (((x)<(y))?(y):(x))
+#define MIN_MACRO_CUDA(x,y) (((x)<(y))?(x):(y))
 
 #define SQRT_MACRO_CUDA(x) sqrt (x)
 

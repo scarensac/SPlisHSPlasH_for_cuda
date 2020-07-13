@@ -22,9 +22,9 @@
 #define BITSHIFT_INDEX_DYNAMIC_BODIES
 
 //using norton bitshift for the cells is slower than using a normal index, not that much though
-//#define LINEAR_INDEX_NEIGHBORS_CELL
+#define LINEAR_INDEX_NEIGHBORS_CELL
 //#define MORTON_INDEX_NEIGHBORS_CELL
-#define HILBERT_INDEX_NEIGHBORS_CELL
+//#define HILBERT_INDEX_NEIGHBORS_CELL
 
 //this has to be activated if you don't want the linear advanced index though it is automaticaly activated if 
 //an index other than direct calculation linear is used

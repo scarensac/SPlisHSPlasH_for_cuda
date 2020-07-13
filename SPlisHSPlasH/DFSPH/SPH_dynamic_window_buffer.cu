@@ -40,9 +40,10 @@ using namespace SPH;
 
 
 
-__device__ void atomicToMin(float* addr, float value)
+__device__ void atomicToMin(RealCuda* addr, RealCuda value)
 {
-	float old = *addr;
+#ifndef USE_DOUBLE_CUDA
+	RealCuda old = *addr;
 	if (old <= value) return;
 	for (;;) {
 		old = atomicExch(addr, value);
@@ -53,11 +54,15 @@ __device__ void atomicToMin(float* addr, float value)
 			return;
 		}
 	}
+#else
+	asm("trap;");
+#endif
 }
 
-__device__ void atomicToMax(float* addr, float value)
+__device__ void atomicToMax(RealCuda* addr, RealCuda value)
 {
-	float old = *addr;
+#ifndef USE_DOUBLE_CUDA
+	RealCuda old = *addr;
 	if (old >= value) return;
 	for (;;) {
 		old = atomicExch(addr, value);
@@ -68,6 +73,9 @@ __device__ void atomicToMax(float* addr, float value)
 			return;
 		}
 	}
+#else
+	asm("trap;");
+#endif
 }
 
 
