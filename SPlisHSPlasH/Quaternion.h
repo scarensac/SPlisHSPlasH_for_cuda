@@ -5,12 +5,6 @@
 #include "SPlisHSPlasH\BasicTypes.h"
 #include "SPlisHSPlasH\Vector.h"
 
-#ifdef __NVCC__
-#define FUNCTION __host__ __device__
-#else
-#define FUNCTION 
-#endif
-
 
 namespace SPH
 {

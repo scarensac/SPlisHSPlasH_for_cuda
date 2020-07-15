@@ -274,13 +274,14 @@ code;\
 
 
 
-__device__ inline void interleave_2_bits_magic_numbers(unsigned int& x) {
+__host__ __device__ inline void interleave_2_bits_magic_numbers(unsigned int& x) {
 	x = (x | (x << 16)) & 0x030000FF;
 	x = (x | (x << 8)) & 0x0300F00F;
 	x = (x | (x << 4)) & 0x030C30C3;
 	x = (x | (x << 2)) & 0x09249249;
 }
-__device__ inline unsigned int compute_morton_magic_numbers(unsigned int x, unsigned int y, unsigned int z) {
+
+__host__ __device__ inline unsigned int compute_morton_magic_numbers(unsigned int x, unsigned int y, unsigned int z) {
 	interleave_2_bits_magic_numbers(x);
 	interleave_2_bits_magic_numbers(y);
 	interleave_2_bits_magic_numbers(z);

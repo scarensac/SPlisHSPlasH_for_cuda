@@ -71,7 +71,8 @@ DFSPHCUDA::~DFSPHCUDA(void)
 void DFSPHCUDA::step()
 {
 
-    static int count_steps = 0;
+	static int count_steps = 0;
+	static int count_fluid_particles_initial = m_data.getFluidParticlesCount();
 
 	if (TimeManager::getCurrent()->getTime() > 0.5) {
 		if ((count_steps % 32) == 0) {
@@ -357,9 +358,11 @@ void DFSPHCUDA::step()
 			if (end_step > 0 && (count_steps+1) == end_step ) {
 				float desired_recap = 0;
 				for (int i = 0; i < NB_TIME_POINTS; ++i) {
+					/*
 					if (i == 1) { //don't consider the neighbor search
 						continue;
 					}
+					//*/
 
 					float time = tab_avg[i] / (count_steps + 1);
 					
@@ -382,6 +385,7 @@ void DFSPHCUDA::step()
 					desired_recap += time;
 				}
 				std::cout << "recap result: " << desired_recap << std::endl;
+				std::cout << "nbr lost particles: " << count_fluid_particles_initial-m_data.getFluidParticlesCount() << std::endl;
 				exit(0);
 
 			}

@@ -434,6 +434,53 @@ void allocate_DFSPHCData_base_cuda(SPH::DFSPHCData& data) {
 	}
 
 #endif
+
+	//Here I'llput a message writing a recap of the type of neighbor index used
+	if (true) {
+		std::string index_name;
+		std::string use_complete = "disabled";
+		std::string precomputed_index = "disabled";
+		std::string manual_neighbors_sort = "disabled";
+		std::string implicit_neighbors_sort = "disabled";
+#ifdef LINEAR_INDEX_NEIGHBORS_CELL
+		index_name = "linear (xyz) index";
+#elif defined(MORTON_INDEX_NEIGHBORS_CELL)
+		index_name = "morton (z-curve) index";
+#elif defined(HILBERT_INDEX_NEIGHBORS_CELL)
+		index_name = "hilbert index";
+#endif // LINEAR
+#ifdef USE_COMPLETE
+		use_complete = "used";
+#endif
+#ifdef INDEX_NEIGHBORS_CELL_FROM_STORAGE
+		precomputed_index = "used";
+#endif
+#ifdef SORT_NEIGHBORS
+		manual_neighbors_sort = "used";
+#endif
+#ifdef NEIGHBORS_RANGE_EXPLORATION
+		implicit_neighbors_sort = "used";
+#endif
+		std::cout << "neighbors index recap: " << index_name << "  //   ";
+		std::cout << "use_complete = " << use_complete << "  //   ";
+		std::cout << "precomputed_index: " << precomputed_index << "  //   ";
+		std::cout << "manual_neighbors_sort: " << manual_neighbors_sort << "  //   ";
+		std::cout << "implicit_neighbors_sort: " << implicit_neighbors_sort << std::endl;
+
+		//I'll do and end test by checking the values of the eight first cells (the first "cube")
+
+		std::cout << "first cells values: " << COMPUTE_CELL_INDEX(0, 0, 0) << "  ";
+		std::cout << COMPUTE_CELL_INDEX(1, 0, 0) << "  ";
+		std::cout << COMPUTE_CELL_INDEX(0, 0, 1) << "  ";
+		std::cout << COMPUTE_CELL_INDEX(1, 0, 1) << "  ";
+		std::cout << COMPUTE_CELL_INDEX(0, 1, 0) << "  ";
+		std::cout << COMPUTE_CELL_INDEX(1, 1, 0) << "  ";
+		std::cout << COMPUTE_CELL_INDEX(0, 1, 1) << "  ";
+		std::cout << COMPUTE_CELL_INDEX(1, 1, 1) << "  ";
+		std::cout<<std::endl;
+	}
+
+
 }
 
 void free_DFSPHCData_base_cuda(SPH::DFSPHCData& data) {

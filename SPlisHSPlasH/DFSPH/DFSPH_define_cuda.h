@@ -22,24 +22,24 @@
 #define BITSHIFT_INDEX_DYNAMIC_BODIES
 
 //using norton bitshift for the cells is slower than using a normal index, not that much though
-#define LINEAR_INDEX_NEIGHBORS_CELL
-//#define MORTON_INDEX_NEIGHBORS_CELL
+//#define LINEAR_INDEX_NEIGHBORS_CELL
+#define MORTON_INDEX_NEIGHBORS_CELL
 //#define HILBERT_INDEX_NEIGHBORS_CELL
 
 //this has to be activated if you don't want the linear advanced index though it is automaticaly activated if 
 //an index other than direct calculation linear is used
-#define USE_COMPLETE
+//#define USE_COMPLETE
 
 //activating this will read the index from memory, the actual index is chosen from the earlier define
-#define INDEX_NEIGHBORS_CELL_FROM_STORAGE
+//#define INDEX_NEIGHBORS_CELL_FROM_STORAGE
 
 //activating this will read the index from memory, the actual index is chosen from the earlier define
 ///!!!WARNING!!! currently this REQUIRES having the interleaved neighbors
-#define SORT_NEIGHBORS
+//#define SORT_NEIGHBORS
 
 //if activated this will create ranges when expliring the neighbor structure so that
 //when neighbors are registered they are already sorted
-#define NEIGHBORS_RANGE_EXPLORATION
+//#define NEIGHBORS_RANGE_EXPLORATION
 
 
 //print debug messages in cuda functions (may not activate /deactivate all messages)
