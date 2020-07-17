@@ -358,7 +358,7 @@ void DFSPHCUDA::step()
 			if (end_step > 0 && (count_steps+1) == end_step ) {
 				float desired_recap = 0;
 				for (int i = 0; i < NB_TIME_POINTS; ++i) {
-					/*
+					//*
 					if (i == 1) { //don't consider the neighbor search
 						continue;
 					}

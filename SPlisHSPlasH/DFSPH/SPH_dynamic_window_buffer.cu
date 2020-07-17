@@ -29,6 +29,8 @@
 
 
 
+
+
 using namespace SPH;
 
 //this macro is juste so that the expression get optimized at the compilation 
@@ -923,6 +925,8 @@ __global__ void DFSPH_evaluate_density_field_kernel(SPH::DFSPHCData data, SPH::U
 	bool near_fluid = false;
 	bool near_buffer = false;
 
+#ifndef PRECOMPUTED_KERNELS_USE_CONSTANT_MEMORY
+
 	//*
 	//compute the fluid contribution
 	ITER_NEIGHBORS_FROM_STRUCTURE_BASE(fluidSet->neighborsDataSet, fluidSet->pos,
@@ -967,6 +971,10 @@ __global__ void DFSPH_evaluate_density_field_kernel(SPH::DFSPHCData data, SPH::U
 		);
 	}
 	//*/
+#else
+	asm("trap;");
+
+#endif 
 
 	if (near_buffer && near_fluid) {
 		samples[i] = density;
@@ -1012,6 +1020,7 @@ __global__ void DFSPH_evaluate_density_in_buffer_kernel(SPH::DFSPHCData data, SP
 	//*
 	keep_particle = false;
 	
+#ifndef PRECOMPUTED_KERNELS_USE_CONSTANT_MEMORY
 
 	//compute the fluid contribution
 	ITER_NEIGHBORS_FROM_STRUCTURE_BASE(fluidSet->neighborsDataSet, fluidSet->pos,
@@ -1026,6 +1035,10 @@ __global__ void DFSPH_evaluate_density_in_buffer_kernel(SPH::DFSPHCData data, SP
 		}
 	}
 	);
+#else
+	asm("trap;");
+
+#endif 
 
 	keep_particle = keep_particle || (!S.isinside(p_i));
 	
@@ -1044,6 +1057,8 @@ __global__ void DFSPH_evaluate_density_in_buffer_kernel(SPH::DFSPHCData data, SP
 			//no need for that since I lighten the buffers before now
 			float limit = data.particleRadius / 10.0f;
 			limit *= limit;
+#ifndef PRECOMPUTED_KERNELS_USE_CONSTANT_MEMORY
+
 			ITER_NEIGHBORS_FROM_STRUCTURE_BASE(backgroundBufferSet->neighborsDataSet, backgroundBufferSet->pos,
 				if ((p_i - backgroundBufferSet->pos[j]).squaredNorm()> (limit)) {
 					RealCuda density_delta = backgroundBufferSet->getMass(j) * KERNEL_W(data, p_i - backgroundBufferSet->pos[j]);
@@ -1051,11 +1066,17 @@ __global__ void DFSPH_evaluate_density_in_buffer_kernel(SPH::DFSPHCData data, SP
 					count_neighbors++;
 				}
 			);
+#else
+			asm("trap;");
+
+#endif 
 			//*/
 		}
 		else {
 			//on the following passes I do the computations using the neighbors from the buffer
 			//ze need to ingore pqrticles that have been tagged for removal
+#ifndef PRECOMPUTED_KERNELS_USE_CONSTANT_MEMORY
+
 			ITER_NEIGHBORS_FROM_STRUCTURE_BASE(bufferSet->neighborsDataSet, bufferSet->pos,
 				if (i!=j) {
 					if (bufferSet->neighborsDataSet->cell_id[j] != removal_tag) {
@@ -1072,16 +1093,26 @@ __global__ void DFSPH_evaluate_density_in_buffer_kernel(SPH::DFSPHCData data, SP
 				density_after_buffer += density_delta;
 				count_neighbors++;
 			);
+#else
+			asm("trap;");
+
+#endif 
 		}
 		//*/
 
 		//compute the boundaries contribution only if there is a fluid particle anywhere near
 		//*
 		if ((density > 100) || (density_after_buffer > 100)) {
+#ifndef PRECOMPUTED_KERNELS_USE_CONSTANT_MEMORY
+
 			ITER_NEIGHBORS_FROM_STRUCTURE_BASE(data.boundaries_data_cuda->neighborsDataSet, data.boundaries_data_cuda->pos,
 				RealCuda density_delta = data.boundaries_data_cuda->getMass(j) * KERNEL_W(data, p_i - data.boundaries_data_cuda->pos[j]);
 			density += density_delta;
 			);
+#else
+			asm("trap;");
+
+#endif 
 		}
 		//*/
 	}
@@ -1217,6 +1248,8 @@ __global__ void DFSPH_lighten_buffers_kernel(SPH::DFSPHCData data, SPH::UnifiedP
 			//for the back ground we want only above the fluid (or at least realyc close from the fluid surface
 			//note:	if it is part of the buffer and under the fluid we can stop the computation because it mean we have to discard
 			//		it from the background
+#ifndef PRECOMPUTED_KERNELS_USE_CONSTANT_MEMORY
+
 			ITER_NEIGHBORS_FROM_STRUCTURE_BASE(fluidSet->neighborsDataSet, fluidSet->pos,
 				if (!is_buffer_particle_under_fluid) {
 					if (S.isinside(fluidSet->pos[j])) {
@@ -1243,6 +1276,10 @@ __global__ void DFSPH_lighten_buffers_kernel(SPH::DFSPHCData data, SPH::UnifiedP
 					}
 				}
 			);
+#else
+			asm("trap;");
+
+#endif 
 			
 			//if it's a buffer particle only keep it if it  is under the fluid
 			keep_particle_buffer &= is_buffer_particle_under_fluid;
@@ -1302,6 +1339,8 @@ __global__ void DFSPH_evaluate_density_kernel(SPH::DFSPHCData data, SPH::Unified
 	int count_neighbors = 0;
 	RealCuda density = fluidSet->getMass(i) * data.W_zero;
 
+#ifndef PRECOMPUTED_KERNELS_USE_CONSTANT_MEMORY
+
 	//check if there is any fluid particle above us
 	ITER_NEIGHBORS_FROM_STRUCTURE_BASE(fluidSet->neighborsDataSet, fluidSet->pos,
 		if (i != j) {
@@ -1319,6 +1358,10 @@ __global__ void DFSPH_evaluate_density_kernel(SPH::DFSPHCData data, SPH::Unified
 		count_neighbors++;
 	);
 	//*/
+#else
+	asm("trap;");
+
+#endif 
 	//tag the surface
 	fluidSet->neighborsDataSet->cell_id[i] = 0;
 	if ((count_neighbors) < 30) {
@@ -1350,6 +1393,8 @@ __global__ void DFSPH_evaluate_particle_concentration_kernel(SPH::DFSPHCData dat
 	//we cna start at 0 and ignire the i contribution because we will do a sustracction when computing the concentration gradiant
 	RealCuda concentration = 0;
 
+#ifndef PRECOMPUTED_KERNELS_USE_CONSTANT_MEMORY
+
 	//check if there is any fluid particle above us
 	ITER_NEIGHBORS_FROM_STRUCTURE_BASE(fluidSet->neighborsDataSet, fluidSet->pos,
 		if (i != j) {
@@ -1365,6 +1410,10 @@ __global__ void DFSPH_evaluate_particle_concentration_kernel(SPH::DFSPHCData dat
 	concentration += concentration_delta;
 	count_neighbors++;
 	);
+#else
+	asm("trap;");
+
+#endif 
 
 	
 
@@ -1404,6 +1453,8 @@ __global__ void DFSPH_particle_shifting_base_kernel(SPH::DFSPHCData data, SPH::U
 		surface_factor += data.W_zero;
 	}
 
+#ifndef PRECOMPUTED_KERNELS_USE_CONSTANT_MEMORY
+
 	//check if there is any fluid particle above us
 	ITER_NEIGHBORS_FROM_STRUCTURE_BASE(fluidSet->neighborsDataSet, fluidSet->pos,
 		if (i != j) {
@@ -1421,6 +1472,10 @@ __global__ void DFSPH_particle_shifting_base_kernel(SPH::DFSPHCData data, SPH::U
 			}
 		}
 	);
+#else
+	asm("trap;");
+
+#endif 
 
 	//as long as I make so that the surface is more than 1 kernel radius from the boundaries those computation are fine no need to iterate on the boundaries
 	//so I'll prevent shifting the particles that are even remotely clse from the boundary
@@ -2676,7 +2731,7 @@ __global__ void DFSPH_handle_inflow_kernel(SPH::DFSPHCData data, SPH::UnifiedPar
 	//though since all fluid particles have the same density if can be slightly simplified as simply a weigth equivalent to the kernel value
 	RealCuda totalWeight = 0;
 	Vector3d weightedSum(0,0,0);
-	
+#ifndef PRECOMPUTED_KERNELS_USE_CONSTANT_MEMORY
 	ITER_NEIGHBORS_FROM_STRUCTURE(particleSet->neighborsDataSet, particleSet->pos,
 		{
 			RealCuda weight =  KERNEL_W(data,pos - particleSet->pos[j]);
@@ -2684,6 +2739,11 @@ __global__ void DFSPH_handle_inflow_kernel(SPH::DFSPHCData data, SPH::UnifiedPar
 			totalWeight += weight;
 		}
 	);
+
+#else
+	asm("trap;");
+
+#endif 
 
 	//don't create a particle if there is a flow toward the outside of the simulation space
 	Vector3d normal(1, 0, 0);
