@@ -31,7 +31,7 @@
 #define USE_COMPLETE
 
 //activating this will read the index from memory, the actual index is chosen from the earlier define
-#define INDEX_NEIGHBORS_CELL_FROM_STORAGE
+//#define INDEX_NEIGHBORS_CELL_FROM_STORAGE
 
 //activating this will read the index from memory, the actual index is chosen from the earlier define
 ///!!!WARNING!!! currently this REQUIRES having the interleaved neighbors

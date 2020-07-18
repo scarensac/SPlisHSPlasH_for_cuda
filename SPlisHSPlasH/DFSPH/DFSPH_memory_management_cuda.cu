@@ -478,6 +478,8 @@ void allocate_DFSPHCData_base_cuda(SPH::DFSPHCData& data) {
 		std::cout << COMPUTE_CELL_INDEX(0, 1, 1) << "  ";
 		std::cout << COMPUTE_CELL_INDEX(1, 1, 1) << "  ";
 		std::cout<<std::endl;
+
+
 	}
 
 

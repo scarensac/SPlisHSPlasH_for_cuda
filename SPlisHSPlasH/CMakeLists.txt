@@ -70,16 +70,18 @@ set(DFSPH_SOURCE_FILES
 #	DFSPH/DFSPH_cpu_c_arrays.cpp
 #	DFSPH/DFSPH_cpu_c_arrays_advanced.cpp
 	DFSPH/DFSPH_cuda_basic.cu
-	DFSPH/DFSPH_memory_management_cuda.cu
-	DFSPH/DFSPH_rendering_cuda.cu
-	DFSPH/DFSPH_static_variables_structure_cuda.cu
-	DFSPH/DFSPH_core_cuda.cu
-	DFSPH/basic_kernels_cuda.cu
-	DFSPH/SPH_other_systems_cuda.cu
+#all the .cu files are compiles through a single cu file so that I can use constant memory structures
+#	DFSPH/DFSPH_memory_management_cuda.cu
+#	DFSPH/DFSPH_rendering_cuda.cu
+#	DFSPH/DFSPH_static_variables_structure_cuda.cu
+#	DFSPH/DFSPH_core_cuda.cu	
+#	DFSPH/basic_kernels_cuda.cu
+#	DFSPH/SPH_other_systems_cuda.cu
+#	DFSPH/SPH_dynamic_window_buffer.cu
+	DFSPH/cuda_compilation_center.cu
 	DFSPH/DFSPH_CUDA.cpp
 	DFSPH/SimulationDataDFSPH.cpp
 	DFSPH/TimeStepDFSPH.cpp
-	DFSPH/SPH_dynamic_window_buffer.cu
 	)	
 	
 set(PF_HEADER_FILES
