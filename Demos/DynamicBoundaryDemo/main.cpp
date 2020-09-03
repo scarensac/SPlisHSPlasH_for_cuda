@@ -289,6 +289,8 @@ void initBoundaryData()
 	SceneLoader::Scene &scene = base.getScene();
 	const bool useCache = base.getUseParticleCaching();
 
+	std::cout << "nbr of boundary models: "<< scene.boundaryModels.size() <<std::endl;
+
 	for (unsigned int i = 0; i < scene.boundaryModels.size(); i++)
 	{
 		std::vector<Vector3r> boundaryParticles;
@@ -355,7 +357,7 @@ void initBoundaryData()
 			}
 			// transform back to local coordinates
 			for (unsigned int j = 0; j < boundaryParticles.size(); j++) {
-				//boundaryParticles[j] = rb->getRotation().transpose() * (boundaryParticles[j] - rb->getPosition());
+				boundaryParticles[j] = rb->getRotation().transpose() * (boundaryParticles[j] - rb->getPosition());
 			}
 		}
 		base.getSimulationMethod().model.addRigidBodyObject(rb, static_cast<unsigned int>(boundaryParticles.size()), &boundaryParticles[0]);

@@ -482,6 +482,9 @@ void UnifiedParticleSet::load_from_file(std::string file_path, bool load_velocit
     Vector3d min=Vector3d(1000);
     Vector3d max=Vector3d(-1000);
 	int NbrLoadedParticles = numParticles;
+	Vector3d max_pos(-100, -100, -100);
+	Vector3d min_pos(100, 100, 100);
+
     for (int i = 0; i < NbrLoadedParticles; ++i) {
 		RealCuda mass;
 		Vector3d pos;
@@ -491,14 +494,31 @@ void UnifiedParticleSet::load_from_file(std::string file_path, bool load_velocit
 		myfile >> pos.x; myfile >> pos.y; myfile >> pos.z;
 		myfile >> vel.x; myfile >> vel.y; myfile >> vel.z;
 
+
+		max_pos.toMax(pos);
+		min_pos.toMin(pos);
+
 		if (!load_velocities) {
 			vel = Vector3d(0, 0, 0);
         }
 
         //this is just used to lowerthe floorrelative the the rb simulation
         if(!is_dynamic_object&&!velocity_impacted_by_fluid_solver){
+		
+
+
             //pos.y-=0.2;
         }
+
+
+		if (velocity_impacted_by_fluid_solver) {
+			Vector3d point = Vector3d(0, 1, 0);
+			if ((pos - point).norm()<0.5) {
+				std::cout << "one particle is too close " << i << " " << pos.toString() << "   dist: "<< (pos - point).norm() <<std::endl;
+			}
+		}
+
+	
 
 #ifdef OCEAN_BOUNDARIES_PROTOTYPE
 		/*
@@ -526,6 +546,9 @@ void UnifiedParticleSet::load_from_file(std::string file_path, bool load_velocit
 
 
 	}
+
+	std::cout << "min/max position is: " << min_pos.toString() << " // " << max_pos.toString() << std::endl;
+	
 
 	reset(pos_temp, vel_temp, mass_temp);
 
@@ -662,6 +685,8 @@ DFSPHCData::DFSPHCData() {
 	h = 0.003;
 	invH = 1.0 / h;
 	invH2 = 1.0 / (h*h);
+	updateTimeStep(h);
+	onSimulationStepEnd();
 	updateTimeStep(h);
 	onSimulationStepEnd();
 
@@ -958,7 +983,7 @@ void DFSPHCData::onSimulationStepEnd() {
 	invH = invH_future;
 	invH2 = invH2_future;
 
-	runAdvancedRendering(Vector3d(3, 3, 3), Vector3d(0, 0, 0));
+	//runAdvancedRendering(Vector3d(3, 3, 3), Vector3d(0, 0, 0));
 
 }
 
@@ -1413,4 +1438,9 @@ void DFSPHCData::runAdvancedRendering(Vector3d eye, Vector3d lookAt) {
 
 void DFSPHCData::checkParticlesPositions(int mode, bool report) {
 	check_particles_positions_cuda(*this, mode, report);
+}
+
+
+Vector3d DFSPHCData::getFluidAvgVelocity() {
+	return get_avg_velocity_cuda(fluid_data);
 }

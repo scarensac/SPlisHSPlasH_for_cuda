@@ -36,4 +36,6 @@ void add_border_to_damp_planes_cuda(SPH::DFSPHCData& data, bool x_displacement =
 void check_particles_positions_cuda(SPH::DFSPHCData& data, int mode=0, bool report=true);
 
 
+Vector3d get_avg_velocity_cuda(SPH::UnifiedParticleSet* particleSet);
+
 #endif //DFSPH_STATIC_VAR_STRUCT

@@ -3036,7 +3036,7 @@ void DynamicWindow::handleOceanBoundariesTestCurrent(SPH::DFSPHCData& data) {
 	initStep(data, Vector3d(0, 0, 0), false, false);
 	//particleSet->initNeighborsSearchData(data, false, false);
 	//full neighbor search for now
-	cuda_neighborsSearch(data);
+	cuda_neighborsSearch(data,true);
 	particleSet->resetColor();
 
 	bool use_stokes_wave = false;

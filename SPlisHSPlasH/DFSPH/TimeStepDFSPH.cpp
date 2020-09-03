@@ -92,7 +92,7 @@ void TimeStepDFSPH::step()
 	tm->setTime (tm->getTime () + h);
 
 
-
+	/*
 
 	 std::chrono::steady_clock::time_point end = std::chrono::steady_clock::now();
 	 float time_iter = std::chrono::duration_cast<std::chrono::nanoseconds> (end - start).count() / 1000000.0f;
@@ -117,7 +117,13 @@ void TimeStepDFSPH::step()
 
 
 	 std::cout << "step finished: " << total_time/ (count_steps) << "  (" << time_iter << ")  " << count_steps++ << std::endl;
+	 //*/
 
+	//*
+	static int count_step = 0;
+	count_step++;
+	std::cout << count_step << " " << m_iterations << " " << m_iterationsV << std::endl;
+	//*/
 }
 
 void TimeStepDFSPH::computeDFSPHFactor()
@@ -196,7 +202,37 @@ void TimeStepDFSPH::pressureSolve()
 	const int numParticles = (int)m_model->numActiveParticles();
 	Real avg_density_err = 0.0;
 
-#ifdef USE_WARMSTART			
+#ifdef USE_WARMSTART	
+	/*
+	Real avg_warmstart = 0;
+	Real count_capped = 0;
+
+	for (int i = 0; i < (int)numParticles; i++)
+	{
+		if (m_simulationData.getKappa(i)*invH2 < -0.5) {
+			count_capped++;
+		}
+
+		avg_warmstart += MAX_MACRO(m_simulationData.getKappa(i)*invH2, -0.5);
+	}
+	avg_warmstart /= numParticles;
+	//std::cout << "pressure wamstart avg: " << avg_warmstart << std::endl;
+
+	static std::vector<Real> avgs_warmstart;
+	static std::vector<int> counts_capped;
+	avgs_warmstart.push_back(avg_warmstart);
+	counts_capped.push_back(count_capped);
+	int count = 1000;
+	if (avgs_warmstart.size() == count) {
+		for (int i = 0; i < avgs_warmstart.size(); i++) {
+			std::cout << "pressure_wamstart_avg: " << i << " " << avgs_warmstart[i] << " "<<counts_capped[i]<< std::endl;
+		}
+		exit(0);
+	}
+	//*/
+
+
+
 	#pragma omp parallel default(shared)
 	{
 		//////////////////////////////////////////////////////////////////////////
@@ -210,7 +246,6 @@ void TimeStepDFSPH::pressureSolve()
 			m_simulationData.getKappa(i) = MAX_MACRO(m_simulationData.getKappa(i)*invH2, -0.5);
 			//computeDensityAdv(i, numParticles, h, density0);
 		}
-
 		//////////////////////////////////////////////////////////////////////////
 		// Predict v_adv with external velocities
 		////////////////////////////////////////////////////////////////////////// 
@@ -289,7 +324,10 @@ void TimeStepDFSPH::pressureSolve()
 	
 	// Maximal allowed density fluctuation
 	const Real eta = m_maxError * 0.01 * density0;  // maxError is given in percent
-	
+	//std::cout << "density eta: " << eta<<  std::endl;
+	static int count_step = 0;
+	count_step++;
+
 	while (((avg_density_err > eta) || (m_iterations < 2)) && (m_iterations < m_maxIterations))
 	{
 		avg_density_err = 0.0;
@@ -371,6 +409,8 @@ void TimeStepDFSPH::pressureSolve()
 		}
 
 		avg_density_err /= numParticles;
+
+		//std::cout << "see density convergence: " << count_step << "  " << m_iterations << " " << avg_density_err << std::endl;
 
 		m_iterations++;
 	}
@@ -493,7 +533,9 @@ void TimeStepDFSPH::divergenceSolve()
 	// Maximal allowed density fluctuation
 	// use maximal density error divided by time step size
 	const Real eta = (1.0/h) * maxError * 0.01 * density0;  // maxError is given in percent
-	
+	//std::cout << "divergence eta: " << eta << std::endl;
+
+
 	Real avg_density_err = 0.0;
 	while (((avg_density_err > eta) || (m_iterationsV < 1)) && (m_iterationsV < maxIter))
 	{

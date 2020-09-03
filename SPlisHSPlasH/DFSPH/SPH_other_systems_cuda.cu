@@ -1282,3 +1282,27 @@ void check_particles_positions_cuda(SPH::DFSPHCData& data, int mode, bool report
 		}
 	}
 }
+
+
+template<typename T>
+__global__ void sum_array_cuda(T* array, int size, T* avg_out) {
+	int i = blockIdx.x * blockDim.x + threadIdx.x;
+	if (i >= 1) { return; }
+
+	for (int k = 0; k < size; ++k) {
+		*avg_out += array[i+k*i];
+	}
+}
+
+Vector3d get_avg_velocity_cuda(SPH::UnifiedParticleSet* particleSet) {
+	Vector3d* avg_vel = SVS_CU::get()->force_cuda;
+	*avg_vel = Vector3d(0,0,0);
+
+	{
+		sum_array_cuda<Vector3d> << <1, 1 >> > (particleSet->vel, particleSet->numParticles , avg_vel);
+		gpuErrchk(cudaDeviceSynchronize());
+	}
+	*avg_vel /= particleSet->numParticles;
+
+	return *avg_vel;
+}

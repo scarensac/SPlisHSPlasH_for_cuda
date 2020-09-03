@@ -28,7 +28,7 @@
 
 //this has to be activated if you don't want the linear advanced index though it is automaticaly activated if 
 //an index other than direct calculation linear is used
-#define USE_COMPLETE
+//#define USE_COMPLETE
 
 //activating this will read the index from memory, the actual index is chosen from the earlier define
 //#define INDEX_NEIGHBORS_CELL_FROM_STORAGE

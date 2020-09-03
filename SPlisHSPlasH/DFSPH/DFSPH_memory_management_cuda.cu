@@ -514,14 +514,14 @@ void allocate_UnifiedParticleSet_cuda(SPH::UnifiedParticleSet& container) {
 		cudaMallocManaged(&(container.neighbourgs), container.numParticlesMax * MAX_NEIGHBOURS * sizeof(int));
 
 		cudaMallocManaged(&(container.density), container.numParticlesMax * sizeof(RealCuda));
-		cudaMalloc(&(container.factor), container.numParticlesMax * sizeof(RealCuda));
+		cudaMallocManaged(&(container.factor), container.numParticlesMax * sizeof(RealCuda));
 		cudaMallocManaged(&(container.densityAdv), container.numParticlesMax * sizeof(RealCuda));
 
-		cudaMalloc(&(container.kappa), container.numParticlesMax * sizeof(RealCuda));
-		cudaMalloc(&(container.kappaV), container.numParticlesMax * sizeof(RealCuda));
+		cudaMallocManaged(&(container.kappa), container.numParticlesMax * sizeof(RealCuda));
+		cudaMallocManaged(&(container.kappaV), container.numParticlesMax * sizeof(RealCuda));
 
 		if (container.velocity_impacted_by_fluid_solver) {
-			cudaMalloc(&(container.acc), container.numParticlesMax * sizeof(Vector3d));
+			cudaMallocManaged(&(container.acc), container.numParticlesMax * sizeof(Vector3d));
 
 #ifdef BENDER2019_BOUNDARIES
 			cudaMallocManaged(&(container.X_rigids), container.numParticlesMax * sizeof(Vector3d));

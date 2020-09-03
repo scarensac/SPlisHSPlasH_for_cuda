@@ -1,6 +1,7 @@
 #ifndef __BasicTypes_h__
 #define __BasicTypes_h__
 
+//#define USE_FLOAT
 #ifndef USE_FLOAT
 #define USE_DOUBLE
 #endif

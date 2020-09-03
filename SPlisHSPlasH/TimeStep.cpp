@@ -27,7 +27,7 @@ TimeStep::TimeStep(FluidModel *model)
 	m_iterationsV = 0;
 	m_cflMethod = 1;
 	m_cflFactor = 0.5;
-	m_cflMaxTimeStepSize = 0.005;
+	m_cflMaxTimeStepSize = 0.01;
 	m_maxIterations = 100;
 	m_maxError = 0.01;
 	m_maxIterationsV = 100;
@@ -222,7 +222,7 @@ void TimeStep::reset()
 		m_drag->reset();
 	m_iterations = 0;
 
-	TimeManager::getCurrent()->setTimeStepSize(0.001);
+	//TimeManager::getCurrent()->setTimeStepSize(0.001);
 }
 
 void TimeStep::setSurfaceTensionMethod(SurfaceTensionMethods val)

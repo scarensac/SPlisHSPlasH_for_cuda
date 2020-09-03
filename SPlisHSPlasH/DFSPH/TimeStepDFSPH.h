@@ -6,6 +6,10 @@
 #include "SimulationDataDFSPH.h"
 #include "SPlisHSPlasH/SPHKernels.h"
 
+
+#define USE_WARMSTART
+#define USE_WARMSTART_V
+
 namespace SPH
 {
 	class SimulationDataDFSPH;

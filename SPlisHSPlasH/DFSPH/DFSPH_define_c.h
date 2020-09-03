@@ -6,7 +6,7 @@
 #endif
 
 
-#define GROUP_DYNAMIC_BODIES_NEIGHBORS_SEARCH
+//#define GROUP_DYNAMIC_BODIES_NEIGHBORS_SEARCH
 
 
 //this control if the neighbors for each particle are stored
@@ -26,7 +26,7 @@
 #define PRECOMPUTED_KERNELS
 #define PRECOMPUTED_KERNELS_SAMPLE_COUNT 1000
 #ifdef PRECOMPUTED_KERNELS
-#define PRECOMPUTED_KERNELS_USE_CONSTANT_MEMORY
+//#define PRECOMPUTED_KERNELS_USE_CONSTANT_MEMORY
 #endif
 
 //use the bender 2019 boundaries

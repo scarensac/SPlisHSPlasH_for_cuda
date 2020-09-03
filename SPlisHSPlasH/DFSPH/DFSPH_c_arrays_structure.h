@@ -434,6 +434,8 @@ public:
 	//	2: rmv particles that have tunneled
 	void checkParticlesPositions(int mode=0, bool report=true);
 
+	//some special getters to have some more info on the fluid 
+	Vector3d getFluidAvgVelocity();
 };
 }
 

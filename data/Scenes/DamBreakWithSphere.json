@@ -32,29 +32,24 @@
 	"RigidBodies": [
 		{
 			"geometryFile": "../models/UnitBox.obj",
-			"translation": [0,0,0],
+			"translation": [0,2.5,0],
 			"rotationAxis": [1, 0, 0],
 			"rotationAngle": 0,
-			"scale": [2, 3, 1],
-			"color": [0.1, 0.4, 0.6, 1.0], 
+			"scale": [3, 5, 3],
+			"color": [0.5, 0.5, 0.5, 1.0], 
 			"isDynamic": false,
-			"mapInvert": true, 
-			"mapThickness": 0.0,
-			"mapResolution": [40,30,15],
 			"restitution" : 0.6,
 			"friction" : 0.0,
 			"collisionObjectType": 2,
-			"collisionObjectScale": [3, 3, 3],	
-			"isWall": true,
-			"invertSDF": true
+			"collisionObjectScale": [1, 2, 3],	
+			"isWall": true
 		},
 		{
 			"id": 2,
 			"geometryFile": "../models/sphere.obj",
-			"particleFile": "../models/sphere.bgeo",
 			"isDynamic": true, 
 			"density": 20, 
-			"translation": [0.0,1.5,0],
+			"translation": [0.0,1.0,0],
 			"rotationAxis": [1, 0, 0],
 			"rotationAngle": 0.0,
 			"scale": [0.475, 0.475, 0.475],
@@ -71,12 +66,12 @@
 		{
 			"denseMode": 0,
 			"start": [-1.5, 0.0, -1.5],
-			"end": [-0.8, 0.75, -0.8]
-		}, 
+			"end": [-0.6, 4, 1.5]
+		},
 		{
 			"denseMode": 0,
-			"start": [0.8, 0.0, 0.8],
-			"end": [1.5, 2.75, 1.5]
+			"start": [0.6, 0.0, -1.5],
+			"end": [1.5, 4, 1.5]
 		}
 	]
 }

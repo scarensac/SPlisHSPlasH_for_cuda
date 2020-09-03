@@ -58,7 +58,7 @@ void cuda_initNeighborsSearchDataSetGroupedDynamicBodies(SPH::DFSPHCData& data);
 void cuda_sortData(SPH::UnifiedParticleSet& particleSet, unsigned int * sort_id);
 void cuda_shuffleData(SPH::UnifiedParticleSet& particleSet);
 
-void cuda_neighborsSearch(SPH::DFSPHCData& data);
+void cuda_neighborsSearch(SPH::DFSPHCData& data, bool need_sort);
 
 
 ////////////////////////////////////////////////////

@@ -763,6 +763,7 @@ int cuda_divergenceSolve(SPH::DFSPHCData& m_data, const unsigned int maxIter, co
 	// Maximal allowed density fluctuation
 	// use maximal density error divided by time step size
 	const RealCuda eta = maxError * 0.01 * density0 / h;  // maxError is given in percent
+	//std::cout << "divergence eta: " << eta << std::endl;
 
 	float time_3_1 = 0;
 	float time_3_2 = 0;
@@ -1281,6 +1282,8 @@ int cuda_pressureSolve(SPH::DFSPHCData& m_data, const unsigned int m_maxIteratio
 
 	// Maximal allowed density fluctuation
 	const RealCuda eta = m_maxError * 0.01 * density0;  // maxError is given in percent
+	//std::cout << "density eta: " << eta << std::endl;
+	static int count_step = 0; count_step++;
 
 	float time_3_1 = 0;
 	float time_3_2 = 0;
@@ -1304,6 +1307,9 @@ int cuda_pressureSolve(SPH::DFSPHCData& m_data, const unsigned int m_maxIteratio
 		time_3_1 += std::chrono::duration_cast<std::chrono::nanoseconds> (p1 - p0).count() / 1000000.0f;
 		time_3_2 += std::chrono::duration_cast<std::chrono::nanoseconds> (p2 - p1).count() / 1000000.0f;
 
+
+
+		//std::cout << "see density convergence: " << count_step << "  " << m_iterations << " " << avg_density_err << std::endl;
 		
 		//std::cout << "presure solve out: " << m_iterations << "   " << avg_density_err << std::endl;
 	}
@@ -1916,6 +1922,11 @@ __global__ void DFSPH_sortFromIndex_kernel(T* in, T* out, unsigned int* index, u
 
 void cuda_sortData(SPH::UnifiedParticleSet& particleSet, unsigned int * sort_id) {
 	//*
+	/*
+	static std::chrono::steady_clock::time_point start;
+	static std::chrono::steady_clock::time_point end;
+	start = std::chrono::steady_clock::now();
+	//*/
 	unsigned int numParticles = particleSet.neighborsDataSet->numParticles;
 	int numBlocks = calculateNumBlocks(numParticles);
 	unsigned int *p_id_sorted = sort_id;
@@ -1963,6 +1974,22 @@ void cuda_sortData(SPH::UnifiedParticleSet& particleSet, unsigned int * sort_id)
 	//now that everything is sorted we can set each particle index to itself
 	gpuErrchk(cudaMemcpy(p_id_sorted, particleSet.neighborsDataSet->p_id, numParticles * sizeof(unsigned int), cudaMemcpyDeviceToDevice));
 
+	/*
+	end = std::chrono::steady_clock::now();
+
+	float time_iter = std::chrono::duration_cast<std::chrono::nanoseconds> (end-start).count() / 1000000.0f;
+	static std::vector<float> timmings;
+
+	timmings.push_back(time_iter);
+
+	static int count = 0;
+	count++;
+
+	if (count==1300) {
+		for (int i = 0; i < 1300; ++i) {
+			std::cout << i << " " << timmings[i] << std::endl;
+		}
+	}//*/
 }
 
 
@@ -2067,7 +2094,7 @@ __global__ void DFSPH_neighborsSearch_kernel(SPH::DFSPHCData data, SPH::UnifiedP
 
 	unsigned int nb_neighbors_fluid = 0;
 	unsigned int nb_neighbors_boundary = 0;
-	unsigned int nb_neighbors_dynamic_objects = 0;
+	unsigned int nb_neighbors_dynamic_objects =0;
 	int* cur_neighbor_ptr= particleSet->getNeighboursPtr(i);
 	//int neighbors_fluid[MAX_NEIGHBOURS];//doing it with local buffer was not faster
 	//int neighbors_boundary[MAX_NEIGHBOURS];
@@ -2297,8 +2324,12 @@ __global__ void DFSPH_neighborsSearch_kernel(SPH::DFSPHCData data, SPH::UnifiedP
 #else
 			for (int id_body = 0; id_body < data.numDynamicBodies; ++id_body) {
 				ITER_NEIGHBORS_FROM_STRUCTURE(data.vector_dynamic_bodies_data_cuda[id_body].neighborsDataSet, data.vector_dynamic_bodies_data_cuda[id_body].pos,
-					int neighbor_idx = WRITE_DYNAMIC_BODIES_PARTICLES_INDEX(body_id, j - count_particles_previous_bodies);
-				WRITE_AND_ADVANCE_NEIGHBORS(cur_neighbor_ptr, neighbor_idx); )
+					{int neighbor_idx = WRITE_DYNAMIC_BODIES_PARTICLES_INDEX(id_body, j);
+				    WRITE_AND_ADVANCE_NEIGHBORS(cur_neighbor_ptr, neighbor_idx);
+					nb_neighbors_dynamic_objects++;
+
+					//printf("wrote a neighbor %i\n", nb_neighbors_boundary+nb_neighbors_fluid+nb_neighbors_dynamic_objects);
+					});
 			}
 #endif
 
@@ -2342,10 +2373,11 @@ __global__ void DFSPH_neighborsSearch_kernel(SPH::DFSPHCData data, SPH::UnifiedP
 #endif // SORT_NEIGHBORS
 
 
-
 	particleSet->numberOfNeighbourgs[3 * i] =  nb_neighbors_fluid;
 	particleSet->numberOfNeighbourgs[3 * i + 1] = nb_neighbors_boundary;
 	particleSet->numberOfNeighbourgs[3 * i + 2] = nb_neighbors_dynamic_objects;
+	
+	
 	
 	/*
 	//simple splashless surface detection
@@ -2414,7 +2446,7 @@ __global__ void DFSPH_neighborsSearchBasic_kernel(unsigned int numFluidParticles
 
 
 
-void cuda_neighborsSearch(SPH::DFSPHCData& data) {
+void cuda_neighborsSearch(SPH::DFSPHCData& data, bool need_sort) {
 
 	static unsigned int* precomputedIndexPtr = NULL;
 
@@ -2436,7 +2468,6 @@ void cuda_neighborsSearch(SPH::DFSPHCData& data) {
 	}
 	//*/
 
-	bool need_sort = true;// ((time_count % 15) == 0);
 
 	if (need_sort) {
 		//std::cout<<"doing full neighbor search"<<std::endl;
@@ -2460,7 +2491,7 @@ void cuda_neighborsSearch(SPH::DFSPHCData& data) {
 #else
 		for (int i = 0; i < data.numDynamicBodies; ++i) {
 			SPH::UnifiedParticleSet& body = data.vector_dynamic_bodies_data[i];
-			body.initNeighborsSearchData(data.getKernelRadius(), false);
+			body.initNeighborsSearchData(data, false);
 		}
 #endif
 		std::chrono::steady_clock::time_point middle = std::chrono::steady_clock::now();
@@ -2520,12 +2551,13 @@ void cuda_neighborsSearch(SPH::DFSPHCData& data) {
 		int numBlocks = calculateNumBlocks(data.fluid_data[0].numParticles);
 
 		//*
-		DFSPH_neighborsSearch_kernel<true> << <numBlocks, BLOCKSIZE >> > (data, data.fluid_data_cuda);
+		DFSPH_neighborsSearch_kernel<true> << <numBlocks, BLOCKSIZE >> > (data, data.fluid_data->gpu_ptr);
 
 		//*
 		if (data.boundaries_data->has_factor_computation) {
 			DFSPH_neighborsSearch_kernel<false> << <numBlocks, BLOCKSIZE >> > (data, data.boundaries_data_cuda);
 		}
+		gpuErrchk(cudaDeviceSynchronize());
 		//*/
 
 		//*/
@@ -2539,11 +2571,6 @@ void cuda_neighborsSearch(SPH::DFSPHCData& data) {
 		data.vector_dynamic_bodies_data_cuda, data.numDynamicBodies);
 		//*/
 
-		cudaStatus = cudaDeviceSynchronize();
-		if (cudaStatus != cudaSuccess) {
-			std::cerr << "cuda neighbors search failed: " << (int)cudaStatus << std::endl;
-			exit(1598);
-		}
 
 		/*
 		std::chrono::steady_clock::time_point end = std::chrono::steady_clock::now();
@@ -2575,38 +2602,47 @@ void cuda_neighborsSearch(SPH::DFSPHCData& data) {
 			}
 			std::cout << "test2: " << count_valid << std::endl;
 			}
-
-		//a simple check to know the max nbr of neighbors
-		static int absolute_max = 0;
-		int max = 0;
-
-		static int absolute_max_d[3] = { 0 };
-		int max_d[3] = { 0 };
-
-
-
-		for (int j = 0; j < data.fluid_data->getNumberOfNeighbourgs(j); j++)
+		}
+			//*/
+		/*
 		{
-		//check the global value
-		int count_neighbors = 0;
-		for (int k = 0; k < 3; ++k) {
-		count_neighbors += data.fluid_data->getNumberOfNeighbourgs(j, k);
-		}
-		if (count_neighbors > max)max = count_neighbors;
+			//a simple check to know the max nbr of neighbors
+			static int absolute_max = 0;
+			int max = 0;
 
-		//chekc the max for each category
-		for (unsigned int k = 0; k < 3; ++k) {
-		if ((int)data.fluid_data->getNumberOfNeighbourgs(j,k) > max_d[k])max_d[k] = data.fluid_data->getNumberOfNeighbourgs(j,k);
-		}
+			static int absolute_max_d[3] = { 0 };
+			int max_d[3] = { 0 };
 
-		}
-		if (max>absolute_max)absolute_max = max;
-		for (unsigned int k = 0; k < 3; ++k) {
-		if (max_d[k]>absolute_max_d[k])absolute_max_d[k] = max_d[k];
-		}
-		printf("max nbr of neighbors %d  (%d) \n", absolute_max, max);
-		printf("max nbr of neighbors %d  (%d)      absolute max  fluid // boundaries // bodies   %d // %d // %d\n",
-		absolute_max, max, absolute_max_d[0], absolute_max_d[1], absolute_max_d[2]);
+
+
+			for (int j = 0; j < data.fluid_data->numParticles; j++)
+			{
+
+				//check the global value
+				int count_neighbors = 0;
+				for (int k = 0; k < 3; ++k) {
+					count_neighbors += data.fluid_data->getNumberOfNeighbourgs(j, k);
+				}
+				if (count_neighbors > max) { 
+					max = count_neighbors;
+				}
+
+				//chekc the max for each category
+				for (unsigned int k = 0; k < 3; ++k) {
+					if ((int)data.fluid_data->getNumberOfNeighbourgs(j,k) > max_d[k])max_d[k] = data.fluid_data->getNumberOfNeighbourgs(j,k);
+				}
+
+			}
+
+			if (max>absolute_max)absolute_max = max;
+
+			for (unsigned int k = 0; k < 3; ++k) {
+				if (max_d[k]>absolute_max_d[k])absolute_max_d[k] = max_d[k];
+			}
+
+			printf("max nbr of neighbors %d  (%d) \n", absolute_max, max);
+			printf("absolute??max  fluid // boundaries // bodies   %d // %d // %d  ?? %d // %d // %d\n",
+			absolute_max_d[0], absolute_max_d[1], absolute_max_d[2], max_d[0], max_d[1], max_d[2]);
 		}
 
 
@@ -2665,6 +2701,8 @@ __global__ void DFSPH_update_vel_kernel(SPH::DFSPHCData m_data, SPH::UnifiedPart
 #ifdef USE_WARMSTART	
 	//done here to have one less kernel
 	particleSet->kappa[i] = MAX_MACRO_CUDA(particleSet->kappa[i] * m_data.h_ratio_to_past2, -0.5);
+	//this line is from the most recent impelmentation but it does not change anything
+	//particleSet->kappa[i] = MAX_MACRO_CUDA(particleSet->kappa[i] * m_data.h_ratio_to_past2, -0.5 * m_data.density0*m_data.density0);
 #endif
 }
 
@@ -2673,6 +2711,21 @@ __global__ void DFSPH_update_vel_kernel(SPH::DFSPHCData m_data, SPH::UnifiedPart
 
 void cuda_update_vel(SPH::DFSPHCData& data) {
 	int numBlocks = calculateNumBlocks(data.fluid_data[0].numParticles);
+
+
+#ifdef USE_WARMSTART
+	/*
+	Real count_capped = 0;
+
+	for (int i = 0; i < (data.fluid_data[0].numParticles); ++i) {
+		if ( data.fluid_data->kappa[i] * data.h_ratio_to_past2 < -0.5) {
+			count_capped++;
+		}
+	}
+	//*/
+#endif
+
+
 	DFSPH_update_vel_kernel << <numBlocks, BLOCKSIZE >> > (data, data.fluid_data[0].gpu_ptr);
 
 	cudaError_t cudaStatus = cudaDeviceSynchronize();
@@ -2681,8 +2734,30 @@ void cuda_update_vel(SPH::DFSPHCData& data) {
 		exit(1598);
 	}
 	
-	
 
+#ifdef USE_WARMSTART
+	/*
+	RealCuda avg_warmstart = 0;
+	for (int i = 0; i < (data.fluid_data[0].numParticles); ++i) {
+		avg_warmstart += data.fluid_data->kappa[i];
+		//std::cout << "pressure wamstart post clamping: " << i << " " << data.fluid_data->kappa[i] << std::endl;
+	}
+	avg_warmstart /= data.fluid_data[0].numParticles;
+	//std::cout << "pressure wamstart avg: " << avg_warmstart << std::endl;
+
+	static std::vector<Real> avgs_warmstart;
+	static std::vector<int> counts_capped;
+	avgs_warmstart.push_back(avg_warmstart);
+	counts_capped.push_back(count_capped);
+	int count = 1000;
+	if (avgs_warmstart.size() == count) {
+		for (int i = 0; i < avgs_warmstart.size(); i++) {
+			std::cout << "pressure_wamstart_avg: " << i << " " << avgs_warmstart[i] << " " << counts_capped[i] << std::endl;
+		}
+		exit(0);
+	}
+	//*/
+#endif
 }
 
 

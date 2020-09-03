@@ -42,7 +42,7 @@ DFSPHCUDA::DFSPHCUDA(FluidModel *model) :
     m_iterations=0;
     m_maxError=0.01;
     m_maxIterations=100;
-    m_maxErrorV=0.01;
+    m_maxErrorV=0.1;
     m_maxIterationsV=100;
     desired_time_step=m_data.get_current_timestep();
 #endif //SPLISHSPLASH_FRAMEWORK
@@ -141,7 +141,10 @@ void DFSPHCUDA::step()
 
         tab_timepoint[current_timepoint++] = std::chrono::steady_clock::now();
         //*
-        cuda_neighborsSearch(m_data);
+		bool sort_data = true;// (((count_steps) % 5) == 0);
+        cuda_neighborsSearch(m_data, sort_data);
+		//if (sort_data) {	std::cout << "sorting now" << std::endl << std::endl << std::endl << std::endl << std::endl;}
+
 
 		///TODO change the code so that the boundaries volumes and distances are conputed directly on the GPU
 #ifdef BENDER2019_BOUNDARIES
@@ -303,8 +306,9 @@ void DFSPHCUDA::step()
 
 
 
-
-        m_data.readDynamicObjectsData(m_model);
+		if (!is_dynamic_bodies_paused) {
+			m_data.readDynamicObjectsData(m_model);
+		}
         m_data.onSimulationStepEnd();
 
 
@@ -339,7 +343,7 @@ void DFSPHCUDA::step()
         if(show_fluid_timings){
             std::cout << "timestep total: " << total_time / (count_steps + 1) << "   this step: " << time_iter + time_between << "  (" << time_iter << "  " << time_between << ")" << std::endl;
             std::cout << "solver iteration avg (current step) density: " <<  iter_pressure_avg / (count_steps + 1) << " ( " << m_iterations << " )   divergence : " <<
-                         iter_divergence_avg / (count_steps + 1) << " ( " << m_iterationsV << " )   divergence : " << std::endl;
+                         iter_divergence_avg / (count_steps + 1) << " ( " << m_iterationsV << " )  " << std::endl;
 
 
             for (int i = 0; i < NB_TIME_POINTS; ++i) {
@@ -354,39 +358,99 @@ void DFSPHCUDA::step()
             }
 
 
-			int end_step = 1650;
-			if (end_step > 0 && (count_steps+1) == end_step ) {
-				float desired_recap = 0;
-				for (int i = 0; i < NB_TIME_POINTS; ++i) {
-					//*
-					if (i == 1) { //don't consider the neighbor search
-						continue;
-					}
-					//*/
+			int end_step =  1650;
+			bool has_solid = false;
+			bool print_avg_velocity = false;
+			if (end_step > 0) {
 
-					float time = tab_avg[i] / (count_steps + 1);
+			static std::vector<float> timmings;
+			static std::vector<float> iters_divergence;
+			static std::vector<float> iters_density;
+			static std::vector<Vector3d> avgs_velocity;
+			timmings.push_back(time_iter);
+			iters_divergence.push_back(m_iterationsV);
+			iters_density.push_back(m_iterations);
+			if (print_avg_velocity) {
+				avgs_velocity.push_back(m_data.getFluidAvgVelocity());
+			}
+
+			static std::vector<Vector3d> forces;
+			if (has_solid) {
+				std::vector<Vector3d> f;
+				std::vector<Vector3d> m;
+				std::vector<Vector3d> c; c.push_back(1);
+				m_data.getFluidImpactOnDynamicBodies(f, m, c);
+				forces.push_back(f[0]);
+			}
+
+				if((count_steps+1) == end_step ) {
+					float desired_recap = 0;
+					for (int i = 0; i < NB_TIME_POINTS; ++i) {
+						/*
+						if (i == 1) { //don't consider the neighbor search
+							
+							//continue;
+						}
+						//*/
+
+						float time = tab_avg[i] / (count_steps + 1);
 					
-					//viscosity
-					//the +1 is for the warm start iteration
-					if (i == 3) {
-						std::cout << time << "  ";
-						time *= 3 / (((iter_divergence_avg ) / (count_steps + 1))+1);
-						std::cout << time << "  "<< ((iter_divergence_avg + 1) / (count_steps + 1)) << "  " << i << "  " << std::endl;
+						//viscosity
+						//the +1 is for the warm start iteration
+						if (i == 2) {
+							std::cout << time << "  ";
+							time *= 3 / (((iter_divergence_avg ) / (count_steps + 1))+1);
+							std::cout << time << "  "<< ((iter_divergence_avg + 1) / (count_steps + 1)) << "  " << i << "  " << std::endl;
+						}
+
+						//density
+						//the +1 is for the warm start iteration
+						if (i == 6) {
+							std::cout << time << "  ";
+							time *= 13 / (((iter_pressure_avg) / (count_steps + 1))+1);
+							std::cout << time << "  " << ((iter_pressure_avg + 1) / (count_steps + 1)) << "  " << i << "  " << std::endl;
+						}
+
+						desired_recap += time;
+					}
+					std::cout << "recap result: " << desired_recap << std::endl;
+					std::cout << "nbr lost particles: " << count_fluid_particles_initial-m_data.getFluidParticlesCount() << std::endl;
+
+
+					if (false) {
+
+						
+
+						std::cout << "timestep comp_time iter_density iter_div ";
+
+						if (print_avg_velocity) {
+							std::cout << " vx vy vz ";
+						}
+						if (has_solid) {
+							std::cout << " fx fy fz ";
+						}
+						std::cout << std::endl;
+						for (int i = 0; i < timmings.size(); ++i) {
+							Vector3d force = forces[i];
+							if (i > 0) {
+								force -= forces[i-1];
+							}
+
+							std::cout << (i + 1)*m_data.get_current_timestep() << " " << timmings[i] << " ";
+							std::cout << iters_density[i] << " " << iters_divergence[i] << " ";
+							if (print_avg_velocity) {
+								std::cout << avgs_velocity[i].toString() << " ";
+							}
+							if (has_solid) {
+								std::cout << force.toString() << " ";
+							}
+							std::cout << std::endl;
+						}
 					}
 
-					//density
-					//the +1 is for the warm start iteration
-					if (i == 6) {
-						std::cout << time << "  ";
-						time *= 13 / (((iter_pressure_avg) / (count_steps + 1))+1);
-						std::cout << time << "  " << ((iter_pressure_avg + 1) / (count_steps + 1)) << "  " << i << "  " << std::endl;
-					}
+					exit(0);
 
-					desired_recap += time;
 				}
-				std::cout << "recap result: " << desired_recap << std::endl;
-				std::cout << "nbr lost particles: " << count_fluid_particles_initial-m_data.getFluidParticlesCount() << std::endl;
-				exit(0);
 
 			}
         }
