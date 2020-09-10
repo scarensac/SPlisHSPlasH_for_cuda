@@ -38,4 +38,10 @@ void check_particles_positions_cuda(SPH::DFSPHCData& data, int mode=0, bool repo
 
 Vector3d get_avg_velocity_cuda(SPH::UnifiedParticleSet* particleSet);
 
+
+void evaluate_density_field(SPH::DFSPHCData& data, SPH::UnifiedParticleSet* particleSet);
+
+
+void remove_tagged_particles(SPH::UnifiedParticleSet* particleSet, int countToRemove);
+
 #endif //DFSPH_STATIC_VAR_STRUCT

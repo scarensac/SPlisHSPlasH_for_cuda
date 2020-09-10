@@ -119,7 +119,7 @@ void DemoBase::initShaders()
 	{
 		vertFile = getDataPath() + "/shaders/vs_points_manual_color.glsl";
 		if (transparent_shader) {
-			fragFile = getDataPath() + "/shaders/fs_points_transparent.glsl";
+			fragFile = getDataPath() + "/shaders/fs_points_transparent_with_manual.glsl";
 		}
 		else {
 			fragFile = getDataPath() + "/shaders/fs_points_manual_color.glsl";
@@ -137,6 +137,7 @@ void DemoBase::initShaders()
 	m_shader.addUniform("projection_radius");
 	m_shader.addUniform("max_velocity");
 	m_shader.end();
+;
 
 	vertFile = getDataPath() + "/shaders/vs_smooth.glsl";
 	fragFile = getDataPath() + "/shaders/fs_smooth.glsl";
@@ -165,7 +166,8 @@ void DemoBase::initShaders()
 	m_shader_transparent.addUniform("projection_radius");
 	m_shader_transparent.addUniform("max_velocity");
 	m_shader_transparent.end();
-	
+
+
 }
 
 

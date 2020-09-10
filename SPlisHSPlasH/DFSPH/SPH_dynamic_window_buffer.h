@@ -23,6 +23,10 @@ namespace SPH {
 
 		static void handleOceanBoundariesTest(SPH::DFSPHCData& data);
 
+		//ok here I'll test a system to initialize a volume of fluid from
+		//a large wolume of fluid (IE a technique to iinit the fluid at rest)
+		static void initializeFluidToSurface(SPH::DFSPHCData& data);
+
 	};
 
 }

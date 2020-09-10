@@ -1306,3 +1306,261 @@ Vector3d get_avg_velocity_cuda(SPH::UnifiedParticleSet* particleSet) {
 
 	return *avg_vel;
 }
+
+
+__global__ void DFSPH_evaluate_density_kernel(SPH::DFSPHCData data, SPH::UnifiedParticleSet* fluidSet) {
+	int i = blockIdx.x * blockDim.x + threadIdx.x;
+	if (i >= fluidSet->numParticles) { return; }
+
+
+	Vector3d p_i = fluidSet->pos[i];
+
+
+	ITER_NEIGHBORS_INIT_CELL_COMPUTATION(p_i, data.getKernelRadius(), data.gridOffset);
+
+
+	bool keep_particle = true;
+	//*
+	int count_neighbors = 0;
+	RealCuda density = fluidSet->getMass(i) * data.W_zero;
+
+
+	ITER_NEIGHBORS_FROM_STRUCTURE_BASE(fluidSet->neighborsDataSet, fluidSet->pos,
+		if (i != j) {
+			//RealCuda density_delta = (fluidSet->pos[j]-p_i).norm();
+			RealCuda density_delta = fluidSet->getMass(j) * KERNEL_W(data, p_i - fluidSet->pos[j]);
+			density += density_delta;
+			count_neighbors++;
+		}
+	);
+
+	//*
+	ITER_NEIGHBORS_FROM_STRUCTURE_BASE(data.boundaries_data_cuda->neighborsDataSet, data.boundaries_data_cuda->pos,
+		RealCuda density_delta = data.boundaries_data_cuda->getMass(j) * KERNEL_W(data, p_i - data.boundaries_data_cuda->pos[j]);
+	density += density_delta;
+	count_neighbors++;
+	);
+	//*/
+
+	fluidSet->density[i] = density;
+}
+
+
+__global__ void DFSPH_evaluate_density_field_kernel(SPH::DFSPHCData data, SPH::UnifiedParticleSet* fluidSet,
+	Vector3d* position, RealCuda* den, int count) {
+	int i = blockIdx.x * blockDim.x + threadIdx.x;
+	if (i >= count) { return; }
+
+	Vector3d p_i = position[i];
+
+
+	ITER_NEIGHBORS_INIT_CELL_COMPUTATION(p_i, data.getKernelRadius(), data.gridOffset);
+
+
+	//*
+	RealCuda sq_diameter = data.particleRadius * 2;
+	sq_diameter *= sq_diameter;
+	int count_neighbors = 0;
+	RealCuda density = 0;
+
+	//check if there is any fluid particle above us
+	ITER_NEIGHBORS_FROM_STRUCTURE_BASE(fluidSet->neighborsDataSet, fluidSet->pos,
+		//RealCuda density_delta = (fluidSet->pos[j]-p_i).norm();
+		RealCuda density_delta = fluidSet->getMass(j) * KERNEL_W(data, p_i - fluidSet->pos[j]);
+	density += density_delta;
+	count_neighbors++;
+	);
+
+	//*
+	ITER_NEIGHBORS_FROM_STRUCTURE_BASE(data.boundaries_data_cuda->neighborsDataSet, data.boundaries_data_cuda->pos,
+		RealCuda density_delta = data.boundaries_data_cuda->getMass(j) * KERNEL_W(data, p_i - data.boundaries_data_cuda->pos[j]);
+	density += density_delta;
+	count_neighbors++;
+	);
+	//*/
+
+
+	den[i] = density;
+
+}
+
+
+void evaluate_density_field(SPH::DFSPHCData& data, SPH::UnifiedParticleSet* particleSet) {
+	
+	BufferFluidSurface S;
+	S.setCuboid(Vector3d(0, 0, 0), Vector3d(1, 100, 100));
+
+	RealCuda height_cap = 0.6;
+
+	//initi neighbor structure
+	particleSet->initNeighborsSearchData(data, false);
+
+	//evaluate the density first since anyway we are gonna need it
+	{
+		int numBlocks = calculateNumBlocks(particleSet->numParticles);
+		DFSPH_evaluate_density_kernel << <numBlocks, BLOCKSIZE >> > (data, particleSet->gpu_ptr);
+		gpuErrchk(cudaDeviceSynchronize());
+	}
+
+	int count_samples = 0;
+	Vector3d* pos = NULL;
+	RealCuda* den = NULL;
+	RealCuda affected_range = data.getKernelRadius();
+
+	bool use_fluid_particles = false;
+	if (use_fluid_particles) {
+		count_samples = particleSet->numParticles;
+		cudaMallocManaged(&(pos), count_samples * sizeof(Vector3d));
+		den = particleSet->density;
+	}
+	else {
+		//I'll do a sampling on a regular grid
+		RealCuda spacing = data.particleRadius;
+
+		Vector3d min, max;
+		get_UnifiedParticleSet_min_max_naive_cuda(*(data.boundaries_data), min, max);
+		std::cout << "min/ max: " << min.toString() << " " << max.toString() << std::endl;
+		min += 2 * data.particleRadius;
+		max -= 2 * data.particleRadius;
+		Vector3i count_dim = (max - min) / spacing;
+		count_dim += 1;
+
+		std::cout << "count samples base :" << count_dim.x * count_dim.y * count_dim.z << std::endl;
+
+		//only keep the samples that are near the plane
+		int real_count = 0;
+		for (int i = 0; i < count_dim.x; ++i) {
+			for (int j = 0; j < count_dim.y; ++j) {
+				for (int k = 0; k < count_dim.z; ++k) {
+					Vector3d p_i = min + Vector3d(i, j, k) * spacing;
+					//if (S.distanceToSurface(p_i) < affected_range)
+					if (S.isinside(p_i))
+					{
+						if (p_i.y < height_cap) {
+							real_count++;
+						}
+					}
+				}
+			}
+		}
+
+		std::cout << "count samples near :" << real_count << std::endl;
+
+		count_samples = real_count;
+		cudaMallocManaged(&(pos), count_samples * sizeof(Vector3d));
+		cudaMallocManaged(&(den), count_samples * sizeof(RealCuda));
+
+		real_count = 0;
+		for (int i = 0; i < count_dim.x; ++i) {
+			for (int j = 0; j < count_dim.y; ++j) {
+				for (int k = 0; k < count_dim.z; ++k) {
+					Vector3d p_i = min + Vector3d(i, j, k) * spacing;
+					//if (S.distanceToSurface(p_i) < affected_range)
+					if (S.isinside(p_i))
+					{
+						if (p_i.y < height_cap) {
+							pos[real_count] = p_i;
+							real_count++;
+						}
+					}
+				}
+			}
+		}
+
+		{
+			int numBlocks = calculateNumBlocks(count_samples);
+			DFSPH_evaluate_density_field_kernel << <numBlocks, BLOCKSIZE >> > (data, particleSet->gpu_ptr, pos, den, count_samples);
+			gpuErrchk(cudaDeviceSynchronize());
+		}
+	}
+
+	if (true) {
+
+		if (use_fluid_particles) {
+			read_UnifiedParticleSet_cuda(*particleSet, pos, NULL, NULL, NULL);
+		}
+
+		//density check
+		//let's evaluate the average and std dev around the surface
+		RealCuda avg = 0;
+		RealCuda min = 1000000;
+		RealCuda max = -1;
+		int count_close = 0;
+		int count_global = 0;
+		RealCuda avg_global = 0;
+		RealCuda min_global = 100000;
+		RealCuda max_global = -1;
+		for (int i = 0; i < count_samples; ++i) {
+			if (pos[i].y < height_cap) {
+
+
+				//if (S.distanceToSurface(pos[i]) < affected_range)
+				if (S.isinside(pos[i]))
+				{
+					avg += den[i];
+					count_close++;
+					min = MIN_MACRO_CUDA(min, den[i]);
+					max = MAX_MACRO_CUDA(max, den[i]);
+				}
+				else {
+					avg_global += den[i];
+					count_global++;
+					min_global = MIN_MACRO_CUDA(min_global, den[i]);
+					max_global = MAX_MACRO_CUDA(max_global, den[i]);
+				}
+			}
+		}
+		avg_global /= count_global;
+		avg /= count_close;
+
+
+		RealCuda stddev = 0;
+		RealCuda stddev_global = 0;
+		for (int i = 0; i < count_samples; ++i) {
+			if (pos[i].y < height_cap) {
+
+				RealCuda delta = (den[i] - avg);
+				delta *= delta;
+				//if (S.distanceToSurface(pos[i]) < affected_range)
+				if (S.isinside(pos[i]))
+				{
+					stddev += delta;
+				}
+				else {
+					stddev_global += delta;
+				}
+			}
+		}
+		stddev = std::sqrtf(stddev);
+		stddev /= count_close;
+		stddev_global = std::sqrtf(stddev_global);
+		stddev_global /= count_samples - count_close;
+
+		std::cout << "other  average density/ deviation / count / min / max: " << avg_global << "   " << stddev_global << "   " << count_global << "  " << min_global << "   " << max_global << std::endl;
+		std::cout << "Surface average density/ deviation / count / min / max: " << avg << "   " << stddev << "   " << count_close << "  " << min << "   " << max << std::endl;
+	}
+
+
+
+	CUDA_FREE_PTR(pos);
+	if (!use_fluid_particles) {
+		CUDA_FREE_PTR(den);
+	}
+
+}
+
+void remove_tagged_particles(SPH::UnifiedParticleSet* particleSet, int countToRemove) {
+	//now use the same process as when creating the neighbors structure to put the particles to be removed at the end
+	cub::DeviceRadixSort::SortPairs(particleSet->neighborsDataSet->d_temp_storage_pair_sort, particleSet->neighborsDataSet->temp_storage_bytes_pair_sort,
+		particleSet->neighborsDataSet->cell_id, particleSet->neighborsDataSet->cell_id_sorted,
+		particleSet->neighborsDataSet->p_id, particleSet->neighborsDataSet->p_id_sorted, particleSet->numParticles);
+	gpuErrchk(cudaDeviceSynchronize());
+
+	cuda_sortData(*particleSet, particleSet->neighborsDataSet->p_id_sorted);
+	gpuErrchk(cudaDeviceSynchronize());
+
+	//and now you can update the number of particles
+	int new_num_particles = particleSet->numParticles - countToRemove;
+	particleSet->updateActiveParticleNumber(new_num_particles);
+	//*/
+}

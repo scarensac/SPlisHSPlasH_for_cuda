@@ -32,7 +32,7 @@ typedef float Real;
 #endif
 
 
-#define USE_DOUBLE_CUDA
+//#define USE_DOUBLE_CUDA
 
 #ifdef USE_DOUBLE_CUDA
 typedef double RealCuda;

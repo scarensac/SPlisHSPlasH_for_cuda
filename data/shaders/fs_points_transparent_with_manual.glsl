@@ -8,6 +8,7 @@ in block
 {
 	flat vec3 mv_pos;
 	flat vec3 velocity;
+	flat vec3 color;
 }
 In;
 
@@ -61,10 +62,13 @@ void main(void)
 	v = min((1.0/max_velocity)*v*v, 1.0);
 	vec3 fluidColor;
 	float opacity;
-
-	fluidColor = hsv2rgb(vec3(hsv.x, 1.0, 1.0));
-	opacity=min(max(5*v,0.01), 1.0);
-	
+	if ((In.color.x>-0.1)||(In.color.y>-0.1)||(In.color.z>-0.1)){
+		fluidColor = In.color;
+		opacity=0.9;
+	}else{
+		fluidColor = hsv2rgb(vec3(hsv.x, 1.0, 1.0));
+		opacity=min(max(5*v,0.01), 1.0);
+	}
 
 	// compute final color
 	vec3 color_ = 0.25 * fluidColor;

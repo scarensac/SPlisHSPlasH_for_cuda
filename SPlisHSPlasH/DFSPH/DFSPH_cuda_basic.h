@@ -21,6 +21,6 @@
 
 void compare_vector3_struct_speed();
 int test_cuda();
-
+void test_particleshift();
 
 #endif

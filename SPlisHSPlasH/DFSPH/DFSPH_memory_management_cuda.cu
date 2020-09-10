@@ -1122,8 +1122,8 @@ void allocate_neighbors_search_data_set(SPH::NeighborsSearchDataSet& dataSet, bo
 	if (!result_buffers_only) {
 		cudaMallocManaged(&(dataSet.cell_id), dataSet.numParticlesMax * sizeof(unsigned int));
 		cudaMallocManaged(&(dataSet.cell_id_sorted), dataSet.numParticlesMax * sizeof(unsigned int));
-		cudaMalloc(&(dataSet.local_id), dataSet.numParticlesMax * sizeof(unsigned int));
-		cudaMalloc(&(dataSet.p_id), dataSet.numParticlesMax * sizeof(unsigned int));
+		cudaMallocManaged(&(dataSet.local_id), dataSet.numParticlesMax * sizeof(unsigned int));
+		cudaMallocManaged(&(dataSet.p_id), dataSet.numParticlesMax * sizeof(unsigned int));
 
 		cudaMalloc(&(dataSet.intermediate_buffer_v3d), dataSet.numParticlesMax * sizeof(Vector3d));
 		cudaMalloc(&(dataSet.intermediate_buffer_real), dataSet.numParticlesMax * sizeof(RealCuda));

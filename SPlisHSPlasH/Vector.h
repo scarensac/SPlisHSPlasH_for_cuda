@@ -96,7 +96,8 @@ namespace SPH
 		FUNCTION inline T norm() { return SQRT_MACRO(squaredNorm()); }
 		FUNCTION inline T norm() const { return SQRT_MACRO(squaredNorm()); }
 
-		FUNCTION inline Vector3& toUnit() { (*this)/=norm(); return *this; }
+		FUNCTION inline Vector3& toUnit() { (*this) /= norm(); return *this; }
+		FUNCTION inline Vector3 unit() { Vector3 v = (*this); ; return v/ norm(); }
 
 		template<typename T2>
 		FUNCTION inline T dot(const Vector3<T2> &o) const { return x * o.x + y * o.y + z * o.z; }

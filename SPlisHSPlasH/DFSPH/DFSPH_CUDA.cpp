@@ -50,7 +50,7 @@ DFSPHCUDA::DFSPHCUDA(FluidModel *model) :
     m_iterationsV = 0;
     m_enableDivergenceSolver = true;
     is_dynamic_bodies_paused = false;
-    show_fluid_timings=true;
+    show_fluid_timings=false;
 
 #ifdef BENDER2019_BOUNDARIES
 	m_boundaryModelBender2019 = new BoundaryModel_Bender2019();
@@ -61,6 +61,8 @@ DFSPHCUDA::DFSPHCUDA(FluidModel *model) :
 
 	
 #endif
+
+    //test_particleshift();
 }
 
 DFSPHCUDA::~DFSPHCUDA(void)
@@ -110,6 +112,7 @@ void DFSPHCUDA::step()
         handleSimulationMovement(Vector3d(1,0,0));
         moving_borders = true;
         count_moving_steps++;
+        //return;
     }//*/
 #endif
         /*
@@ -208,6 +211,23 @@ void DFSPHCUDA::step()
             m_iterationsV = 0;
         }
 
+       // std::cout << "self density: " << m_data.W_zero * 0.1 << std::endl;
+
+
+        //*
+        RealCuda min_density = 10000;
+        RealCuda max_density = 0;
+        for (int j = 0; j < m_data.fluid_data->numParticles; ++j) {
+            if((m_data.fluid_data->getNumberOfNeighbourgs(j) + m_data.fluid_data->getNumberOfNeighbourgs(j)) >60)
+            min_density = std::fminf(min_density, m_data.fluid_data->density[j]);
+            max_density = std::fmaxf(max_density, m_data.fluid_data->density[j]);
+           
+        }
+
+        std::cout << "min/ max density : " << min_density << "  " << max_density << std::endl;
+        
+        std::cout << "fluid_level: " << getFluidLevel() << std::endl;
+        //*/
 
         tab_timepoint[current_timepoint++] = std::chrono::steady_clock::now();
 
@@ -320,7 +340,7 @@ void DFSPHCUDA::step()
 #endif //SPLISHSPLASH_FRAMEWORK
         //*/
 
-		m_data.checkParticlesPositions(2);
+		//m_data.checkParticlesPositions(2);
 
 		//code for timming informations
 

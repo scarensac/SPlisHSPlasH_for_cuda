@@ -5,6 +5,7 @@
 #include <chrono>
 #include <iostream>
 #include <thread>
+#include <iomanip>
 
 #include "DFSPH_define_cuda.h"
 #include "DFSPH_macro_cuda.h"
@@ -15,7 +16,6 @@
 #include "device_launch_parameters.h"
 #include "DFSPH_c_arrays_structure.h"
 #include "cub.cuh"
-
 
 
 #include <curand.h>
@@ -328,4 +328,233 @@ Error:
     cudaFree(dev_b);
 
     return cudaStatus;
+}
+
+
+
+void test_particleshift() {
+    compare_vector3_struct_speed();
+
+#define count_pos 100
+    RealCuda pos[count_pos];
+    pos[0] = 0;
+
+    auto normalize_string = [](std::string s, int length) {
+        int to_add = length - s.length();
+        std::ostringstream oss;
+        oss << s;
+        for (int i = 0; i < to_add; ++i) {
+            oss << " ";
+        }
+        return oss.str();
+    };
+
+#define W(p1,p2) (MAX_MACRO_CUDA(1-abs(p2-p1),0))
+#define W_SIGNED(p1,p2)  W(p1,p2)*((p2>p1)?1:-1)
+#define W_GRAD(p1,p2) ((W(p1,p2)>0)?((p2-p1)<0?-1:1):0)
+
+    RealCuda mass[count_pos];
+    RealCuda density[count_pos];
+    RealCuda c[count_pos];
+    RealCuda nabla_c[count_pos];
+    for (int i = 0; i < count_pos; ++i) {
+        mass[i] = 1;
+
+        if (i > 0 && i < 33) {
+            pos[i] = pos[i - 1] + 0.5;
+        }else if(i>32){
+            pos[i] = pos[i - 1] + 0.25;
+        }
+
+       // std::cout << "pos: " << i << "  " <<  pos[i] << std::endl;
+
+    }
+
+    std::vector<std::vector<RealCuda>> hist_pos;
+    std::vector<std::vector<RealCuda>> hist_den;
+
+    //concentration based
+    if(false){
+        for (int repeat = 0; repeat < 5; ++repeat) {
+
+            for (int i = 0; i < count_pos; ++i) {
+                density[i] = 0;
+                for (int j = 0; j < count_pos; ++j) {
+                    density[i] += mass[j]*W(pos[j],pos[i]);
+                    if (i == 33) {
+                        //std::cout << "W/grad: " <<j<<"  "<< W(pos[j], pos[i]) <<"  "<< W_GRAD(pos[j], pos[i]) << std::endl;
+                    }
+                }
+            }
+
+
+            for (int i = 0; i < count_pos; ++i) {
+                c[i] = 0;
+                for (int j = 0; j < count_pos; ++j) {
+                    if (i != j) {
+                        c[i] += (mass[j] / density[j]) * W(pos[j], pos[i]);
+                    }
+                }
+            }
+
+            for (int i = 0; i < count_pos; ++i) {
+                nabla_c[i] = 0;
+                for (int j = 0; j < count_pos; ++j) {
+                    if (i != j) {
+                        nabla_c[i] += (c[j]-c[i]) * (mass[j] / density[j]) * W_GRAD(pos[j], pos[i]);
+                    }
+                }
+            }
+
+
+            /*
+            
+            for (int i = 0; i < count_pos; ++i) {
+                std::ostringstream oss;
+                oss << std::setprecision(2) << pos[i];
+                std::cout << normalize_string(oss.str(), 6) << "   ";
+            }
+            std::cout << std::endl;
+
+            for (int i = 0; i < count_pos; ++i) {
+                std::ostringstream oss;
+                oss << std::setprecision(2) << density[i];
+                std::cout << normalize_string(oss.str(), 6) << "   ";
+            }
+            std::cout << std::endl;
+
+            for (int i = 0; i < count_pos; ++i) {
+                std::ostringstream oss;
+                oss << std::setprecision(2) << c[i];
+                std::cout << normalize_string(oss.str(), 6) << "   ";
+            }
+            std::cout << std::endl;
+
+            for (int i = 0; i < count_pos; ++i) {
+                std::ostringstream oss;
+                oss << std::setprecision(2) << nabla_c[i];
+                std::cout << normalize_string(oss.str(), 6) << "   ";
+            }
+            std::cout << std::endl;
+            //*/
+            std::vector<RealCuda> vect_pos;
+            std::vector<RealCuda> vect_den;
+            for (int i = 0; i < count_pos; ++i) {
+                vect_pos.push_back(pos[i]);
+                vect_den.push_back(density[i]);
+            }
+            hist_pos.push_back(vect_pos);
+            hist_den.push_back(vect_den);
+
+
+            RealCuda pos2[count_pos];
+            RealCuda density2[count_pos];
+
+            RealCuda factor = 0.5;
+            for (int i = 0; i < count_pos; ++i) {
+                pos2[i] = pos[i] + nabla_c[i] * factor;
+            }
+
+            for (int i = 0; i < count_pos; ++i) {
+                density2[i] = 0;
+                for (int j = 0; j < count_pos; ++j) {
+                    density2[i] += mass[j] * W(pos2[j], pos2[i]);
+                }
+            }
+
+
+            for (int i = 0; i < count_pos; ++i) {
+                std::cout << pos[i] << "   " << density[i] << "   " << c[i] << "   " << nabla_c[i] << "   " << pos2[i] << "   " << density2[i] << "   ";
+                std::cout << std::endl;
+            }
+
+            for (int i = 0; i < count_pos; ++i) {
+                pos[i] = pos2[i];
+            }
+
+        }
+    }
+
+    //simply densty based
+    //not much better
+    for (int repeat = 0; repeat < 5; ++repeat) {
+        for (int i = 0; i < count_pos; ++i) {
+            density[i] = 0;
+            for (int j = 0; j < count_pos; ++j) {
+                density[i] += mass[j] * W(pos[j], pos[i]);
+            }
+        }
+
+        for (int i = 0; i < count_pos; ++i) {
+            nabla_c[i] = 0;
+            for (int j = 0; j < count_pos; ++j) {
+                if (i != j) {
+                    nabla_c[i] += (density[j] - density[i])* (mass[j]/density[j]) * W_SIGNED(pos[j], pos[i]);
+                }
+            }
+        }
+
+        for (int i = 0; i < count_pos; ++i) {
+            //std::cout << pos[i] << "   " << density[i] << "   " << c[i] << "   " << nabla_c[i];
+            {
+                std::ostringstream oss;
+                oss << std::setprecision(2) << pos[i];
+                std::cout << normalize_string(oss.str(), 6) << "   ";
+            }
+            {
+                std::ostringstream oss;
+                oss << std::setprecision(2) << density[i];
+                std::cout << normalize_string(oss.str(), 6) << "   ";
+            }
+            {
+                std::ostringstream oss;
+                oss << std::setprecision(2) << nabla_c[i];
+                std::cout << normalize_string(oss.str(), 6) << "   ";
+            }
+            std::cout << std::endl;
+        }
+
+        std::vector<RealCuda> vect_pos;
+        std::vector<RealCuda> vect_den;
+        for (int i = 0; i < count_pos; ++i) {
+            vect_pos.push_back(pos[i]);
+            vect_den.push_back(density[i]);
+        }
+        hist_pos.push_back(vect_pos);
+        hist_den.push_back(vect_den);
+
+
+        for (int i = 0; i < count_pos; ++i) {
+            if (abs(nabla_c[i]) > 0.15) {
+                nabla_c[i] *= 0.15 / abs(nabla_c[i]);
+            }
+            pos[i] += nabla_c[i];
+        }
+    }
+    
+
+    //ok so let's trys with a regular space sampling
+
+
+    /*
+    std::cout << "end results" << std::endl;
+    std::cout << "end results" << std::endl;
+    std::cout << "end results" << std::endl;
+    std::ostringstream oss;
+    for (int k = 0; k < hist_pos.size(); ++k) {
+        oss << "pos_gen_"<< k << "  " << "den_gen_" << k << "  ";
+    }
+    oss << std::endl;
+    for (int i = 0; i < count_pos; ++i) {
+        for (int k = 0; k < hist_pos.size(); ++k) {
+            oss << hist_pos[k][i] << "  " << hist_den[k][i] << "  ";
+        }
+        oss << std::endl;
+    }
+    std::cout <<oss.str();
+    //*/
+
+#undef W
+#undef W_SIGNED
+#undef W_GRAD
 }

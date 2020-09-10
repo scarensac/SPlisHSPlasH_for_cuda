@@ -510,19 +510,20 @@ void UnifiedParticleSet::load_from_file(std::string file_path, bool load_velocit
             //pos.y-=0.2;
         }
 
-
+		/*
 		if (velocity_impacted_by_fluid_solver) {
 			Vector3d point = Vector3d(0, 1, 0);
 			if ((pos - point).norm()<0.5) {
 				std::cout << "one particle is too close " << i << " " << pos.toString() << "   dist: "<< (pos - point).norm() <<std::endl;
 			}
 		}
+		//*/
 
 	
 
 #ifdef OCEAN_BOUNDARIES_PROTOTYPE
-		/*
-		float height = 1;
+		//*
+		float height = 0.8;
 		if ((positions_limitations)&&
 			(velocity_impacted_by_fluid_solver)&&
 			//(((pos.x > (-2.0 + 8 * 0.1)) && (pos.x < (2.0 - 8 * 0.1))) || (pos.y > height))
@@ -1094,6 +1095,8 @@ void DFSPHCData::read_fluid_from_file(bool load_velocities) {
 	//init gpu struct
     allocate_and_copy_UnifiedParticleSet_vector_cuda(&fluid_data_cuda, fluid_data, 1);
 
+	///remove that line it ecrase the existing fluid
+	DynamicWindowInterface::initializeFluidToSurface(*this);
 	//init the boundaries neighbor searchs
 	//fluid_data[0].initNeighborsSearchData(this->m_kernel_precomp.getRadius(), true, false);
 
