@@ -523,7 +523,7 @@ void UnifiedParticleSet::load_from_file(std::string file_path, bool load_velocit
 
 #ifdef OCEAN_BOUNDARIES_PROTOTYPE
 		//*
-		float height = 0.8;
+		float height = 5.65;
 		if ((positions_limitations)&&
 			(velocity_impacted_by_fluid_solver)&&
 			//(((pos.x > (-2.0 + 8 * 0.1)) && (pos.x < (2.0 - 8 * 0.1))) || (pos.y > height))
@@ -613,6 +613,10 @@ void UnifiedParticleSet::write_forces_to_file(std::string file_path) {
 
 
 void UnifiedParticleSet::updateActiveParticleNumber(unsigned int val) {
+
+	if (val >= numParticlesMax) {
+		changeMaxParticleNumber(val * 1.5);
+	}
 
     numParticles = val;
     if (gpu_ptr!=NULL){
@@ -814,9 +818,13 @@ DFSPHCData::DFSPHCData(FluidModel *model): DFSPHCData()
     //it is called in the DFSOH_CUDA constructor anyway
 	//reset(model);
 
+	reset(model);
+
 	read_last_error_cuda("check for errors end creation  ");
 
-	std::cout << "here" << std::endl;
+	std::cout << "test before from surface: " << boundaries_data->numParticles << std::endl;
+	DynamicWindowInterface::initializeFluidToSurface(*this);
+
 	destructor_activated = true;
 }
 
@@ -1096,7 +1104,10 @@ void DFSPHCData::read_fluid_from_file(bool load_velocities) {
     allocate_and_copy_UnifiedParticleSet_vector_cuda(&fluid_data_cuda, fluid_data, 1);
 
 	///remove that line it ecrase the existing fluid
-	DynamicWindowInterface::initializeFluidToSurface(*this);
+	//I'm just using that place for my tests
+	//DynamicWindowInterface::initializeFluidToSurface(*this);
+	
+	
 	//init the boundaries neighbor searchs
 	//fluid_data[0].initNeighborsSearchData(this->m_kernel_precomp.getRadius(), true, false);
 

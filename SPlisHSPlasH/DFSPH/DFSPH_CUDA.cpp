@@ -340,7 +340,7 @@ void DFSPHCUDA::step()
 #endif //SPLISHSPLASH_FRAMEWORK
         //*/
 
-		//m_data.checkParticlesPositions(2);
+		m_data.checkParticlesPositions(2);
 
 		//code for timming informations
 

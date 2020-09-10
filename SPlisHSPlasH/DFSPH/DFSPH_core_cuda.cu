@@ -2825,11 +2825,11 @@ __global__ void DFSPH_update_pos_kernel(SPH::DFSPHCData data, SPH::UnifiedPartic
 
 	}
 
-
+	/*
 	if (particleSet->density[i] < 900) {
 		particleSet->color[i] = Vector3d(0, 1, 0);
 	}
-
+	//*/
 	particleSet->pos[i] += data.h * particleSet->vel[i];
 }
 

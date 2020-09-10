@@ -369,6 +369,8 @@ void DemoBase::initParameters()
 
 void DemoBase::buildModel()
 {
+	std::cout << "DemoBase::buildModel start" << std::endl;
+
 	TimeManager::getCurrent()->setTimeStepSize(m_scene.timeStepSize);
 
 	std::vector<Vector3r> fluidParticles;
@@ -475,6 +477,9 @@ void DemoBase::buildModel()
 	}
 
 	initParameters();
+
+
+	std::cout << "DemoBase::buildModel end" << std::endl;
 }
 
 

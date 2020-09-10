@@ -57,6 +57,9 @@ void FluidModel::cleanupModel()
 
 void FluidModel::reset()
 {
+
+	std::cout << "FluidModel::reset" << std::endl;
+
 	m_emitterSystem.reset();
 	setNumActiveParticles(m_numActiveParticles0);
 	const unsigned int nPoints = numActiveParticles();
@@ -182,7 +185,7 @@ void FluidModel::updateBoundaryPsi()
 	// Search boundary neighborhood
 
 	// Activate only static boundaries
-	std::cout << "Initialize boundary psi\n";
+	std::cout << "Initialize boundary psi start\n";
 	m_neighborhoodSearch->set_active(false);
 	for (unsigned int i = 0; i < numberOfRigidBodyParticleObjects(); i++)
 	{
@@ -221,6 +224,10 @@ void FluidModel::updateBoundaryPsi()
 	m_neighborhoodSearch->set_active(0u, 0u, true); 	
 	for (unsigned int i = 1; i < m_neighborhoodSearch->point_sets().size(); i++) 		
 		m_neighborhoodSearch->set_active(0u, i, true);
+
+
+
+	std::cout << "Initialize boundary psi end\n";
 }
 
 void FluidModel::computeBoundaryPsi(const unsigned int body)
@@ -310,6 +317,8 @@ void FluidModel::performNeighborhoodSearchSort()
 
 void SPH::FluidModel::setDensity0(const Real v)
 {
+	std::cout << "SPH::FluidModel::setDensity0" << std::endl;
+
 	m_density0 = v; 
 	initMasses(); 
 	updateBoundaryPsi();

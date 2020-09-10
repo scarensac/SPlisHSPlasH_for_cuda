@@ -3761,7 +3761,8 @@ void DynamicWindowInterface::initializeFluidToSurface(SPH::DFSPHCData& data) {
 	//I'll center the loaded dataset (for now hozontally but in the end I'll also center it vertically)
 	Vector3d displacement = max_fluid_buffer + min_fluid_buffer;
 	displacement /= 2;
-	displacement.y = 0;
+	//on y I just put the fluid slightly below the simulation space to dodge the special distribution around the borders
+	displacement.y = -min_fluid_buffer.y -0.2;
 	std::cout << "background buffer displacement: " << displacement.toString() << std::endl;
 	{
 		int numBlocks = calculateNumBlocks(backgroundFluidBufferSet->numParticles);
@@ -3798,7 +3799,6 @@ void DynamicWindowInterface::initializeFluidToSurface(SPH::DFSPHCData& data) {
 	int count_outside_buffer = *outInt;
 
 
-
 	//sort the buffer
 	cub::DeviceRadixSort::SortPairs(backgroundFluidBufferSet->neighborsDataSet->d_temp_storage_pair_sort, backgroundFluidBufferSet->neighborsDataSet->temp_storage_bytes_pair_sort,
 		backgroundFluidBufferSet->neighborsDataSet->cell_id, backgroundFluidBufferSet->neighborsDataSet->cell_id_sorted,
@@ -3813,7 +3813,7 @@ void DynamicWindowInterface::initializeFluidToSurface(SPH::DFSPHCData& data) {
 	{
 		std::cout << "init end check values" << std::endl;
 		Vector3d min, max;
-		get_UnifiedParticleSet_min_max_naive_cuda(*(data.boundaries_data), min, max);
+		get_UnifiedParticleSet_min_max_naive_cuda(*(backgroundFluidBufferSet), min, max);
 		std::cout << "buffer informations: count particles (potential fluid)" << backgroundFluidBufferSet->numParticles << "  (" << backgroundFluidBufferSet->numParticles-count_outside_buffer << ") ";
 		std::cout << " min/max " << min.toString() << " // " << max.toString() << std::endl;
 	}
@@ -3878,11 +3878,15 @@ void DynamicWindowInterface::initializeFluidToSurface(SPH::DFSPHCData& data) {
 	remove_tagged_particles(backgroundFluidBufferSet, total_to_remove);
 
 
+	std::cout << "buffer info before copy, count particles: " << backgroundFluidBufferSet->numParticles << std::endl;
+
 	//Now we have our fluid particles and we can just put them in the actual fluid buffer
 	data.fluid_data->updateActiveParticleNumber(backgroundFluidBufferSet->numParticles);
-	gpuErrchk(cudaMemcpy(data.fluid_data->pos, backgroundFluidBufferSet->pos, backgroundFluidBufferSet->numParticles * sizeof(Vector3d), cudaMemcpyDeviceToDevice));
+
+	read_last_error_cuda("before copy");
 	gpuErrchk(cudaMemcpy(data.fluid_data->mass, backgroundFluidBufferSet->mass, backgroundFluidBufferSet->numParticles * sizeof(RealCuda), cudaMemcpyDeviceToDevice));
-	gpuErrchk(cudaMemcpy(data.fluid_data->vel, backgroundFluidBufferSet->vel, backgroundFluidBufferSet->numParticles * sizeof(RealCuda), cudaMemcpyDeviceToDevice));
+	gpuErrchk(cudaMemcpy(data.fluid_data->pos, backgroundFluidBufferSet->pos, backgroundFluidBufferSet->numParticles * sizeof(Vector3d), cudaMemcpyDeviceToDevice));
+	gpuErrchk(cudaMemcpy(data.fluid_data->vel, backgroundFluidBufferSet->vel, backgroundFluidBufferSet->numParticles * sizeof(Vector3d), cudaMemcpyDeviceToDevice));
 	data.fluid_data->resetColor();
 
 	set_buffer_to_value<Vector3d>(data.fluid_data->vel, Vector3d(0, 0, 0), data.fluid_data->numParticles);

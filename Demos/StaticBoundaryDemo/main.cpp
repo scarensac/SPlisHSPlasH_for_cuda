@@ -53,9 +53,14 @@ int main( int argc, char **argv )
 	base.buildModel();
 	base.setSimulationMethodChangedFct(simulationMethodChanged);
 
+	std::cout << "initializing GL" << std::endl;
+
 	MiniGL::setClientIdleFunc(50, timeStep);
 	MiniGL::setKeyFunc(0, 'r', reset);
 	MiniGL::setClientSceneFunc(render);
+
+	std::cout << "launching GL" << std::endl;
+
 
 	glutMainLoop ();	
 
@@ -87,6 +92,13 @@ void simulationMethodChanged()
 
 void timeStep ()
 {
+	static int count = 0;
+	count++;
+	if (count==1) {
+	
+		std::cout << "started timesteps" << std::endl;
+	}
+
 	if ((base.getPauseAt() > 0.0) && (base.getPauseAt() < TimeManager::getCurrent()->getTime()))
 		base.setPause(true);
 
@@ -126,9 +138,19 @@ void timeStep ()
 		base.setZeroVelocities(false);
 	}
 
+	if (count == 1) {
+
+		std::cout << "timesteps middle" << std::endl;
+	}
 
 	if (base.getPause())
 		return;
+
+
+	if (count == 1) {
+
+		std::cout << "timesteps middle afterpause" << std::endl;
+	}
 
 	// Simulation code
 	for (unsigned int i = 0; i < base.getNumberOfStepsPerRenderUpdate(); i++)
@@ -151,6 +173,12 @@ void timeStep ()
 		}
 	}
 
+
+	if (count == 1) {
+
+		std::cout << "timesteps end" << std::endl;
+	}
+
 #ifdef FFMPEG_RENDER
 	//the part to save to file
 	static int steps=0;
@@ -168,6 +196,14 @@ void timeStep ()
 
 void render()
 {
+	static int count = 0;
+	if (count < 10) {
+		count++;
+	}
+	if (count == 1) {
+		std::cout << "render start" << std::endl;
+	}
+
 	static int width = glutGet(GLUT_WINDOW_WIDTH);
 	static int height = glutGet(GLUT_WINDOW_HEIGHT);
 
@@ -232,6 +268,10 @@ void render()
 	}
 #endif
 
+	if (count == 1) {
+		std::cout << "render before fluid" << std::endl;
+	}
+
 	//activate this if you want the axis
 	//MiniGL::coordinateSystem();
 
@@ -252,11 +292,16 @@ void render()
 	fwrite(buffer, sizeof(int)*width*height, 1, ffmpeg);
 #endif
 #endif
+	if (count == 1) {
+		std::cout << "render before boundary" << std::endl;
+	}
 
 	renderBoundary();
 
 
-
+	if (count == 1) {
+		std::cout << "render end" << std::endl;
+	}
 	
 }
 
