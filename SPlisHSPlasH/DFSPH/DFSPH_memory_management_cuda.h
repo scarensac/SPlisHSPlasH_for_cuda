@@ -43,6 +43,8 @@ void change_max_particle_number(SPH::NeighborsSearchDataSet& dataSet, int numPar
 void add_particles_cuda(SPH::UnifiedParticleSet& container, int num_additional_particles, const Vector3d* pos, const Vector3d* vel);
 
 template<class T> void set_buffer_to_value(T* buff, T val, int size);
+template<class T> void apply_factor_to_buffer(T* buff, T val, int size);
+template<class T, int clamping_type> void clamp_buffer_to_value(T* buff, T val, int size);
 
 
 void allocate_precomputed_kernel_managed(SPH::PrecomputedCubicKernelPerso& kernel, bool minimize_managed = false);

@@ -141,6 +141,8 @@ void DFSPHCUDA::step()
             m_data.loadDynamicObjectsData(m_model);
         }
 
+       
+
 
         tab_timepoint[current_timepoint++] = std::chrono::steady_clock::now();
         //*
@@ -253,11 +255,12 @@ void DFSPHCUDA::step()
         cuda_update_vel(m_data);
 
 
+
         tab_timepoint[current_timepoint++] = std::chrono::steady_clock::now();
 
 
         m_iterations = cuda_pressureSolve(m_data, m_maxIterations, m_maxError);
-
+        
 		if (false&&count_steps == 0) 	
 		{
 			/*
@@ -312,6 +315,16 @@ void DFSPHCUDA::step()
 			}
 		}
 		
+
+        if (count_steps < 4) {
+            /*
+            RealCuda clamp_value = m_data.particleRadius* 10 * 0.003;
+            clamp_buffer_to_value<Vector3d, 4>(m_data.fluid_data->vel, Vector3d(clamp_value), m_data.fluid_data->numParticles);
+            //*/
+            RealCuda factor = 0.2;
+            apply_factor_to_buffer(m_data.fluid_data->vel, Vector3d(factor), m_data.fluid_data->numParticles);
+        }
+
 
         tab_timepoint[current_timepoint++] = std::chrono::steady_clock::now();
 

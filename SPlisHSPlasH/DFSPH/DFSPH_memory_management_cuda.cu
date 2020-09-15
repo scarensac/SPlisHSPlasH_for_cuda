@@ -19,7 +19,7 @@
 
 #include <curand.h>
 #include <curand_kernel.h>
-
+#include <type_traits>
 
 #include "basic_kernels_cuda.cuh"
 #include "SPH_other_systems_cuda.h"
@@ -1058,6 +1058,64 @@ template<class T> void set_buffer_to_value(T* buff, T val, int size) {
 }
 template void set_buffer_to_value<Vector3d>(Vector3d* buff, Vector3d val, int size);
 template void set_buffer_to_value<int>(int* buff, int val, int size);
+
+template<class T> void apply_factor_to_buffer(T* buff, T val, int size) {
+	//can't use memeset for the mass so I have to make a kernel for the  set
+	int numBlocks = calculateNumBlocks(size);
+	cuda_applyFactorToBuffer_kernel<T> << <numBlocks, BLOCKSIZE >> > (buff, val, size);
+
+	cudaError_t cudaStatus = cudaDeviceSynchronize();
+	if (cudaStatus != cudaSuccess) {
+		std::cerr << "set_buffer_to_value failed: " << (int)cudaStatus << std::endl;
+		exit(1598);
+	}
+}
+template void apply_factor_to_buffer<Vector3d>(Vector3d* buff, Vector3d val, int size);
+template void apply_factor_to_buffer<int>(int* buff, int val, int size);
+
+
+
+template<class T, int clamping_type> void clamp_buffer_to_value(T* buff, T val, int size) {
+	//can't use memeset for the mass so I have to make a kernel for the  set
+	int numBlocks = calculateNumBlocks(size);
+
+	if (std::is_same<T, Vector3d>::value) {
+		cuda_clampV3dBufferToValue_kernel<clamping_type> << <numBlocks, BLOCKSIZE >> > (buff, val, size);
+	} else {
+		std::cout << "clamp_buffer_to_value:: currently only partialy coded" << std::endl;
+		exit(0);
+	}
+
+	cudaError_t cudaStatus = cudaDeviceSynchronize();
+	if (cudaStatus != cudaSuccess) {
+		std::cerr << "set_buffer_to_value failed: " << (int)cudaStatus << std::endl;
+		exit(1598);
+	}
+}
+
+/*
+//there is a mistake in this partial specialization but I don't realy know what
+template<int clamping_type> void clamp_buffer_to_value<Vector3d>(Vector3d* buff, Vector3d val, int size) {
+	std::cout << "gone in that implementation" << std::endl;
+
+	//can't use memeset for the mass so I have to make a kernel for the  set
+	int numBlocks = calculateNumBlocks(size);
+	cuda_clampV3dBufferToValue_kernel<clamping_type> << <numBlocks, BLOCKSIZE >> > (buff, val, size);
+	
+
+	cudaError_t cudaStatus = cudaDeviceSynchronize();
+	if (cudaStatus != cudaSuccess) {
+		std::cerr << "set_buffer_to_value failed: " << (int)cudaStatus << std::endl;
+		exit(1598);
+	}
+}
+//*/
+template void clamp_buffer_to_value<Vector3d, 0>(Vector3d* buff, Vector3d val, int size);
+template void clamp_buffer_to_value<Vector3d, 1>(Vector3d* buff, Vector3d val, int size);
+template void clamp_buffer_to_value<Vector3d, 2>(Vector3d* buff, Vector3d val, int size);
+template void clamp_buffer_to_value<Vector3d, 3>(Vector3d* buff, Vector3d val, int size);
+template void clamp_buffer_to_value<Vector3d, 4>(Vector3d* buff, Vector3d val, int size);
+
 
 
 void allocate_precomputed_kernel_managed(SPH::PrecomputedCubicKernelPerso& kernel, bool minimize_managed) {

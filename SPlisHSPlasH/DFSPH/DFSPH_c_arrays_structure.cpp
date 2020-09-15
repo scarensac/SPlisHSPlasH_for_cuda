@@ -822,8 +822,7 @@ DFSPHCData::DFSPHCData(FluidModel *model): DFSPHCData()
 
 	read_last_error_cuda("check for errors end creation  ");
 
-	std::cout << "test before from surface: " << boundaries_data->numParticles << std::endl;
-	DynamicWindowInterface::initializeFluidToSurface(*this);
+
 
 	destructor_activated = true;
 }
@@ -1092,35 +1091,43 @@ void DFSPHCData::read_fluid_from_file(bool load_velocities) {
 	destructor_activated = false;
 
 	std::cout << "loading fluid start: " << load_velocities << std::endl;
-	//reset the data strucure
-	clear_fluid_data();
-	fluid_data = new UnifiedParticleSet[1];
 
-	//read the data to cpu pointer
-	std::string file_name = fluid_files_folder + "fluid_file.txt";
-	fluid_data[0].load_from_file(file_name, load_velocities);
+	bool load_with_surface_method = true;
 
-	//init gpu struct
-    allocate_and_copy_UnifiedParticleSet_vector_cuda(&fluid_data_cuda, fluid_data, 1);
+	if (load_with_surface_method) {
+		DynamicWindowInterface::initializeFluidToSurface(*this);
+	}
+	else {
+		//reset the data strucure
+		clear_fluid_data();
+		fluid_data = new UnifiedParticleSet[1];
 
-	///remove that line it ecrase the existing fluid
-	//I'm just using that place for my tests
-	//DynamicWindowInterface::initializeFluidToSurface(*this);
+		//read the data to cpu pointer
+		std::string file_name = fluid_files_folder + "fluid_file.txt";
+		fluid_data[0].load_from_file(file_name, load_velocities);
+
+		//init gpu struct
+		allocate_and_copy_UnifiedParticleSet_vector_cuda(&fluid_data_cuda, fluid_data, 1);
+
+
+
+		//init the boundaries neighbor searchs
+		//fluid_data[0].initNeighborsSearchData(this->m_kernel_precomp.getRadius(), true, false);
+
+
+
+
+
+		//this damping is only needed if the simulation frequencies of the save nd load are not the same
+		//since I now export it it is fine
+		//damp_borders = true;
+		//damp_borders_steps_count = 5;
+		//add_border_to_damp_planes_cuda(*this);
+
+	}
+
+
 	
-	
-	//init the boundaries neighbor searchs
-	//fluid_data[0].initNeighborsSearchData(this->m_kernel_precomp.getRadius(), true, false);
-
-	
-
-
-
-	//this damping is only needed if the simulation frequencies of the save nd load are not the same
-	//since I now export it it is fine
-	//damp_borders = true;
-	//damp_borders_steps_count = 5;
-	//add_border_to_damp_planes_cuda(*this);
-
 
     //allocate the grouped neighbor struct
 #ifdef GROUP_DYNAMIC_BODIES_NEIGHBORS_SEARCH
