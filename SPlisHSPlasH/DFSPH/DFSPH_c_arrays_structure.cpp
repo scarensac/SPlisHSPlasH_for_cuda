@@ -522,7 +522,7 @@ void UnifiedParticleSet::load_from_file(std::string file_path, bool load_velocit
 	
 
 #ifdef OCEAN_BOUNDARIES_PROTOTYPE
-		//*
+		/*
 		float height = 5.65;
 		if ((positions_limitations)&&
 			(velocity_impacted_by_fluid_solver)&&
@@ -614,7 +614,7 @@ void UnifiedParticleSet::write_forces_to_file(std::string file_path) {
 
 void UnifiedParticleSet::updateActiveParticleNumber(unsigned int val) {
 
-	if (val >= numParticlesMax) {
+	if (val > numParticlesMax) {
 		changeMaxParticleNumber(val * 1.5);
 	}
 
@@ -1092,10 +1092,15 @@ void DFSPHCData::read_fluid_from_file(bool load_velocities) {
 
 	std::cout << "loading fluid start: " << load_velocities << std::endl;
 
-	bool load_with_surface_method = true;
+	bool load_with_surface_method = false;
 
 	if (load_with_surface_method) {
-		DynamicWindowInterface::initializeFluidToSurface(*this);
+		RestFLuidLoaderInterface::initializeFluidToSurface(*this);
+
+		RestFLuidLoaderInterface::StabilizationParameters params;
+		params.method = 0;
+		params.max_iter = 10;
+		//RestFLuidLoaderInterface::stabilizeFluid(*this, params);
 	}
 	else {
 		//reset the data strucure

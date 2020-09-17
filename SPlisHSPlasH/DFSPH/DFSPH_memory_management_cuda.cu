@@ -1035,12 +1035,7 @@ void add_particles_cuda(SPH::UnifiedParticleSet& container, int num_additional_p
 	//update the particle count
 	container.updateActiveParticleNumber(container.numParticles + num_additional_particles);
 
-
-	cudaError_t cudaStatus = cudaDeviceSynchronize();
-	if (cudaStatus != cudaSuccess) {
-		std::cerr << "add_particles_cuda failed: " << (int)cudaStatus << std::endl;
-		exit(1598);
-	}
+	gpuErrchk(cudaDeviceSynchronize());
 
 
 }
@@ -1050,11 +1045,7 @@ template<class T> void set_buffer_to_value(T* buff, T val, int size) {
 	int numBlocks = calculateNumBlocks(size);
 	cuda_setBufferToValue_kernel<T> << <numBlocks, BLOCKSIZE >> > (buff, val, size);
 
-	cudaError_t cudaStatus = cudaDeviceSynchronize();
-	if (cudaStatus != cudaSuccess) {
-		std::cerr << "set_buffer_to_value failed: " << (int)cudaStatus << std::endl;
-		exit(1598);
-	}
+	gpuErrchk(cudaDeviceSynchronize());
 }
 template void set_buffer_to_value<Vector3d>(Vector3d* buff, Vector3d val, int size);
 template void set_buffer_to_value<int>(int* buff, int val, int size);
@@ -1064,11 +1055,7 @@ template<class T> void apply_factor_to_buffer(T* buff, T val, int size) {
 	int numBlocks = calculateNumBlocks(size);
 	cuda_applyFactorToBuffer_kernel<T> << <numBlocks, BLOCKSIZE >> > (buff, val, size);
 
-	cudaError_t cudaStatus = cudaDeviceSynchronize();
-	if (cudaStatus != cudaSuccess) {
-		std::cerr << "set_buffer_to_value failed: " << (int)cudaStatus << std::endl;
-		exit(1598);
-	}
+	gpuErrchk(cudaDeviceSynchronize());
 }
 template void apply_factor_to_buffer<Vector3d>(Vector3d* buff, Vector3d val, int size);
 template void apply_factor_to_buffer<int>(int* buff, int val, int size);
@@ -1086,12 +1073,21 @@ template<class T, int clamping_type> void clamp_buffer_to_value(T* buff, T val, 
 		exit(0);
 	}
 
-	cudaError_t cudaStatus = cudaDeviceSynchronize();
-	if (cudaStatus != cudaSuccess) {
-		std::cerr << "set_buffer_to_value failed: " << (int)cudaStatus << std::endl;
-		exit(1598);
-	}
+	gpuErrchk(cudaDeviceSynchronize());
 }
+
+
+template<class T, class T2> void copy_buffer_cross_type(T* out, T2* in, int size) {
+	//can't use memeset for the mass so I have to make a kernel for the  set
+	int numBlocks = calculateNumBlocks(size);
+	cuda_copyBufferCrossType_kernel<T,T2> << <numBlocks, BLOCKSIZE >> > (out, in, size);
+
+	gpuErrchk(cudaDeviceSynchronize());
+}
+template void copy_buffer_cross_type<RealCuda, int>(RealCuda* out, int* in, int size);
+template void copy_buffer_cross_type<RealCuda, unsigned int>(RealCuda* out, unsigned int* in, int size);
+template void copy_buffer_cross_type<unsigned int, RealCuda>(unsigned int* out, RealCuda* in, int size);
+template void copy_buffer_cross_type<int, RealCuda>(int* out, RealCuda* in, int size);
 
 /*
 //there is a mistake in this partial specialization but I don't realy know what

@@ -46,6 +46,7 @@ DFSPHCUDA::DFSPHCUDA(FluidModel *model) :
     m_maxIterationsV=100;
     desired_time_step=m_data.get_current_timestep();
 #endif //SPLISHSPLASH_FRAMEWORK
+    count_steps = 0;
     m_counter = 0;
     m_iterationsV = 0;
     m_enableDivergenceSolver = true;
@@ -73,7 +74,6 @@ DFSPHCUDA::~DFSPHCUDA(void)
 void DFSPHCUDA::step()
 {
 
-	static int count_steps = 0;
 	static int count_fluid_particles_initial = m_data.getFluidParticlesCount();
 
 	if (TimeManager::getCurrent()->getTime() > 0.5) {
@@ -315,21 +315,37 @@ void DFSPHCUDA::step()
 			}
 		}
 		
-
-        if (count_steps < 4) {
-            /*
-            RealCuda clamp_value = m_data.particleRadius* 10 * 0.003;
+        int nbr_step_apply = -1;
+        if (count_steps < nbr_step_apply) {
+            //*
+            RealCuda clamp_value = m_data.particleRadius * 1 / 0.003;
             clamp_buffer_to_value<Vector3d, 4>(m_data.fluid_data->vel, Vector3d(clamp_value), m_data.fluid_data->numParticles);
+            std::cout << "clamping value: " << clamp_value << std::endl;
             //*/
-            RealCuda factor = 0.2;
+            /*
+            RealCuda factor = 0;
             apply_factor_to_buffer(m_data.fluid_data->vel, Vector3d(factor), m_data.fluid_data->numParticles);
+            //*/
+            
         }
-
+        //std::cout << "count steps: " << count_steps << std::endl;
 
         tab_timepoint[current_timepoint++] = std::chrono::steady_clock::now();
 
         cuda_update_pos(m_data);
 
+        if (count_steps < nbr_step_apply) {
+            //*
+            RealCuda clamp_value = 0;// m_data.particleRadius * 0.3 / 0.003;
+            clamp_buffer_to_value<Vector3d, 4>(m_data.fluid_data->vel, Vector3d(clamp_value), m_data.fluid_data->numParticles);
+            std::cout << "clamping value: " << clamp_value << std::endl;
+            //*/
+            /*
+            RealCuda factor = 0;
+            apply_factor_to_buffer(m_data.fluid_data->vel, Vector3d(factor), m_data.fluid_data->numParticles);
+            //*/
+
+        }
 
         tab_timepoint[current_timepoint++] = std::chrono::steady_clock::now();
 
@@ -603,7 +619,8 @@ void DFSPHCUDA::step()
 
 
 
-    if(show_fluid_timings){
+    if(show_fluid_timings)
+    {
         static int true_count_steps = 0;
         std::cout << "step finished: " << true_count_steps<<"  "<< count_steps << std::endl;
 		true_count_steps++;
@@ -1783,6 +1800,9 @@ void DFSPHCUDA::handleSimulationLoad(bool load_liquid, bool load_liquid_velociti
 		std::cout << "loading general data end: " << std::endl;
     }
 
+    if (load_liquid||load_boundaries||load_solids) {
+        count_steps = 0;
+    }
 
 }
 

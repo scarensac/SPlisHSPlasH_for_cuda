@@ -63,7 +63,6 @@ template<int clamping_type> __global__ void cuda_clampV3dBufferToValue_kernel(Ve
 		asm("trap;");
 	}
 
-	buff[i] = value;
 }
 template __global__ void cuda_clampV3dBufferToValue_kernel<0>(Vector3d* buff, Vector3d value, unsigned int buff_size);
 template __global__ void cuda_clampV3dBufferToValue_kernel<1>(Vector3d* buff, Vector3d value, unsigned int buff_size);
@@ -71,6 +70,19 @@ template __global__ void cuda_clampV3dBufferToValue_kernel<2>(Vector3d* buff, Ve
 template __global__ void cuda_clampV3dBufferToValue_kernel<3>(Vector3d* buff, Vector3d value, unsigned int buff_size);
 template __global__ void cuda_clampV3dBufferToValue_kernel<4>(Vector3d* buff, Vector3d value, unsigned int buff_size);
 
+
+
+template<class T, class T2>
+__global__ void cuda_copyBufferCrossType_kernel(T* out, T2* in, unsigned int size) {
+	int i = blockIdx.x * blockDim.x + threadIdx.x;
+	if (i >= size) { return; }
+
+	out[i] = in[i];
+}
+template __global__ void cuda_copyBufferCrossType_kernel<RealCuda, int>(RealCuda* out, int* in, unsigned int size);
+template __global__ void cuda_copyBufferCrossType_kernel<RealCuda, unsigned int>(RealCuda* out, unsigned int* in, unsigned int size);
+template __global__ void cuda_copyBufferCrossType_kernel<unsigned int, RealCuda>(unsigned int* out, RealCuda* in, unsigned int size);
+template __global__ void cuda_copyBufferCrossType_kernel<int, RealCuda>(int* out, RealCuda* in, unsigned int size);
 
 
 __global__ void DFSPH_Histogram_kernel(unsigned int* in, unsigned int* out, unsigned int num_particles) {

@@ -30,6 +30,7 @@ class DFSPHCUDA
 {
 protected:
     DFSPHCData m_data;
+    int count_steps;
     bool show_fluid_timings;
 
 #ifdef SPLISHSPLASH_FRAMEWORK

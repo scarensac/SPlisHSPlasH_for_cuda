@@ -11,11 +11,14 @@ __global__ void DFSPH_setVector3dBufferToZero_kernel(Vector3d* buff, unsigned in
 template<class T> 
 __global__ void cuda_setBufferToValue_kernel(T* buff, T value, unsigned int buff_size);
 
-template<class T> 
+template<class T>
 __global__ void cuda_applyFactorToBuffer_kernel(T* buff, T value, unsigned int buff_size);
 
 template<int clamping_type> 
 __global__ void cuda_clampV3dBufferToValue_kernel(Vector3d* buff, Vector3d value, unsigned int buff_size);
+
+template<class T, class T2>
+__global__ void cuda_copyBufferCrossType_kernel(T* out, T2* in, unsigned int size);
 
 __global__ void DFSPH_Histogram_kernel(unsigned int* in, unsigned int* out, unsigned int num_particles);
 

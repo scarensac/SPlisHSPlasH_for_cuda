@@ -45,6 +45,7 @@ void add_particles_cuda(SPH::UnifiedParticleSet& container, int num_additional_p
 template<class T> void set_buffer_to_value(T* buff, T val, int size);
 template<class T> void apply_factor_to_buffer(T* buff, T val, int size);
 template<class T, int clamping_type> void clamp_buffer_to_value(T* buff, T val, int size);
+template<class T, class T2> void copy_buffer_cross_type(T* out, T2* in, int size);
 
 
 void allocate_precomputed_kernel_managed(SPH::PrecomputedCubicKernelPerso& kernel, bool minimize_managed = false);
