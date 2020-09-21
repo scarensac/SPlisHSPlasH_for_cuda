@@ -428,11 +428,12 @@ public:
     void runAdvancedRendering(Vector3d eye, Vector3d lookAt);
 
 	//this function will check if there are particle that tunneld throught the boundary box
-	//3 possible modes:
+	//it return the number of particle that have been detected as problematic
+    //3 possible modes:
 	//	0: just report
 	//	1: end simulaton if tunneled detected
 	//	2: rmv particles that have tunneled
-	void checkParticlesPositions(int mode=0, bool report=true);
+	int checkParticlesPositions(int mode=0, bool report=true);
 
 	//some special getters to have some more info on the fluid 
 	Vector3d getFluidAvgVelocity();

@@ -1237,7 +1237,7 @@ __global__ void tag_particles_outside_bounding_box_kernel(SPH::DFSPHCData data, 
 	
 }
 
-void check_particles_positions_cuda(SPH::DFSPHCData& data, int mode, bool report) {
+int check_particles_positions_cuda(SPH::DFSPHCData& data, int mode, bool report) {
 
 	//static bool* errorDetected = NULL;
 	static int* countDetection = NULL;
@@ -1281,6 +1281,8 @@ void check_particles_positions_cuda(SPH::DFSPHCData& data, int mode, bool report
 			//*/
 		}
 	}
+
+	return (*countDetection);
 }
 
 
@@ -1549,10 +1551,31 @@ void evaluate_density_field(SPH::DFSPHCData& data, SPH::UnifiedParticleSet* part
 
 }
 
-void remove_tagged_particles(SPH::UnifiedParticleSet* particleSet, int countToRemove) {
+template<class T>
+__global__ void advance_in_time_particleSet_kernel(T* buffer, int countElems) {
+	int i = blockIdx.x * blockDim.x + threadIdx.x;
+	if (i >= countElems) { return; }
+
+	buffer[i] += i;
+}
+
+//NOTE the index_array_sorted is just a memory space that must be of the same type as the index_array, any value in it would be erased
+template<class T>
+void remove_tagged_particles(SPH::UnifiedParticleSet* particleSet, T* index_array, T* index_array_sorted, int countToRemove, bool forceKeepOrder) {
+
+	if (forceKeepOrder) {
+		//add the index of each particles to it's tag to maintain the order
+		{
+			int numBlocks = calculateNumBlocks(particleSet->numParticles);
+			advance_in_time_particleSet_kernel<unsigned int> << <numBlocks, BLOCKSIZE >> > (index_array, particleSet->numParticles);
+			gpuErrchk(cudaDeviceSynchronize());
+		}
+	}
+
+
 	//now use the same process as when creating the neighbors structure to put the particles to be removed at the end
 	cub::DeviceRadixSort::SortPairs(particleSet->neighborsDataSet->d_temp_storage_pair_sort, particleSet->neighborsDataSet->temp_storage_bytes_pair_sort,
-		particleSet->neighborsDataSet->cell_id, particleSet->neighborsDataSet->cell_id_sorted,
+		index_array, index_array_sorted,
 		particleSet->neighborsDataSet->p_id, particleSet->neighborsDataSet->p_id_sorted, particleSet->numParticles);
 	gpuErrchk(cudaDeviceSynchronize());
 
@@ -1564,3 +1587,4 @@ void remove_tagged_particles(SPH::UnifiedParticleSet* particleSet, int countToRe
 	particleSet->updateActiveParticleNumber(new_num_particles);
 	//*/
 }
+template void remove_tagged_particles<unsigned int>(SPH::UnifiedParticleSet* particleSet, unsigned int* index_array, unsigned int* index_array_sorted, int countToRemove, bool forceKeepOrder);

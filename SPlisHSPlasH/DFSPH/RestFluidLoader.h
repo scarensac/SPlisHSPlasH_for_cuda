@@ -24,9 +24,10 @@ namespace SPH {
 		//this struct is only to be more flexible in the addition of stabilization methods in the stabilizeFluid function 
 		struct StabilizationParameters {
 			int method;
-			int max_iter;
-			RealCuda threshold;
+			int stabilizationItersCount;
+			RealCuda timeStep;
 
+			//those are parameters for when using the SPH simulation step to stabilize the fluid
 			bool useDivergenceSolver;
 			bool useDensitySolver;
 			bool useExternalForces;
@@ -34,7 +35,8 @@ namespace SPH {
 			RealCuda maxIterV;
 			RealCuda maxErrorD;
 			RealCuda maxIterD;
-			RealCuda timeStep;
+
+			bool clearWarmstartAfterStabilization;
 
 			bool preUpdateVelocityClamping;
 			RealCuda preUpdateVelocityClamping_val ;
@@ -45,9 +47,19 @@ namespace SPH {
 			bool postUpdateVelocityDamping ;
 			RealCuda postUpdateVelocityDamping_val ;
 
+
+
 			bool runCheckParticlesPostion;
 			bool interuptOnLostParticle;
 
+			//params for the particle packing method
+			RealCuda p_b;//2500 * delta_s;
+			RealCuda k_r;// 150 * delta_s * delta_s;
+			RealCuda zeta;// 2 * (SQRT_MACRO_CUDA(delta_s) + 1) / delta_s;
+
+
+
+			//params for the evaluation
 			RealCuda evaluateStabilization;
 			RealCuda stabilzationEvaluation;
 			RealCuda maxErrorVEval;
@@ -55,9 +67,12 @@ namespace SPH {
 			RealCuda maxErrorDEval;
 			RealCuda maxIterDEval;
 			RealCuda timeStepEval;
+			int max_iterEval;
 
 			StabilizationParameters() {
 				method = -1;
+				stabilizationItersCount = 5;
+				timeStep = 0.003;
 
 				useDivergenceSolver = true;
 				useDensitySolver = true;
@@ -66,7 +81,7 @@ namespace SPH {
 				maxIterV = 100;
 				maxErrorD = 0.01;
 				maxIterD = 100;
-				timeStep = 0.003;
+				clearWarmstartAfterStabilization = true;
 
 				preUpdateVelocityClamping = false;
 				preUpdateVelocityClamping_val = 0;
@@ -80,6 +95,11 @@ namespace SPH {
 				runCheckParticlesPostion = true;
 				interuptOnLostParticle = true;
 
+
+				p_b = -1;
+				k_r = -1;
+				zeta = -1;
+
 				evaluateStabilization = true;
 				stabilzationEvaluation = -1;
 				maxErrorVEval = 0.1;
@@ -87,6 +107,7 @@ namespace SPH {
 				maxErrorDEval = 0.01;
 				maxIterDEval = 100;
 				timeStepEval = 0.003;
+				max_iterEval = 5;
 			}
 		};
 

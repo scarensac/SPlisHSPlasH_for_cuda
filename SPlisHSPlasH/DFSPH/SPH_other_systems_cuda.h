@@ -34,7 +34,7 @@ void add_border_to_damp_planes_cuda(SPH::DFSPHCData& data, bool x_displacement =
 //	0: just report
 //	1: end simulaton if tunneled detected
 //	2: rmv particles that have tunneled
-void check_particles_positions_cuda(SPH::DFSPHCData& data, int mode=0, bool report=true);
+int check_particles_positions_cuda(SPH::DFSPHCData& data, int mode=0, bool report=true);
 
 
 Vector3d get_avg_velocity_cuda(SPH::UnifiedParticleSet* particleSet);
@@ -42,7 +42,7 @@ Vector3d get_avg_velocity_cuda(SPH::UnifiedParticleSet* particleSet);
 
 void evaluate_density_field(SPH::DFSPHCData& data, SPH::UnifiedParticleSet* particleSet);
 
-
-void remove_tagged_particles(SPH::UnifiedParticleSet* particleSet, int countToRemove);
+template<class T>
+void remove_tagged_particles(SPH::UnifiedParticleSet* particleSet, T* index_array, T* index_array_sorted, int countToRemove, bool forceKeepOrder=false);
 
 #endif //DFSPH_STATIC_VAR_STRUCT

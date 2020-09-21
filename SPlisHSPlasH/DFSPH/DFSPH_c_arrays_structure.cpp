@@ -1092,14 +1092,14 @@ void DFSPHCData::read_fluid_from_file(bool load_velocities) {
 
 	std::cout << "loading fluid start: " << load_velocities << std::endl;
 
-	bool load_with_surface_method = false;
+	bool load_with_surface_method = true;
 
 	if (load_with_surface_method) {
 		RestFLuidLoaderInterface::initializeFluidToSurface(*this);
 
 		RestFLuidLoaderInterface::StabilizationParameters params;
 		params.method = 0;
-		params.max_iter = 10;
+		params.stabilizationItersCount = 10;
 		//RestFLuidLoaderInterface::stabilizeFluid(*this, params);
 	}
 	else {
@@ -1462,8 +1462,8 @@ void DFSPHCData::runAdvancedRendering(Vector3d eye, Vector3d lookAt) {
 }
 
 
-void DFSPHCData::checkParticlesPositions(int mode, bool report) {
-	check_particles_positions_cuda(*this, mode, report);
+int DFSPHCData::checkParticlesPositions(int mode, bool report) {
+	return check_particles_positions_cuda(*this, mode, report);
 }
 
 
