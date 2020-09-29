@@ -41,6 +41,7 @@ typedef double RealCuda;
 #define MIN_MACRO_CUDA(x,y) (((x)<(y))?(x):(y))
 
 #define SQRT_MACRO_CUDA(x) sqrt (x)
+#define ABS_MACRO_CUDA(x) abs(x)
 
 #define GL_FORMAT GL_DOUBLE
 
@@ -53,6 +54,7 @@ typedef float RealCuda;
 #define MIN_MACRO_CUDA(x,y) fminf(x,y)
 
 #define SQRT_MACRO_CUDA(x) sqrtf (x)
+#define ABS_MACRO_CUDA(x) abs(x)
 
 #define GL_FORMAT GL_FLOAT
 

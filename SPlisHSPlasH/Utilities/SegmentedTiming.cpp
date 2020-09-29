@@ -90,9 +90,9 @@ void SegmentedTiming::recap_timings(){
 			throw(msg);
 		}
 	
-		std::cout << " timer " << timer_name <<"  iter:  "<< count_steps<<"  total: " << (cumul_time.back() / count_steps) << "  (" << time.back() << ")" << std::endl;
+		std::cout << " timer " << timer_name <<"  iter:  "<< count_steps<<"  total(avg): " << (cumul_time.back()) << "  (" << (cumul_time.back() / count_steps) << ")" << std::endl;
 		for (int i=0; i<timepoints_names.size();++i){
-			std::cout << timepoints_names[i] << "  :" << (cumul_time[i] / count_steps) << "  (" << time[i] << ")" << std::endl;
+			std::cout << timepoints_names[i] << " total(avg) :" << (cumul_time[i]) << "  (" << (cumul_time[i] / count_steps) << ")" << std::endl;
 		}
 	}
 }

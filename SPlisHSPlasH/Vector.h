@@ -8,9 +8,11 @@
 #ifdef __NVCC__
 #define FUNCTION __host__ __device__
 #define SQRT_MACRO(x) SQRT_MACRO_CUDA(x)
+#define ABS_MACRO(x) ABS_MACRO_CUDA(x)
 #else
 #define FUNCTION 
 #define SQRT_MACRO(x) std::sqrt(x)
+#define ABS_MACRO(x) std::abs(x)
 #endif
 
 
@@ -124,6 +126,10 @@ namespace SPH
 		template<typename T2>
 		FUNCTION inline Vector3& toMax(const Vector3<T2>& o) { if (x < o.x)x = o.x; if (y < o.y)y = o.y; if (z < o.z)z = o.z; return *this; }
 
+		//this function is to nullify values below a certain value.
+		//FUUUUUUUUUUUUUUCK I called on of the class function ABS so I can't use the std abs function in this context............
+		//FUNCTION inline Vector3& toEpsilonAbsToZero(const T val) { if (ABS_MACRO(x) < val)x = 0; if (ABS_MACRO(y) < val)y = 0; if (ABS_MACRO(z) < val)z = 0; return *this; }
+		FUNCTION inline Vector3& toEpsilonAbsToZero(const T val) { Vector3 o = abs(); if (o.x < val)x = 0; if (o.y < val)y = 0; if (o.z < val)z = 0; return *this; }
 
 		//host only functions
 		inline std::string toString() { return std::to_string(x) + " " + std::to_string(y) + " " + std::to_string(z); }

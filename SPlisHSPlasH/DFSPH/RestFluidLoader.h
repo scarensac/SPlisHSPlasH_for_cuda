@@ -56,6 +56,9 @@ namespace SPH {
 			RealCuda p_b;//2500 * delta_s;
 			RealCuda k_r;// 150 * delta_s * delta_s;
 			RealCuda zeta;// 2 * (SQRT_MACRO_CUDA(delta_s) + 1) / delta_s;
+			int zetaChangeFrequency;
+			RealCuda zetaChangeCoefficient;
+
 
 
 
@@ -98,7 +101,9 @@ namespace SPH {
 
 				p_b = -1;
 				k_r = -1;
-				zeta = -1;
+				zeta = 1;
+				zetaChangeFrequency=1;
+				zetaChangeCoefficient=0.997;
 
 				evaluateStabilization = true;
 				stabilzationEvaluation = -1;

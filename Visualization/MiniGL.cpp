@@ -442,14 +442,36 @@ void MiniGL::setClientSceneFunc (void  (*func)(void))
 
 void MiniGL::display ()
 {
+	static int count = 0;
+	if (count < 5) {
+		count++;
+	}
+	if (count ==1) {
+		std::cout << "MiniGL::display start" << std::endl;
+	}
+
 	glPolygonMode (GL_FRONT_AND_BACK, drawMode); 
 	viewport ();
 
 	if (scenefunc != NULL)
 		scenefunc ();
 
+	if (count == 1) {
+		std::cout << "MiniGL::display after scene func" << std::endl;
+	}
+
 	TwDraw();  // draw the tweak bar(s)
+
+	if (count == 1) {
+		std::cout << "MiniGL::display after twdraw" << std::endl;
+	}
+
 	glutSwapBuffers();
+
+
+	if (count == 1) {
+		std::cout << "MiniGL::display end" << std::endl;
+	}
 }
 
 void MiniGL::init(int argc, char **argv, const int width, const int height, const int posx, const int posy, const char *name)

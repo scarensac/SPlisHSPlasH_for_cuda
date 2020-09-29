@@ -1552,7 +1552,7 @@ void evaluate_density_field(SPH::DFSPHCData& data, SPH::UnifiedParticleSet* part
 }
 
 template<class T>
-__global__ void advance_in_time_particleSet_kernel(T* buffer, int countElems) {
+__global__ void add_id_to_buffer_kernel(T* buffer, int countElems) {
 	int i = blockIdx.x * blockDim.x + threadIdx.x;
 	if (i >= countElems) { return; }
 
@@ -1567,7 +1567,7 @@ void remove_tagged_particles(SPH::UnifiedParticleSet* particleSet, T* index_arra
 		//add the index of each particles to it's tag to maintain the order
 		{
 			int numBlocks = calculateNumBlocks(particleSet->numParticles);
-			advance_in_time_particleSet_kernel<unsigned int> << <numBlocks, BLOCKSIZE >> > (index_array, particleSet->numParticles);
+			add_id_to_buffer_kernel<unsigned int> << <numBlocks, BLOCKSIZE >> > (index_array, particleSet->numParticles);
 			gpuErrchk(cudaDeviceSynchronize());
 		}
 	}

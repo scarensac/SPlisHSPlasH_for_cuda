@@ -237,6 +237,10 @@ public:
         return numberOfNeighbourgs[particle_id * 3 + body_id];
     }
 
+    FUNCTION inline void setNumberOfNeighbourgs(int count, int particle_id, int body_id = 0) {
+        numberOfNeighbourgs[particle_id * 3 + body_id]=count;
+    }
+
     void updateActiveParticleNumber(unsigned int val);
     void changeMaxParticleNumber(int numParticlesMax_i);
 

@@ -100,11 +100,11 @@ void DFSPHCUDA::step()
 
         //*
             RestFLuidLoaderInterface::StabilizationParameters params;
-            params.method = 1;
+            params.method = 0;
             params.max_iterEval = 30;
 
             if (params.method == 0) {
-                params.stabilizationItersCount = 4;
+                params.stabilizationItersCount = 10;
                 params.useDivergenceSolver = true;
                 params.useExternalForces = true;
 
@@ -112,12 +112,28 @@ void DFSPHCUDA::step()
                 
             }
             else if (params.method == 1) {
-                params.stabilizationItersCount = 500;
-                params.timeStep = -0.0002;
+                params.stabilizationItersCount = 1;
+                params.timeStep = 0.0001;
                 RealCuda delta_s = m_data.particleRadius * 2;
-                params.p_b = 2500 * delta_s;
-                params.k_r = 15 * delta_s * delta_s;
-                params.zeta = 2 * (SQRT_MACRO_CUDA(delta_s) + 1) / delta_s;
+                //params.p_b = 1000.0 * 1.0 ;//25000 * delta_s;
+                //values used when doing density based gradiant
+                params.p_b = 1/1.0;//25000 * delta_s;
+                //values used when doing the density estimation gradiant
+                //params.p_b = 1.0 / 10000;//25000 * delta_s;
+                //values used when doing the density estimation gradiant v2
+                //params.p_b = 1.0 / 1000;//25000 * delta_s;
+                //deactivate
+                //params.p_b = 0;//25000 * delta_s;
+                
+                //deactivate
+                //params.k_r = 0;//150 * delta_s * delta_s * 0.03 / 3200.0;
+                //params.k_r = 1;//150 * delta_s * delta_s * 0.03 / 3200.0;
+
+                //zeta as a pure damping coefficient directly on the velocity
+                params.zeta = 1;
+                params.zetaChangeFrequency = 10000;
+                params.zetaChangeCoefficient = 0.999;
+                //params.zeta = 2 * (SQRT_MACRO_CUDA(delta_s) + 1) / delta_s;
             }
             
 
@@ -172,7 +188,8 @@ void DFSPHCUDA::step()
                 if (count_eval > 1) {
                     std::cout << "stabilisation evaluation (avg/max): " << avg_eval << "    " << max_eval << std::endl;
                 }
-                //return;
+                count_steps++;
+                return;
                 //exit(0); 
             }
             else {
