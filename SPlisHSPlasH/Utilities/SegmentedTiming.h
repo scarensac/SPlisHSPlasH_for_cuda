@@ -9,6 +9,21 @@
 //easy way to make sure the timmgs print and computation are desactvated for final execution
 #define ACTIVATE_SEGMENTED_TIMING
 
+
+/*//an exeample of use
+{
+	std::vector<std::string> timing_names{ "p1","p2","p3" };
+	static SPH::SegmentedTiming timings("timer name", timing_names, true);
+	timings.init_step();//start point of the current step (if measuring avgs you need to call it at everystart of the loop)
+	timings.time_next_point();//time p1
+	timings.time_next_point();//time p2
+	timings.time_next_point();//time p3
+	timings.end_step();//end point of the current step (if measuring avgs you need to call it at every end of the loop)
+	timings.recap_timings();//writte timming to cout
+}
+
+
+//*/
 namespace SPH
 {
 	class SegmentedTiming

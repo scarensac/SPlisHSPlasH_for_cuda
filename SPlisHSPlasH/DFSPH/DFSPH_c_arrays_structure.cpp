@@ -302,12 +302,25 @@ void UnifiedParticleSet::updateDynamicBodiesParticles() {
 }
 
 void UnifiedParticleSet::initNeighborsSearchData(SPH::DFSPHCData& data, bool sort_data, bool delete_computation_data) {
-    neighborsDataSet->initData(this, data, sort_data);
+	neighborsDataSet->initData(this, data, sort_data);
 
 	if (delete_computation_data) {
 		neighborsDataSet->deleteComputationBuffer();
 	}
 }
+
+void UnifiedParticleSet::initAndStoreNeighbors(SPH::DFSPHCData& data, bool sort_data, bool delete_computation_data) {
+	neighborsDataSet->initData(this, data, sort_data);
+
+	//store the neighbors
+	cuda_updateNeighborsStorage(data, *this);
+
+	if (delete_computation_data) {
+		neighborsDataSet->deleteComputationBuffer();
+	}
+}
+
+
 
 template<class T>
 void UnifiedParticleSet::reset(T* particleObj) {
@@ -721,6 +734,10 @@ DFSPHCData::DFSPHCData() {
 	damp_planes = NULL;
 	damp_planes_count = 0;
 
+	restriction_mode = 0;
+	count_active=0;
+	count_active_neighbors=0;
+
 	allocate_DFSPHCData_base_cuda(*this);
 
 	std::ostringstream oss;
@@ -735,8 +752,8 @@ DFSPHCData::DFSPHCData() {
 	//oss << "fluid_data/test_box_object/";
 	//oss << "fluid_data/test_objects/";
 #endif
-
 	fluid_files_folder = oss.str();
+
 	std::cout << "detected fluid file folder: " << fluid_files_folder << std::endl;
 }
 
@@ -821,8 +838,13 @@ DFSPHCData::DFSPHCData(FluidModel *model): DFSPHCData()
 	reset(model);
 
 	read_last_error_cuda("check for errors end creation  ");
-
-
+	/*
+	for (int i = 0; i < 1000; ++i) {
+		RealCuda x = i * particleRadius / 200.0;
+		Vector3d v(x, 0, 0);
+		std::cout <<x/particleRadius <<"  "<<W(v) << "  " << gradW(v).x << std::endl;
+	}
+	//*/
 
 	destructor_activated = true;
 }
@@ -1095,7 +1117,7 @@ void DFSPHCData::read_fluid_from_file(bool load_velocities) {
 	bool load_with_surface_method = true;
 
 	if (load_with_surface_method) {
-		RestFLuidLoaderInterface::initializeFluidToSurface(*this);
+		RestFLuidLoaderInterface::initializeFluidToSurface(*this,true);
 
 		RestFLuidLoaderInterface::StabilizationParameters params;
 		params.method = 0;

@@ -191,6 +191,12 @@ include_directories(${PROJECT_PATH}/extern/glew/include)
 include_directories(${PROJECT_PATH}/extern/install/Discregrid/include)
 
 
+
+############################################################
+# A .OBJ file loader
+############################################################
+include_directories(${PROJECT_PATH}/extern/OBJ-Loader)
+
 add_library(SPlisHSPlasH STATIC
 	BasicTypes.h
 	Common.h

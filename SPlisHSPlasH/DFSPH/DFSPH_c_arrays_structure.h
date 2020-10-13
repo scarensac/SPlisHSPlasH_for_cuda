@@ -202,7 +202,12 @@ public:
     void transferForcesToCPU();
 
     //this does the necessary calls to be able to run the neighbors search later
-    void initNeighborsSearchData(DFSPHCData &data, bool sort_data, bool delete_computation_data=false);
+    void initNeighborsSearchData(DFSPHCData& data, bool sort_data, bool delete_computation_data = false);
+
+    //this is rarely used since I have a function specialized to handle the storage of the fluid neighbors
+    //However for systems where I want to store the neighbors on smth other thant the fluid is will be usefull
+    void initAndStoreNeighbors(DFSPHCData& data, bool sort_data, bool delete_computation_data = false);
+
 
     //reset the data
     //also clear the computation buffers
@@ -365,6 +370,13 @@ public:
 	//this is a debug functionality
 	Vector3d boundingBoxMin;
 	Vector3d boundingBoxMax;
+
+    //this variable is to make posssible the simulation of a restricted part of the simulation domain
+    //it has 3 possible values: 0==>full simulation ; 1==>restricted by CellID ; 2==> restricted to the first part of the particle buffer
+    //the count active and active neighbors are necessary to not have to recount it every fucking time
+    int restriction_mode;
+    unsigned int count_active;
+    unsigned int count_active_neighbors;
 
     DFSPHCData();
     DFSPHCData(FluidModel *model);

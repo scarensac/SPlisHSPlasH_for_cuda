@@ -2,6 +2,13 @@
 #define TAG_REMOVAL  25000000
 #define TAG_REMOVAL_CANDIDATE  12500000
 #define TAG_ACTIVE 1
+#define TAG_ACTIVE_NEIGHBORS 2
+#define TAG_AIR 3
+#define TAG_1 1001
+#define TAG_2 1002
+#define TAG_3 1003
+
+#define TAG_UNTAGGED 0
 
 
 #include "basic_kernels_cuda.cu"

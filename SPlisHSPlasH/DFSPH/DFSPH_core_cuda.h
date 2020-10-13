@@ -60,6 +60,9 @@ void cuda_shuffleData(SPH::UnifiedParticleSet& particleSet);
 
 void cuda_neighborsSearch(SPH::DFSPHCData& data, bool need_sort);
 
+///WARNING:: this function requires having run the init neighbors search data before execution
+void cuda_updateNeighborsStorage(SPH::DFSPHCData& data, SPH::UnifiedParticleSet& particleSet);
+
 
 ////////////////////////////////////////////////////
 /////////             OTHERS           /////////////

@@ -74,7 +74,7 @@ DFSPHCUDA::~DFSPHCUDA(void)
 void DFSPHCUDA::step()
 {
    
-   
+    m_data.fluid_data->resetColor();
 
 	static int count_fluid_particles_initial = m_data.getFluidParticlesCount();
 
@@ -112,26 +112,39 @@ void DFSPHCUDA::step()
                 
             }
             else if (params.method == 1) {
-                params.stabilizationItersCount = 1;
+                params.stabilizationItersCount = 0;
                 params.timeStep = 0.0001;
                 RealCuda delta_s = m_data.particleRadius * 2;
-                //params.p_b = 1000.0 * 1.0 ;//25000 * delta_s;
+                //when based on gamma gradiant fast evolution on a single perturbated particle
+                //params.p_b = 10000;//25000 * delta_s;
+                //based on gamma slow evolution on a single particle
+                //params.p_b = 10;//25000 * delta_s;
+                //based on gamma slow evolution on a single particle
+                //params.p_b = 100;//25000 * delta_s;
                 //values used when doing density based gradiant
-                params.p_b = 1/1.0;//25000 * delta_s;
+                //params.p_b = 1/1.0;//25000 * delta_s;
                 //values used when doing the density estimation gradiant
                 //params.p_b = 1.0 / 10000;//25000 * delta_s;
                 //values used when doing the density estimation gradiant v2
-                //params.p_b = 1.0 / 1000;//25000 * delta_s;
+                //params.p_b = -1.0 / 1000;//25000 * delta_s;
+                //values used when pushing the particles from the border
+                //params.p_b = 100;//25000 * delta_s;
+                //values used when using the attraction model
+                params.p_b = 10;//25000 * delta_s;
                 //deactivate
                 //params.p_b = 0;//25000 * delta_s;
                 
                 //deactivate
-                //params.k_r = 0;//150 * delta_s * delta_s * 0.03 / 3200.0;
+                params.k_r = 0;
+                //params.k_r = 0.01;//150 * delta_s * delta_s * 0.03 / 3200.0;
                 //params.k_r = 1;//150 * delta_s * delta_s * 0.03 / 3200.0;
+
+                //params.k_r *= 100;
+                params.p_b *= 20;
 
                 //zeta as a pure damping coefficient directly on the velocity
                 params.zeta = 1;
-                params.zetaChangeFrequency = 10000;
+                params.zetaChangeFrequency = 100000;
                 params.zetaChangeCoefficient = 0.999;
                 //params.zeta = 2 * (SQRT_MACRO_CUDA(delta_s) + 1) / delta_s;
             }
@@ -141,6 +154,7 @@ void DFSPHCUDA::step()
 
                 if (params.method == 0) {
 
+                    /*
                     params.preUpdateVelocityDamping = true;
                     params.postUpdateVelocityDamping = true;
                     params.preUpdateVelocityClamping = true;
@@ -148,11 +162,33 @@ void DFSPHCUDA::step()
                     params.postUpdateVelocityDamping_val = 0.2;
                     params.preUpdateVelocityClamping_val = 4;
                     params.postUpdateVelocityClamping = false;
+                    //*/
+
+                    //*
+                    params.preUpdateVelocityDamping = false;
+                    params.postUpdateVelocityDamping = false;
+                    params.postUpdateVelocityClamping = false;
+                    params.preUpdateVelocityClamping = false;
+                    //*/
 
                     //params.preUpdateVelocityClamping = false;
                     //params.preUpdateVelocityDamping = false;
                     //params.postUpdateVelocityDamping_val = 0;
-                    params.maxErrorD = 0.1;
+                    //params.maxErrorD = 0.1;
+                    params.maxErrorD = 0.05;
+
+                    //params.useDivergenceSolver = false;
+                    //params.useExternalForces = false;
+
+                    params.preUpdateVelocityDamping = true;
+                    params.preUpdateVelocityDamping_val = 0.8;
+
+                    params.postUpdateVelocityDamping = false;
+                    params.postUpdateVelocityDamping_val = 1;
+
+                    params.reduceDampingAndClamping = true;
+                    params.reduceDampingAndClamping_val = 0.80;
+
                 }
                 else if (params.method == 1) {
                 }
@@ -584,7 +620,8 @@ void DFSPHCUDA::step()
 			m_data.readDynamicObjectsData(m_model);
 		}
         m_data.onSimulationStepEnd();
-
+        
+        //set_buffer_to_value<Vector3d>(m_data.fluid_data->vel, Vector3d(0), m_data.fluid_data->numParticles);
 
         // Compute new time
 

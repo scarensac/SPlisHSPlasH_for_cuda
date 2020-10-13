@@ -1,4 +1,5 @@
 #include "SegmentedTiming.h"
+#include <sstream>
 
 using namespace SPH;
 
@@ -47,12 +48,15 @@ void SegmentedTiming::time_next_point(){
 void SegmentedTiming::end_step(){
 	if (active) {
 		if(cur_point!=timepoints.size()){
-			std::string msg("SegmentedTiming::end_step nbr of registered sampling do not fit the nbr of call");
+			std::ostringstream oss;
+			oss << "SegmentedTiming::end_step: " + timer_name + " nbr of registered sampling do not fit the nbr of call (current/expected) " << 
+				cur_point << "/" << timepoints.size();
+			std::string msg = oss.str(); 
 			std::cout << msg << std::endl;
 			throw(msg);
 		}
 		if(cur_point<2){
-			std::string msg("SegmentedTiming::end_step no timing points have been registered");
+			std::string msg("SegmentedTiming::end_step: " + timer_name + " no timing points have been registered");
 			std::cout << msg << std::endl;
 			throw(msg);
 		}
@@ -90,10 +94,16 @@ void SegmentedTiming::recap_timings(){
 			throw(msg);
 		}
 	
-		std::cout << " timer " << timer_name <<"  iter:  "<< count_steps<<"  total(avg): " << (cumul_time.back()) << "  (" << (cumul_time.back() / count_steps) << ")" << std::endl;
+		std::ostringstream oss;
+		oss << std::endl;
+		oss << "/////////////////////////////////////////////////////////////////////////////////////////" << std::endl;
+		oss << "timer " << timer_name <<"  iter:  "<< count_steps<<"  total(avg): " << (cumul_time.back()) << "  (" << (cumul_time.back() / count_steps) << ")" << std::endl;
 		for (int i=0; i<timepoints_names.size();++i){
-			std::cout << timepoints_names[i] << " total(avg) :" << (cumul_time[i]) << "  (" << (cumul_time[i] / count_steps) << ")" << std::endl;
+			oss << timepoints_names[i] << " total(avg) :" << (cumul_time[i]) << "  (" << (cumul_time[i] / count_steps) << ")" << std::endl;
 		}
+		oss << "/////////////////////////////////////////////////////////////////////////////////////////" << std::endl;
+		oss << std::endl;
+		std::cout << oss.str();
 	}
 }
 

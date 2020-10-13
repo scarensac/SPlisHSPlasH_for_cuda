@@ -12,13 +12,13 @@ namespace SPH {
 
 	public:
 		
-		static void init(DFSPHCData& data);
+		static void init(DFSPHCData& data, bool center_loaded_fluid);
 
 		static bool isInitialized();
 		
 		//ok here I'll test a system to initialize a volume of fluid from
 		//a large wolume of fluid (IE a technique to iinit the fluid at rest)
-		static void initializeFluidToSurface(SPH::DFSPHCData& data);
+		static void initializeFluidToSurface(SPH::DFSPHCData& data, bool center_loaded_fluid=false);
 
 
 		//this struct is only to be more flexible in the addition of stabilization methods in the stabilizeFluid function 
@@ -44,8 +44,11 @@ namespace SPH {
 			RealCuda preUpdateVelocityDamping_val ;
 			bool postUpdateVelocityClamping ;
 			RealCuda postUpdateVelocityClamping_val ;
-			bool postUpdateVelocityDamping ;
-			RealCuda postUpdateVelocityDamping_val ;
+			bool postUpdateVelocityDamping;
+			RealCuda postUpdateVelocityDamping_val;
+			bool reduceDampingAndClamping;
+			RealCuda reduceDampingAndClamping_val;
+			RealCuda countLostParticlesLimit;
 
 
 
@@ -94,6 +97,9 @@ namespace SPH {
 				postUpdateVelocityClamping_val = 0;
 				postUpdateVelocityDamping = false;
 				postUpdateVelocityDamping_val = 0;
+				postUpdateVelocityDamping = false;
+				postUpdateVelocityDamping_val = 0;
+				countLostParticlesLimit = 10;
 
 				runCheckParticlesPostion = true;
 				interuptOnLostParticle = true;

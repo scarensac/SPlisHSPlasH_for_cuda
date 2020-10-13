@@ -219,6 +219,26 @@ code;\
 #define ITER_NEIGHBORS_INIT_FROM_STORAGE(data,particleSet,index) ITER_NEIGHBORS_INIT_FROM_STORAGE_BASE(data,particleSet,index)
 #endif
 
+//to work you must have put the index of the neighbors in the first part of the neighbors structure
+#define ITER_NEIGHBORS_FROM_STORAGE(data,particleSet,index,type,code){\
+	ADVANCE_END_PTR(end_ptr,particleSet->getNumberOfNeighbourgs(index,type));\
+    while (neighbors_ptr != end_ptr)\
+{\
+    READ_AND_ADVANCE_NEIGHBOR(neighborIndex,neighbors_ptr)\
+    code;\
+    }\
+    }
+
+//to work you must have put the index of the neighbors in the first part of the neighbors structure
+#define ITER_NEIGHBORS_SELF_FROM_STORAGE(data,particleSet,index,code){\
+	ADVANCE_END_PTR(end_ptr,particleSet->getNumberOfNeighbourgs(index));\
+    const SPH::UnifiedParticleSet& body = *particleSet;\
+    while (neighbors_ptr != end_ptr)\
+{\
+    READ_AND_ADVANCE_NEIGHBOR(neighborIndex,neighbors_ptr)\
+    code;\
+    }\
+    }
 
 #define ITER_NEIGHBORS_FLUID_FROM_STORAGE(data,particleSet,index,code){\
 	ADVANCE_END_PTR(end_ptr,particleSet->getNumberOfNeighbourgs(index));\
