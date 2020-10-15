@@ -14,11 +14,36 @@ namespace SPH {
 		
 		static void init(DFSPHCData& data, bool center_loaded_fluid);
 
+
 		static bool isInitialized();
-		
+
+		struct TaggingParameters {
+			RealCuda density_start ;
+			RealCuda density_end;
+			RealCuda step_density;
+
+			bool useRule2;
+			RealCuda min_density;
+
+			bool useRule3;
+			RealCuda density_delta_threshold;
+
+			TaggingParameters(){
+				density_start = 1900;
+				density_end = 1001;
+				step_density = 50;
+
+				useRule2 = false;
+				min_density = 905;
+			
+				useRule3 = false;
+				density_delta_threshold = 5;
+			}
+		};
+
 		//ok here I'll test a system to initialize a volume of fluid from
 		//a large wolume of fluid (IE a technique to iinit the fluid at rest)
-		static void initializeFluidToSurface(SPH::DFSPHCData& data, bool center_loaded_fluid=false);
+		static void initializeFluidToSurface(SPH::DFSPHCData& data, bool center_loaded_fluid, TaggingParameters& params, bool load_fluid=true);
 
 
 		//this struct is only to be more flexible in the addition of stabilization methods in the stabilizeFluid function 
@@ -67,7 +92,9 @@ namespace SPH {
 
 			//params for the evaluation
 			RealCuda evaluateStabilization;
-			RealCuda stabilzationEvaluation;
+			RealCuda stabilzationEvaluation1;
+			RealCuda stabilzationEvaluation2;
+			RealCuda stabilzationEvaluation3;
 			RealCuda maxErrorVEval;
 			RealCuda maxIterVEval;
 			RealCuda maxErrorDEval;
@@ -112,7 +139,9 @@ namespace SPH {
 				zetaChangeCoefficient=0.997;
 
 				evaluateStabilization = true;
-				stabilzationEvaluation = -1;
+				stabilzationEvaluation1 = -1;
+				stabilzationEvaluation2 = -1;
+				stabilzationEvaluation3 = -1;
 				maxErrorVEval = 0.1;
 				maxIterVEval = 100;
 				maxErrorDEval = 0.01;

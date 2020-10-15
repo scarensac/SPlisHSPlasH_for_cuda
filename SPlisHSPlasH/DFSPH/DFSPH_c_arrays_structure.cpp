@@ -1117,11 +1117,54 @@ void DFSPHCData::read_fluid_from_file(bool load_velocities) {
 	bool load_with_surface_method = true;
 
 	if (load_with_surface_method) {
-		RestFLuidLoaderInterface::initializeFluidToSurface(*this,true);
+		RestFLuidLoaderInterface::init(*this, true);
+		
+		RestFLuidLoaderInterface::TaggingParameters paramsTagging;
+		if (true) {
+			/*
+			paramsTagging.useRule3 = false;
+			paramsTagging.useRule2 = false;
+			for (int i = 1; i < 100; ++i) {
+				paramsTagging.step_density = i;
+				RestFLuidLoaderInterface::initializeFluidToSurface(*this, true, paramsTagging, false);
+			}
+			//*/
+			/*
+			paramsTagging.useRule3 = true;
+			paramsTagging.useRule2 = false;
+			for (int i = 1; i < 100; ++i) {
+				paramsTagging.step_density = i;
+				RestFLuidLoaderInterface::initializeFluidToSurface(*this, true, paramsTagging, false);
+			}
+			//*/
+			/*
+			paramsTagging.useRule3 = false;
+			paramsTagging.useRule2 = true;
+			for (int i = 1; i < 100; ++i) {
+				paramsTagging.step_density = i;
+				RestFLuidLoaderInterface::initializeFluidToSurface(*this, true, paramsTagging, false);
+			}
+			//*/
+			/*
+			paramsTagging.useRule3 = true;
+			paramsTagging.useRule2 = true;
+			for (int i = 1; i < 100; ++i) {
+				paramsTagging.step_density = i;
+				RestFLuidLoaderInterface::initializeFluidToSurface(*this, true, paramsTagging, false);
+			}
+			//*/
+		}
 
-		RestFLuidLoaderInterface::StabilizationParameters params;
-		params.method = 0;
-		params.stabilizationItersCount = 10;
+		if (true) {
+			paramsTagging.useRule3 = true;
+			paramsTagging.useRule2 = true;
+			paramsTagging.step_density = 25;
+			RestFLuidLoaderInterface::initializeFluidToSurface(*this, true, paramsTagging, true);
+		}
+
+		RestFLuidLoaderInterface::StabilizationParameters paramsStab;
+		paramsStab.method = 0;
+		paramsStab.stabilizationItersCount = 10;
 		//RestFLuidLoaderInterface::stabilizeFluid(*this, params);
 	}
 	else {
@@ -1402,7 +1445,7 @@ void DFSPHCData::handleFLuidLevelControl(RealCuda level) {
 
 
 RealCuda DFSPHCData::computeFluidLevel(){
-    return find_fluid_height_cuda(*this);
+    return find_fluid_height_cuda(*this,fluid_data);
 }
 
 void DFSPHCData::getFluidImpactOnDynamicBodies(std::vector<SPH::Vector3d>& sph_forces, std::vector<SPH::Vector3d>& sph_moments,

@@ -55,7 +55,7 @@ typedef float RealCuda;
 
 #define SQRT_MACRO_CUDA(x) sqrtf (x)
 //#define ABS_MACRO_CUDA(x) abs(x)
-#define ABS_MACRO_CUDA(x) ((x > 0)?x:-x)
+#define ABS_MACRO_CUDA(x) (((x) > 0)?(x):-(x))
 
 
 #define GL_FORMAT GL_FLOAT

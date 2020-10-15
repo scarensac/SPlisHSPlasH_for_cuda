@@ -14,7 +14,7 @@ void read_last_error_cuda(std::string msg);
 void get_UnifiedParticleSet_min_max_naive_cuda(SPH::UnifiedParticleSet& particleSet, Vector3d& min, Vector3d& max);
 
 //fluid height related
-RealCuda find_fluid_height_cuda(SPH::DFSPHCData& data);
+RealCuda find_fluid_height_cuda(SPH::DFSPHCData& data, SPH::UnifiedParticleSet* particleSet);
 void control_fluid_height_cuda(SPH::DFSPHCData& data, RealCuda target_height);
 
 

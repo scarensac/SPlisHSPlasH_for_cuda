@@ -97,12 +97,15 @@ public:
 
 		Bmin = o->Bmin;
 		Bmax = o->Bmax;
+		offset = o->offset;
 	}
 
 	inline bool isInitialized() { return (nbVectex > 0) && (nbfaces > 0); }
 
 	//no check on the size os be carefull
 	FUNCTION inline Vector3d getVertex(int i) { return v[i] + offset; }
+	FUNCTION inline Vector3d getBmin() { return Bmin + offset; }
+	FUNCTION inline Vector3d getBmax() { return Bmax + offset; }
 
 	inline void applyOffset(Vector3d off) { offset += off; }
 
@@ -218,7 +221,7 @@ public:
 		}
 
 		//do a check using the bounding box to accelerate the computations
-		if ((p < Bmin) || p > Bmax) {
+		if ((p < getBmin()) || p > getBmax()) {
 			*result = false;
 			return 0;
 		}
@@ -596,6 +599,9 @@ public:
 	std::string toString() {
 		std::ostringstream oss;
 		//*
+		if (isReversedSurface) {
+			oss << "Reversed ";
+		}
 		switch (type) {
 		case 0: {
 			oss << "plane "  << " (o,n)  " << o.x << "   " << o.y << "   " << o.z << "  //  "
@@ -613,7 +619,7 @@ public:
 		case 3: {
 			if (mesh->isInitialized()) {
 				oss << "Mesh with nbVertices: " << mesh->nbVectex << "  and nbFaces: " << mesh->nbfaces <<
-					 "  and bounding box (bmin//bmax): "<< mesh->Bmin.toString() <<" // "<<mesh->Bmax.toString() <<std::endl;
+					 "  and bounding box (bmin//bmax): "<< mesh->getBmin().toString() <<" // "<<mesh->getBmax().toString() <<std::endl;
 			}
 			else {
 				oss << "Mesh not initialized (wtf)" << std::endl;
@@ -867,4 +873,21 @@ public:
 		}
 	}
 
+	//WARNING curretnly this can only be used for intersection type of aggregation 
+	//It will return a positive number inside the aggregation and 0 if the point is outside
+	///TODO see if there is any way to handle other cases
+	FUNCTION RealCuda distance(Vector3d p) {
+		RealCuda dist = 0;//if the point is outide the reported distance will be 0
+		if (isinside(p)) {
+			dist = surfaces[0].distanceToSurface(p);
+			for (int i = 1; i < numSurface; ++i)
+			{
+				RealCuda cur_dist = surfaces[i].distanceToSurface(p);
+				if (dist > cur_dist) {
+					dist = cur_dist;
+				}
+			}
+		}
+		return dist;
+	}
 };

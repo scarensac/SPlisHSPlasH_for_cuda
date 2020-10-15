@@ -10,6 +10,7 @@
 #include "DFSPH_cuda_basic.h"
 #include <fstream>
 #include <sstream>
+#include <cmath>
 
 // BENDER2019_BOUNDARIES includes
 #include "SPlisHSPlasH/BoundaryModel_Bender2019.h"
@@ -101,7 +102,7 @@ void DFSPHCUDA::step()
         //*
             RestFLuidLoaderInterface::StabilizationParameters params;
             params.method = 0;
-            params.max_iterEval = 30;
+            params.max_iterEval = 59;
 
             if (params.method == 0) {
                 params.stabilizationItersCount = 10;
@@ -149,8 +150,8 @@ void DFSPHCUDA::step()
                 //params.zeta = 2 * (SQRT_MACRO_CUDA(delta_s) + 1) / delta_s;
             }
             
-
-            if (true) {
+            int run_type = 2;
+            if (run_type==0) {
 
                 if (params.method == 0) {
 
@@ -205,11 +206,11 @@ void DFSPHCUDA::step()
 
                     RestFLuidLoaderInterface::stabilizeFluid(m_data, params);
 
-                    max_eval = MAX_MACRO_CUDA(max_eval, params.stabilzationEvaluation);
-                    avg_eval += params.stabilzationEvaluation;
+                    max_eval = MAX_MACRO_CUDA(max_eval, params.stabilzationEvaluation1);
+                    avg_eval += params.stabilzationEvaluation1;
                         
                     std::cout << params.preUpdateVelocityDamping_val << "  " << params.postUpdateVelocityDamping_val <<
-                        "  " << params.preUpdateVelocityClamping_val << "  " << params.postUpdateVelocityClamping_val << "  " << params.stabilzationEvaluation << std::endl;
+                        "  " << params.preUpdateVelocityClamping_val << "  " << params.postUpdateVelocityClamping_val << "  " << params.stabilzationEvaluation1 << std::endl;
 
 
                    // params.clearWarmstartAfterStabilization = false;
@@ -228,8 +229,8 @@ void DFSPHCUDA::step()
                 return;
                 //exit(0); 
             }
-            else {
-
+            else if (run_type == 1) {
+                
                  std::chrono::steady_clock::time_point tp1 = std::chrono::steady_clock::now();
 
                 //*
@@ -286,7 +287,7 @@ void DFSPHCUDA::step()
                                     if (myfile.is_open())
                                     {
                                         myfile <<params.preUpdateVelocityDamping_val<< "  " <<params.postUpdateVelocityDamping_val<<
-                                            "  " <<params.preUpdateVelocityClamping_val<< "  " << params.postUpdateVelocityClamping_val << "  " <<params.stabilzationEvaluation<< std::endl;
+                                            "  " <<params.preUpdateVelocityClamping_val<< "  " << params.postUpdateVelocityClamping_val << "  " <<params.stabilzationEvaluation1<< std::endl;
                                         myfile.close();
                                     }
                                     else {
@@ -322,6 +323,86 @@ void DFSPHCUDA::step()
                 exit(0);
                 //*/
 
+            }
+            else if (run_type == 2) {
+                //here is an optimisation that challenge the step size versus the Nbr of simulation steps required for stability
+
+
+                std::chrono::steady_clock::time_point tp1 = std::chrono::steady_clock::now();
+
+                RestFLuidLoaderInterface::TaggingParameters tagging_params;
+                tagging_params.useRule2 = true;
+                tagging_params.useRule3 = true;
+                tagging_params.step_density = 32;
+                RestFLuidLoaderInterface::initializeFluidToSurface(m_data, true, tagging_params, false);
+
+                
+                {
+                    params.preUpdateVelocityDamping = false;
+                    params.postUpdateVelocityDamping = false;
+                    params.postUpdateVelocityClamping = false;
+                    params.preUpdateVelocityClamping = false;
+                    //*/
+
+                    params.maxErrorD = 0.05;
+
+                    params.useDivergenceSolver = true;
+                    params.useExternalForces = true;
+
+                    params.preUpdateVelocityDamping = true;
+                    params.preUpdateVelocityDamping_val = 0.8;
+                    
+                    params.stabilizationItersCount = 20;
+
+                    params.reduceDampingAndClamping = true;
+                    params.reduceDampingAndClamping_val = std::powf(0.1f/params.preUpdateVelocityDamping_val, 1.0f / params.stabilizationItersCount);
+                }
+
+                RealCuda avg_eval = 0;
+                RealCuda max_eval = 0;
+                params.evaluateStabilization = true;
+                int count_eval = 1;
+                std::vector<RealCuda> vect_eval_1;
+                std::vector<RealCuda> vect_eval_2;
+                std::vector<RealCuda> vect_eval_3;
+                params.stabilizationItersCount = 6;
+
+                for (int i = 0; i < count_eval; ++i) {
+                    //RestFLuidLoaderInterface::init(m_data);
+                    //RestFLuidLoaderInterface::initializeFluidToSurface(m_data);
+                    //params.stabilizationItersCount = count_eval-i;
+
+                    RestFLuidLoaderInterface::stabilizeFluid(m_data, params);
+
+                    max_eval = MAX_MACRO_CUDA(max_eval, params.stabilzationEvaluation1);
+                    avg_eval += params.stabilzationEvaluation1;
+
+                    std::cout << tagging_params.step_density << "  " << params.stabilizationItersCount << "  " << (params.stabilzationEvaluation1*params.timeStepEval)/m_data.particleRadius << 
+                        "  " << (params.stabilzationEvaluation2* params.timeStepEval) / m_data.particleRadius << "  " << params.stabilzationEvaluation3 << std::endl;
+
+
+                    vect_eval_1.push_back((params.stabilzationEvaluation1* params.timeStepEval) / m_data.particleRadius);
+                    vect_eval_2.push_back((params.stabilzationEvaluation2* params.timeStepEval) / m_data.particleRadius);
+                    vect_eval_3.push_back(params.stabilzationEvaluation3);
+
+                    // params.clearWarmstartAfterStabilization = false;
+                }
+                avg_eval /= count_eval;
+
+                std::chrono::steady_clock::time_point tp2 = std::chrono::steady_clock::now();
+                RealCuda time_opti = std::chrono::duration_cast<std::chrono::nanoseconds> (tp2 - tp1).count() / 1000000000.0f;
+                std::cout << "fluid initialization finished and took (in s): " << time_opti << std::endl;
+
+                for (int i = 0; i < vect_eval_1.size(); ++i) {
+                    std::cout << tagging_params.step_density << "  " << count_eval - i << "  " << vect_eval_1[i] <<
+                        "  " << vect_eval_2[i] << "  " << vect_eval_3[i] << std::endl;
+
+                }
+
+                if (count_eval > 1) {
+                    std::cout << "stabilisation evaluation (avg/max): " << avg_eval << "    " << max_eval << std::endl;
+
+                }
             }
         }
 

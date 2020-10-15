@@ -32,7 +32,7 @@ SVS_CU* SVS_CU::get(bool free) {
 }
 
 SVS_CU::SVS_CU() {
-	cudaMalloc(&(avg_density_err), sizeof(RealCuda));
+	cudaMallocManaged(&(avg_density_err), sizeof(RealCuda));
 	shuffle_index = NULL;
 
 

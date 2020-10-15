@@ -1041,6 +1041,10 @@ void add_particles_cuda(SPH::UnifiedParticleSet& container, int num_additional_p
 }
 
 template<class T> void set_buffer_to_value(T* buff, T val, int size) {
+	if (size < 1) {
+		return;
+	}
+
 	//can't use memeset for the mass so I have to make a kernel for the  set
 	int numBlocks = calculateNumBlocks(size);
 	cuda_setBufferToValue_kernel<T> << <numBlocks, BLOCKSIZE >> > (buff, val, size);

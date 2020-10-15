@@ -4,6 +4,7 @@
 #define TAG_ACTIVE 1
 #define TAG_ACTIVE_NEIGHBORS 2
 #define TAG_AIR 3
+#define TAG_SAVE 4
 #define TAG_1 1001
 #define TAG_2 1002
 #define TAG_3 1003

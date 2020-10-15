@@ -193,8 +193,8 @@ __global__ void find_splashless_column_max_height_kernel(SPH::DFSPHCData data, S
 
 
 
-RealCuda find_fluid_height_cuda(SPH::DFSPHCData& data) {
-	SPH::UnifiedParticleSet* particleSet = data.fluid_data;
+RealCuda find_fluid_height_cuda(SPH::DFSPHCData& data, SPH::UnifiedParticleSet* particleSet) {
+	
 
 
 	//we will need the neighbors data to know where the particles are
@@ -214,18 +214,47 @@ RealCuda find_fluid_height_cuda(SPH::DFSPHCData& data) {
 		gpuErrchk(cudaDeviceSynchronize());
 	}
 
-	//now I keep the avg of all the cells containing enought particles
-	//technicaly i'd prefer the median but it would require way more computations
-	//also doing it on the gpu would be better but F it for now
+	//and now find the height from the height of each column
 	RealCuda global_height = 0;
-	int count_existing_columns = 0;
-	for (int i = 0; i < CELL_ROW_LENGTH*CELL_ROW_LENGTH; ++i) {
-		if (column_max_height[i] > 0) {
-			global_height += column_max_height[i];
-			count_existing_columns++;
+	if (false) {
+		//now I keep the avg of all the cells containing enought particles
+		//technicaly i'd prefer the median but it would require way more computations
+		//also doing it on the gpu would be better but F it for now
+		//this works weel but only for flat fluid surface( no object near the surface)
+		int count_existing_columns = 0;
+		for (int i = 0; i < CELL_ROW_LENGTH*CELL_ROW_LENGTH; ++i) {
+			if (column_max_height[i] > 0) {
+				global_height += column_max_height[i];
+				count_existing_columns++;
+			}
 		}
+		global_height /= count_existing_columns;
 	}
-	global_height /= count_existing_columns;
+	else {
+		//this version will return the n highest value (once again not the very highest becaue I'd like to doge any remaining splash)
+		//and anyway there should be relatively enough column close to the highest  
+		int selected_column_rank = 1;
+		static RealCuda* ranking = new RealCuda[selected_column_rank];
+		for (int i = 0; i < selected_column_rank; ++i) {
+			ranking[i] = -1;
+		}
+
+		for (int i = 0; i < CELL_ROW_LENGTH * CELL_ROW_LENGTH; ++i) {
+			RealCuda cur_height = column_max_height[i];
+			if ( ranking[selected_column_rank - 1] <cur_height ) {
+				//if it is one of the maximums
+				//find position in ranking
+				int place = 1;
+				while ((place<(selected_column_rank))&&(ranking[selected_column_rank - 1 - place] < cur_height)) {
+					ranking[selected_column_rank - 1 - place - 1] = ranking[selected_column_rank - 1 - place];
+					place++;
+				}
+				
+				ranking[selected_column_rank - place] = cur_height;
+			}
+		}
+		global_height = ranking[selected_column_rank - 1];
+	}
 
 #ifdef SHOW_MESSAGES_IN_CUDA_FUNCTIONS
 	std::cout << "global height detected: " << global_height << "  over column count " << count_existing_columns << std::endl;
@@ -386,7 +415,7 @@ void control_fluid_height_cuda(SPH::DFSPHCData& data, RealCuda target_height) {
 	SPH::UnifiedParticleSet* particleSet = data.fluid_data;
 
 
-	RealCuda global_height = find_fluid_height_cuda(data);
+	RealCuda global_height = find_fluid_height_cuda(data,particleSet);
 
 
 	//I'll take an error margin of 5 cm for now

@@ -115,7 +115,7 @@ void DemoBase::initShaders()
 {
 	string vertFile;
 	string fragFile;
-	bool transparent_shader = true;
+	bool transparent_shader = false;
 	{
 		vertFile = getDataPath() + "/shaders/vs_points_manual_color.glsl";
 		if (transparent_shader) {
