@@ -331,9 +331,9 @@ void DFSPHCUDA::step()
                 std::chrono::steady_clock::time_point tp1 = std::chrono::steady_clock::now();
 
                 RestFLuidLoaderInterface::TaggingParameters tagging_params;
-                tagging_params.useRule2 = true;
+                tagging_params.useRule2 = false;
                 tagging_params.useRule3 = true;
-                tagging_params.step_density = 32;
+                tagging_params.step_density = 59;
                 RestFLuidLoaderInterface::initializeFluidToSurface(m_data, true, tagging_params, false);
 
                 
@@ -360,12 +360,12 @@ void DFSPHCUDA::step()
 
                 RealCuda avg_eval = 0;
                 RealCuda max_eval = 0;
-                params.evaluateStabilization = true;
+                params.evaluateStabilization = false;
                 int count_eval = 1;
                 std::vector<RealCuda> vect_eval_1;
                 std::vector<RealCuda> vect_eval_2;
                 std::vector<RealCuda> vect_eval_3;
-                params.stabilizationItersCount = 6;
+                params.stabilizationItersCount = 5;
 
                 for (int i = 0; i < count_eval; ++i) {
                     //RestFLuidLoaderInterface::init(m_data);
@@ -541,9 +541,9 @@ void DFSPHCUDA::step()
            
         }
 
-        std::cout << "min/ max density : " << min_density << "  " << max_density << std::endl;
+        //std::cout << "min/ max density : " << min_density << "  " << max_density << std::endl;
         
-        std::cout << "fluid_level: " << getFluidLevel() << std::endl;
+        //std::cout << "fluid_level: " << getFluidLevel() << std::endl;
         //*/
 
         tab_timepoint[current_timepoint++] = std::chrono::steady_clock::now();
@@ -650,7 +650,7 @@ void DFSPHCUDA::step()
         cuda_update_pos(m_data);
 
 
-        {
+        if(false){
             //read data to CPU
             static Vector3d* vel = NULL;
             int size = 0;
@@ -847,7 +847,7 @@ void DFSPHCUDA::step()
 			}
         }
 
-		if (true) {
+		if (false) {
 			if ((count_steps % 50) == 0) {
 				std::cout << "time computation for "<< count_steps <<" steps: " << total_time << std::endl;
 			}

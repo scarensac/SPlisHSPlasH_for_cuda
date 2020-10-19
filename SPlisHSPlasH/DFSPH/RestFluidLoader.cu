@@ -560,7 +560,7 @@ __global__ void save_usefull_candidates_kernel(SPH::DFSPHCData data, SPH::Unifie
 		);
 
 		if (need_saving) {
-			bufferSet->neighborsDataSet->cell_id[i] = TAG_ACTIVE;
+			bufferSet->neighborsDataSet->cell_id[i] = TAG_SAVE;
 			atomicAdd(countRmv, 1);
 		}
 
@@ -640,7 +640,7 @@ __global__ void save_usefull_candidates_kernel_v2(SPH::DFSPHCData data, SPH::Uni
 	ITER_NEIGHBORS_INIT_CELL_COMPUTATION(p_i, data.getKernelRadius(), data.gridOffset);
 	ITER_NEIGHBORS_FROM_STRUCTURE_BASE(bufferSet->neighborsDataSet, bufferSet->pos,		
 			if (j < count_potential_fluid) {
-				if (bufferSet->neighborsDataSet->cell_id[j] == TAG_ACTIVE || bufferSet->neighborsDataSet->cell_id[j] == TAG_REMOVAL_CANDIDATE) {
+				if (bufferSet->neighborsDataSet->cell_id[j] == TAG_REMOVAL_CANDIDATE) {
 					if (i != j) {
 						//check if wee need the impact of that neighbors
 						RealCuda density_delta = bufferSet->getMass(j) * KERNEL_W(data, p_i - bufferSet->pos[j]);
@@ -969,7 +969,7 @@ void RestFLuidLoader::init(DFSPHCData& data, bool center_loaded_fluid) {
 
 	BufferFluidSurface S_simulation;
 	BufferFluidSurface S_fluid;
-	int simulation_config = 0;
+	int simulation_config = 3;
 	if (simulation_config == 0) {
 		S_simulation.setCuboid(Vector3d(0, 2.5, 0), Vector3d(0.5, 2.5, 0.5));
 		S_fluid.setCuboid(Vector3d(0, 1, 0), Vector3d(0.5, 1, 0.5));
@@ -1521,7 +1521,7 @@ void RestFLuidLoader::tagDataToSurface(SPH::DFSPHCData& data, RestFLuidLoaderInt
 	RealCuda step_density = params.step_density;
 	limit_density = density_start;
 	int i = 0;//a simple counter
-	bool use_cub_for_avg = true;//ok for some reason using cub has consequences that augent the computation time... don't ask me
+	bool use_cub_for_avg = false;//ok for some reason using cub has consequences that augent the computation time... don't ask me
 	int* outInt2 = NULL;
 	int count_active_ini = 0;
 	if (use_cub_for_avg) {
@@ -1536,12 +1536,16 @@ void RestFLuidLoader::tagDataToSurface(SPH::DFSPHCData& data, RestFLuidLoaderInt
 			count_active_ini=*(SVS_CU::get()->tagged_particles_count);
 		}
 	}
-	while (limit_density>=density_end) {
+	bool successful = false;
+	while (limit_density>density_end) {
 		 ++i;//a simple counter
 
 		timings_loop.init_step();//start point of the current step (if measuring avgs you need to call it at everystart of the loop)
 		
 		limit_density -= step_density;
+		if (limit_density < density_end) {
+			limit_density = density_end-0.001;
+		}
 		int count_saved = 0;
 		//I will use the kappa buffer to compute the avg density of active particles
 		if (use_cub_for_avg) {
@@ -1558,6 +1562,8 @@ void RestFLuidLoader::tagDataToSurface(SPH::DFSPHCData& data, RestFLuidLoaderInt
 		int count_to_rmv_this_step = *outInt;
 
 		timings_loop.time_next_point();//time
+
+		//check the avg
 		{
 			RealCuda avg_density = 0;
 			int count = 0;
@@ -1607,6 +1613,8 @@ void RestFLuidLoader::tagDataToSurface(SPH::DFSPHCData& data, RestFLuidLoaderInt
 				timings_loop.time_next_point();//time
 				timings_loop.end_step();
 
+				successful = true;
+
 				//and end the iteration process
 				break;
 			}
@@ -1615,7 +1623,7 @@ void RestFLuidLoader::tagDataToSurface(SPH::DFSPHCData& data, RestFLuidLoaderInt
 		timings_loop.time_next_point();//time
 
 		//let's try to not remove candidates that are too clase to low points
-		bool invert_save = true;
+		bool invert_save = false;
 		*outInt = 0;
 		if (params.useRule2){
 			//idealy this would only be run by one thread, but it would take a massive amount of time
@@ -1626,9 +1634,12 @@ void RestFLuidLoader::tagDataToSurface(SPH::DFSPHCData& data, RestFLuidLoaderInt
 				int numBlocks = calculateNumBlocks(count_potential_fluid);
 				if (invert_save) {
 					save_usefull_candidates_kernel_v2 << <numBlocks, BLOCKSIZE >> > (data, backgroundFluidBufferSet->gpu_ptr, outInt, min_density, count_potential_fluid);
-					convert_tag_kernel << <numBlocks, BLOCKSIZE >> > (backgroundFluidBufferSet->gpu_ptr, TAG_SAVE, TAG_ACTIVE);
 				}else{
 					save_usefull_candidates_kernel<true> << <numBlocks, BLOCKSIZE >> > (data, backgroundFluidBufferSet->gpu_ptr, outInt, min_density, count_potential_fluid);
+				}
+				if (show_debug) 
+				{
+					convert_tag_kernel << <numBlocks, BLOCKSIZE >> > (backgroundFluidBufferSet->gpu_ptr, TAG_SAVE, TAG_ACTIVE);
 				}
 			}
 			else {
@@ -1777,6 +1788,35 @@ void RestFLuidLoader::tagDataToSurface(SPH::DFSPHCData& data, RestFLuidLoaderInt
 	timings.time_next_point();//time 
 	timings_loop.recap_timings();//writte timming to cout
 
+	//if we had to use the last iter of the loop because we were never successful before it
+	if (!successful) {
+		//reevaluta to see if the last iter was enougth and if not just say it
+		{
+			int numBlocks = calculateNumBlocks(count_potential_fluid);
+			evaluate_and_tag_high_density_from_buffer_kernel<false, true, true, true> << <numBlocks, BLOCKSIZE >> > (data, backgroundFluidBufferSet->gpu_ptr,
+				outInt, 4000, count_potential_fluid, outInt2);
+			gpuErrchk(cudaDeviceSynchronize());
+		}
+
+		//and compute the avg
+		RealCuda avg_density = 0;
+		int count = 0;
+		{
+			for (int j = 0; j < count_potential_fluid; ++j) {
+				if (backgroundFluidBufferSet->neighborsDataSet->cell_id[j] == TAG_ACTIVE ||
+					backgroundFluidBufferSet->neighborsDataSet->cell_id[j] == TAG_REMOVAL_CANDIDATE) {
+					avg_density += backgroundFluidBufferSet->density[j];
+					count++;
+				}
+			}
+			avg_density /= count;
+		}
+		//std::cout << "check avg density avg/count: " << avg_density << "   " << count << std::endl;
+
+		if ((avg_density - data.density0) > 1) {
+			std::cout << "Never reached the desired average density current/target: " << avg_density << "  " << data.density0 << std::endl;
+		}
+	}
 
 	//let's do one last test by regoing through every particle tagged for removal and chcking if there arent some that I can get back
 	//currently I save every particle that is essencial already so I don't need to care about this

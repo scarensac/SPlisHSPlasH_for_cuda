@@ -279,6 +279,12 @@ void UnifiedParticleSet::updateDynamicBodiesParticles(T* particleObj) {
 			q.fromEulerMatrix(rotation_matrix);
 		
 			updateDynamicBodiesParticles(position, velocity, q, angular_vel);
+
+			//*
+			static Vector3d angles(0);
+			angles += 0.003*angular_vel;
+			std::cout << "Pos obj: " << position.toString() <<"   "<<angular_vel.toString()<<"  "<<angles.toString()<< std::endl;
+			//*/
 		}
 	}
 
@@ -1114,7 +1120,7 @@ void DFSPHCData::read_fluid_from_file(bool load_velocities) {
 
 	std::cout << "loading fluid start: " << load_velocities << std::endl;
 
-	bool load_with_surface_method = true;
+	bool load_with_surface_method = false;
 
 	if (load_with_surface_method) {
 		RestFLuidLoaderInterface::init(*this, true);
