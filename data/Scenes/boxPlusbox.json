@@ -37,11 +37,11 @@
 			"mapResolution": [40,30,15]
 		},
 		{
-			"geometryFile": "../models/sphere_d1m.obj",
-			"density": 550, 
+			"geometryFile": "../models/UnitBox.obj",
+			"density": 400, 
 			"translation": [0,2,0],
 			"rotationAxis": [1, 0, 0],
-			"rotationAngle": 0,
+			"rotationAngle": 0.785,
 			"scale": [1, 1, 1],
 			"color": [0.1, 0.4, 0.6, 1.0], 
 			"isDynamic": true,
