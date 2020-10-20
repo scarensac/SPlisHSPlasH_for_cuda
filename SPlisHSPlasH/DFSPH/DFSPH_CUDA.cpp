@@ -101,7 +101,7 @@ void DFSPHCUDA::step()
 
         //*
             RestFLuidLoaderInterface::StabilizationParameters params;
-            params.method = 0;
+            params.method = 1;
             params.max_iterEval = 59;
 
             if (params.method == 0) {
@@ -113,7 +113,7 @@ void DFSPHCUDA::step()
                 
             }
             else if (params.method == 1) {
-                params.stabilizationItersCount = 0;
+                params.stabilizationItersCount = 30;
                 params.timeStep = 0.0001;
                 RealCuda delta_s = m_data.particleRadius * 2;
                 //when based on gamma gradiant fast evolution on a single perturbated particle
@@ -131,7 +131,7 @@ void DFSPHCUDA::step()
                 //values used when pushing the particles from the border
                 //params.p_b = 100;//25000 * delta_s;
                 //values used when using the attraction model
-                params.p_b = 10;//25000 * delta_s;
+                params.p_b = 100;//25000 * delta_s;
                 //deactivate
                 //params.p_b = 0;//25000 * delta_s;
                 
@@ -141,7 +141,7 @@ void DFSPHCUDA::step()
                 //params.k_r = 1;//150 * delta_s * delta_s * 0.03 / 3200.0;
 
                 //params.k_r *= 100;
-                params.p_b *= 20;
+                //params.p_b *= 20;
 
                 //zeta as a pure damping coefficient directly on the velocity
                 params.zeta = 1;
@@ -150,7 +150,7 @@ void DFSPHCUDA::step()
                 //params.zeta = 2 * (SQRT_MACRO_CUDA(delta_s) + 1) / delta_s;
             }
             
-            int run_type = 2;
+            int run_type = 0;
             if (run_type==0) {
 
                 if (params.method == 0) {
@@ -365,7 +365,7 @@ void DFSPHCUDA::step()
                 std::vector<RealCuda> vect_eval_1;
                 std::vector<RealCuda> vect_eval_2;
                 std::vector<RealCuda> vect_eval_3;
-                params.stabilizationItersCount = 6;
+                params.stabilizationItersCount = 1;
 
                 for (int i = 0; i < count_eval; ++i) {
                     //RestFLuidLoaderInterface::init(m_data);
