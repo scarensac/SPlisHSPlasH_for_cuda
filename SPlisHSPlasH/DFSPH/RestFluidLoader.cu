@@ -969,7 +969,7 @@ void RestFLuidLoader::init(DFSPHCData& data, bool center_loaded_fluid) {
 
 	BufferFluidSurface S_simulation;
 	BufferFluidSurface S_fluid;
-	int simulation_config = 3;
+	int simulation_config = 0;
 	if (simulation_config == 0) {
 		S_simulation.setCuboid(Vector3d(0, 2.5, 0), Vector3d(0.5, 2.5, 0.5));
 		S_fluid.setCuboid(Vector3d(0, 1, 0), Vector3d(0.5, 1, 0.5));
@@ -1014,7 +1014,23 @@ void RestFLuidLoader::init(DFSPHCData& data, bool center_loaded_fluid) {
 
 	}
 	else if(simulation_config == 4) {
+		//box plus box
+		S_simulation.setCuboid(Vector3d(0, 2.5, 0), Vector3d(1.75, 2.5, 1.75));
+		S_fluid.setCuboid(Vector3d(0, 1.5, 0), Vector3d(1.75, 1.5, 1.75));
 
+		//add a rotated box
+		BufferFluidSurface S_obj;
+		std::string obj_file_name = data.fluid_files_folder + "../models/2mBox_rotated45.obj";
+		S_obj.setMesh(obj_file_name);
+		S_obj.setReversedSurface(true);
+		S_obj.move(Vector3d(0, 3, 0));
+
+		S_simulation_aggr.addSurface(S_obj);
+		S_fluid_aggr.addSurface(S_obj);
+
+		S_simulation_aggr.setIsUnion(false);
+		S_fluid_aggr.setIsUnion(false);
+		
 	}
 	else {
 		exit(5986);
@@ -1235,7 +1251,7 @@ void RestFLuidLoader::tagDataToSurface(SPH::DFSPHCData& data, RestFLuidLoaderInt
 	//although it might now be but it will do for now
 	///TODO: For this process I only use one unified particle set, as surch, I could just work inside the actual fluid buffer
 	///TODO:  ^	NAH no need for that  
-	bool show_debug = false;
+	bool show_debug = true;
 	bool send_result_to_file = false;
 
 	//*

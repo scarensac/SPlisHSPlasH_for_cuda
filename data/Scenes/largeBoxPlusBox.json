@@ -28,7 +28,7 @@
 			"translation": [0,2.5,0],
 			"rotationAxis": [1, 0, 0],
 			"rotationAngle": 0,
-			"scale": [2, 5, 2],
+			"scale": [3.5, 5, 3.5],
 			"color": [0.1, 0.4, 0.6, 1.0], 
 			"isDynamic": false,
 			"isWall": true,
@@ -37,9 +37,9 @@
 			"mapResolution": [40,30,15]
 		},
 		{
-			"geometryFile": "../models/UnitBox_rotated45.obj",
+			"geometryFile": "../models/2mBox_rotated45.obj",
 			"density": 550, 
-			"translation": [0,2,0],
+			"translation": [0,3,0],
 			"rotationAxis": [1, 0, 0],
 			"rotationAngle": 0,
 			"scale": [1, 1, 1],
