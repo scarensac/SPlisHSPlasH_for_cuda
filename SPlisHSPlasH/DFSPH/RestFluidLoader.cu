@@ -1139,13 +1139,29 @@ void RestFLuidLoader::init(DFSPHCData& data, bool center_loaded_fluid, int air_p
 
 	}
 	else if (simulation_config == 4) {
+		//box plus box
+		S_simulation.setCuboid(Vector3d(0, 2.5, 0), Vector3d(1.75, 2.5, 1.75));
+		S_fluid.setCuboid(Vector3d(0, 1.5, 0), Vector3d(1.75, 1.5, 1.75));
 
+		//add a rotated box
+		BufferFluidSurface S_obj;
+		std::string obj_file_name = data.fluid_files_folder + "../models/2mBox_rotated45.obj";
+		S_obj.setMesh(obj_file_name);
+		S_obj.setReversedSurface(true);
+		S_obj.move(Vector3d(0, 3, 0));
+
+		S_simulation_aggr.addSurface(S_obj);
+		S_fluid_aggr.addSurface(S_obj);
+
+		S_simulation_aggr.setIsUnion(false);
+		S_fluid_aggr.setIsUnion(false);
 	}
 	else if (simulation_config == 5) {
 
 		S_simulation.setCuboid(Vector3d(0, 2.5, 0), Vector3d(1, 2.5, 1));
 		S_fluid.setCuboid(Vector3d(0, 1, 0), Vector3d(1, 1, 1));
 		//S_fluid.setPlane(Vector3d(0, 2, 0), Vector3d(0, -1, 0));
+		
 	}
 	else {
 		exit(5986);

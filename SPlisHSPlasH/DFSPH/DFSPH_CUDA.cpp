@@ -367,6 +367,7 @@ void DFSPHCUDA::step()
                 std::vector<RealCuda> vect_eval_3;
                 params.stabilizationItersCount = 1;
 
+				std::chrono::steady_clock::time_point tp2 = std::chrono::steady_clock::now();
                 for (int i = 0; i < count_eval; ++i) {
                     //RestFLuidLoaderInterface::init(m_data);
                     //RestFLuidLoaderInterface::initializeFluidToSurface(m_data);
@@ -389,9 +390,10 @@ void DFSPHCUDA::step()
                 }
                 avg_eval /= count_eval;
 
-                std::chrono::steady_clock::time_point tp2 = std::chrono::steady_clock::now();
-                RealCuda time_opti = std::chrono::duration_cast<std::chrono::nanoseconds> (tp2 - tp1).count() / 1000000000.0f;
-                std::cout << "fluid initialization finished and took (in s): " << time_opti << std::endl;
+				std::chrono::steady_clock::time_point tp3 = std::chrono::steady_clock::now();
+				RealCuda time_ini = std::chrono::duration_cast<std::chrono::nanoseconds> (tp2 - tp1).count() / 1000000000.0f;
+				RealCuda time_opti = std::chrono::duration_cast<std::chrono::nanoseconds> (tp3 - tp2).count() / 1000000000.0f;
+                std::cout << "fluid initialization finished and took (in s) ini/opti: " <<time_ini<<"  "<< time_opti << std::endl;
 
                 for (int i = 0; i < vect_eval_1.size(); ++i) {
                     std::cout << tagging_params.step_density << "  " << count_eval - i << "  " << vect_eval_1[i] <<
@@ -403,6 +405,8 @@ void DFSPHCUDA::step()
                     std::cout << "stabilisation evaluation (avg/max): " << avg_eval << "    " << max_eval << std::endl;
 
                 }
+
+				std::cout << "count particles after init: " << m_data.fluid_data->numParticles << std::endl;
             }
             else if (run_type == 3) {
                 //this one will try to slightly improve the particle distribution befor going for the simulation
