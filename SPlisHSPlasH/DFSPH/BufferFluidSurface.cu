@@ -763,7 +763,7 @@ public:
 		}
 		default: {
 			dist= distanceToSurface(p) * ((isinside(p)) ? 1 : -1);
-		}//it should NEVER reach here
+		}
 		}
 
 		
@@ -874,20 +874,32 @@ public:
 	}
 
 	//WARNING curretnly this can only be used for intersection type of aggregation 
-	//It will return a positive number inside the aggregation and 0 if the point is outside
+	//It will return a positive number inside the aggregation and a negative number outside (note I'm not sure the negative number works
+	//the template parameters can be used to skip the inside/outide computations (and the system will return 0 in this case)
 	///TODO see if there is any way to handle other cases
-	FUNCTION RealCuda distance(Vector3d p) {
+	template <bool compute_inside, bool compute_outside>
+	FUNCTION RealCuda distanceSigned(Vector3d p) {
 		RealCuda dist = 0;//if the point is outide the reported distance will be 0
 		if (isinside(p)) {
-			dist = surfaces[0].distanceToSurface(p);
-			for (int i = 1; i < numSurface; ++i)
-			{
-				RealCuda cur_dist = surfaces[i].distanceToSurface(p);
-				if (dist > cur_dist) {
-					dist = cur_dist;
+			if (compute_inside) {
+				dist = surfaces[0].distanceToSurface(p);
+				for (int i = 1; i < numSurface; ++i)
+				{
+					RealCuda cur_dist = surfaces[i].distanceToSurface(p);
+					if (dist > cur_dist) {
+						dist = cur_dist;
+					}
 				}
+			}
+		}
+		else {
+			if (compute_outside) {
+				//nah I have no idea on how to compute that ...
+				//I would have to project the point on the survface wich would take a fucking long time
 			}
 		}
 		return dist;
 	}
+
+	
 };

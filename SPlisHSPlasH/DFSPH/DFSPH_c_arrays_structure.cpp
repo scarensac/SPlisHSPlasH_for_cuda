@@ -1120,7 +1120,7 @@ void DFSPHCData::read_fluid_from_file(bool load_velocities) {
 
 	std::cout << "loading fluid start: " << load_velocities << std::endl;
 
-	bool load_with_surface_method = false;
+	bool load_with_surface_method = true;
 
 	if (load_with_surface_method) {
 		RestFLuidLoaderInterface::init(*this, true);
@@ -1162,8 +1162,8 @@ void DFSPHCData::read_fluid_from_file(bool load_velocities) {
 		}
 
 		if (true) {
+			paramsTagging.useRule2 = false;
 			paramsTagging.useRule3 = true;
-			paramsTagging.useRule2 = true;
 			paramsTagging.step_density = 25;
 			RestFLuidLoaderInterface::initializeFluidToSurface(*this, true, paramsTagging, true);
 		}

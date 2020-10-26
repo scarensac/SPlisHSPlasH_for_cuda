@@ -227,6 +227,8 @@ __global__ void DFSPH_divergence_warmstart_init_kernel(SPH::DFSPHCData m_data, S
 			(particleSet->neighborsDataSet->cell_id[i] != TAG_ACTIVE_NEIGHBORS)) {
 			return;
 		}
+	}else if (m_data.restriction_mode == 2) {
+		if (i >= (m_data.count_active + m_data.count_active_neighbors)) { return; }
 	}
 
 	if (ignore_when_no_fluid_near) {
@@ -494,6 +496,8 @@ template<bool warmstart> __global__ void DFSPH_divergence_compute_kernel(SPH::DF
 		if ((particleSet->neighborsDataSet->cell_id[i] != TAG_ACTIVE)) {
 			return;
 		}
+	}else if (m_data.restriction_mode == 2) {
+		if (i >= (m_data.count_active)) { return; }
 	}
 
 	if (warmstart) {
@@ -616,6 +620,9 @@ __global__ void DFSPH_divergence_init_kernel(SPH::DFSPHCData m_data, SPH::Unifie
 			return;
 		}
 	}
+	else if (m_data.restriction_mode == 2) {
+		if (i >= (m_data.count_active + m_data.count_active_neighbors)) { return; }
+	}
 
 	{
 #ifdef USE_WARMSTART_V
@@ -727,6 +734,9 @@ __global__ void DFSPH_divergence_loop_end_kernel(SPH::DFSPHCData m_data, SPH::Un
 			return;
 		}
 	}
+	else if (m_data.restriction_mode == 2) {
+		if (i >= (m_data.count_active + m_data.count_active_neighbors)) { return; }
+	}
 
 	computeDensityChange(m_data, particleSet, i);
 	//atomicAdd(avg_density_err, m_data.densityAdv[i]);
@@ -776,10 +786,6 @@ int cuda_divergenceSolve(SPH::DFSPHCData& m_data, const unsigned int maxIter, co
 	int numParticles = m_data.fluid_data[0].numParticles;
 	const RealCuda density0 = m_data.density0;
 
-
-	if (m_data.restriction_mode == 1 || m_data.restriction_mode == 2) {
-	//	numParticles = m_data.count_active + m_data.count_active_neighbors;
-	}
 
 	std::chrono::steady_clock::time_point start = std::chrono::steady_clock::now();
 
@@ -958,6 +964,10 @@ template<bool warmstart> __global__ void DFSPH_pressure_compute_kernel(SPH::DFSP
 			return;
 		}
 	}
+	else if (m_data.restriction_mode == 2) {
+		if (i >= (m_data.count_active)) { return; }
+	}
+
 	pressureSolveParticle<warmstart>(m_data, particleSet, i);
 
 }
@@ -1207,6 +1217,9 @@ __global__ void DFSPH_pressure_init_kernel(SPH::DFSPHCData m_data, SPH::UnifiedP
 			return;
 		}
 	}
+	else if (m_data.restriction_mode == 2) {
+		if (i >= (m_data.count_active + m_data.count_active_neighbors)) { return; }
+	}
 
 #ifdef USE_WARMSTART
 	particleSet->kappa[i] = 0;
@@ -1250,6 +1263,9 @@ __global__ void DFSPH_pressure_loop_end_kernel(SPH::DFSPHCData m_data, SPH::Unif
 			(particleSet->neighborsDataSet->cell_id[i] != TAG_ACTIVE_NEIGHBORS)) {
 			return;
 		}
+	}
+	else if (m_data.restriction_mode == 2) {
+		if (i >= (m_data.count_active + m_data.count_active_neighbors)) { return; }
 	}
 
 #ifdef USE_POSITION_BASED_DENSITY_CONTRAINT
@@ -1316,10 +1332,6 @@ int cuda_pressureSolve(SPH::DFSPHCData& m_data, const unsigned int m_maxIteratio
 	const RealCuda density0 = m_data.density0;
 	int numParticles = (int)m_data.fluid_data[0].numParticles;
 	RealCuda avg_density_err = 0.0;
-
-	if (m_data.restriction_mode == 1 || m_data.restriction_mode == 2) {
-	//	numParticles = m_data.count_active + m_data.count_active_neighbors;
-	}
 
 	std::chrono::steady_clock::time_point start = std::chrono::steady_clock::now();
 
@@ -1406,6 +1418,9 @@ __global__ void DFSPH_viscosityXSPH_kernel(SPH::DFSPHCData m_data, SPH::UnifiedP
 		if ((particleSet->neighborsDataSet->cell_id[i] != TAG_ACTIVE)) {
 			return;
 		}
+	}
+	else if (m_data.restriction_mode == 2) {
+		if (i >= (m_data.count_active)) { return; }
 	}
 
 	//I set the gravitation directly here to lover the number of kernels
@@ -2477,6 +2492,14 @@ __global__ void DFSPH_neighborsSearchSelf_kernel(SPH::DFSPHCData data, SPH::Unif
 	int i = blockIdx.x * blockDim.x + threadIdx.x;
 	if (i >= particleSet_self->numParticles) { return; }
 
+	if (data.restriction_mode == 1) {
+		int tag = particleSet_self->neighborsDataSet->cell_id[i];
+		if (tag != TAG_ACTIVE && tag != TAG_ACTIVE_NEIGHBORS) {
+			return;
+		}
+	}else if (data.restriction_mode == 2) {
+		if (i >= (data.count_active + data.count_active_neighbors)) { return; }
+	}
 
 	ITER_NEIGHBORS_INIT_FROM_STRUCTURE(data, particleSet_self, i);
 
@@ -2816,8 +2839,13 @@ void cuda_neighborsSearch(SPH::DFSPHCData& data, bool need_sort) {
 }
 
 void cuda_updateNeighborsStorage(SPH::DFSPHCData& data, SPH::UnifiedParticleSet& particleSet) {
-	int numBlocks = calculateNumBlocks(particleSet.numParticles);
-	
+	int count_particles = particleSet.numParticles;
+	if (data.restriction_mode == 2) {
+		count_particles = (data.count_active + data.count_active_neighbors);
+	}
+
+	int numBlocks = calculateNumBlocks(count_particles);
+
 	//*
 	DFSPH_neighborsSearchSelf_kernel<< <numBlocks, BLOCKSIZE >> > (data, particleSet.gpu_ptr,
 			data.boundaries_data->gpu_ptr, data.vector_dynamic_bodies_data_cuda, data.numDynamicBodies);
@@ -2837,6 +2865,9 @@ __global__ void DFSPH_update_vel_kernel(SPH::DFSPHCData m_data, SPH::UnifiedPart
 		if ((particleSet->neighborsDataSet->cell_id[i] != TAG_ACTIVE)) {
 			return;
 		}
+	}
+	else if (m_data.restriction_mode == 2) {
+		if (i >= (m_data.count_active)) { return; }
 	}
 
 	particleSet->vel[i] += m_data.h * particleSet->acc[i];
@@ -2913,6 +2944,9 @@ __global__ void DFSPH_update_pos_kernel(SPH::DFSPHCData data, SPH::UnifiedPartic
 		if ((particleSet->neighborsDataSet->cell_id[i] != TAG_ACTIVE)) {
 			return;
 		}
+	}
+	else if (data.restriction_mode == 2) {
+		if (i >= (data.count_active)) { return; }
 	}
 
 	if (data.damp_borders) {

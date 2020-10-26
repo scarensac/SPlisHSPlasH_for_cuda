@@ -51,6 +51,7 @@ namespace SPH {
 			int method;
 			int stabilizationItersCount;
 			RealCuda timeStep;
+			bool reloadFluid;
 
 			//those are parameters for when using the SPH simulation step to stabilize the fluid
 			bool useDivergenceSolver;
@@ -106,6 +107,7 @@ namespace SPH {
 				method = -1;
 				stabilizationItersCount = 5;
 				timeStep = 0.003;
+				reloadFluid = true;
 
 				useDivergenceSolver = true;
 				useDensitySolver = true;

@@ -1242,6 +1242,15 @@ __global__ void tag_particles_outside_bounding_box_kernel(SPH::DFSPHCData data, 
 	int i = blockIdx.x * blockDim.x + threadIdx.x;
 	if (i >= particleSet->numParticles) { return; }
 
+	if (data.restriction_mode == 1) {
+		if ((particleSet->neighborsDataSet->cell_id[i] != TAG_ACTIVE)) {
+			return;
+		}
+	}
+	else if (data.restriction_mode == 2) {
+		if (i >= (data.count_active)) { return; }
+	}
+
 	Vector3d pos = particleSet->pos[i];
 
 
@@ -1256,11 +1265,12 @@ __global__ void tag_particles_outside_bounding_box_kernel(SPH::DFSPHCData data, 
 		}
 		
 		if (tagForRemoval) {
-			particleSet->neighborsDataSet->cell_id[i] = 25000000;
+			particleSet->neighborsDataSet->cell_id[i] = TAG_REMOVAL;
 		}
 	}
 	else if (tagForRemoval) {	
-		particleSet->neighborsDataSet->cell_id[i] = 0;
+		//if I keep the particles I'll tag them with their position so that the particle order is maintained
+		particleSet->neighborsDataSet->cell_id[i] = i;
 	}
 
 	
