@@ -497,11 +497,11 @@ __global__ void evaluate_and_tag_high_density_from_buffer_kernel(SPH::DFSPHCData
 		
 	}
 	//*/
-	/*
-	if (density>1025) {
+	//*
+	if (density>1005) {
 		bufferSet->color[i] = Vector3d(1, 0, 0);
 	}
-	if (density < 975) {
+	if (density < 990) {
 		bufferSet->color[i] = Vector3d(0, 1, 0);
 	}
 	/*
@@ -1237,7 +1237,73 @@ __global__ void convert_tag_kernel(SPH::UnifiedParticleSet* particleSet, int tag
 	}
 }
 
+void show_extensive_densitu_information(SPH::UnifiedParticleSet* particleSet, int count_fluid_particles) {
+	{
+		int numBlocks = calculateNumBlocks(count_fluid_particles);
+		evaluate_and_tag_high_density_from_buffer_kernel<false, true, true, true> << <numBlocks, BLOCKSIZE >> > (data, particleSet->gpu_ptr,
+			outInt, 4000, count_fluid_particles, NULL);
+		gpuErrchk(cudaDeviceSynchronize());
+	}
 
+	{
+		RealCuda min_density = 10000;
+		RealCuda max_density = 0;
+		RealCuda avg_density = 0;
+		RealCuda min_density_all = 10000;
+		RealCuda max_density_all = 0;
+		RealCuda avg_density_all = 0;
+		RealCuda min_density_neighbors = 10000;
+		RealCuda max_density_neighbors = 0;
+		RealCuda avg_density_neighbors = 0;
+		RealCuda min_density_neighbors2 = 10000;
+		RealCuda max_density_neighbors2 = 0;
+		RealCuda avg_density_neighbors2 = 0;
+		int count = 0;
+		int count_all = 0;
+		int count_neighbors = 0;
+		int count_neighbors2 = 0;
+		for (int j = 0; j < count_fluid_particles; ++j) {
+			if (particleSet->neighborsDataSet->cell_id[j] != TAG_REMOVAL) {
+				avg_density_all += particleSet->density[j];
+				min_density_all = std::fminf(min_density_all, particleSet->density[j]);
+				max_density_all = std::fmaxf(max_density_all, particleSet->density[j]);
+				count_all++;
+			}
+			if (particleSet->neighborsDataSet->cell_id[j] == TAG_ACTIVE) {
+				avg_density += particleSet->density[j];
+				min_density = std::fminf(min_density, particleSet->density[j]);
+				max_density = std::fmaxf(max_density, particleSet->density[j]);
+				count++;
+			}
+			if (particleSet->neighborsDataSet->cell_id[j] == TAG_ACTIVE_NEIGHBORS) {
+				avg_density_neighbors += particleSet->density[j];
+				min_density_neighbors = std::fminf(min_density_neighbors, particleSet->density[j]);
+				max_density_neighbors = std::fmaxf(max_density_neighbors, particleSet->density[j]);
+				count_neighbors++;
+			}
+			if (particleSet->neighborsDataSet->cell_id[j] == TAG_1) {
+				avg_density_neighbors2 += particleSet->density[j];
+				min_density_neighbors2 = std::fminf(min_density_neighbors2, particleSet->density[j]);
+				max_density_neighbors2 = std::fmaxf(max_density_neighbors2, particleSet->density[j]);
+				count_neighbors2++;
+			}
+		}
+		avg_density /= count;
+		avg_density_all /= count_all;
+		avg_density_neighbors /= count_neighbors;
+		avg_density_neighbors2 /= count_neighbors2;
+		std::cout << "!!!!!!!!!!!!! before comp informations !!!!!!!!!!!!!!!" << std::endl;
+		std::cout << "                  count/avg/min/max density this iter : " << count << " / " << avg_density << " / " <<
+			min_density << " / " << max_density << std::endl;
+		std::cout << "                  count/avg/min/max         neighbors : " << count_neighbors << " / " << avg_density_neighbors << " / " <<
+			min_density_neighbors << " / " << max_density_neighbors << std::endl;
+		std::cout << "                  count/avg/min/max        neighbors2 : " << count_neighbors2 << " / " << avg_density_neighbors2 << " / " <<
+			min_density_neighbors2 << " / " << max_density_neighbors2 << std::endl;
+		std::cout << "                  count/avg/min/max               all : " << count_all << " / " << avg_density_all << " / " <<
+			min_density_all << " / " << max_density_all << std::endl;
+		std::cout << "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!" << std::endl;
+	}
+}
 
 void RestFLuidLoader::tagDataToSurface(SPH::DFSPHCData& data, RestFLuidLoaderInterface::TaggingParameters& params) {
 	if (!isInitialized()) {
@@ -1385,71 +1451,7 @@ void RestFLuidLoader::tagDataToSurface(SPH::DFSPHCData& data, RestFLuidLoaderInt
 
 	//evaluate the density and show it (only debug)
 	if(show_debug){
-		{
-			int numBlocks = calculateNumBlocks(count_potential_fluid);
-			evaluate_and_tag_high_density_from_buffer_kernel<false, true, true, true> << <numBlocks, BLOCKSIZE >> > (data, backgroundFluidBufferSet->gpu_ptr, 
-				outInt, 4000, count_potential_fluid, NULL);
-			gpuErrchk(cudaDeviceSynchronize());
-		}
-
-		{
-			RealCuda min_density = 10000;
-			RealCuda max_density = 0;
-			RealCuda avg_density = 0;
-			RealCuda min_density_all = 10000;
-			RealCuda max_density_all = 0;
-			RealCuda avg_density_all = 0;
-			RealCuda min_density_neighbors = 10000;
-			RealCuda max_density_neighbors = 0;
-			RealCuda avg_density_neighbors = 0;
-			RealCuda min_density_neighbors2 = 10000;
-			RealCuda max_density_neighbors2 = 0;
-			RealCuda avg_density_neighbors2 = 0;
-			int count = 0;
-			int count_all = 0;
-			int count_neighbors = 0;
-			int count_neighbors2 = 0;
-			for (int j = 0; j < count_potential_fluid; ++j) {
-				if (backgroundFluidBufferSet->neighborsDataSet->cell_id[j] != TAG_REMOVAL) {
-					avg_density_all += backgroundFluidBufferSet->density[j];
-					min_density_all = std::fminf(min_density_all, backgroundFluidBufferSet->density[j]);
-					max_density_all = std::fmaxf(max_density_all, backgroundFluidBufferSet->density[j]);
-					count_all++;
-				}
-				if (backgroundFluidBufferSet->neighborsDataSet->cell_id[j] == TAG_ACTIVE) {
-					avg_density += backgroundFluidBufferSet->density[j];
-					min_density = std::fminf(min_density, backgroundFluidBufferSet->density[j]);
-					max_density = std::fmaxf(max_density, backgroundFluidBufferSet->density[j]);
-					count++;
-				}
-				if (backgroundFluidBufferSet->neighborsDataSet->cell_id[j] == TAG_ACTIVE_NEIGHBORS) {
-					avg_density_neighbors += backgroundFluidBufferSet->density[j];
-					min_density_neighbors = std::fminf(min_density_neighbors, backgroundFluidBufferSet->density[j]);
-					max_density_neighbors = std::fmaxf(max_density_neighbors, backgroundFluidBufferSet->density[j]);
-					count_neighbors++;
-				}
-				if (backgroundFluidBufferSet->neighborsDataSet->cell_id[j] == TAG_1) {
-					avg_density_neighbors2 += backgroundFluidBufferSet->density[j];
-					min_density_neighbors2 = std::fminf(min_density_neighbors2, backgroundFluidBufferSet->density[j]);
-					max_density_neighbors2 = std::fmaxf(max_density_neighbors2, backgroundFluidBufferSet->density[j]);
-					count_neighbors2++;
-				}
-			}
-			avg_density /= count;
-			avg_density_all /= count_all;
-			avg_density_neighbors /= count_neighbors;
-			avg_density_neighbors2 /= count_neighbors2;
-			std::cout << "!!!!!!!!!!!!! before comp informations !!!!!!!!!!!!!!!" << std::endl;
-			std::cout << "                  count/avg/min/max density this iter : " << count << " / " << avg_density << " / " <<
-				min_density << " / " << max_density << std::endl;
-			std::cout << "                  count/avg/min/max         neighbors : " << count_neighbors << " / " << avg_density_neighbors << " / " <<
-				min_density_neighbors << " / " << max_density_neighbors << std::endl;
-			std::cout << "                  count/avg/min/max        neighbors2 : " << count_neighbors2 << " / " << avg_density_neighbors2 << " / " <<
-				min_density_neighbors2 << " / " << max_density_neighbors2 << std::endl;
-			std::cout << "                  count/avg/min/max               all : " << count_all << " / " << avg_density_all << " / " <<
-				min_density_all << " / " << max_density_all << std::endl;
-			std::cout << "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!" << std::endl;
-		}
+		show_extensive_densitu_information(backgroundFluidBufferSet, count_potential_fluid);
 	}
 	//a test to compare the code using store neighbors and on fly neighbors
 	if (false) {
@@ -3064,17 +3066,18 @@ __global__ void low_densities_attraction_kernel(SPH::DFSPHCData data, SPH::Unifi
 	}
 
 	Vector3d p_i = bufferSet->pos[i];
+	Vector3d den_i = bufferSet->density[i];
 	Vector3d F(0);
 
 	//essencially I'll push the particles relative to their contribution in the density
 	ITER_NEIGHBORS_INIT_CELL_COMPUTATION(p_i, data.getKernelRadius(), data.gridOffset);
 	ITER_NEIGHBORS_FROM_STRUCTURE_BASE(bufferSet->neighborsDataSet, bufferSet->pos,
 	
-		if (data.density0 > bufferSet->density[j]) {
+		if (den_i > bufferSet->density[j]) {
 			Vector3d x_ij = p_i - bufferSet->pos[j];
 			//F += KERNEL_W(data, x_ij) * data.boundaries_data_cuda->mass[j] * x_ij.unit();
 
-			F += -1.0f * x_ij.unit() * (data.density0 - bufferSet->density[j]);
+			F += -1.0f * x_ij.unit() * (den_i - bufferSet->density[j]);
 		}
 
 	);
@@ -3653,34 +3656,7 @@ void RestFLuidLoader::stabilizeFluid(SPH::DFSPHCData& data, RestFLuidLoaderInter
 				outInt, 4000, particleSet->numParticles, NULL);
 			gpuErrchk(cudaDeviceSynchronize());
 		}
-		{
-			RealCuda min_density = 10000;
-			RealCuda max_density = 0;
-			RealCuda avg_density = 0;
-			RealCuda min_density_all = 10000;
-			RealCuda max_density_all = 0;
-			RealCuda avg_density_all = 0;
-			int count = 0;
 
-			for (int j = 0; j < count_fluid_particles; ++j) {
-				if (particleSet->neighborsDataSet->cell_id[j] == TAG_ACTIVE)
-				{
-					avg_density += particleSet->density[j];
-					min_density = std::fminf(min_density, particleSet->density[j]);
-					max_density = std::fmaxf(max_density, particleSet->density[j]);
-					count++;
-				}
-				avg_density_all += particleSet->density[j];
-				min_density_all = std::fminf(min_density_all, particleSet->density[j]);
-				max_density_all = std::fmaxf(max_density_all, particleSet->density[j]);
-
-			}
-			avg_density_all /= count_fluid_particles;
-			avg_density /= count;
-			//*
-			std::cout << "avg/min/max density (tagged ? all fluid) : " << avg_density << "  " << min_density << "  " << max_density << " ?? "
-				<< avg_density_all << "  " << min_density_all << "  " << max_density_all << std::endl;
-		}
 
 		// a debug that show the lowest distance between two particles (with at least one beeing a fluid particle)
 		if(true) {
@@ -3727,7 +3703,7 @@ void RestFLuidLoader::stabilizeFluid(SPH::DFSPHCData& data, RestFLuidLoaderInter
 	
 		//let's try smth new
 		//I will only tag the particles that have a high enougth density
-		if (true) {
+		if (false) {
 			set_buffer_to_value<unsigned int>(data.fluid_data->neighborsDataSet->cell_id, TAG_UNTAGGED, data.fluid_data->numParticles);
 			{
 				int numBlocks = calculateNumBlocks(particleSet->numParticles);
@@ -3748,15 +3724,16 @@ void RestFLuidLoader::stabilizeFluid(SPH::DFSPHCData& data, RestFLuidLoaderInter
 		}
 
 		//retag the particles that are near the border
-		if (false) {
+		if (true) {
 			set_buffer_to_value<unsigned int>(data.fluid_data->neighborsDataSet->cell_id, TAG_UNTAGGED, data.fluid_data->numParticles);
 			{
-				int numBlocks = calculateNumBlocks(data.boundaries_data->numParticles);
+				int numBlocks = calculateNumBlocks(count_fluid_particles);
 				tag_neighborhood_kernel<true, true> << <numBlocks, BLOCKSIZE >> > (data, data.boundaries_data_cuda, particleSet->gpu_ptr, data.getKernelRadius() * 1.001, count_fluid_particles);
 				gpuErrchk(cudaDeviceSynchronize());
 			}
 		}
 
+		//this can be used to tag the n order neighborhood
 		if(false){
 			int additional_neighbors_order_tagging = 1;
 			for (int i = 0; i < (additional_neighbors_order_tagging); ++i) {
@@ -3808,31 +3785,37 @@ void RestFLuidLoader::stabilizeFluid(SPH::DFSPHCData& data, RestFLuidLoaderInter
 			data.fluid_data->neighborsDataSet->cell_id[id] = TAG_ACTIVE;
 		}
 
-		//this cna be used to tag the n order neighbor
-		if (false) {
 
-			//I'll activvate the k order neighborhood
-			int neighborhood_order = 0;
-			for (int k = 0; k < neighborhood_order; ++k) {
+		//show the min max density of taged and all
+		if(true){
+			RealCuda min_density = 10000;
+			RealCuda max_density = 0;
+			RealCuda avg_density = 0;
+			RealCuda min_density_all = 10000;
+			RealCuda max_density_all = 0;
+			RealCuda avg_density_all = 0;
+			int count = 0;
+
+			for (int j = 0; j < count_fluid_particles; ++j) {
+				if (particleSet->neighborsDataSet->cell_id[j] == TAG_ACTIVE)
 				{
-					int numBlocks = calculateNumBlocks(particleSet->numParticles);
-					tag_closest_kernel << <numBlocks, BLOCKSIZE >> > (data, particleSet->gpu_ptr, TAG_ACTIVE + 2);
-					gpuErrchk(cudaDeviceSynchronize());
+					avg_density += particleSet->density[j];
+					min_density = std::fminf(min_density, particleSet->density[j]);
+					max_density = std::fmaxf(max_density, particleSet->density[j]);
+					count++;
 				}
+				avg_density_all += particleSet->density[j];
+				min_density_all = std::fminf(min_density_all, particleSet->density[j]);
+				max_density_all = std::fmaxf(max_density_all, particleSet->density[j]);
 
-				//check and untag partile that are air particles
-				for (int i = 0; i < count_fluid_particles; i++) {
-					if (data.fluid_data->neighborsDataSet->cell_id[i] == (TAG_ACTIVE + 1)) {
-						data.fluid_data->neighborsDataSet->cell_id[i] = TAG_ACTIVE;
-					}
-				}
-				for (int i = count_fluid_particles; i < particleSet->numParticles; i++) {
-					data.fluid_data->neighborsDataSet->cell_id[i] = 0;
-				}
 			}
+			avg_density_all /= count_fluid_particles;
+			avg_density /= count;
+			//*
+			std::cout << "avg/min/max density (tagged ? all fluid) : " << avg_density << "  " << min_density << "  " << max_density << " ?? "
+				<< avg_density_all << "  " << min_density_all << "  " << max_density_all << std::endl;
 		}
 
-		
 
 
 		//evaluate gama at the start for debug purposes
@@ -3997,7 +3980,7 @@ void RestFLuidLoader::stabilizeFluid(SPH::DFSPHCData& data, RestFLuidLoaderInter
 			// to reevaluate the density I need to rebuild the neighborhood
 			//though this would override the tagging I'm using
 			//so I nee to backup the tagging and reload it after
-			bool use_precomputed_tag = false;
+			bool use_precomputed_tag = true;
 			if(use_precomputed_tag){
 				static unsigned int* tag_array = NULL;
 				if (tag_array == NULL) {
@@ -4064,6 +4047,7 @@ void RestFLuidLoader::stabilizeFluid(SPH::DFSPHCData& data, RestFLuidLoaderInter
 
 			//the thing that push the particles from the border
 			//it is too risky as it will cause superpositions 
+			//and anyway there may be gap in the layer near the boundary
 			if (false) {
 				int numBlocks = calculateNumBlocks(count_fluid_particles);
 				push_particles_from_boundaries_kernel<true> << <numBlocks, BLOCKSIZE >> > (data, particleSet->gpu_ptr, count_fluid_particles,p_b);
