@@ -32,6 +32,14 @@ SegmentedTiming::SegmentedTiming(std::string timer_name_i, std::vector<std::stri
 
 void SegmentedTiming::init_step(){
 	if (active) {
+		if (saving) {
+			std::ostringstream oss;
+			oss << "SegmentedTiming::init_step: " + timer_name + " started a new step before finishing the previous one... (previous_step_sompletion/expected)" <<
+				cur_point << "/" << timepoints.size();
+			std::string msg = oss.str();
+			std::cout << msg << std::endl;
+			throw(msg);
+		}
 		cur_point=0;
 		time_next_point();
 		saving=true;
@@ -45,8 +53,15 @@ void SegmentedTiming::time_next_point(){
 	}
 }
 
-void SegmentedTiming::end_step(){
+void SegmentedTiming::end_step(bool force_ending){
 	if (active) {
+		if (force_ending) {
+			while (cur_point != timepoints.size())
+			{
+				time_next_point();
+			}
+		}
+
 		if(cur_point!=timepoints.size()){
 			std::ostringstream oss;
 			oss << "SegmentedTiming::end_step: " + timer_name + " nbr of registered sampling do not fit the nbr of call (current/expected) " << 

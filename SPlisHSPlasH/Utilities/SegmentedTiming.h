@@ -56,7 +56,7 @@ namespace SPH
 		void time_next_point();
 		
 		//call that every end of timming
-		void end_step();
+		void end_step(bool force_ending=false);
 	
 		//this is if you want to do the timmings dynamically
 		//if you want to be able to know the average values use the satically set version with the contructor
@@ -69,7 +69,7 @@ namespace SPH
 
 		void init_step() {}
 		void time_next_point() {}
-		void end_step() {}
+		void end_step(bool force_ending = false) {}
 		void add_timestamp(std::string name) {}
 		void recap_timings() {}
 #endif

@@ -743,6 +743,7 @@ DFSPHCData::DFSPHCData() {
 	restriction_mode = 0;
 	count_active=0;
 	count_active_neighbors=0;
+	true_particle_count = -1;
 
 	allocate_DFSPHCData_base_cuda(*this);
 

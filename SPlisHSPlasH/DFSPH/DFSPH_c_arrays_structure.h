@@ -377,6 +377,9 @@ public:
     int restriction_mode;
     unsigned int count_active;
     unsigned int count_active_neighbors;
+    //this is used when trying to simulate only the particles near the border while keeping the other particles in a separated buffer
+    //I need an int and not an unsigned because I want to be able to put a negative value by default
+    int true_particle_count;
 
     DFSPHCData();
     DFSPHCData(FluidModel *model);

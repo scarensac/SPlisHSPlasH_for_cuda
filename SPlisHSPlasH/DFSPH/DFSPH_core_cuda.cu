@@ -785,7 +785,9 @@ int cuda_divergenceSolve(SPH::DFSPHCData& m_data, const unsigned int maxIter, co
 	const RealCuda h = m_data.h;
 	int numParticles = m_data.fluid_data[0].numParticles;
 	const RealCuda density0 = m_data.density0;
-
+	if (m_data.true_particle_count >= 0) {
+		numParticles = m_data.true_particle_count;
+	}
 
 	std::chrono::steady_clock::time_point start = std::chrono::steady_clock::now();
 
@@ -1331,6 +1333,10 @@ RealCuda cuda_pressure_loop_end(SPH::DFSPHCData& data) {
 int cuda_pressureSolve(SPH::DFSPHCData& m_data, const unsigned int m_maxIterations, const RealCuda m_maxError) {
 	const RealCuda density0 = m_data.density0;
 	int numParticles = (int)m_data.fluid_data[0].numParticles;
+	if (m_data.true_particle_count >= 0) {
+		numParticles = m_data.true_particle_count;
+	}
+
 	RealCuda avg_density_err = 0.0;
 
 	std::chrono::steady_clock::time_point start = std::chrono::steady_clock::now();

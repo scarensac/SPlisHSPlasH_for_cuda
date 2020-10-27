@@ -439,7 +439,7 @@ void DFSPHCUDA::step()
 
                     params.maxErrorD = 0.05;
 
-                    params.useDivergenceSolver = true;
+                    params.useDivergenceSolver = false;
                     params.useExternalForces = true;
 
                     params.preUpdateVelocityDamping = true;
