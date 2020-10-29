@@ -9,6 +9,7 @@
 #define TAG_2 1002
 #define TAG_3 1003
 #define TAG_AIR 30000
+#define TAG_AIR_ACTIVE_NEIGHBORS 30002
 
 #define TAG_UNTAGGED 10000
 

@@ -11,6 +11,8 @@
 #include <fstream>
 #include <sstream>
 #include <cmath>
+#include <chrono>
+#include <thread>
 
 // BENDER2019_BOUNDARIES includes
 #include "SPlisHSPlasH/BoundaryModel_Bender2019.h"
@@ -225,8 +227,6 @@ void DFSPHCUDA::step()
                 if (count_eval > 1) {
                     std::cout << "stabilisation evaluation (avg/max): " << avg_eval << "    " << max_eval << std::endl;
                 }
-                count_steps++;
-                return;
                 //exit(0); 
             }
             else if (run_type == 1) {
@@ -439,7 +439,7 @@ void DFSPHCUDA::step()
 
                     params.maxErrorD = 0.05;
 
-                    params.useDivergenceSolver = false;
+                    params.useDivergenceSolver = true;
                     params.useExternalForces = true;
 
                     params.preUpdateVelocityDamping = true;
@@ -448,12 +448,14 @@ void DFSPHCUDA::step()
                     params.stabilizationItersCount = 6;
 
                     params.reduceDampingAndClamping = true;
-                    params.reduceDampingAndClamping_val = std::powf(0.1f / params.preUpdateVelocityDamping_val, 1.0f / (params.stabilizationItersCount-1));
+                    params.reduceDampingAndClamping_val = std::powf(0.2f / params.preUpdateVelocityDamping_val, 1.0f / (params.stabilizationItersCount-1));
                     
                     params.clearWarmstartAfterStabilization = false;
+                    params.maxIterD = 10;
                 }
-
-                params.reloadFluid = false;
+                params.runCheckParticlesPostion = true;
+                params.interuptOnLostParticle = false;
+                params.reloadFluid = true;
                 RestFLuidLoaderInterface::stabilizeFluid(m_data, params);
 
 
@@ -544,13 +546,21 @@ void DFSPHCUDA::step()
                 }
 
             }
+
+
+            std::this_thread::sleep_for(std::chrono::nanoseconds(10));
+            std::this_thread::sleep_until(std::chrono::system_clock::now() + std::chrono::seconds(1));
+
+            count_steps++;
+            return;
         }
 
 
 
+
 #ifdef OCEAN_BOUNDARIES_PROTOTYPE
-    bool moving_borders = false;
-    static int count_moving_steps = 0;
+        bool moving_borders = false;
+        static int count_moving_steps = 0;
         //*
 
     //test boundries height control

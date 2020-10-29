@@ -335,6 +335,11 @@ __global__ void DFSPH_divergence_warmstart_init_kernel(SPH::DFSPHCData m_data, S
 		//////////////////////////////////////////////////////////////////////////
 		particleSet->factor[i] = (-m_data.invH / (MAX_MACRO_CUDA(sum_grad_p_k, m_eps)));
 		particleSet->density[i] = density;
+		/*
+		if ((particleSet->neighborsDataSet->cell_id[i] == TAG_ACTIVE_NEIGHBORS)) {
+			printf("mass/height/density: %f %f %f\n", particleSet->mass[i], xi.y, density);
+		}
+		//*/
 
 		//end the density adv computation
 #ifdef STORE_PARTICLE_NEIGHBORS
@@ -2493,7 +2498,7 @@ __global__ void DFSPH_neighborsSearch_kernel(SPH::DFSPHCData data, SPH::UnifiedP
 //also when stored the stored index will obviously use the same compression method as the one used for the dynamic bodies in the noraml execution
 __global__ void DFSPH_neighborsSearchSelf_kernel(SPH::DFSPHCData data, SPH::UnifiedParticleSet* particleSet_self,
 	SPH::UnifiedParticleSet* particleSet_other,
-	SPH::UnifiedParticleSet* particleSet_vect_additionals, int nb_additional_bodies) {
+	SPH::UnifiedParticleSet* particleSet_vect_additionals, int nb_additional_bodies, int iter_debug=-1) {
 
 	int i = blockIdx.x * blockDim.x + threadIdx.x;
 	if (i >= particleSet_self->numParticles) { return; }
@@ -2844,7 +2849,7 @@ void cuda_neighborsSearch(SPH::DFSPHCData& data, bool need_sort) {
 	//*/
 }
 
-void cuda_updateNeighborsStorage(SPH::DFSPHCData& data, SPH::UnifiedParticleSet& particleSet) {
+void cuda_updateNeighborsStorage(SPH::DFSPHCData& data, SPH::UnifiedParticleSet& particleSet, int iter_debug) {
 	int count_particles = particleSet.numParticles;
 	if (data.restriction_mode == 2) {
 		count_particles = (data.count_active + data.count_active_neighbors);
@@ -2853,8 +2858,11 @@ void cuda_updateNeighborsStorage(SPH::DFSPHCData& data, SPH::UnifiedParticleSet&
 	int numBlocks = calculateNumBlocks(count_particles);
 
 	//*
+	
 	DFSPH_neighborsSearchSelf_kernel<< <numBlocks, BLOCKSIZE >> > (data, particleSet.gpu_ptr,
-			data.boundaries_data->gpu_ptr, data.vector_dynamic_bodies_data_cuda, data.numDynamicBodies);
+			data.boundaries_data->gpu_ptr, data.vector_dynamic_bodies_data_cuda, data.numDynamicBodies, iter_debug);
+
+	
 	gpuErrchk(cudaDeviceSynchronize());
 }
 
@@ -3013,6 +3021,14 @@ __global__ void DFSPH_update_pos_kernel(SPH::DFSPHCData data, SPH::UnifiedPartic
 			}
 		}
 
+	}
+
+	if (data.restriction_mode == 1) {
+		if (particleSet->pos[i].y > 1.95) {
+			if (particleSet->vel[i].y > 0) {
+				//particleSet->vel[i].y *= 0.25;
+			}
+		}
 	}
 
 	/*
