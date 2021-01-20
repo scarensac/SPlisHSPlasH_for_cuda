@@ -545,11 +545,15 @@ void allocate_UnifiedParticleSet_cuda(SPH::UnifiedParticleSet& container) {
 	}
 	else {
 		cudaMallocManaged(&(container.mass_flow), container.numParticlesMax * sizeof(RealCuda));
+		//you need to initialize it to zero or it may break shit if the system is not actually used
+		set_buffer_to_value<RealCuda>(container.mass_flow,0 , container.numParticlesMax);
 	}
 
 	if (container.is_dynamic_object) {
 		cudaMalloc(&(container.pos0), container.numParticlesMax * sizeof(Vector3d));
 		cudaMalloc(&(container.F), container.numParticlesMax * sizeof(Vector3d));
+		//you need to initialize it to zero or it may break shit if the system is not actually used
+		set_buffer_to_value<Vector3d>(container.F, Vector3d(0,0,0), container.numParticlesMax);
 	}
 
 	

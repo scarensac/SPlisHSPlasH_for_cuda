@@ -152,7 +152,7 @@ void DFSPHCUDA::step()
                 //params.zeta = 2 * (SQRT_MACRO_CUDA(delta_s) + 1) / delta_s;
             }
             
-            int run_type = 3;
+            int run_type = 2;
             if (run_type==0) {
 
                 if (params.method == 0) {
@@ -331,11 +331,12 @@ void DFSPHCUDA::step()
                 std::chrono::steady_clock::time_point tp1 = std::chrono::steady_clock::now();
 
                 RestFLuidLoaderInterface::TaggingParameters tagging_params;
+				//*
                 tagging_params.useRule2 = false;
                 tagging_params.useRule3 = true;
-                tagging_params.step_density = 59;
+                tagging_params.step_density = 25;
                 RestFLuidLoaderInterface::initializeFluidToSurface(m_data, true, tagging_params, false);
-
+				//*/
                 
                 {
                     params.preUpdateVelocityDamping = false;
@@ -352,11 +353,12 @@ void DFSPHCUDA::step()
                     params.preUpdateVelocityDamping = true;
                     params.preUpdateVelocityDamping_val = 0.8;
                     
-                    params.stabilizationItersCount = 20;
+                    params.stabilizationItersCount = 6;
 
-                    params.reduceDampingAndClamping = true;
-                    params.reduceDampingAndClamping_val = std::powf(0.1f/params.preUpdateVelocityDamping_val, 1.0f / (params.stabilizationItersCount-1));
-                }
+                    params.reduceDampingAndClamping = false;
+					params.reduceDampingAndClamping_val = 0.0;
+					//params.reduceDampingAndClamping_val = std::powf(0.1f / params.preUpdateVelocityDamping_val, 1.0f / (params.stabilizationItersCount - 1));
+				}
 
                 RealCuda avg_eval = 0;
                 RealCuda max_eval = 0;
@@ -365,7 +367,6 @@ void DFSPHCUDA::step()
                 std::vector<RealCuda> vect_eval_1;
                 std::vector<RealCuda> vect_eval_2;
                 std::vector<RealCuda> vect_eval_3;
-                params.stabilizationItersCount = 1;
 
 				std::chrono::steady_clock::time_point tp2 = std::chrono::steady_clock::now();
                 for (int i = 0; i < count_eval; ++i) {
@@ -800,7 +801,7 @@ void DFSPHCUDA::step()
         cuda_update_pos(m_data);
 
 
-        if(true){
+        if(false){
             //read data to CPU
             static Vector3d* vel = NULL;
             int size = 0;
@@ -997,7 +998,7 @@ void DFSPHCUDA::step()
 			}
         }
 
-		if (false) {
+		if (true) {
 			if ((count_steps % 50) == 0) {
 				std::cout << "time computation for "<< count_steps <<" steps: " << total_time << std::endl;
 			}

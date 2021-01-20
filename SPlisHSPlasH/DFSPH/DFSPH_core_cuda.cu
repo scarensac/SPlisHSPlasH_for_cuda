@@ -3401,6 +3401,7 @@ void compute_UnifiedParticleSet_particles_mass_cuda(SPH::DFSPHCData& data, SPH::
 	//gpuErrchk(cudaDeviceSynchronize());
 
 
+
 	bool refine_masses = false;//This is a test using relaxed jacobi to calculate the true mass of the particle
 	if (refine_masses) {
 

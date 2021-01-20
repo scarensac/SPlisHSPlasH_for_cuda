@@ -1,17 +1,26 @@
-#define REMOVAL_TAG  25000000
-#define TAG_REMOVAL  25000000
-#define TAG_REMOVAL_CANDIDATE  12500000
-#define TAG_ACTIVE 1
-#define TAG_ACTIVE_NEIGHBORS 2
-#define TAG_ACTIVE_NEIGHBORS_ORDER_2 3
-#define TAG_SAVE 4
-#define TAG_1 1001
-#define TAG_2 1002
-#define TAG_3 1003
-#define TAG_AIR 30000
-#define TAG_AIR_ACTIVE_NEIGHBORS 30002
+//the two removal tag must be high enought to ensure thay'll be at the end
+#define TAG_REMOVAL  310000000
+#define TAG_REMOVAL_CANDIDATE  320000000
 
-#define TAG_UNTAGGED 10000
+//those are the structural tags, they MUST be in that particular order of value
+#define TAG_ACTIVE 10000000
+#define TAG_ACTIVE_NEIGHBORS 20000000
+#define TAG_ACTIVE_NEIGHBORS_ORDER_2 30000000
+#define TAG_UNTAGGED 40000000
+#define TAG_AIR 50000000
+#define TAG_AIR_ACTIVE_NEIGHBORS 60000000
+
+//other tag for internal functioning theeir actualvalue is unimportant
+#define TAG_SAVE 80000000
+
+//some additiona tags for debug
+#define TAG_1 90000000
+#define TAG_2 100000000
+#define TAG_3 110000000
+
+//another removal tag for backward compatibility
+#define REMOVAL_TAG  TAG_REMOVAL
+
 
 
 #include "basic_kernels_cuda.cu"

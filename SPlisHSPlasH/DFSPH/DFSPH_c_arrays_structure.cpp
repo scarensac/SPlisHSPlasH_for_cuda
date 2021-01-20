@@ -952,6 +952,9 @@ void DFSPHCData::reset(FluidModel *model) {
 	//redo the rigid bodies mass computation
 	computeRigidBodiesParticlesMass();
 
+
+
+
 #endif //SPLISHSPLASH_FRAMEWORK
 
 	destructor_activated = old_destructor_status;
@@ -1166,7 +1169,21 @@ void DFSPHCData::read_fluid_from_file(bool load_velocities) {
 			paramsTagging.useRule2 = false;
 			paramsTagging.useRule3 = true;
 			paramsTagging.step_density = 25;
-			RestFLuidLoaderInterface::initializeFluidToSurface(*this, true, paramsTagging, true);
+			try {
+				RestFLuidLoaderInterface::initializeFluidToSurface(*this, true, paramsTagging, true);
+			}
+			catch (const std::string& e) { // reference to the base of a polymorphic object
+				std::cout << e << std::endl;
+				exit(0);
+			}
+			catch (const char* e) { // reference to the base of a polymorphic object
+				std::cout << std::string(e) << std::endl;
+				exit(0);
+			}
+			catch (...) {
+				std::cout << "unknown exception detected" << std::endl;
+				exit(0);
+			}
 		}
 
 		RestFLuidLoaderInterface::StabilizationParameters paramsStab;
