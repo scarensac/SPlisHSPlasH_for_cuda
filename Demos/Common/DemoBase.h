@@ -81,6 +81,7 @@ namespace SPH
 		SimulationMethodChangedFct m_simulationMethodChangedFct;
 		bool m_saveLiquid;
 		bool m_loadLiquid;
+		bool m_loadLiquidGeneric;
 		bool m_saveSimulation;
 		bool m_loadSimulation;
 		bool m_zeroVelocities;
@@ -146,6 +147,8 @@ namespace SPH
 		void setSaveLiquid(bool val) { m_saveLiquid = val; }
 		bool getLoadLiquid() const { return m_loadLiquid; }
 		void setLoadLiquid(bool val) { m_loadLiquid = val; }
+		bool getLoadLiquidGeneric() const { return m_loadLiquidGeneric; }
+		void setLoadLiquidGeneric(bool val) { m_loadLiquidGeneric = val; }
 		bool getSaveSimulation() const { return m_saveSimulation; }
 		void setSaveSimulation(bool val) { m_saveSimulation = val; }
 		bool getLoadSimulation() const { return m_loadSimulation; }

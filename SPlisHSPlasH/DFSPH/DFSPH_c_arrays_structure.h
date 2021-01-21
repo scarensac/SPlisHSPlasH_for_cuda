@@ -405,7 +405,8 @@ public:
     inline RealCuda get_current_timestep(){return h;}
 
     void write_fluid_to_file();
-    void read_fluid_from_file(bool load_velocities);
+	void read_fluid_from_file(bool load_velocities);
+	void init_fluid_to_simulation(bool keep_existing_fluid);
     void write_boundaries_to_file();
     void read_boundaries_from_file(bool load_velocities);
     void write_solids_to_file();

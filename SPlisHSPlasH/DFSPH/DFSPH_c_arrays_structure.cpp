@@ -1126,72 +1126,7 @@ void DFSPHCData::read_fluid_from_file(bool load_velocities) {
 
 	bool load_with_surface_method = true;
 
-	if (load_with_surface_method) {
-		RestFLuidLoaderInterface::init(*this, true);
-		
-		RestFLuidLoaderInterface::TaggingParameters paramsTagging;
-		if (true) {
-			/*
-			paramsTagging.useRule3 = false;
-			paramsTagging.useRule2 = false;
-			for (int i = 1; i < 100; ++i) {
-				paramsTagging.step_density = i;
-				RestFLuidLoaderInterface::initializeFluidToSurface(*this, true, paramsTagging, false);
-			}
-			//*/
-			/*
-			paramsTagging.useRule3 = true;
-			paramsTagging.useRule2 = false;
-			for (int i = 1; i < 100; ++i) {
-				paramsTagging.step_density = i;
-				RestFLuidLoaderInterface::initializeFluidToSurface(*this, true, paramsTagging, false);
-			}
-			//*/
-			/*
-			paramsTagging.useRule3 = false;
-			paramsTagging.useRule2 = true;
-			for (int i = 1; i < 100; ++i) {
-				paramsTagging.step_density = i;
-				RestFLuidLoaderInterface::initializeFluidToSurface(*this, true, paramsTagging, false);
-			}
-			//*/
-			/*
-			paramsTagging.useRule3 = true;
-			paramsTagging.useRule2 = true;
-			for (int i = 1; i < 100; ++i) {
-				paramsTagging.step_density = i;
-				RestFLuidLoaderInterface::initializeFluidToSurface(*this, true, paramsTagging, false);
-			}
-			//*/
-		}
-
-		if (true) {
-			paramsTagging.useRule2 = false;
-			paramsTagging.useRule3 = true;
-			paramsTagging.step_density = 25;
-			try {
-				RestFLuidLoaderInterface::initializeFluidToSurface(*this, true, paramsTagging, true);
-			}
-			catch (const std::string& e) { // reference to the base of a polymorphic object
-				std::cout << e << std::endl;
-				exit(0);
-			}
-			catch (const char* e) { // reference to the base of a polymorphic object
-				std::cout << std::string(e) << std::endl;
-				exit(0);
-			}
-			catch (...) {
-				std::cout << "unknown exception detected" << std::endl;
-				exit(0);
-			}
-		}
-
-		RestFLuidLoaderInterface::StabilizationParameters paramsStab;
-		paramsStab.method = 0;
-		paramsStab.stabilizationItersCount = 10;
-		//RestFLuidLoaderInterface::stabilizeFluid(*this, params);
-	}
-	else {
+	 {
 		//reset the data strucure
 		clear_fluid_data();
 		fluid_data = new UnifiedParticleSet[1];
@@ -1229,6 +1164,85 @@ void DFSPHCData::read_fluid_from_file(bool load_velocities) {
 #endif
 
     std::cout << "loading fluid end" << std::endl;
+
+
+	destructor_activated = true;
+}
+
+
+void DFSPHCData::init_fluid_to_simulation(bool keep_existing_fluid) {
+
+	destructor_activated = false;
+
+	std::cout << "init fluid to simulation start: " << std::endl;
+
+	{
+		RestFLuidLoaderInterface::init(*this, true);
+
+		RestFLuidLoaderInterface::TaggingParameters paramsTagging;
+		if (true) {
+			/*
+			paramsTagging.useRule3 = false;
+			paramsTagging.useRule2 = false;
+			for (int i = 1; i < 100; ++i) {
+			paramsTagging.step_density = i;
+			RestFLuidLoaderInterface::initializeFluidToSurface(*this, true, paramsTagging, false);
+			}
+			//*/
+			/*
+			paramsTagging.useRule3 = true;
+			paramsTagging.useRule2 = false;
+			for (int i = 1; i < 100; ++i) {
+			paramsTagging.step_density = i;
+			RestFLuidLoaderInterface::initializeFluidToSurface(*this, true, paramsTagging, false);
+			}
+			//*/
+			/*
+			paramsTagging.useRule3 = false;
+			paramsTagging.useRule2 = true;
+			for (int i = 1; i < 100; ++i) {
+			paramsTagging.step_density = i;
+			RestFLuidLoaderInterface::initializeFluidToSurface(*this, true, paramsTagging, false);
+			}
+			//*/
+			/*
+			paramsTagging.useRule3 = true;
+			paramsTagging.useRule2 = true;
+			for (int i = 1; i < 100; ++i) {
+			paramsTagging.step_density = i;
+			RestFLuidLoaderInterface::initializeFluidToSurface(*this, true, paramsTagging, false);
+			}
+			//*/
+		}
+
+		if (true) {
+			paramsTagging.useRule2 = false;
+			paramsTagging.useRule3 = true;
+			paramsTagging.step_density = 25;
+			try {
+				RestFLuidLoaderInterface::initializeFluidToSurface(*this, true, paramsTagging, true);
+			}
+			catch (const std::string& e) { // reference to the base of a polymorphic object
+				std::cout << e << std::endl;
+				exit(0);
+			}
+			catch (const char* e) { // reference to the base of a polymorphic object
+				std::cout << std::string(e) << std::endl;
+				exit(0);
+			}
+			catch (...) {
+				std::cout << "unknown exception detected" << std::endl;
+				exit(0);
+			}
+		}
+
+		RestFLuidLoaderInterface::StabilizationParameters paramsStab;
+		paramsStab.method = 0;
+		paramsStab.stabilizationItersCount = 10;
+		//RestFLuidLoaderInterface::stabilizeFluid(*this, params);
+	}
+
+	std::cout << "init fluid to simulation end" << std::endl;
 
 
 	destructor_activated = true;

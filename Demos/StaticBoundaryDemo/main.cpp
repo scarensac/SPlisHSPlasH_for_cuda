@@ -116,9 +116,17 @@ void timeStep ()
 
 		//load the simulation state if asked
 		sim->handleSimulationLoad(base.getLoadLiquid() || base.getLoadSimulation(), true, base.getLoadSimulation(), true, base.getLoadSimulation(), true);
-		//I'll handle the save as token so I need to consume them
+		//I'll handle the load as token so I need to consume them
 		base.setLoadLiquid(false);
 		base.setLoadSimulation(false);
+
+		//load the fluid with the loading algorithm handling any shape ifasked
+		if (base.getLoadLiquidGeneric()) {
+			sim->handleFluidInit();
+			//I'll handle the load as token so I need to consume them
+			base.setLoadLiquidGeneric(false);
+		}
+
 
 		//ontrol the fluid height if required
 		sim->handleFLuidLevelControl(base.getFLuidLevelTarget());

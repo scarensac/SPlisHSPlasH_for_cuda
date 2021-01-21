@@ -31,7 +31,9 @@ class DFSPHCUDA
 protected:
     DFSPHCData m_data;
     int count_steps;
-    bool show_fluid_timings;
+	bool show_fluid_timings;
+	bool need_stabilization_for_init;
+
 
 #ifdef SPLISHSPLASH_FRAMEWORK
     SimulationDataDFSPH m_simulationData;
@@ -115,6 +117,7 @@ public:
     void handleSimulationSave(bool save_liquid, bool save_solids, bool save_boundaries);
     void handleSimulationLoad(bool load_liquid, bool load_liquid_velocities, bool load_solids, bool load_solids_velocities,
                               bool load_boundaries, bool load_boundaries_velocities);
+	void handleFluidInit();
 
     void handleSimulationMovement(Vector3d movement);
 

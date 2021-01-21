@@ -34,6 +34,7 @@ DemoBase::DemoBase()
 	m_doRbPause = true;
 	m_saveLiquid = false;
 	m_loadLiquid = false;
+	m_loadLiquidGeneric = false;
 	m_saveSimulation = false;
 	m_loadSimulation = false;
 	m_zeroVelocities = false;
@@ -243,6 +244,7 @@ void DemoBase::initParameters()
 	TwAddVarRW(MiniGL::getTweakBar(), "PauseRB", TW_TYPE_BOOLCPP, &m_doRbPause, " label='Pause rigid bodies' group=Simulation key=k ");
 	TwAddVarRW(MiniGL::getTweakBar(), "SaveLiquid", TW_TYPE_BOOLCPP, &m_saveLiquid, " label='save liquid positions' group=Simulation key=n ");
 	TwAddVarRW(MiniGL::getTweakBar(), "LoadLiquid", TW_TYPE_BOOLCPP, &m_loadLiquid, " label='load liquid positions' group=Simulation key=v ");
+	TwAddVarRW(MiniGL::getTweakBar(), "LoadLiquidGeneric", TW_TYPE_BOOLCPP, &m_loadLiquidGeneric, " label='init liquid for simulation' group=Simulation key=g ");
 	TwAddVarRW(MiniGL::getTweakBar(), "SaveSimulation", TW_TYPE_BOOLCPP, &m_saveSimulation, " label='save simulation state' group=Simulation key=b ");
 	TwAddVarRW(MiniGL::getTweakBar(), "LoadSimulation", TW_TYPE_BOOLCPP, &m_loadSimulation, " label='load simulation state' group=Simulation key=c ");
 	TwAddVarRW(MiniGL::getTweakBar(), "zeroVelocities", TW_TYPE_BOOLCPP, &m_zeroVelocities, " label='set fluid velocities to zero' group=Simulation key=m ");

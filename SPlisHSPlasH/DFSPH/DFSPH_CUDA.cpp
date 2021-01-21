@@ -49,6 +49,7 @@ DFSPHCUDA::DFSPHCUDA(FluidModel *model) :
     m_maxIterationsV=100;
     desired_time_step=m_data.get_current_timestep();
 #endif //SPLISHSPLASH_FRAMEWORK
+	need_stabilization_for_init = false;
     count_steps = 0;
     m_counter = 0;
     m_iterationsV = 0;
@@ -99,8 +100,8 @@ void DFSPHCUDA::step()
         m_data.destructor_activated = false;
 
    //I'll run my tests here so that I can be sure that the loading did not failed before launching them
-        if (true && count_steps < 1) {
-
+        if (true && need_stabilization_for_init) {
+			need_stabilization_for_init = false;
         //*
             RestFLuidLoaderInterface::StabilizationParameters params;
             params.method = 0;
@@ -2300,6 +2301,13 @@ void DFSPHCUDA::handleSimulationLoad(bool load_liquid, bool load_liquid_velociti
 
 }
 
+
+void DFSPHCUDA::handleFluidInit() {
+
+	m_data.init_fluid_to_simulation(false);
+	count_steps = 0;
+	need_stabilization_for_init = true;
+}
 
 void DFSPHCUDA::handleSimulationMovement(Vector3d movement) {
     if (movement.norm() > 0.5) {
