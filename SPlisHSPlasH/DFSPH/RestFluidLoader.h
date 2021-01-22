@@ -12,7 +12,7 @@ namespace SPH {
 
 	public:
 		
-		static void init(DFSPHCData& data, bool center_loaded_fluid);
+		static void init(DFSPHCData& data, bool center_loaded_fluid, bool keep_existing_fluid);
 
 
 		static bool isInitialized();
@@ -28,6 +28,8 @@ namespace SPH {
 			bool useRule3;
 			RealCuda density_delta_threshold;
 
+			bool keep_existing_fluid;
+
 			TaggingParameters(){
 				density_start = 1900;
 				density_end = 1001;
@@ -38,12 +40,29 @@ namespace SPH {
 			
 				useRule3 = false;
 				density_delta_threshold = 5;
+
+				keep_existing_fluid = false;
+			}
+		};
+
+		struct LoadingParameters {
+			bool load_fluid;
+			bool keep_air_particles;
+			bool set_up_tagging;
+			bool keep_existing_fluid;
+
+			LoadingParameters() {
+				load_fluid=true;
+				keep_air_particles = false;
+				set_up_tagging = true;
+				keep_existing_fluid = false;
 			}
 		};
 
 		//ok here I'll test a system to initialize a volume of fluid from
 		//a large wolume of fluid (IE a technique to iinit the fluid at rest)
-		static void initializeFluidToSurface(SPH::DFSPHCData& data, bool center_loaded_fluid, TaggingParameters& params, bool load_fluid=true);
+		static void initializeFluidToSurface(SPH::DFSPHCData& data, bool center_loaded_fluid, TaggingParameters& params, 
+			bool load_fluid=true, bool keep_existing_fluid=false);
 
 
 		//this struct is only to be more flexible in the addition of stabilization methods in the stabilizeFluid function 

@@ -1177,7 +1177,7 @@ void DFSPHCData::init_fluid_to_simulation(bool keep_existing_fluid) {
 	std::cout << "init fluid to simulation start: " << std::endl;
 
 	{
-		RestFLuidLoaderInterface::init(*this, true);
+		RestFLuidLoaderInterface::init(*this, true,false);
 
 		RestFLuidLoaderInterface::TaggingParameters paramsTagging;
 		if (true) {

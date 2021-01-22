@@ -77,7 +77,7 @@ namespace SPH {
 		//an explanation for the air particle range
 		//it is used to limit the amount of air particles that are kept 
 		//-1: no restriction; 0: no air(don't use that...), 1: air that are neighbors to fluid, 2: air that are neigbors to air particles that are neighbors to fluid
-		void init(DFSPHCData& data, bool center_loaded_fluid, int air_particles_restriction);
+		void init(DFSPHCData& data, bool center_loaded_fluid, int air_particles_restriction, bool keep_existing_fluid);
 
 		bool isInitialized() { return _isInitialized; }
 
@@ -92,7 +92,7 @@ namespace SPH {
 		//ok here I'll test a system to initialize a volume of fluid from
 		//a large wolume of fluid (IE a technique to iinit the fluid at rest)
 		//return the number of FLUID particles (it may be less than the number of loaded particle since there are air particles)
-		int loadDataToSimulation(SPH::DFSPHCData& data, bool keep_air_particles = false, bool set_up_tagging = false);
+		int loadDataToSimulation(SPH::DFSPHCData& data, RestFLuidLoaderInterface::LoadingParameters& params);
 
 		//so this is a function that will be used to move around the particles in the fluid to 
 		//improove the stability of the fluid when the first time step is ran
@@ -102,8 +102,8 @@ namespace SPH {
 }
 
 
-void RestFLuidLoaderInterface::init(DFSPHCData& data, bool center_loaded_fluid) {
-	RestFLuidLoader::getStructure().init(data, center_loaded_fluid,1);
+void RestFLuidLoaderInterface::init(DFSPHCData& data, bool center_loaded_fluid, bool keep_existing_fluid) {
+	RestFLuidLoader::getStructure().init(data, center_loaded_fluid,1, keep_existing_fluid);
 }
 
 bool RestFLuidLoaderInterface::isInitialized() {
@@ -111,24 +111,28 @@ bool RestFLuidLoaderInterface::isInitialized() {
 }
 
 
-void RestFLuidLoaderInterface::initializeFluidToSurface(SPH::DFSPHCData& data, bool center_loaded_fluid, TaggingParameters& params, bool load_fluid) {
+void RestFLuidLoaderInterface::initializeFluidToSurface(SPH::DFSPHCData& data, bool center_loaded_fluid, TaggingParameters& params, 
+	bool load_fluid, bool keep_existing_fluid) {
 	std::vector<std::string> timing_names{ "init","tag","load" };
 	SPH::SegmentedTiming timings("RestFLuidLoaderInterface::initializeFluidToSurface", timing_names, true);
 	timings.init_step();//start point of the current step (if measuring avgs you need to call it at everystart of the loop)
 
 	if (!isInitialized()) {
-		init(data,center_loaded_fluid);
+		init(data,center_loaded_fluid, keep_existing_fluid);
 	}
 
 
 	timings.time_next_point();//time p1
 	
+	params.keep_existing_fluid = keep_existing_fluid;
 	RestFLuidLoader::getStructure().tagDataToSurface(data,params);
 	
 	timings.time_next_point();//time p2
 	
-	if (load_fluid) {
-		int count_fluid = RestFLuidLoader::getStructure().loadDataToSimulation(data, false, true);
+	LoadingParameters params_loading;
+	params_loading.load_fluid = load_fluid;
+	if (params_loading.load_fluid) {
+		int count_fluid = RestFLuidLoader::getStructure().loadDataToSimulation(data, params_loading);
 	}
 	
 	timings.time_next_point();//time p3
@@ -1169,7 +1173,7 @@ __global__ void test_kernel(BufferFluidSurface S) {
 
 
 
-void RestFLuidLoader::init(DFSPHCData& data, bool center_loaded_fluid, int air_particles_restriction) {
+void RestFLuidLoader::init(DFSPHCData& data, bool center_loaded_fluid, int air_particles_restriction, bool keep_existing_fluid) {
 	_isInitialized = false;
 	_isDataTagged = false;
 	//Essencially this function will load the background buffer and initialize it to the desired simulation domain
@@ -2908,7 +2912,7 @@ void RestFLuidLoader::tagDataToSurface(SPH::DFSPHCData& data, RestFLuidLoaderInt
 }
 
 
-int RestFLuidLoader::loadDataToSimulation(SPH::DFSPHCData& data, bool keep_air_particles, bool set_up_tagging) {
+int RestFLuidLoader::loadDataToSimulation(SPH::DFSPHCData& data, RestFLuidLoaderInterface::LoadingParameters& params) {
 	if (!isInitialized()) {
 		std::cout << "RestFLuidLoader::loadDataToSimulation Loading impossible data was not initialized" << std::endl;
 		return -1;
@@ -2929,7 +2933,7 @@ int RestFLuidLoader::loadDataToSimulation(SPH::DFSPHCData& data, bool keep_air_p
 	std::cout << "count to rmv in fluid/air " <<count_high_density_tagged_in_potential <<"  "<<
 		count_high_density_tagged_in_air << std::endl;
 
-	if (keep_air_particles) {
+	if (params.keep_air_particles) {
 		std::cout << "keeping air particles" << std::endl;
 		//here it is more complicated since I want to remove the tagged particles without 
 		//breaking the order of the particles
@@ -3084,7 +3088,7 @@ int RestFLuidLoader::loadDataToSimulation(SPH::DFSPHCData& data, bool keep_air_p
 
 	timings.time_next_point();//time
 
-	if (set_up_tagging) {
+	if (params.set_up_tagging) {
 		//I'll store the tagging in the cell_id of the background buffer since I know it has at least the same number of particles
 		//as the number of particles I have loaded in the fluid 
 		//for now I'll leave some system to full computation and I'll change them if their computation time is high enougth
@@ -3092,7 +3096,7 @@ int RestFLuidLoader::loadDataToSimulation(SPH::DFSPHCData& data, bool keep_air_p
 		cuda_neighborsSearch(data, false);
 
 		//init the tagging and make a backup
-		if (keep_air_particles) {
+		if (params.keep_air_particles) {
 			set_buffer_to_value<unsigned int>(data.fluid_data->neighborsDataSet->cell_id, TAG_AIR, data.fluid_data->numParticles);
 		}
 		set_buffer_to_value<unsigned int>(data.fluid_data->neighborsDataSet->cell_id, TAG_UNTAGGED, nbr_fluid_particles);
@@ -3269,7 +3273,7 @@ int RestFLuidLoader::loadDataToSimulation(SPH::DFSPHCData& data, bool keep_air_p
 
 		//if I have kept the air particles then I have to tag the air particles that are neighbors so that they 
 		//have their density computed
-		if (keep_air_particles) 
+		if (params.keep_air_particles) 
 		{
 			//since I have set a special tag for the air particles that are neighbors of active, I can simply trasnform the tag
 			int numBlocks = calculateNumBlocks(data.fluid_data->numParticles);
@@ -4224,7 +4228,12 @@ void RestFLuidLoader::stabilizeFluid(SPH::DFSPHCData& data, RestFLuidLoaderInter
 		if (params.reloadFluid) {
 
 			std::cout << "Reloading asked " << std::endl;
-			count_fluid_particles = loadDataToSimulation(data, false, true);
+			RestFLuidLoaderInterface::LoadingParameters params_loading;
+			params_loading.load_fluid = true;
+			params_loading.keep_air_particles = false;
+			params_loading.set_up_tagging = true;
+			params_loading.keep_existing_fluid = false;
+			count_fluid_particles = loadDataToSimulation(data, params_loading);
 			std::cout << " test after loading  (current/actualfluid): " << particleSet->numParticles << "   " << count_fluid_particles << std::endl;
 		}
 		else {
@@ -4738,7 +4747,12 @@ for (int i = 0; i < (additional_neighbors_order_tagging); ++i) {
 		if (params.reloadFluid) {
 
 			std::cout << "Reloading asked " << std::endl;
-			count_fluid_particles = loadDataToSimulation(data, true);
+			RestFLuidLoaderInterface::LoadingParameters params_loading;
+			params_loading.load_fluid = true;
+			params_loading.keep_air_particles = false;
+			params_loading.set_up_tagging = false;
+			params_loading.keep_existing_fluid = false;
+			count_fluid_particles = loadDataToSimulation(data, params_loading);
 			std::cout << " test after loading  (current/actualfluid): " << particleSet->numParticles << "   " << count_fluid_particles << std::endl;
 		}
 		else {
@@ -5458,9 +5472,17 @@ for (int i = 0; i < (additional_neighbors_order_tagging); ++i) {
 	else if (params.method == 2) {
 	//ok since displacing the particle from an overdensity is so fucking hard maybe placing particles in an undersampled space will be easier
 	//I know I'm missing around 700 partiles to maintain volume so first let's find a solution to find position where I can put those particles
-	int count_fluid_particles = loadDataToSimulation(data, true);
-	UnifiedParticleSet* particleSet = data.fluid_data;
-	std::cout << " test after loading  (current/actualfluid): " << particleSet->numParticles << "   " << count_fluid_particles << std::endl;
+		int count_fluid_particles=0;
+		{
+			RestFLuidLoaderInterface::LoadingParameters params_loading;
+			params_loading.load_fluid = true;
+			params_loading.keep_air_particles = true;
+			params_loading.set_up_tagging = false;
+			params_loading.keep_existing_fluid = false;
+			count_fluid_particles = loadDataToSimulation(data, params_loading);
+		}
+		UnifiedParticleSet* particleSet = data.fluid_data;
+		std::cout << " test after loading  (current/actualfluid): " << particleSet->numParticles << "   " << count_fluid_particles << std::endl;
 
 	//maybe a flull contruction of the neighbor is useless (typicaly storing them is most likely useless
 	cuda_neighborsSearch(data, false);
@@ -5845,7 +5867,12 @@ for (int i = 0; i < (additional_neighbors_order_tagging); ++i) {
 		if (params.reloadFluid) {
 
 			std::cout << "Reloading asked " << std::endl;
-			count_fluid_particles = loadDataToSimulation(data, true, true);
+			RestFLuidLoaderInterface::LoadingParameters params_loading;
+			params_loading.load_fluid = true;
+			params_loading.keep_air_particles = true;
+			params_loading.set_up_tagging = true;
+			params_loading.keep_existing_fluid = false;
+			count_fluid_particles = loadDataToSimulation(data, params_loading);
 			std::cout << " test after loading  (current/actualfluid): " << particleSet->numParticles << "   " << count_fluid_particles << std::endl;
 		}
 		else {
