@@ -981,6 +981,7 @@ void change_max_particle_number(SPH::UnifiedParticleSet& container, int numParti
 	//now we need to copy the data
 	gpuErrchk(cudaMemcpy(container.pos, dummy.pos, dummy.numParticles * sizeof(Vector3d), cudaMemcpyDeviceToDevice));
 	gpuErrchk(cudaMemcpy(container.vel, dummy.vel, dummy.numParticles * sizeof(Vector3d), cudaMemcpyDeviceToDevice));
+	gpuErrchk(cudaMemcpy(container.color, dummy.color, dummy.numParticles * sizeof(Vector3d), cudaMemcpyDeviceToDevice));
 
 	//and the rest of the data
 	allocate_UnifiedParticleSet_cuda(container);

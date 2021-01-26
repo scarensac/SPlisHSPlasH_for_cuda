@@ -100,8 +100,7 @@ void DFSPHCUDA::step()
         m_data.destructor_activated = false;
 
    //I'll run my tests here so that I can be sure that the loading did not failed before launching them
-        if (true && need_stabilization_for_init) {
-			need_stabilization_for_init = false;
+        if (true && count_steps==0) {
         //*
             RestFLuidLoaderInterface::StabilizationParameters params;
             params.method = 0;
@@ -153,7 +152,7 @@ void DFSPHCUDA::step()
                 //params.zeta = 2 * (SQRT_MACRO_CUDA(delta_s) + 1) / delta_s;
             }
             
-            int run_type = 2;
+            int run_type = 5;
             if (run_type==0) {
 
                 if (params.method == 0) {
@@ -328,15 +327,16 @@ void DFSPHCUDA::step()
             else if (run_type == 2) {
                 //here is an optimisation that challenge the step size versus the Nbr of simulation steps required for stability
 
-
                 std::chrono::steady_clock::time_point tp1 = std::chrono::steady_clock::now();
 
-                RestFLuidLoaderInterface::TaggingParameters tagging_params;
 				//*
-                tagging_params.useRule2 = false;
-                tagging_params.useRule3 = true;
-                tagging_params.step_density = 25;
-                RestFLuidLoaderInterface::initializeFluidToSurface(m_data, true, tagging_params, false);
+
+				RestFLuidLoaderInterface::TaggingParameters tagging_params;
+				tagging_params.useRule2 = false;
+				tagging_params.useRule3 = true;
+				tagging_params.step_density = 25;
+				RestFLuidLoaderInterface::initializeFluidToSurface(m_data, true, tagging_params, false);
+				
 				//*/
                 
                 {
@@ -380,7 +380,8 @@ void DFSPHCUDA::step()
                     max_eval = MAX_MACRO_CUDA(max_eval, params.stabilzationEvaluation1);
                     avg_eval += params.stabilzationEvaluation1;
 
-                    std::cout << tagging_params.step_density << "  " << params.stabilizationItersCount << "  " << (params.stabilzationEvaluation1*params.timeStepEval)/m_data.particleRadius << 
+                    std::cout << tagging_params.step_density << "  " << params.stabilizationItersCount << 
+						"  " << (params.stabilzationEvaluation1*params.timeStepEval)/m_data.particleRadius << 
                         "  " << (params.stabilzationEvaluation2* params.timeStepEval) / m_data.particleRadius << "  " << params.stabilzationEvaluation3 << std::endl;
 
 
@@ -547,13 +548,106 @@ void DFSPHCUDA::step()
 
                 }
 
-            }
+			}
+			else if (run_type == 5) {
+				//the run type with preexisting ffluid
+				params.keep_existing_fluid = true;
+				std::chrono::steady_clock::time_point tp1 = std::chrono::steady_clock::now();
+
+				//*
+
+				RestFLuidLoaderInterface::TaggingParameters tagging_params;
+				tagging_params.step_density = -1;
+				if (!(need_stabilization_for_init&&params.keep_existing_fluid)) {
+					tagging_params.useRule2 = false;
+					tagging_params.useRule3 = true;
+					tagging_params.step_density = 25;
+					tagging_params.keep_existing_fluid = params.keep_existing_fluid;
+					RestFLuidLoaderInterface::initializeFluidToSurface(m_data, true, tagging_params, true);
+				}
+				//*/
+
+				{
+					params.preUpdateVelocityDamping = false;
+					params.postUpdateVelocityDamping = false;
+					params.postUpdateVelocityClamping = false;
+					params.preUpdateVelocityClamping = false;
+					//*/
+
+					params.maxErrorD = 0.05;
+					params.stabilize_tagged_only = true;
+
+					params.useDivergenceSolver = true;
+					params.useExternalForces = true;
+
+					params.preUpdateVelocityDamping = true;
+					params.preUpdateVelocityDamping_val = 0.8;
+
+					params.stabilizationItersCount = 1;
+
+					params.reduceDampingAndClamping = false;
+					params.reduceDampingAndClamping_val = 0.0;
+					//params.reduceDampingAndClamping_val = std::powf(0.1f / params.preUpdateVelocityDamping_val, 1.0f / (params.stabilizationItersCount - 1));
+				}
+
+				RealCuda avg_eval = 0;
+				RealCuda max_eval = 0;
+				params.evaluateStabilization = false;
+				int count_eval = 1;
+				std::vector<RealCuda> vect_eval_1;
+				std::vector<RealCuda> vect_eval_2;
+				std::vector<RealCuda> vect_eval_3;
+
+				std::chrono::steady_clock::time_point tp2 = std::chrono::steady_clock::now();
+				for (int i = 0; i < count_eval; ++i) {
+					//RestFLuidLoaderInterface::init(m_data);
+					//RestFLuidLoaderInterface::initializeFluidToSurface(m_data);
+					//params.stabilizationItersCount = count_eval-i;
+
+					RestFLuidLoaderInterface::stabilizeFluid(m_data, params);
+
+					max_eval = MAX_MACRO_CUDA(max_eval, params.stabilzationEvaluation1);
+					avg_eval += params.stabilzationEvaluation1;
+
+					std::cout << tagging_params.step_density << "  " << params.stabilizationItersCount <<
+						"  " << (params.stabilzationEvaluation1*params.timeStepEval) / m_data.particleRadius <<
+						"  " << (params.stabilzationEvaluation2* params.timeStepEval) / m_data.particleRadius << "  " << params.stabilzationEvaluation3 << std::endl;
+
+
+					vect_eval_1.push_back((params.stabilzationEvaluation1* params.timeStepEval) / m_data.particleRadius);
+					vect_eval_2.push_back((params.stabilzationEvaluation2* params.timeStepEval) / m_data.particleRadius);
+					vect_eval_3.push_back(params.stabilzationEvaluation3);
+
+					// params.clearWarmstartAfterStabilization = false;
+				}
+
+				avg_eval /= count_eval;
+
+				std::chrono::steady_clock::time_point tp3 = std::chrono::steady_clock::now();
+				RealCuda time_ini = std::chrono::duration_cast<std::chrono::nanoseconds> (tp2 - tp1).count() / 1000000000.0f;
+				RealCuda time_opti = std::chrono::duration_cast<std::chrono::nanoseconds> (tp3 - tp2).count() / 1000000000.0f;
+				std::cout << "fluid initialization finished and took (in s) ini/opti: " << time_ini << "  " << time_opti << std::endl;
+
+				for (int i = 0; i < vect_eval_1.size(); ++i) {
+					std::cout << tagging_params.step_density << "  " << count_eval - i << "  " << vect_eval_1[i] <<
+						"  " << vect_eval_2[i] << "  " << vect_eval_3[i] << std::endl;
+
+				}
+
+				if (count_eval > 1) {
+					std::cout << "stabilisation evaluation (avg/max): " << avg_eval << "    " << max_eval << std::endl;
+
+				}
+
+				std::cout << "count particles after init: " << m_data.fluid_data->numParticles << std::endl;
+			}
 
 
             std::this_thread::sleep_for(std::chrono::nanoseconds(10));
             std::this_thread::sleep_until(std::chrono::system_clock::now() + std::chrono::seconds(1));
 
             count_steps++;
+			need_stabilization_for_init = false;
             return;
         }
 

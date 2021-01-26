@@ -42,6 +42,9 @@ namespace SPH {
 		SPH::UnifiedParticleSet* backgroundFluidBufferSet;
 		int count_potential_fluid;
 
+		unsigned int* tag_array_with_existing_fluid;
+		unsigned int tag_array_with_existing_fluid_size;
+
 		//if this is equals to 0 after tagging this mean the tagging phase extracted them
 		int count_high_density_tagged_in_potential;
 		int count_high_density_tagged_in_air;
@@ -61,6 +64,9 @@ namespace SPH {
 			count_potential_fluid = 0;
 			count_high_density_tagged_in_potential = 0;
 			count_high_density_tagged_in_air = 0;
+
+			tag_array_with_existing_fluid=NULL;
+			tag_array_with_existing_fluid_size=0;
 		}
 
 		~RestFLuidLoader() {
@@ -112,25 +118,26 @@ bool RestFLuidLoaderInterface::isInitialized() {
 
 
 void RestFLuidLoaderInterface::initializeFluidToSurface(SPH::DFSPHCData& data, bool center_loaded_fluid, TaggingParameters& params, 
-	bool load_fluid, bool keep_existing_fluid) {
+	bool load_fluid) {
 	std::vector<std::string> timing_names{ "init","tag","load" };
 	SPH::SegmentedTiming timings("RestFLuidLoaderInterface::initializeFluidToSurface", timing_names, true);
 	timings.init_step();//start point of the current step (if measuring avgs you need to call it at everystart of the loop)
 
 	if (!isInitialized()) {
-		init(data,center_loaded_fluid, keep_existing_fluid);
+		init(data,center_loaded_fluid, params.keep_existing_fluid);
 	}
 
 
 	timings.time_next_point();//time p1
 	
-	params.keep_existing_fluid = keep_existing_fluid;
+	params.keep_existing_fluid = params.keep_existing_fluid;
 	RestFLuidLoader::getStructure().tagDataToSurface(data,params);
 	
 	timings.time_next_point();//time p2
 	
 	LoadingParameters params_loading;
 	params_loading.load_fluid = load_fluid;
+	params_loading.keep_existing_fluid =  params.keep_existing_fluid;
 	if (params_loading.load_fluid) {
 		int count_fluid = RestFLuidLoader::getStructure().loadDataToSimulation(data, params_loading);
 	}
@@ -322,7 +329,7 @@ __global__ void tag_close_to_boundaires_kernel(SPH::DFSPHCData data, SPH::Unifie
 //at worst particles will be tagged multiples times which only waste computation time
 template<bool tag_candidate_only, bool tag_untagged_only>
 __global__ void tag_neighborhood_kernel(SPH::DFSPHCData data, SPH::UnifiedParticleSet* particleSet, SPH::UnifiedParticleSet* particleSetToTag, 
-	RealCuda limit_distance, int count_candidates) {
+	RealCuda limit_distance, int count_candidates, unsigned int tag_o=TAG_ACTIVE) {
 	int i = blockIdx.x * blockDim.x + threadIdx.x;
 	if (i >= particleSet->numParticles) { return; }
 
@@ -338,12 +345,12 @@ __global__ void tag_neighborhood_kernel(SPH::DFSPHCData data, SPH::UnifiedPartic
 				if (j < count_candidates) {
 					if (tag_untagged_only) {
 						if (particleSetToTag->neighborsDataSet->cell_id[j] == TAG_UNTAGGED) {
-							particleSetToTag->neighborsDataSet->cell_id[j] = TAG_ACTIVE;
+							particleSetToTag->neighborsDataSet->cell_id[j] = tag_o;
 							//particleSetToTag->color[j] = Vector3d(1, 0, 1);
 						}
 					}
 					else {
-						particleSetToTag->neighborsDataSet->cell_id[j] = TAG_ACTIVE;
+						particleSetToTag->neighborsDataSet->cell_id[j] = tag_o;
 					}
 				}
 			);
@@ -352,11 +359,11 @@ __global__ void tag_neighborhood_kernel(SPH::DFSPHCData data, SPH::UnifiedPartic
 			ITER_NEIGHBORS_FROM_STRUCTURE_BASE(particleSetToTag->neighborsDataSet, particleSetToTag->pos,
 				if (tag_untagged_only) {
 					if (particleSetToTag->neighborsDataSet->cell_id[j] == TAG_UNTAGGED) {
-						particleSetToTag->neighborsDataSet->cell_id[j] = TAG_ACTIVE;
+						particleSetToTag->neighborsDataSet->cell_id[j] = tag_o;
 					}
 				}
 				else {
-					particleSetToTag->neighborsDataSet->cell_id[j] = TAG_ACTIVE;
+					particleSetToTag->neighborsDataSet->cell_id[j] = tag_o;
 				}
 			);
 
@@ -390,11 +397,11 @@ __global__ void tag_neighborhood_kernel(SPH::DFSPHCData data, SPH::UnifiedPartic
 								if (j < count_candidates) {
 									if (tag_untagged_only) {
 										if (particleSetToTag->neighborsDataSet->cell_id[j] == TAG_UNTAGGED) {
-											particleSetToTag->neighborsDataSet->cell_id[j] = TAG_ACTIVE;
+											particleSetToTag->neighborsDataSet->cell_id[j] = tag_o;
 										}
 									}
 									else {
-										particleSetToTag->neighborsDataSet->cell_id[j] = TAG_ACTIVE;
+										particleSetToTag->neighborsDataSet->cell_id[j] = tag_o;
 									}
 								}
 							}
@@ -426,11 +433,11 @@ __global__ void tag_neighborhood_kernel(SPH::DFSPHCData data, SPH::UnifiedPartic
 							if ((pos - positions[j]).squaredNorm() < radius_sq) {
 								if (tag_untagged_only) {
 									if (particleSetToTag->neighborsDataSet->cell_id[j] == TAG_UNTAGGED) {
-										particleSetToTag->neighborsDataSet->cell_id[j] = TAG_ACTIVE;
+										particleSetToTag->neighborsDataSet->cell_id[j] = tag_o;
 									}
 								}
 								else {
-									particleSetToTag->neighborsDataSet->cell_id[j] = TAG_ACTIVE;
+									particleSetToTag->neighborsDataSet->cell_id[j] = tag_o;
 								}
 							}
 						}
@@ -488,7 +495,7 @@ __global__ void tag_densities_kernel(SPH::DFSPHCData data, SPH::UnifiedParticleS
 
 template<bool compute_active_only, bool tag_active_only, bool tag_as_candidate, bool use_stored_neighbors>
 __global__ void evaluate_and_tag_high_density_from_buffer_kernel(SPH::DFSPHCData data, SPH::UnifiedParticleSet* bufferSet, int* countRmv, 
-	RealCuda limit_density, int count_affected, int* count_stored_density) {
+	RealCuda limit_density, int count_affected, int* count_stored_density, SPH::UnifiedParticleSet* existingFluidSet) {
 	int i = blockIdx.x * blockDim.x + threadIdx.x;
 	if (i >= count_affected) { return; }
 
@@ -508,6 +515,19 @@ __global__ void evaluate_and_tag_high_density_from_buffer_kernel(SPH::DFSPHCData
 	RealCuda density = bufferSet->getMass(i) * data.W_zero;
 	RealCuda density_fluid = 0;
 	RealCuda density_boundaries = 0;
+
+	if (existingFluidSet != NULL) {
+		//for existing fluid we cannot use stored neighbors
+		//the reason is that since I'm having neightbors form particle set that are at least partialy superposed
+		//it might happen that I go above the maximum number of neighbors allowed 
+		//and I'm not augmenting to double the number taking double the memory just to optimize this algorithm
+		ITER_NEIGHBORS_INIT_FROM_STRUCTURE(data, bufferSet, i);
+		ITER_NEIGHBORS_FROM_STRUCTURE(existingFluidSet->neighborsDataSet, existingFluidSet->pos,
+			{
+				RealCuda density_delta = existingFluidSet->getMass(j) * KERNEL_W(data, p_i - existingFluidSet->pos[j]);
+				density += density_delta;
+			});
+	}
 
 	if (use_stored_neighbors) {
 		ITER_NEIGHBORS_INIT(m_data, bufferSet, i);
@@ -620,7 +640,8 @@ __global__ void evaluate_and_tag_high_density_from_buffer_kernel(SPH::DFSPHCData
 //this function requires having the neighbors stored
 template<bool output_densities, bool compute_on_neighbors>
 __global__ void particle_selection_rule_1_kernel(SPH::DFSPHCData data, SPH::UnifiedParticleSet* bufferSet, 
-	RealCuda limit_density, int count_potential_fluid, RealCuda* sum_densities, int* count_summed, RealCuda* max_density) {
+	RealCuda limit_density, int count_potential_fluid, RealCuda* sum_densities, int* count_summed, RealCuda* max_density,
+	int iterId, SPH::UnifiedParticleSet* existingFluidSet) {
 	int i = blockIdx.x * blockDim.x + threadIdx.x;
 	if (i >= count_potential_fluid) { return; }
 
@@ -638,8 +659,35 @@ __global__ void particle_selection_rule_1_kernel(SPH::DFSPHCData data, SPH::Unif
 	
 	Vector3d p_i = bufferSet->pos[i];
 	RealCuda density = bufferSet->getMass(i) * data.W_zero;
+	RealCuda densityConstant = 0;
 	RealCuda min_dist = 100000;
 	RealCuda factor = 1;
+
+	//handle existing fluid
+	if (iterId == 0)
+	{
+		if (existingFluidSet != NULL) {
+			//for existing fluid we cannot use stored neighbors
+			//the reason is that since I'm having neightbors form particle set that are at least partialy superposed
+			//it might happen that I go above the maximum number of neighbors allowed 
+			//and I'm not augmenting to double the number taking double the memory just to optimize this algorithm
+			int count_neigbors_existing_fluid = 0;
+			//RealCuda min_dist = 1000;
+			ITER_NEIGHBORS_INIT_FROM_STRUCTURE(data, bufferSet, i);
+			ITER_NEIGHBORS_FROM_STRUCTURE(existingFluidSet->neighborsDataSet, existingFluidSet->pos,
+				{
+					RealCuda density_delta = existingFluidSet->getMass(j) * KERNEL_W(data, p_i - existingFluidSet->pos[j]);
+					densityConstant += density_delta;
+					//count_neigbors_existing_fluid++;
+					//min_dist = MIN_MACRO_CUDA(min_dist, ((p_i - existingFluidSet->pos[j]).norm()));
+				});
+			//printf("density constant from fluid and neighbors count: %i // %f %i // %f\n", i, densityConstant, 
+			//	count_neigbors_existing_fluid, min_dist);
+			bufferSet->kappa[i] = densityConstant;
+			//bufferSet->kappaV[i] = min_dist;
+		}
+	}
+
 	{
 		ITER_NEIGHBORS_INIT(m_data, bufferSet, i);
 		SPH::UnifiedParticleSet* otherSet;
@@ -658,57 +706,92 @@ __global__ void particle_selection_rule_1_kernel(SPH::DFSPHCData data, SPH::Unif
 			}
 		);
 
-		//then boundaires
-		otherSet = data.boundaries_data_cuda;
-		ITER_NEIGHBORS_FROM_STORAGE(data, bufferSet, i, 1,
-			{
-				RealCuda density_delta = otherSet->getMass(neighborIndex) * KERNEL_W(data, p_i - otherSet->pos[neighborIndex]);
-				density += density_delta;
+		//for boundaries and solids since they do not move it is only needed to compute it once at the start
+		if (iterId == 0) 
+		{
+			//then boundaires
+			otherSet = data.boundaries_data_cuda;
+			ITER_NEIGHBORS_FROM_STORAGE(data, bufferSet, i, 1,
+				{
+					RealCuda density_delta = otherSet->getMass(neighborIndex) * KERNEL_W(data, p_i - otherSet->pos[neighborIndex]);
+					densityConstant += density_delta;
 
-				RealCuda dist = (p_i - otherSet->pos[neighborIndex]).norm();
-				if (min_dist > dist) {
-					min_dist = dist;
-					factor = -1;
+					RealCuda dist = (p_i - otherSet->pos[neighborIndex]).norm();
+					if (min_dist > dist) {
+						min_dist = dist;
+						factor = -1;
+					}
+
 				}
+			);
 
-			}
-		);
+			//and finaly solids (which I'll count as boundaries)
+			//*
+			ITER_NEIGHBORS_FROM_STORAGE(data, bufferSet, i, 2,
+				{
+					int dummy = neighborIndex;
+					READ_DYNAMIC_BODIES_PARTICLES_INDEX(dummy, bodyIndex, neighborIndex);
+					const SPH::UnifiedParticleSet & body = data.vector_dynamic_bodies_data_cuda[bodyIndex];
 
+					RealCuda density_delta = body.getMass(neighborIndex) * KERNEL_W(data, p_i - body.pos[neighborIndex]);
+					densityConstant += density_delta;
+				}
+			);
 
-		//and finaly solids (which I'll count as boundaries)
-		//*
-		ITER_NEIGHBORS_FROM_STORAGE(data, bufferSet, i, 2,
-			{
-				int dummy = neighborIndex;
-				READ_DYNAMIC_BODIES_PARTICLES_INDEX(dummy, bodyIndex, neighborIndex);
-				const SPH::UnifiedParticleSet & body = data.vector_dynamic_bodies_data_cuda[bodyIndex];
-
-				RealCuda density_delta = body.getMass(neighborIndex) * KERNEL_W(data, p_i - body.pos[neighborIndex]);
-				density += density_delta;
-			}
-		);
-
+			//bufferSet->kappaV[i] = densityConstant - bufferSet->kappa[i];
+			//printf("density  %i // %f %f %f\n", i, density ,densityConstant, temp_calc);
+		}
 		//*/
 
-
 	}
+
+	//I can save the density that I'm sure doesn't change between iterations
+	//meaning the density from solids, boundaries and existing fluids
+	
+	if (iterId == 0) {
+
+		bufferSet->densityAdv[i] = densityConstant;
+	}
+	else {
+		/*
+		if (densityConstant != bufferSet->densityAdv[i]) {
+			printf("density constant is not the same: %i // %f!=%f\n", i, densityConstant, bufferSet->densityAdv[i]);
+		}
+		//*/
+		
+		densityConstant = bufferSet->densityAdv[i];
+	}
+
+	//add the constant
+	density += densityConstant;
+	
 
 	//*
 	if ((bufferSet->neighborsDataSet->cell_id[i] == TAG_ACTIVE)) {
 		//printf("dist/density: %f %f\n", factor*min_dist/data.particleRadius,density);
-		if (density > limit_density) {
-			bufferSet->neighborsDataSet->cell_id[i] =  TAG_REMOVAL_CANDIDATE;
-			//bufferSet->color[i] = Vector3d(0, 1, 0);
+		//ok if the sum of existing fluid and boundaries is too high I can directly delete the particle
+		if (densityConstant > (data.density0*0.70)) {
+			bufferSet->neighborsDataSet->cell_id[i] = TAG_REMOVAL_CANDIDATE;
 		}
-		//*
-		//doing it with atomic is as fast/faster than cub since only a few thread need to add their values
-		//also when chaining atomic it seems that only the first one has a cost
-		atomicAdd(sum_densities, density);
-		atomicAdd(count_summed, 1);
-		//*/
-		if (max_density != NULL) {
-			atomicToMax(max_density, density);
+		else {
+			if (density > limit_density) {
+				bufferSet->neighborsDataSet->cell_id[i] =  TAG_REMOVAL_CANDIDATE;
+				//bufferSet->color[i] = Vector3d(0, 1, 0);
+			}
+			else {
+				//*
+				//doing it with atomic is as fast/faster than cub since only a few thread need to add their values
+				//also when chaining atomic it seems that only the first one has a cost
+				atomicAdd(sum_densities, density);
+				atomicAdd(count_summed, 1);
+				//*/
+
+				if (max_density != NULL) {
+					atomicToMax(max_density, density);
+				}
+			}
 		}
+		
 	}
 	//*/
 
@@ -1195,7 +1278,8 @@ void RestFLuidLoader::init(DFSPHCData& data, bool center_loaded_fluid, int air_p
 	int simulation_config = 0;
 	if (simulation_config == 0) {
 		S_simulation.setCuboid(Vector3d(0, 2.5, 0), Vector3d(0.5, 2.5, 0.5));
-		S_fluid.setCuboid(Vector3d(0, 1, 0), Vector3d(0.5, 1, 0.5));
+		//S_fluid.setCuboid(Vector3d(0, 1, 0), Vector3d(0.5, 1, 0.5));
+		S_fluid.setCuboid(Vector3d(0, 0.95, 0), Vector3d(0.5, 1, 0.5));
 		//S_simulation.setCuboid(Vector3d(0, 1, 0), Vector3d(0.5, 1, 0.5));
 		//S_fluid.move(Vector3d(0, 1, 0));
 	}
@@ -1499,22 +1583,30 @@ __global__ void tag_neighbors_of_tagged_kernel(SPH::DFSPHCData data, SPH::Unifie
 }
 
 template<bool tag_untagged_only, bool tag_candidate_only, bool tag_air_separate>
-__global__ void tag_neighbors_of_tagged_kernel(SPH::DFSPHCData data, SPH::UnifiedParticleSet* particleSet, RealCuda tagging_distance, int tag_i, int tag_o, int count_candidate=-1
-, int tag_o_air= TAG_AIR) {
+__global__ void tag_neighbors_of_tagged_kernel(SPH::DFSPHCData data, SPH::UnifiedParticleSet* particleSet, 
+	RealCuda tagging_distance, int tag_i, int tag_o, int count_candidate=-1, int tag_o_air= TAG_AIR) {
 	int i = blockIdx.x * blockDim.x + threadIdx.x;
 	if (i >= particleSet->numParticles) { return; }
 
+	//particleSet->color[i] = Vector3d(-1, -1, -1);
 	if (particleSet->neighborsDataSet->cell_id[i] == tag_i) {
 		Vector3d p_i = particleSet->pos[i];
+		//particleSet->color[i] = Vector3d(1, 0, 0);
 
 		ITER_NEIGHBORS_INIT_CELL_COMPUTATION(particleSet->pos[i], data.getKernelRadius(), data.gridOffset);
 
-		//override the kernel distance
+		//override the kernel distance after that the grid cell computation is done
 		radius_sq = tagging_distance * tagging_distance;
 		
 		NeighborsSearchDataSet* neighborsDataSet = particleSet->neighborsDataSet;
 		Vector3d* positions = particleSet->pos;
 		int range_increase = tagging_distance / data.getKernelRadius();
+		/*
+		if (i == 9400) {
+			printf("range increase test : %i = %f / %f \n", 
+				range_increase , tagging_distance , data.getKernelRadius());
+		}
+		//*/
 		for (int k = -1 - range_increase; k < (2 + range_increase); ++k) {
 			if ((y + k < 0) || (y + k >= CELL_ROW_LENGTH)) {
 				continue;
@@ -1528,6 +1620,14 @@ __global__ void tag_neighbors_of_tagged_kernel(SPH::DFSPHCData data, SPH::Unifie
 						continue;
 					}
 					unsigned int cur_cell_id = COMPUTE_CELL_INDEX(x + n, y + k, z + m);
+					/*
+					if (i == 9400) {
+						static int count_pass = 0;
+						count_pass++;
+						printf("count pass : %i // %i : %i %i %i \n",count_pass, cur_cell_id,
+							x + n, y + k, z + m);
+					}
+					//*/
 					unsigned int end = neighborsDataSet->cell_start_end[cur_cell_id + 1];
 					for (unsigned int cur_particle = neighborsDataSet->cell_start_end[cur_cell_id]; cur_particle < end; ++cur_particle) {
 						unsigned int j = neighborsDataSet->p_id_sorted[cur_particle];
@@ -1547,6 +1647,12 @@ __global__ void tag_neighbors_of_tagged_kernel(SPH::DFSPHCData data, SPH::Unifie
 										//printf("test tagging air neighbors\n");
 									}else if (particleSet->neighborsDataSet->cell_id[j] != TAG_ACTIVE) {
 										particleSet->neighborsDataSet->cell_id[j] = tag_o;
+										//particleSet->color[j] = Vector3d(1, 1, 0);
+										/*
+										if (i == 9400) {
+											printf("neighbor info : %i  \n", j);
+										}
+										//*/
 									}
 								}
 							}
@@ -1657,6 +1763,34 @@ void show_extensive_density_information(SPH::UnifiedParticleSet* particleSet, in
 	}
 }
 
+//this function tags for removal any particle that is too close to the existing fluid
+/*
+__global__ void tag_close_to__kernel(SPH::DFSPHCData data, SPH::UnifiedParticleSet* particleSet, SPH::UnifiedParticleSet* existingFluidSet,
+	RealCuda limit_distance_sq, int count_candidates) {
+	int i = blockIdx.x * blockDim.x + threadIdx.x;
+	if (i >= particleSet->numParticles) { return; }
+
+	if (i > count_candidates) {
+		return;
+	}
+
+	if (particleSet->neighborsDataSet->cell_id[i] != TAG_ACTIVE) {
+		return;
+	}
+
+	Vector3d p_i = particleSet->pos[i];
+	ITER_NEIGHBORS_INIT_FROM_STRUCTURE(data, particleSet, i);
+	ITER_NEIGHBORS_FROM_STRUCTURE(existingFluidSet->neighborsDataSet, existingFluidSet->pos,
+		{
+			if ((p_i - existingFluidSet->pos[j]).squaredNorm() < limit_distance_sq) {
+				particleSet->neighborsDataSet->cell_id[i] != TAG_REMOVAL;
+				return;
+			}
+		});
+}
+//*/
+
+
 void RestFLuidLoader::tagDataToSurface(SPH::DFSPHCData& data, RestFLuidLoaderInterface::TaggingParameters& params) {
 	if (!isInitialized()) {
 		std::cout << "RestFLuidLoader::tagDataToSurface tagging impossible data was not initialized" << std::endl;
@@ -1687,11 +1821,17 @@ void RestFLuidLoader::tagDataToSurface(SPH::DFSPHCData& data, RestFLuidLoaderInt
 	std::vector<std::string> timing_names{ "neighbor","void","tagging","void","loop","count_tagged_for_removal","void","cleartag" };
 	SPH::SegmentedTiming timings("tag data", timing_names, true);
 	timings.init_step();//start point of the current step (if measuring avgs you need to call it at everystart of the loop)
+
+
 	//*/
 	//reinitialise the neighbor structure (might be able to delete it if I never use it
 	//though I will most likely use it
 	//backgroundFluidBufferSet->initNeighborsSearchData(data, false);
 	backgroundFluidBufferSet->initAndStoreNeighbors(data, false);
+
+	if (params.keep_existing_fluid) {
+		data.fluid_data->initNeighborsSearchData(data, false);
+	}
 
 	timings.time_next_point();//time 
 
@@ -1723,7 +1863,7 @@ void RestFLuidLoader::tagDataToSurface(SPH::DFSPHCData& data, RestFLuidLoaderInt
 	set_buffer_to_value<RealCuda>(backgroundFluidBufferSet->kappa, 0, backgroundFluidBufferSet->numParticles);
 	set_buffer_to_value<RealCuda>(backgroundFluidBufferSet->kappaV, 0, backgroundFluidBufferSet->numParticles);
 
-
+	if(show_debug)
 
 	timings.time_next_point();//time 
 
@@ -1751,6 +1891,27 @@ void RestFLuidLoader::tagDataToSurface(SPH::DFSPHCData& data, RestFLuidLoaderInt
 				data.getKernelRadius(), count_potential_fluid);
 		}
 		gpuErrchk(cudaDeviceSynchronize());
+
+		//tag existing fluid neighbors
+		if (params.keep_existing_fluid) {
+			int numBlocks = calculateNumBlocks(data.fluid_data->numParticles);
+			//here I can optimize the comutation by tagging for removal any particle that is extremely close to an existing fluid particle
+			bool remove_close_to_fluid = true;
+			if (remove_close_to_fluid) {
+				RealCuda distance_to_exiting_limit = data.particleRadius*1.05;
+				tag_neighborhood_kernel<false, false> << <numBlocks, BLOCKSIZE >> > (data, data.fluid_data->gpu_ptr, backgroundFluidBufferSet->gpu_ptr,
+					distance_to_exiting_limit, backgroundFluidBufferSet->numParticles, TAG_REMOVAL);
+				gpuErrchk(cudaDeviceSynchronize());
+			}
+			
+			//do the actual tag as actives
+			tag_neighborhood_kernel<true, true> << <numBlocks, BLOCKSIZE >> > (data, data.fluid_data->gpu_ptr, backgroundFluidBufferSet->gpu_ptr,
+				data.getKernelRadius(), count_potential_fluid);
+			gpuErrchk(cudaDeviceSynchronize());
+
+			//if we have existing fluid we can directly eliminate any particle too close from it 
+
+		}
 
 		//and tag their neighbors if I need it
 		bool tag_neigbors = true;
@@ -1825,7 +1986,27 @@ void RestFLuidLoader::tagDataToSurface(SPH::DFSPHCData& data, RestFLuidLoaderInt
 				std::cout << "tag: " << tag << "   count tagged: " << *(SVS_CU::get()->tagged_particles_count) << std::endl;
 			}
 			{
-				int tag = TAG_1;
+				int tag = TAG_AIR;
+				int numBlocks = calculateNumBlocks(backgroundFluidBufferSet->numParticles);
+				*(SVS_CU::get()->tagged_particles_count) = 0;
+				count_particle_with_tag_kernel << <numBlocks, BLOCKSIZE >> > (backgroundFluidBufferSet->gpu_ptr, tag, SVS_CU::get()->tagged_particles_count);
+				gpuErrchk(cudaDeviceSynchronize());
+
+				std::cout << "tag: " << tag << "   count tagged: " << *(SVS_CU::get()->tagged_particles_count) << std::endl;
+			}
+
+			{
+				int tag = TAG_UNTAGGED;
+				int numBlocks = calculateNumBlocks(backgroundFluidBufferSet->numParticles);
+				*(SVS_CU::get()->tagged_particles_count) = 0;
+				count_particle_with_tag_kernel << <numBlocks, BLOCKSIZE >> > (backgroundFluidBufferSet->gpu_ptr, tag, SVS_CU::get()->tagged_particles_count);
+				gpuErrchk(cudaDeviceSynchronize());
+
+				std::cout << "tag: " << tag << "   count tagged: " << *(SVS_CU::get()->tagged_particles_count) << std::endl;
+			}
+
+			{
+				int tag = TAG_REMOVAL;
 				int numBlocks = calculateNumBlocks(backgroundFluidBufferSet->numParticles);
 				*(SVS_CU::get()->tagged_particles_count) = 0;
 				count_particle_with_tag_kernel << <numBlocks, BLOCKSIZE >> > (backgroundFluidBufferSet->gpu_ptr, tag, SVS_CU::get()->tagged_particles_count);
@@ -1849,9 +2030,10 @@ void RestFLuidLoader::tagDataToSurface(SPH::DFSPHCData& data, RestFLuidLoaderInt
 	//evaluate the density and show it (only debug)
 	if(show_debug){
 		{
+			
 			int numBlocks = calculateNumBlocks(count_potential_fluid);
 			evaluate_and_tag_high_density_from_buffer_kernel<false, true, true, true> << <numBlocks, BLOCKSIZE >> > (data, backgroundFluidBufferSet->gpu_ptr,
-				outInt, 4000, count_potential_fluid, NULL);
+				outInt, 4000, count_potential_fluid, NULL, (params.keep_existing_fluid ? data.fluid_data->gpu_ptr : NULL));
 			gpuErrchk(cudaDeviceSynchronize());
 		}
 
@@ -1865,7 +2047,7 @@ void RestFLuidLoader::tagDataToSurface(SPH::DFSPHCData& data, RestFLuidLoaderInt
 		{
 			int numBlocks = calculateNumBlocks(count_potential_fluid);
 			evaluate_and_tag_high_density_from_buffer_kernel<false, true, true, false> << <numBlocks, BLOCKSIZE >> > (data, backgroundFluidBufferSet->gpu_ptr, 
-				outInt, 4000, count_potential_fluid, NULL);
+				outInt, 4000, count_potential_fluid, NULL, (params.keep_existing_fluid ? data.fluid_data->gpu_ptr : NULL));
 			gpuErrchk(cudaDeviceSynchronize());
 		}
 
@@ -1967,8 +2149,16 @@ void RestFLuidLoader::tagDataToSurface(SPH::DFSPHCData& data, RestFLuidLoaderInt
 	const bool candidate_validation_separate = true;
 	RealCuda* max_density_first_step= SVS_CU::get()->avg_density_err;
 	*max_density_first_step = 0;
+
+	//clear buffers
+	set_buffer_to_value<RealCuda>(backgroundFluidBufferSet->densityAdv, 0, backgroundFluidBufferSet->numParticles);
+	set_buffer_to_value<RealCuda>(backgroundFluidBufferSet->kappaV, 0, backgroundFluidBufferSet->numParticles);
+	set_buffer_to_value<RealCuda>(backgroundFluidBufferSet->kappa, 0, backgroundFluidBufferSet->numParticles);
+
 	while (limit_density>density_end) {
 		 ++i;//a simple counter
+
+		set_buffer_to_value<RealCuda>(backgroundFluidBufferSet->kappa, 0, backgroundFluidBufferSet->numParticles);
 
 		//set_buffer_to_value<RealCuda>(backgroundFluidBufferSet->density, 0, backgroundFluidBufferSet->numParticles);
 
@@ -1982,14 +2172,96 @@ void RestFLuidLoader::tagDataToSurface(SPH::DFSPHCData& data, RestFLuidLoaderInt
 		RealCuda avg_density = 0;
 		int count_to_rmv_this_step = 0;
 		if (use_clean_version) {
+			
+
 			*outRealCuda = 0;
 			*outInt = 0;
 			{
 				int numBlocks = calculateNumBlocks(count_potential_fluid);
-				particle_selection_rule_1_kernel<true, false> << <numBlocks, BLOCKSIZE >> > (data, backgroundFluidBufferSet->gpu_ptr,
-					limit_density, count_potential_fluid, outRealCuda, outInt, max_density_first_step);
+				if (params.keep_existing_fluid) {
+					particle_selection_rule_1_kernel<true, false> << <numBlocks, BLOCKSIZE >> > (data, backgroundFluidBufferSet->gpu_ptr,
+						limit_density, count_potential_fluid, outRealCuda, outInt, 
+						max_density_first_step, i - 1, data.fluid_data->gpu_ptr);
+				}
+				else {
+					particle_selection_rule_1_kernel<true, false> << <numBlocks, BLOCKSIZE >> > (data, backgroundFluidBufferSet->gpu_ptr,
+						limit_density, count_potential_fluid, outRealCuda, outInt, 
+						max_density_first_step, i - 1, NULL);
+				}
 				gpuErrchk(cudaDeviceSynchronize());
 			}
+
+			if (false) {
+				if (i == 1) {
+					Vector3d* pos = new Vector3d[backgroundFluidBufferSet->numParticles];
+					read_UnifiedParticleSet_cuda(*backgroundFluidBufferSet, pos, NULL, NULL, NULL);
+
+					std::ofstream myfile("temp5.csv", std::ofstream::trunc);
+					if (myfile.is_open())
+					{
+						for (int j = 0; j < backgroundFluidBufferSet->numParticles; j++) {
+
+							myfile << backgroundFluidBufferSet->neighborsDataSet->cell_id[j] << "  " << pos[j].toString() << "  " <<
+								backgroundFluidBufferSet->density[j] << "  " <<
+								backgroundFluidBufferSet->density[j] - backgroundFluidBufferSet->densityAdv[j] << "  " <<
+								backgroundFluidBufferSet->densityAdv[j] << "  " << backgroundFluidBufferSet->kappa[j] << "  " <<
+								backgroundFluidBufferSet->densityAdv[j] - backgroundFluidBufferSet->kappa[j] << "  " <<
+								backgroundFluidBufferSet->kappaV[j] << "  " << std::endl;
+						}
+						myfile.close();
+					}
+
+					exit(0);
+				}
+			}
+
+			if (true) {
+				{
+					// a test to compare the zone between the fluid-fluid and border-fluid
+					UnifiedParticleSet* particleSet = backgroundFluidBufferSet;
+					RealCuda min_density = 10000;
+					RealCuda max_density = 0;
+					RealCuda avg_density = 0;
+					RealCuda min_density_all = 10000;
+					RealCuda max_density_all = 0;
+					RealCuda avg_density_all = 0;
+					int count = 0;
+					int count_all = 0;
+					for (int j = 0; j < count_potential_fluid; ++j) {
+						if (particleSet->neighborsDataSet->cell_id[j] == TAG_ACTIVE) {
+							if (particleSet->getNumberOfNeighbourgs(j, 1) > 0) {
+								avg_density += particleSet->density[j];
+								min_density = std::fminf(min_density, particleSet->density[j]);
+								max_density = std::fmaxf(max_density, particleSet->density[j]);
+								count++;
+							}
+							else {
+								avg_density_all += particleSet->density[j];
+								min_density_all = std::fminf(min_density_all, particleSet->density[j]);
+								max_density_all = std::fmaxf(max_density_all, particleSet->density[j]);
+								count_all++;
+							}
+						}
+					}
+					avg_density /= count;
+					avg_density_all /= count_all;
+					std::cout << "                  count/avg/min/max density boundary : " << count << " / " << avg_density << " / " <<
+						min_density << " / " << max_density << std::endl;
+					std::cout << "                  count/avg/min/max density fluid    : " << count_all << " / " << avg_density_all << " / " <<
+						min_density_all << " / " << max_density_all << std::endl;
+				}
+			}
+
+
+			//first we need to check if there is any particle left
+			if ((*outInt) == 0) {
+				//ok i'll do a gross suposition, if there is no candidate particle left for the selection
+				//it very likely means that there is no particle remaining that would be added to the simulation
+				//if I were to continue with the process
+				_isDataTagged = false;
+				return;
+			}
+
 			//exit(0);
 			//avg_density = 1000;//(*outRealCuda) / (*outInt);
 			avg_density = (*outRealCuda) / (*outInt);
@@ -2007,11 +2279,24 @@ void RestFLuidLoader::tagDataToSurface(SPH::DFSPHCData& data, RestFLuidLoaderInt
 					//yeah if we have the timer we need to end its step
 					timings_loop.end_step(true);//time
 					
+					//deactivate that since for next stepsince it isimpossible for it to trigger for 2 steps
+					max_density_first_step = NULL;
+
 					//go to the next step
 					continue;
 				}
 			}
-			max_density_first_step = NULL;
+			else {
+				//reactivate the utation of the max in case there is a gap after some steps
+				//Normaly this should NEVER happens exact when there is extremely few remaining particles
+				//when the existing fluid is used this fucking case happens sometime due to some optimizations 
+				//so I might as well use it as an advantage
+				if (params.keep_existing_fluid) {
+					max_density_first_step = SVS_CU::get()->avg_density_err;
+					*max_density_first_step = 0;
+				}
+				
+			}
 
 			/*
 			RealCuda* sum_densities = SVS_CU::get()->avg_density_err;
@@ -2038,7 +2323,7 @@ void RestFLuidLoader::tagDataToSurface(SPH::DFSPHCData& data, RestFLuidLoaderInt
 			{
 				int numBlocks = calculateNumBlocks(count_potential_fluid);
 				evaluate_and_tag_high_density_from_buffer_kernel<false, true, true, true> << <numBlocks, BLOCKSIZE >> > (data, backgroundFluidBufferSet->gpu_ptr,
-					outInt, limit_density, count_potential_fluid, outInt2);
+					outInt, limit_density, count_potential_fluid, outInt2, (params.keep_existing_fluid ? data.fluid_data->gpu_ptr : NULL));
 				gpuErrchk(cudaDeviceSynchronize());
 			}
 			count_to_rmv_this_step = *outInt;
@@ -2240,7 +2525,7 @@ void RestFLuidLoader::tagDataToSurface(SPH::DFSPHCData& data, RestFLuidLoaderInt
 				{
 					int numBlocks = calculateNumBlocks(count_potential_fluid);
 					evaluate_and_tag_high_density_from_buffer_kernel<false, true, true, true> << <numBlocks, BLOCKSIZE >> > (data, backgroundFluidBufferSet->gpu_ptr,
-						outInt, 4000, count_potential_fluid, NULL);
+						outInt, 4000, count_potential_fluid, NULL, (params.keep_existing_fluid ? data.fluid_data->gpu_ptr : NULL));
 					gpuErrchk(cudaDeviceSynchronize());
 				}
 
@@ -2270,6 +2555,8 @@ void RestFLuidLoader::tagDataToSurface(SPH::DFSPHCData& data, RestFLuidLoaderInt
 				}
 				std::cout << "fluid min/max " << min.toString() << " // " << max.toString() << std::endl;
 			}
+
+			
 		}
 	}
 	timings.time_next_point();//time 
@@ -2295,7 +2582,7 @@ void RestFLuidLoader::tagDataToSurface(SPH::DFSPHCData& data, RestFLuidLoaderInt
 				{
 					int numBlocks = calculateNumBlocks(backgroundFluidBufferSet->numParticles);
 					evaluate_and_tag_high_density_from_buffer_kernel<false, true, true, true> << <numBlocks, BLOCKSIZE >> > (data, backgroundFluidBufferSet->gpu_ptr,
-						outInt, 4000, backgroundFluidBufferSet->numParticles, NULL);
+						outInt, 4000, backgroundFluidBufferSet->numParticles, NULL, (params.keep_existing_fluid ? data.fluid_data->gpu_ptr : NULL));
 					gpuErrchk(cudaDeviceSynchronize());
 				}
 			}
@@ -2324,7 +2611,29 @@ void RestFLuidLoader::tagDataToSurface(SPH::DFSPHCData& data, RestFLuidLoaderInt
 
 	}
 
-	
+	if (false) {
+		{
+			Vector3d* pos = new Vector3d[backgroundFluidBufferSet->numParticles];
+			read_UnifiedParticleSet_cuda(*backgroundFluidBufferSet, pos, NULL, NULL, NULL);
+
+			std::ofstream myfile("temp5.csv", std::ofstream::trunc);
+			if (myfile.is_open())
+			{
+				for (int j = 0; j < backgroundFluidBufferSet->numParticles; j++) {
+
+					myfile << backgroundFluidBufferSet->neighborsDataSet->cell_id[j] << "  " << pos[j].toString() << "  " <<
+						backgroundFluidBufferSet->density[j] << "  " <<
+						backgroundFluidBufferSet->density[j] - backgroundFluidBufferSet->densityAdv[j] << "  " <<
+						backgroundFluidBufferSet->densityAdv[j] << "  " << backgroundFluidBufferSet->kappa[j] << "  " <<
+						backgroundFluidBufferSet->densityAdv[j] - backgroundFluidBufferSet->kappa[j] << "  " <<
+						backgroundFluidBufferSet->kappaV[j] << "  " << std::endl;
+				}
+				myfile.close();
+			}
+
+			exit(0);
+		}
+	}
 
 	//count the number of particles to remove at the end
 	//if the air particles are part of the selection I'll use a two pass process for now 
@@ -2384,7 +2693,7 @@ void RestFLuidLoader::tagDataToSurface(SPH::DFSPHCData& data, RestFLuidLoaderInt
 		{
 			int numBlocks = calculateNumBlocks(count_potential_fluid);
 			evaluate_and_tag_high_density_from_buffer_kernel<false, true, true, true> << <numBlocks, BLOCKSIZE >> > (data, backgroundFluidBufferSet->gpu_ptr,
-				outInt, 4000, count_potential_fluid, outInt2);
+				outInt, 4000, count_potential_fluid, outInt2, (params.keep_existing_fluid ? data.fluid_data->gpu_ptr : NULL));
 			gpuErrchk(cudaDeviceSynchronize());
 		}
 
@@ -2434,7 +2743,7 @@ void RestFLuidLoader::tagDataToSurface(SPH::DFSPHCData& data, RestFLuidLoaderInt
 		{
 			int numBlocks = calculateNumBlocks(count_potential_fluid);
 			evaluate_and_tag_high_density_from_buffer_kernel<true,false,false, true> << <numBlocks, BLOCKSIZE >> > (data, backgroundFluidBufferSet->gpu_ptr, 
-				outInt, 4000, count_potential_fluid, NULL);
+				outInt, 4000, count_potential_fluid, NULL, (params.keep_existing_fluid ? data.fluid_data->gpu_ptr : NULL));
 			gpuErrchk(cudaDeviceSynchronize());
 		}
 		total_to_remove += *outInt;
@@ -2515,7 +2824,7 @@ void RestFLuidLoader::tagDataToSurface(SPH::DFSPHCData& data, RestFLuidLoaderInt
 			{
 				int numBlocks = calculateNumBlocks(count_potential_fluid);
 				evaluate_and_tag_high_density_from_buffer_kernel<true, false, false, true> << <numBlocks, BLOCKSIZE >> > (data, backgroundFluidBufferSet->gpu_ptr, 
-					outInt, 4000, count_potential_fluid, NULL);
+					outInt, 4000, count_potential_fluid, NULL, (params.keep_existing_fluid ? data.fluid_data->gpu_ptr : NULL));
 				gpuErrchk(cudaDeviceSynchronize());
 			}
 			total_to_remove += *outInt;
@@ -2553,10 +2862,11 @@ void RestFLuidLoader::tagDataToSurface(SPH::DFSPHCData& data, RestFLuidLoaderInt
 	timings.time_next_point();//time 
 
 	//I need to remove all debug tag
-	//for now just wipe all that is not the removal tag
+	//for now just wipe all that is not the removal tag and the active tag
 	//technically I could save quite some time by saving the tagging of the actve and active neighbors
 	for (int i = 0; i < backgroundFluidBufferSet->numParticles; i++) {
-		if (backgroundFluidBufferSet->neighborsDataSet->cell_id[i] != TAG_REMOVAL) {
+		if (backgroundFluidBufferSet->neighborsDataSet->cell_id[i] != TAG_REMOVAL &&
+			backgroundFluidBufferSet->neighborsDataSet->cell_id[i] != TAG_ACTIVE) {
 			backgroundFluidBufferSet->neighborsDataSet->cell_id[i] = TAG_UNTAGGED;
 		}
 	}
@@ -2625,7 +2935,7 @@ void RestFLuidLoader::tagDataToSurface(SPH::DFSPHCData& data, RestFLuidLoaderInt
 		{
 			int numBlocks = calculateNumBlocks(backgroundFluidBufferSet->numParticles);
 			evaluate_and_tag_high_density_from_buffer_kernel<false, false, false, false> << <numBlocks, BLOCKSIZE >> > (data, backgroundFluidBufferSet->gpu_ptr, 
-				outInt, 4000, backgroundFluidBufferSet->numParticles, NULL);
+				outInt, 4000, backgroundFluidBufferSet->numParticles, NULL, (params.keep_existing_fluid ? data.fluid_data->gpu_ptr : NULL));
 			gpuErrchk(cudaDeviceSynchronize());
 		}
 
@@ -2653,7 +2963,7 @@ void RestFLuidLoader::tagDataToSurface(SPH::DFSPHCData& data, RestFLuidLoaderInt
 		{
 			int numBlocks = calculateNumBlocks(backgroundFluidBufferSet->numParticles);
 			evaluate_and_tag_high_density_from_buffer_kernel<false, false, false, false> << <numBlocks, BLOCKSIZE >> > (data, backgroundFluidBufferSet->gpu_ptr, 
-				outInt, 4000, backgroundFluidBufferSet->numParticles, NULL);
+				outInt, 4000, backgroundFluidBufferSet->numParticles, NULL, (params.keep_existing_fluid ? data.fluid_data->gpu_ptr : NULL));
 			gpuErrchk(cudaDeviceSynchronize());
 		}
 
@@ -2830,7 +3140,7 @@ void RestFLuidLoader::tagDataToSurface(SPH::DFSPHCData& data, RestFLuidLoaderInt
 		{
 			int numBlocks = calculateNumBlocks(backgroundFluidBufferSet->numParticles);
 			evaluate_and_tag_high_density_from_buffer_kernel<true, false, false, false> << <numBlocks, BLOCKSIZE >> > (data, backgroundFluidBufferSet->gpu_ptr, 
-				outInt, limit_density, backgroundFluidBufferSet->numParticles, NULL);
+				outInt, limit_density, backgroundFluidBufferSet->numParticles, NULL, (params.keep_existing_fluid ? data.fluid_data->gpu_ptr : NULL));
 			gpuErrchk(cudaDeviceSynchronize());
 		}
 
@@ -2933,145 +3243,45 @@ int RestFLuidLoader::loadDataToSimulation(SPH::DFSPHCData& data, RestFLuidLoader
 	std::cout << "count to rmv in fluid/air " <<count_high_density_tagged_in_potential <<"  "<<
 		count_high_density_tagged_in_air << std::endl;
 
-	if (params.keep_air_particles) {
-		std::cout << "keeping air particles" << std::endl;
-		//here it is more complicated since I want to remove the tagged particles without 
-		//breaking the order of the particles
-
-		//just copy all the values to the fluid (including air)
-		data.fluid_data->updateActiveParticleNumber(backgroundFluidBufferSet->numParticles);
-
-		gpuErrchk(cudaMemcpy(data.fluid_data->mass, backgroundFluidBufferSet->mass, backgroundFluidBufferSet->numParticles * sizeof(RealCuda), cudaMemcpyDeviceToDevice));
-		gpuErrchk(cudaMemcpy(data.fluid_data->pos, backgroundFluidBufferSet->pos, backgroundFluidBufferSet->numParticles * sizeof(Vector3d), cudaMemcpyDeviceToDevice));
-		gpuErrchk(cudaMemcpy(data.fluid_data->vel, backgroundFluidBufferSet->vel, backgroundFluidBufferSet->numParticles * sizeof(Vector3d), cudaMemcpyDeviceToDevice));
-		gpuErrchk(cudaMemcpy(data.fluid_data->color, backgroundFluidBufferSet->color, backgroundFluidBufferSet->numParticles * sizeof(Vector3d), cudaMemcpyDeviceToDevice));
-		//data.fluid_data->resetColor();
-
-
-		//I know that all air paticles and accepted fluid particles have cell_id< TAG_active which is < numPaticles
-		//so the easiest ay to maintain the order is to add to each particle tag it's index
-		gpuErrchk(cudaMemcpy(backgroundFluidBufferSet->neighborsDataSet->local_id, 
-			backgroundFluidBufferSet->neighborsDataSet->cell_id, 
-			backgroundFluidBufferSet->numParticles * sizeof(unsigned int), cudaMemcpyDeviceToDevice));
-
-		//a test 
-		gpuErrchk(cudaMemcpy(data.fluid_data->kappa, backgroundFluidBufferSet->density, 
-			backgroundFluidBufferSet->numParticles * sizeof(RealCuda), cudaMemcpyDeviceToDevice));
-
-
-		remove_tagged_particles(data.fluid_data, backgroundFluidBufferSet->neighborsDataSet->local_id,
-			backgroundFluidBufferSet->neighborsDataSet->cell_id_sorted, 
-			count_high_density_tagged_in_potential+count_high_density_tagged_in_air,true);
-
-		nbr_fluid_particles = count_potential_fluid - count_high_density_tagged_in_potential;
-
-		gpuErrchk(cudaMemcpy(data.fluid_data->density, data.fluid_data->kappa,
-			data.fluid_data->numParticles * sizeof(RealCuda), cudaMemcpyDeviceToDevice));
-
-		//a check to see if there is still some particles that should have been removed
-		//if everything is working properly this test should be outputting files where you can get the same density for the corresponfding particles
-		if (false) {
-			//after the copy
-			if (true) {
-				UnifiedParticleSet* tempSet = data.fluid_data;
-
-				tempSet->initAndStoreNeighbors(data, false);
-				if (true) {
-					set_buffer_to_value<RealCuda>(tempSet->density, 0, tempSet->numParticles);
-					{
-						int numBlocks = calculateNumBlocks(tempSet->numParticles);
-						evaluate_and_tag_high_density_from_buffer_kernel<false, true, true, true> << <numBlocks, BLOCKSIZE >> > (data, tempSet->gpu_ptr,
-							outInt, 4000, tempSet->numParticles, NULL);
-						gpuErrchk(cudaDeviceSynchronize());
-					}
-				}
-
-				gpuErrchk(cudaMemcpy(tempSet->kappaV, tempSet->density,
-					tempSet->numParticles * sizeof(RealCuda), cudaMemcpyDeviceToDevice));
-
-				if (true) {
-					cuda_divergence_warmstart_init(data);
-				}
-
-				//*
-				std::cout << "!!!!!!!!!!!!! after with air           !!!!!!!!!!!!!!!" << std::endl;
-				show_extensive_density_information(tempSet, tempSet->numParticles);
-				std::cout << "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!" << std::endl;
-				//*/
-
-
-
-				std::ofstream myfile("temp.csv", std::ofstream::trunc);
-				if (myfile.is_open())
-				{
-					for (int i_test = 0; i_test < tempSet->numParticles; ++i_test) {
-						myfile << i_test << "   " << tempSet->density[i_test] << "  " <<
-							tempSet->neighborsDataSet->cell_id[i_test] << "  " <<
-							backgroundFluidBufferSet->neighborsDataSet->cell_id_sorted[i_test] << "  " <<
-							(i_test<nbr_fluid_particles) << "  " <<
-							(i_test<count_potential_fluid) << "  " << tempSet->getNumberOfNeighbourgs(i_test, 0) << "  " <<
-							tempSet->getNumberOfNeighbourgs(i_test, 1) << "  " <<
-							tempSet->kappa[i_test] << "  " << tempSet->kappaV[i_test]*2 << "  " << std::endl;
-
-					}
-				}
-			}
-
-			//before the copy
-			if (true) {
-				UnifiedParticleSet* tempSet = backgroundFluidBufferSet;
-
-				if (true) {
-					set_buffer_to_value<RealCuda>(tempSet->density, 0, tempSet->numParticles);
-					{
-						int numBlocks = calculateNumBlocks(tempSet->numParticles);
-						evaluate_and_tag_high_density_from_buffer_kernel<false, true, true, true> << <numBlocks, BLOCKSIZE >> > (data, tempSet->gpu_ptr,
-							outInt, 4000, tempSet->numParticles, NULL);
-						gpuErrchk(cudaDeviceSynchronize());
-					}
-				}
-
-				//*
-				std::cout << "!!!!!!!!!!!!! after with air           !!!!!!!!!!!!!!!" << std::endl;
-				show_extensive_density_information(tempSet, tempSet->numParticles);
-				std::cout << "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!" << std::endl;
-				//*/
-
-
-
-				std::ofstream myfile("temp3.csv", std::ofstream::trunc);
-				if (myfile.is_open())
-				{
-					for (int i_test = 0; i_test < tempSet->numParticles; ++i_test) {
-						myfile << i_test << "   " << tempSet->density[i_test] << "  " <<
-							tempSet->neighborsDataSet->cell_id[i_test] << "  " <<
-							tempSet->neighborsDataSet->cell_id_sorted[i_test] << "  " <<
-							(i_test<nbr_fluid_particles) << "  " <<
-							(i_test<count_potential_fluid) << "  " << tempSet->getNumberOfNeighbourgs(i_test, 0) << "  " <<
-							tempSet->getNumberOfNeighbourgs(i_test, 1) << "  " << std::endl;
-
-					}
-				}
-			}
+	if (params.keep_existing_fluid) {
+		if (params.keep_air_particles) {
+			throw("RestFLuidLoader::loadDataToSimulation keeping the air particles while keeping existing fluid is not currently allowed");
 		}
-		
-	}
-	else {
-		//just copy all the potential values to the fluid
-		data.fluid_data->updateActiveParticleNumber(count_potential_fluid);
 
-		gpuErrchk(cudaMemcpy(data.fluid_data->mass, backgroundFluidBufferSet->mass, count_potential_fluid * sizeof(RealCuda), cudaMemcpyDeviceToDevice));
-		gpuErrchk(cudaMemcpy(data.fluid_data->pos, backgroundFluidBufferSet->pos, count_potential_fluid * sizeof(Vector3d), cudaMemcpyDeviceToDevice));
-		gpuErrchk(cudaMemcpy(data.fluid_data->vel, backgroundFluidBufferSet->vel, count_potential_fluid * sizeof(Vector3d), cudaMemcpyDeviceToDevice));
-		gpuErrchk(cudaMemcpy(data.fluid_data->color, backgroundFluidBufferSet->color, count_potential_fluid * sizeof(Vector3d), cudaMemcpyDeviceToDevice));
+	
+
+		//just copy all the potential values to the fluid
+		int count_existing_fluid_particles = data.fluid_data->numParticles;
+		data.fluid_data->updateActiveParticleNumber(count_potential_fluid + count_existing_fluid_particles);
+
+		gpuErrchk(cudaMemcpy(data.fluid_data->mass + count_existing_fluid_particles, backgroundFluidBufferSet->mass,
+			count_potential_fluid * sizeof(RealCuda), cudaMemcpyDeviceToDevice));
+		gpuErrchk(cudaMemcpy(data.fluid_data->pos + count_existing_fluid_particles, backgroundFluidBufferSet->pos,
+			count_potential_fluid * sizeof(Vector3d), cudaMemcpyDeviceToDevice));
+		gpuErrchk(cudaMemcpy(data.fluid_data->vel + count_existing_fluid_particles, backgroundFluidBufferSet->vel,
+			count_potential_fluid * sizeof(Vector3d), cudaMemcpyDeviceToDevice));
+		gpuErrchk(cudaMemcpy(data.fluid_data->color + count_existing_fluid_particles, backgroundFluidBufferSet->color,
+			count_potential_fluid * sizeof(Vector3d), cudaMemcpyDeviceToDevice));
 		//data.fluid_data->resetColor();
 
 
-		//we can remove all that is not fluid
+
+		//the main problem is that I have ot extract the particles to rmv
+		//however now I don't have a cell index for all existing particles so I have to first build it
+
+		//first clear the index for exisitng particles
+		//set_buffer_to_value<unsigned int>(data.fluid_data->neighborsDataSet->cell_id, 0, data.fluid_data->numParticles);
+		gpuErrchk(cudaMemset(data.fluid_data->neighborsDataSet->cell_id, TAG_UNTAGGED, 
+			data.fluid_data->numParticles * sizeof(unsigned int)));
+		
+		//now add the tags for the new particles
+		gpuErrchk(cudaMemcpy(data.fluid_data->neighborsDataSet->cell_id + count_existing_fluid_particles, 
+			backgroundFluidBufferSet->neighborsDataSet->cell_id,
+			count_potential_fluid * sizeof(unsigned int), cudaMemcpyDeviceToDevice));
 
 		//and now remove the partifcles that were tagged for the fitting
-		remove_tagged_particles(data.fluid_data, backgroundFluidBufferSet->neighborsDataSet->cell_id,
-			backgroundFluidBufferSet->neighborsDataSet->cell_id_sorted, count_high_density_tagged_in_potential);
+		remove_tagged_particles(data.fluid_data, data.fluid_data->neighborsDataSet->cell_id,
+			data.fluid_data->neighborsDataSet->cell_id_sorted, count_high_density_tagged_in_potential);
 
 
 		//clearing the warmstart values is necessary
@@ -3083,172 +3293,422 @@ int RestFLuidLoader::loadDataToSimulation(SPH::DFSPHCData& data, RestFLuidLoader
 		set_buffer_to_value<Vector3d>(data.fluid_data->vel, Vector3d(0, 0, 0), data.fluid_data->numParticles);
 
 		nbr_fluid_particles = data.fluid_data->numParticles;
-	}
 
+		timings.time_next_point();//time
 
-	timings.time_next_point();//time
+		
 
-	if (params.set_up_tagging) {
-		//I'll store the tagging in the cell_id of the background buffer since I know it has at least the same number of particles
-		//as the number of particles I have loaded in the fluid 
-		//for now I'll leave some system to full computation and I'll change them if their computation time is high enougth
-			//neighborsearch 
-		cuda_neighborsSearch(data, false);
+		
+		//ok so when keeping existing fluid i can't simply stock it in the background structure
+		if (params.set_up_tagging) {
+			std::cout << "RestFLuidLoader::loadDataToSimulation setting up the tagging for stabilization step" << std::endl;
 
-		//init the tagging and make a backup
-		if (params.keep_air_particles) {
-			set_buffer_to_value<unsigned int>(data.fluid_data->neighborsDataSet->cell_id, TAG_AIR, data.fluid_data->numParticles);
-		}
-		set_buffer_to_value<unsigned int>(data.fluid_data->neighborsDataSet->cell_id, TAG_UNTAGGED, nbr_fluid_particles);
-		{
-			RealCuda tagging_distance = data.getKernelRadius() * 0.99;
-			int numBlocks = calculateNumBlocks(data.boundaries_data->numParticles);
-			tag_neighborhood_kernel<true, true> << <numBlocks, BLOCKSIZE >> > (data, data.boundaries_data_cuda, data.fluid_data->gpu_ptr,
-				tagging_distance, nbr_fluid_particles);
-			gpuErrchk(cudaDeviceSynchronize());
-		}
-
-		//set an additional order of neighbors as active 
-		//an order of neighbors is the neighbors of neighbors
-		///TODO verify that this works properly...
-		///thoughI'm not using it currently normaly
-		int additional_neighbors_order_tagging = 0;
-		for (int i = 0; i < (additional_neighbors_order_tagging); ++i) {
-			int numBlocks = calculateNumBlocks(data.fluid_data->numParticles);
-
-			//tag the first order neighbors
-			if (i == 0) {
-				tag_neighbors_of_tagged_kernel<true, true> << <numBlocks, BLOCKSIZE >> > (data, data.fluid_data->gpu_ptr, TAG_ACTIVE, TAG_ACTIVE_NEIGHBORS);
-				gpuErrchk(cudaDeviceSynchronize());
+			//I have to allocate dedicated memory since I can't store it into the background arrays because ofthe preexisting particles
+			if (tag_array_with_existing_fluid_size < data.fluid_data->numParticles) {
+				CUDA_FREE_PTR(tag_array_with_existing_fluid);
 			}
 
-			//then the second order
-			tag_neighbors_of_tagged_kernel<true, true> << <numBlocks, BLOCKSIZE >> > (data, data.fluid_data->gpu_ptr, TAG_ACTIVE_NEIGHBORS, TAG_1);
-			gpuErrchk(cudaDeviceSynchronize());
-
-
-			//then cnvert the tags
-			convert_tag_kernel << <numBlocks, BLOCKSIZE >> > (data.fluid_data->gpu_ptr, TAG_ACTIVE_NEIGHBORS, TAG_ACTIVE);
-			gpuErrchk(cudaDeviceSynchronize());
-			if (i < (additional_neighbors_order_tagging - 1)) {
-				convert_tag_kernel << <numBlocks, BLOCKSIZE >> > (data.fluid_data->gpu_ptr, TAG_1, TAG_ACTIVE_NEIGHBORS);
+			if (tag_array_with_existing_fluid == NULL) {
+				cudaMallocManaged(&(tag_array_with_existing_fluid), data.fluid_data->numParticlesMax * sizeof(unsigned int));
+				tag_array_with_existing_fluid_size = data.fluid_data->numParticlesMax;
 			}
-			else {
-				convert_tag_kernel << <numBlocks, BLOCKSIZE >> > (data.fluid_data->gpu_ptr, TAG_1, TAG_UNTAGGED);
-			}
-			gpuErrchk(cudaDeviceSynchronize());
-		}
 
-		//count hte number of tagged particles and back the tag array (at the same sime to parralel everything (comp and mem transfer)
-		{
-			int tag = TAG_ACTIVE;
-			int numBlocks = calculateNumBlocks(data.fluid_data->numParticles);
-			*(SVS_CU::get()->tagged_particles_count) = 0;
-			count_particle_with_tag_kernel << <numBlocks, BLOCKSIZE >> > (data.fluid_data->gpu_ptr, tag, SVS_CU::get()->tagged_particles_count);
-			gpuErrchk(cudaDeviceSynchronize());
-
-			std::cout << "tag: " << tag << "   count tagged: " << *(SVS_CU::get()->tagged_particles_count) << std::endl;
-			data.count_active = *(SVS_CU::get()->tagged_particles_count);
-		}
-
-
-
-		//do a wide tagging of their neighbors
-		//by wide I mean you nee to do the tagging like if they had a slightly extended neighborhood
-		//*
-		if (true) {
-			RealCuda tagging_distance = data.getKernelRadius() * 1.1;
-			int numBlocks = calculateNumBlocks(data.fluid_data->numParticles);
-			tag_neighbors_of_tagged_kernel<false,false, true> << <numBlocks, BLOCKSIZE >> > (data, data.fluid_data->gpu_ptr, tagging_distance, 
-				TAG_ACTIVE, TAG_ACTIVE_NEIGHBORS, nbr_fluid_particles, TAG_AIR_ACTIVE_NEIGHBORS);
-			gpuErrchk(cudaDeviceSynchronize());
-		}
-		{
-			int tag = TAG_ACTIVE_NEIGHBORS;
-			int* count_tagged_candidates = (SVS_CU::get()->tagged_particles_count);
-			int* count_tagged_other = SVS_CU::get()->count_created_particles;
-			*count_tagged_candidates = 0;
-			*count_tagged_other = 0;
-			int numBlocks = calculateNumBlocks(data.fluid_data->numParticles);
-			count_particle_with_tag_kernel << <numBlocks, BLOCKSIZE >> > (data.fluid_data->gpu_ptr, tag, count_tagged_other, nbr_fluid_particles, count_tagged_candidates);
-			gpuErrchk(cudaDeviceSynchronize());
-
-			std::cout << "tag: " << tag << "   count tagged (candidate/others): " << *count_tagged_candidates<< "   "<< *count_tagged_other<< std::endl;
-			data.count_active_neighbors = (*count_tagged_other)+(*count_tagged_candidates);
-		}
-		//*/
-		int count_neighbors_order_2 = 0;
-		if (true) {
-			int numBlocks = calculateNumBlocks(data.fluid_data->numParticles);
-			tag_neighbors_of_tagged_kernel<true, true> << <numBlocks, BLOCKSIZE >> > (data, data.fluid_data->gpu_ptr, TAG_ACTIVE_NEIGHBORS, TAG_ACTIVE_NEIGHBORS_ORDER_2);
-			gpuErrchk(cudaDeviceSynchronize());
-		}
-		{
-			int tag = TAG_ACTIVE_NEIGHBORS_ORDER_2;
-			int* count_tagged_candidates = (SVS_CU::get()->tagged_particles_count);
-			int* count_tagged_other = SVS_CU::get()->count_created_particles;
-			*count_tagged_candidates = 0;
-			*count_tagged_other = 0;
-			int numBlocks = calculateNumBlocks(data.fluid_data->numParticles);
-			count_particle_with_tag_kernel << <numBlocks, BLOCKSIZE >> > (data.fluid_data->gpu_ptr, tag, count_tagged_other, nbr_fluid_particles, count_tagged_candidates);
-			gpuErrchk(cudaDeviceSynchronize());
-
-			std::cout << "tag: " << tag << "   count tagged (candidate/others): " << *count_tagged_candidates << "   " << *count_tagged_other << std::endl;
-			count_neighbors_order_2 = (*count_tagged_other) + (*count_tagged_candidates);
-		}
-
-		//a print to disk to do some studies before sorting
-		if (false) {
-			gpuErrchk(cudaMemcpy(backgroundFluidBufferSet->neighborsDataSet->cell_id_sorted, data.fluid_data->neighborsDataSet->cell_id,
+			//so the main difficulty is that we have to also simulate the border with the fluid
+			//although since the cell id sorted currently old the previously used tag we can reuse it
+			//so first we recover the tagging to recover the active tagging
+			gpuErrchk(cudaMemcpy(tag_array_with_existing_fluid,
+				data.fluid_data->neighborsDataSet->cell_id_sorted,
 				data.fluid_data->numParticles * sizeof(unsigned int), cudaMemcpyDeviceToDevice));
-				
-			UnifiedParticleSet* tempSet = data.fluid_data;
-			tempSet->initAndStoreNeighbors(data, false);
-			cuda_divergence_warmstart_init(data);
 
-			std::ofstream myfile("temp6.csv", std::ofstream::trunc);
-			if (myfile.is_open())
-			{
-				for (int i_test = 0; i_test < tempSet->numParticles; ++i_test) {
-					myfile << i_test << "   " << tempSet->density[i_test] << "  " <<
-						tempSet->neighborsDataSet->cell_id[i_test] << "  " <<
-						backgroundFluidBufferSet->neighborsDataSet->cell_id_sorted[i_test] << "  " <<
-						(i_test<nbr_fluid_particles) << "  " <<
-						(i_test<count_potential_fluid) << "  " << tempSet->getNumberOfNeighbourgs(i_test, 0) << "  " <<
-						tempSet->getNumberOfNeighbourgs(i_test, 1) << "  " <<
-						tempSet->kappa[i_test] << "  " << tempSet->kappaV[i_test] * 2 << "  " << std::endl;
+			//first init the neighbor structure
+			data.fluid_data->initNeighborsSearchData(data, false);
 
+			//load the backuped tag
+			gpuErrchk(cudaMemcpy(data.fluid_data->neighborsDataSet->cell_id,
+				tag_array_with_existing_fluid,
+				data.fluid_data->numParticles * sizeof(unsigned int), cudaMemcpyDeviceToDevice));
+
+
+			
+			//then set anything that is not the active untagged to be sure
+			for (int i = 0; i < data.fluid_data->numParticles; i++) {
+				if (data.fluid_data->neighborsDataSet->cell_id[i] != TAG_ACTIVE) {
+					data.fluid_data->neighborsDataSet->cell_id[i] = TAG_UNTAGGED;
 				}
 			}
 
-			gpuErrchk(cudaMemcpy(data.fluid_data->neighborsDataSet->cell_id, backgroundFluidBufferSet->neighborsDataSet->cell_id_sorted,
-				data.fluid_data->numParticles * sizeof(unsigned int), cudaMemcpyDeviceToDevice));
-		}
+			//count hte number of tagged particles and back the tag array (at the same sime to parralel everything (comp and mem transfer)
+			{
+				int tag = TAG_ACTIVE;
+				int numBlocks = calculateNumBlocks(data.fluid_data->numParticles);
+				*(SVS_CU::get()->tagged_particles_count) = 0;
+				count_particle_with_tag_kernel << <numBlocks, BLOCKSIZE >> > (data.fluid_data->gpu_ptr, tag, SVS_CU::get()->tagged_particles_count);
+				gpuErrchk(cudaDeviceSynchronize());
+
+				std::cout << "tag: " << tag << "   count tagged: " << *(SVS_CU::get()->tagged_particles_count) << std::endl;
+				data.count_active = *(SVS_CU::get()->tagged_particles_count);
+			}
+
+			//do a wide tagging of their neighbors
+			//by wide I mean you nee to do the tagging like if they had a slightly extended neighborhood
+			//*
+			if (true) {
+				//data.fluid_data->resetColor();
+				RealCuda tagging_distance = data.getKernelRadius() * 1.1;
+				int numBlocks = calculateNumBlocks(data.fluid_data->numParticles);
+				tag_neighbors_of_tagged_kernel<false, false, false> << <numBlocks, BLOCKSIZE >> > (data, data.fluid_data->gpu_ptr, tagging_distance,
+					TAG_ACTIVE, TAG_ACTIVE_NEIGHBORS);
+				gpuErrchk(cudaDeviceSynchronize());
+			
+			}
+			{
+				int tag = TAG_ACTIVE_NEIGHBORS;
+				int* count_tagged_candidates = (SVS_CU::get()->tagged_particles_count);
+				int* count_tagged_other = SVS_CU::get()->count_created_particles;
+				*count_tagged_candidates = 0;
+				*count_tagged_other = 0;
+				int numBlocks = calculateNumBlocks(data.fluid_data->numParticles);
+				count_particle_with_tag_kernel << <numBlocks, BLOCKSIZE >> > (data.fluid_data->gpu_ptr, tag, count_tagged_other, nbr_fluid_particles, count_tagged_candidates);
+				gpuErrchk(cudaDeviceSynchronize());
+
+				std::cout << "tag: " << tag << "   count tagged (candidate/others): " << *count_tagged_candidates << "   " << *count_tagged_other << std::endl;
+				data.count_active_neighbors = (*count_tagged_other) + (*count_tagged_candidates);
+			}
+
 		
 
-		//sort de data following the tag so that the particles that interest us are stacked at the front
-		if (true) {
-			//run the sort
-			cub::DeviceRadixSort::SortPairs(data.fluid_data->neighborsDataSet->d_temp_storage_pair_sort, data.fluid_data->neighborsDataSet->temp_storage_bytes_pair_sort,
-				data.fluid_data->neighborsDataSet->cell_id, data.fluid_data->neighborsDataSet->cell_id_sorted,
-				data.fluid_data->neighborsDataSet->p_id, data.fluid_data->neighborsDataSet->p_id_sorted, data.fluid_data->numParticles);
-			gpuErrchk(cudaDeviceSynchronize());
-
-			cuda_sortData(*(data.fluid_data), data.fluid_data->neighborsDataSet->p_id_sorted);
-			gpuErrchk(cudaDeviceSynchronize());
-
-			//and backup the tag
-			//WARNING the reason why I don't store it in cell id is because cell id still have to maintain
-			//			the storage of the particles id that must me removed if I ever call that function again 
-			gpuErrchk(cudaMemcpy(backgroundFluidBufferSet->neighborsDataSet->cell_id_sorted, data.fluid_data->neighborsDataSet->cell_id_sorted,
-				data.fluid_data->numParticles * sizeof(unsigned int), cudaMemcpyDeviceToDevice));
-
+			//sort de data following the tag so that the particles that interest us are stacked at the front
 			if (false) {
+				//run the sort
+				cub::DeviceRadixSort::SortPairs(data.fluid_data->neighborsDataSet->d_temp_storage_pair_sort, data.fluid_data->neighborsDataSet->temp_storage_bytes_pair_sort,
+					data.fluid_data->neighborsDataSet->cell_id, data.fluid_data->neighborsDataSet->cell_id_sorted,
+					data.fluid_data->neighborsDataSet->p_id, data.fluid_data->neighborsDataSet->p_id_sorted, data.fluid_data->numParticles);
+				gpuErrchk(cudaDeviceSynchronize());
+
+				cuda_sortData(*(data.fluid_data), data.fluid_data->neighborsDataSet->p_id_sorted);
+				gpuErrchk(cudaDeviceSynchronize());
+
+				//and backup the tag
+				//WARNING the reason why I don't store it in cell id is because cell id still have to maintain
+				//			the storage of the particles id that must me removed if I ever call that function again 
+				gpuErrchk(cudaMemcpy(tag_array_with_existing_fluid, data.fluid_data->neighborsDataSet->cell_id_sorted,
+					data.fluid_data->numParticles * sizeof(unsigned int), cudaMemcpyDeviceToDevice));
+
+				if (false) {
+					UnifiedParticleSet* tempSet = data.fluid_data;
+					tempSet->initAndStoreNeighbors(data, false);
+					cuda_divergence_warmstart_init(data);
+
+					std::ofstream myfile("temp7.csv", std::ofstream::trunc);
+					if (myfile.is_open())
+					{
+						for (int i_test = 0; i_test < tempSet->numParticles; ++i_test) {
+							myfile << i_test << "   " << tempSet->density[i_test] << "  " <<
+								tempSet->neighborsDataSet->cell_id[i_test] << "  " <<
+								backgroundFluidBufferSet->neighborsDataSet->cell_id_sorted[i_test] << "  " <<
+								(i_test<nbr_fluid_particles) << "  " <<
+								(i_test<count_potential_fluid) << "  " << tempSet->getNumberOfNeighbourgs(i_test, 0) << "  " <<
+								tempSet->getNumberOfNeighbourgs(i_test, 1) << "  " <<
+								tempSet->kappa[i_test] << "  " << tempSet->kappaV[i_test] * 2 << "  " << std::endl;
+
+						}
+					}
+				}
+
+			}
+			else {
+				//backup the tag
+				gpuErrchk(cudaMemcpy(tag_array_with_existing_fluid, data.fluid_data->neighborsDataSet->cell_id,
+					data.fluid_data->numParticles * sizeof(unsigned int), cudaMemcpyDeviceToDevice));
+			}
+
+
+			//set a bool to indicate the fullowing system they don't have to recompute the tagging
+			_hasFullTaggingSaved = true;
+		}
+		else {
+
+			//set a bool to indicate the fullowing system they don't have to recompute the tagging
+			_hasFullTaggingSaved = false;
+
+			throw("RestFLuidLoader::loadDataToSimulation when keeping existing fluid it is required to pre-compute the tagging currently");
+		}
+	}
+	else {
+		if (params.keep_air_particles) {
+			std::cout << "keeping air particles" << std::endl;
+			//here it is more complicated since I want to remove the tagged particles without 
+			//breaking the order of the particles
+
+			//just copy all the values to the fluid (including air)
+			data.fluid_data->updateActiveParticleNumber(backgroundFluidBufferSet->numParticles);
+
+			gpuErrchk(cudaMemcpy(data.fluid_data->mass, backgroundFluidBufferSet->mass, backgroundFluidBufferSet->numParticles * sizeof(RealCuda), cudaMemcpyDeviceToDevice));
+			gpuErrchk(cudaMemcpy(data.fluid_data->pos, backgroundFluidBufferSet->pos, backgroundFluidBufferSet->numParticles * sizeof(Vector3d), cudaMemcpyDeviceToDevice));
+			gpuErrchk(cudaMemcpy(data.fluid_data->vel, backgroundFluidBufferSet->vel, backgroundFluidBufferSet->numParticles * sizeof(Vector3d), cudaMemcpyDeviceToDevice));
+			gpuErrchk(cudaMemcpy(data.fluid_data->color, backgroundFluidBufferSet->color, backgroundFluidBufferSet->numParticles * sizeof(Vector3d), cudaMemcpyDeviceToDevice));
+			//data.fluid_data->resetColor();
+
+
+			//I know that all air paticles and accepted fluid particles have cell_id< TAG_active which is < numPaticles
+			//so the easiest ay to maintain the order is to add to each particle tag it's index
+			gpuErrchk(cudaMemcpy(backgroundFluidBufferSet->neighborsDataSet->local_id,
+				backgroundFluidBufferSet->neighborsDataSet->cell_id,
+				backgroundFluidBufferSet->numParticles * sizeof(unsigned int), cudaMemcpyDeviceToDevice));
+
+			//a test 
+			gpuErrchk(cudaMemcpy(data.fluid_data->kappa, backgroundFluidBufferSet->density,
+				backgroundFluidBufferSet->numParticles * sizeof(RealCuda), cudaMemcpyDeviceToDevice));
+
+
+			remove_tagged_particles(data.fluid_data, backgroundFluidBufferSet->neighborsDataSet->local_id,
+				backgroundFluidBufferSet->neighborsDataSet->cell_id_sorted,
+				count_high_density_tagged_in_potential + count_high_density_tagged_in_air, true);
+
+			nbr_fluid_particles = count_potential_fluid - count_high_density_tagged_in_potential;
+
+			gpuErrchk(cudaMemcpy(data.fluid_data->density, data.fluid_data->kappa,
+				data.fluid_data->numParticles * sizeof(RealCuda), cudaMemcpyDeviceToDevice));
+
+			//a check to see if there is still some particles that should have been removed
+			//if everything is working properly this test should be outputting files where you can get the same density for the corresponfding particles
+			if (false) {
+				//after the copy
+				if (true) {
+					UnifiedParticleSet* tempSet = data.fluid_data;
+
+					tempSet->initAndStoreNeighbors(data, false);
+					if (true) {
+						set_buffer_to_value<RealCuda>(tempSet->density, 0, tempSet->numParticles);
+						{
+							int numBlocks = calculateNumBlocks(tempSet->numParticles);
+							evaluate_and_tag_high_density_from_buffer_kernel<false, true, true, true> << <numBlocks, BLOCKSIZE >> > (data, tempSet->gpu_ptr,
+								outInt, 4000, tempSet->numParticles, NULL, (params.keep_existing_fluid ? data.fluid_data->gpu_ptr : NULL));
+							gpuErrchk(cudaDeviceSynchronize());
+						}
+					}
+
+					gpuErrchk(cudaMemcpy(tempSet->kappaV, tempSet->density,
+						tempSet->numParticles * sizeof(RealCuda), cudaMemcpyDeviceToDevice));
+
+					if (true) {
+						cuda_divergence_warmstart_init(data);
+					}
+
+					//*
+					std::cout << "!!!!!!!!!!!!! after with air           !!!!!!!!!!!!!!!" << std::endl;
+					show_extensive_density_information(tempSet, tempSet->numParticles);
+					std::cout << "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!" << std::endl;
+					//*/
+
+
+
+					std::ofstream myfile("temp.csv", std::ofstream::trunc);
+					if (myfile.is_open())
+					{
+						for (int i_test = 0; i_test < tempSet->numParticles; ++i_test) {
+							myfile << i_test << "   " << tempSet->density[i_test] << "  " <<
+								tempSet->neighborsDataSet->cell_id[i_test] << "  " <<
+								backgroundFluidBufferSet->neighborsDataSet->cell_id_sorted[i_test] << "  " <<
+								(i_test<nbr_fluid_particles) << "  " <<
+								(i_test<count_potential_fluid) << "  " << tempSet->getNumberOfNeighbourgs(i_test, 0) << "  " <<
+								tempSet->getNumberOfNeighbourgs(i_test, 1) << "  " <<
+								tempSet->kappa[i_test] << "  " << tempSet->kappaV[i_test] * 2 << "  " << std::endl;
+
+						}
+					}
+				}
+
+				//before the copy
+				if (true) {
+					UnifiedParticleSet* tempSet = backgroundFluidBufferSet;
+
+					if (true) {
+						set_buffer_to_value<RealCuda>(tempSet->density, 0, tempSet->numParticles);
+						{
+							int numBlocks = calculateNumBlocks(tempSet->numParticles);
+							evaluate_and_tag_high_density_from_buffer_kernel<false, true, true, true> << <numBlocks, BLOCKSIZE >> > (data, tempSet->gpu_ptr,
+								outInt, 4000, tempSet->numParticles, NULL, (params.keep_existing_fluid ? data.fluid_data->gpu_ptr : NULL));
+							gpuErrchk(cudaDeviceSynchronize());
+						}
+					}
+
+					//*
+					std::cout << "!!!!!!!!!!!!! after with air           !!!!!!!!!!!!!!!" << std::endl;
+					show_extensive_density_information(tempSet, tempSet->numParticles);
+					std::cout << "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!" << std::endl;
+					//*/
+
+
+
+					std::ofstream myfile("temp3.csv", std::ofstream::trunc);
+					if (myfile.is_open())
+					{
+						for (int i_test = 0; i_test < tempSet->numParticles; ++i_test) {
+							myfile << i_test << "   " << tempSet->density[i_test] << "  " <<
+								tempSet->neighborsDataSet->cell_id[i_test] << "  " <<
+								tempSet->neighborsDataSet->cell_id_sorted[i_test] << "  " <<
+								(i_test<nbr_fluid_particles) << "  " <<
+								(i_test<count_potential_fluid) << "  " << tempSet->getNumberOfNeighbourgs(i_test, 0) << "  " <<
+								tempSet->getNumberOfNeighbourgs(i_test, 1) << "  " << std::endl;
+
+						}
+					}
+				}
+			}
+
+		}
+		else {
+			//just copy all the potential values to the fluid
+			data.fluid_data->updateActiveParticleNumber(count_potential_fluid);
+
+			gpuErrchk(cudaMemcpy(data.fluid_data->mass, backgroundFluidBufferSet->mass, count_potential_fluid * sizeof(RealCuda), cudaMemcpyDeviceToDevice));
+			gpuErrchk(cudaMemcpy(data.fluid_data->pos, backgroundFluidBufferSet->pos, count_potential_fluid * sizeof(Vector3d), cudaMemcpyDeviceToDevice));
+			gpuErrchk(cudaMemcpy(data.fluid_data->vel, backgroundFluidBufferSet->vel, count_potential_fluid * sizeof(Vector3d), cudaMemcpyDeviceToDevice));
+			gpuErrchk(cudaMemcpy(data.fluid_data->color, backgroundFluidBufferSet->color, count_potential_fluid * sizeof(Vector3d), cudaMemcpyDeviceToDevice));
+			//data.fluid_data->resetColor();
+
+
+			//we can remove all that is not fluid
+
+			//and now remove the partifcles that were tagged for the fitting
+			remove_tagged_particles(data.fluid_data, backgroundFluidBufferSet->neighborsDataSet->cell_id,
+				backgroundFluidBufferSet->neighborsDataSet->cell_id_sorted, count_high_density_tagged_in_potential);
+
+
+			//clearing the warmstart values is necessary
+			set_buffer_to_value<RealCuda>(data.fluid_data->kappa, 0, data.fluid_data->numParticles);
+			set_buffer_to_value<RealCuda>(data.fluid_data->kappaV, 0, data.fluid_data->numParticles);
+
+			//I'll also clear the velocities for now since I'll load fluid at rest
+			//this will have to be removed at some point in the future
+			set_buffer_to_value<Vector3d>(data.fluid_data->vel, Vector3d(0, 0, 0), data.fluid_data->numParticles);
+
+			nbr_fluid_particles = data.fluid_data->numParticles;
+		}
+
+
+		timings.time_next_point();//time
+
+		if (params.set_up_tagging) {
+			//I'll store the tagging in the cell_id of the background buffer since I know it has at least the same number of particles
+			//as the number of particles I have loaded in the fluid 
+			//for now I'll leave some system to full computation and I'll change them if their computation time is high enougth
+			//neighborsearch 
+			data.fluid_data->initNeighborsSearchData(data, false);
+
+			//init the tagging and make a backup
+			if (params.keep_air_particles) {
+				set_buffer_to_value<unsigned int>(data.fluid_data->neighborsDataSet->cell_id, TAG_AIR, data.fluid_data->numParticles);
+			}
+			set_buffer_to_value<unsigned int>(data.fluid_data->neighborsDataSet->cell_id, TAG_UNTAGGED, nbr_fluid_particles);
+			{
+				RealCuda tagging_distance = data.getKernelRadius() * 0.99;
+				int numBlocks = calculateNumBlocks(data.boundaries_data->numParticles);
+				tag_neighborhood_kernel<true, true> << <numBlocks, BLOCKSIZE >> > (data, data.boundaries_data_cuda, data.fluid_data->gpu_ptr,
+					tagging_distance, nbr_fluid_particles);
+				gpuErrchk(cudaDeviceSynchronize());
+			}
+
+			//set an additional order of neighbors as active 
+			//an order of neighbors is the neighbors of neighbors
+			///TODO verify that this works properly...
+			///thoughI'm not using it currently normaly
+			int additional_neighbors_order_tagging = 0;
+			for (int i = 0; i < (additional_neighbors_order_tagging); ++i) {
+				int numBlocks = calculateNumBlocks(data.fluid_data->numParticles);
+
+				//tag the first order neighbors
+				if (i == 0) {
+					tag_neighbors_of_tagged_kernel<true, true> << <numBlocks, BLOCKSIZE >> > (data, data.fluid_data->gpu_ptr, TAG_ACTIVE, TAG_ACTIVE_NEIGHBORS);
+					gpuErrchk(cudaDeviceSynchronize());
+				}
+
+				//then the second order
+				tag_neighbors_of_tagged_kernel<true, true> << <numBlocks, BLOCKSIZE >> > (data, data.fluid_data->gpu_ptr, TAG_ACTIVE_NEIGHBORS, TAG_1);
+				gpuErrchk(cudaDeviceSynchronize());
+
+
+				//then cnvert the tags
+				convert_tag_kernel << <numBlocks, BLOCKSIZE >> > (data.fluid_data->gpu_ptr, TAG_ACTIVE_NEIGHBORS, TAG_ACTIVE);
+				gpuErrchk(cudaDeviceSynchronize());
+				if (i < (additional_neighbors_order_tagging - 1)) {
+					convert_tag_kernel << <numBlocks, BLOCKSIZE >> > (data.fluid_data->gpu_ptr, TAG_1, TAG_ACTIVE_NEIGHBORS);
+				}
+				else {
+					convert_tag_kernel << <numBlocks, BLOCKSIZE >> > (data.fluid_data->gpu_ptr, TAG_1, TAG_UNTAGGED);
+				}
+				gpuErrchk(cudaDeviceSynchronize());
+			}
+
+			//count hte number of tagged particles and back the tag array (at the same sime to parralel everything (comp and mem transfer)
+			{
+				int tag = TAG_ACTIVE;
+				int numBlocks = calculateNumBlocks(data.fluid_data->numParticles);
+				*(SVS_CU::get()->tagged_particles_count) = 0;
+				count_particle_with_tag_kernel << <numBlocks, BLOCKSIZE >> > (data.fluid_data->gpu_ptr, tag, SVS_CU::get()->tagged_particles_count);
+				gpuErrchk(cudaDeviceSynchronize());
+
+				std::cout << "tag: " << tag << "   count tagged: " << *(SVS_CU::get()->tagged_particles_count) << std::endl;
+				data.count_active = *(SVS_CU::get()->tagged_particles_count);
+			}
+
+
+
+			//do a wide tagging of their neighbors
+			//by wide I mean you nee to do the tagging like if they had a slightly extended neighborhood
+			//*
+			if (true) {
+				RealCuda tagging_distance = data.getKernelRadius() * 1.1;
+				int numBlocks = calculateNumBlocks(data.fluid_data->numParticles);
+				tag_neighbors_of_tagged_kernel<false, false, true> << <numBlocks, BLOCKSIZE >> > (data, data.fluid_data->gpu_ptr, tagging_distance,
+					TAG_ACTIVE, TAG_ACTIVE_NEIGHBORS, nbr_fluid_particles, TAG_AIR_ACTIVE_NEIGHBORS);
+				gpuErrchk(cudaDeviceSynchronize());
+			}
+			{
+				int tag = TAG_ACTIVE_NEIGHBORS;
+				int* count_tagged_candidates = (SVS_CU::get()->tagged_particles_count);
+				int* count_tagged_other = SVS_CU::get()->count_created_particles;
+				*count_tagged_candidates = 0;
+				*count_tagged_other = 0;
+				int numBlocks = calculateNumBlocks(data.fluid_data->numParticles);
+				count_particle_with_tag_kernel << <numBlocks, BLOCKSIZE >> > (data.fluid_data->gpu_ptr, tag, count_tagged_other, nbr_fluid_particles, count_tagged_candidates);
+				gpuErrchk(cudaDeviceSynchronize());
+
+				std::cout << "tag: " << tag << "   count tagged (candidate/others): " << *count_tagged_candidates << "   " << *count_tagged_other << std::endl;
+				data.count_active_neighbors = (*count_tagged_other) + (*count_tagged_candidates);
+			}
+			//*/
+			int count_neighbors_order_2 = 0;
+			if (true) {
+				int numBlocks = calculateNumBlocks(data.fluid_data->numParticles);
+				tag_neighbors_of_tagged_kernel<true, true> << <numBlocks, BLOCKSIZE >> > (data, data.fluid_data->gpu_ptr, TAG_ACTIVE_NEIGHBORS, TAG_ACTIVE_NEIGHBORS_ORDER_2);
+				gpuErrchk(cudaDeviceSynchronize());
+			}
+			{
+				int tag = TAG_ACTIVE_NEIGHBORS_ORDER_2;
+				int* count_tagged_candidates = (SVS_CU::get()->tagged_particles_count);
+				int* count_tagged_other = SVS_CU::get()->count_created_particles;
+				*count_tagged_candidates = 0;
+				*count_tagged_other = 0;
+				int numBlocks = calculateNumBlocks(data.fluid_data->numParticles);
+				count_particle_with_tag_kernel << <numBlocks, BLOCKSIZE >> > (data.fluid_data->gpu_ptr, tag, count_tagged_other, nbr_fluid_particles, count_tagged_candidates);
+				gpuErrchk(cudaDeviceSynchronize());
+
+				std::cout << "tag: " << tag << "   count tagged (candidate/others): " << *count_tagged_candidates << "   " << *count_tagged_other << std::endl;
+				count_neighbors_order_2 = (*count_tagged_other) + (*count_tagged_candidates);
+			}
+
+			//a print to disk to do some studies before sorting
+			if (false) {
+				gpuErrchk(cudaMemcpy(backgroundFluidBufferSet->neighborsDataSet->cell_id_sorted, data.fluid_data->neighborsDataSet->cell_id,
+					data.fluid_data->numParticles * sizeof(unsigned int), cudaMemcpyDeviceToDevice));
+
 				UnifiedParticleSet* tempSet = data.fluid_data;
 				tempSet->initAndStoreNeighbors(data, false);
 				cuda_divergence_warmstart_init(data);
 
-				std::ofstream myfile("temp7.csv", std::ofstream::trunc);
+				std::ofstream myfile("temp6.csv", std::ofstream::trunc);
 				if (myfile.is_open())
 				{
 					for (int i_test = 0; i_test < tempSet->numParticles; ++i_test) {
@@ -3262,42 +3722,87 @@ int RestFLuidLoader::loadDataToSimulation(SPH::DFSPHCData& data, RestFLuidLoader
 
 					}
 				}
+
+				gpuErrchk(cudaMemcpy(data.fluid_data->neighborsDataSet->cell_id, backgroundFluidBufferSet->neighborsDataSet->cell_id_sorted,
+					data.fluid_data->numParticles * sizeof(unsigned int), cudaMemcpyDeviceToDevice));
 			}
 
+
+			//sort de data following the tag so that the particles that interest us are stacked at the front
+			if (true) {
+				//run the sort
+				cub::DeviceRadixSort::SortPairs(data.fluid_data->neighborsDataSet->d_temp_storage_pair_sort, data.fluid_data->neighborsDataSet->temp_storage_bytes_pair_sort,
+					data.fluid_data->neighborsDataSet->cell_id, data.fluid_data->neighborsDataSet->cell_id_sorted,
+					data.fluid_data->neighborsDataSet->p_id, data.fluid_data->neighborsDataSet->p_id_sorted, data.fluid_data->numParticles);
+				gpuErrchk(cudaDeviceSynchronize());
+
+				cuda_sortData(*(data.fluid_data), data.fluid_data->neighborsDataSet->p_id_sorted);
+				gpuErrchk(cudaDeviceSynchronize());
+
+				//and backup the tag
+				//WARNING the reason why I don't store it in cell id is because cell id still have to maintain
+				//			the storage of the particles id that must me removed if I ever call that function again 
+				gpuErrchk(cudaMemcpy(backgroundFluidBufferSet->neighborsDataSet->cell_id_sorted, data.fluid_data->neighborsDataSet->cell_id_sorted,
+					data.fluid_data->numParticles * sizeof(unsigned int), cudaMemcpyDeviceToDevice));
+
+				if (false) {
+					UnifiedParticleSet* tempSet = data.fluid_data;
+					tempSet->initAndStoreNeighbors(data, false);
+					cuda_divergence_warmstart_init(data);
+
+					std::ofstream myfile("temp7.csv", std::ofstream::trunc);
+					if (myfile.is_open())
+					{
+						for (int i_test = 0; i_test < tempSet->numParticles; ++i_test) {
+							myfile << i_test << "   " << tempSet->density[i_test] << "  " <<
+								tempSet->neighborsDataSet->cell_id[i_test] << "  " <<
+								backgroundFluidBufferSet->neighborsDataSet->cell_id_sorted[i_test] << "  " <<
+								(i_test<nbr_fluid_particles) << "  " <<
+								(i_test<count_potential_fluid) << "  " << tempSet->getNumberOfNeighbourgs(i_test, 0) << "  " <<
+								tempSet->getNumberOfNeighbourgs(i_test, 1) << "  " <<
+								tempSet->kappa[i_test] << "  " << tempSet->kappaV[i_test] * 2 << "  " << std::endl;
+
+						}
+					}
+				}
+
+			}
+			else {
+				//and backup the tag
+				gpuErrchk(cudaMemcpy(backgroundFluidBufferSet->neighborsDataSet->cell_id_sorted, data.fluid_data->neighborsDataSet->cell_id,
+					data.fluid_data->numParticles * sizeof(unsigned int), cudaMemcpyDeviceToDevice));
+			}
+
+			//if I have kept the air particles then I have to tag the air particles that are neighbors so that they 
+			//have their density computed
+			if (params.keep_air_particles)
+			{
+				//since I have set a special tag for the air particles that are neighbors of active, I can simply trasnform the tag
+				int numBlocks = calculateNumBlocks(data.fluid_data->numParticles);
+				convert_tag_kernel << <numBlocks, BLOCKSIZE >> > (backgroundFluidBufferSet->neighborsDataSet->cell_id_sorted,
+					data.fluid_data->numParticles, TAG_AIR_ACTIVE_NEIGHBORS, TAG_ACTIVE_NEIGHBORS);
+				gpuErrchk(cudaDeviceSynchronize());
+			}
+
+			//the goal here is to rmv the block of particles that are not used for the stabilization process
+			if (false) {
+				//let's do a retarded test
+				//I'll actually remove any particle that is not acting in the stabilization process and see if it make any difference
+				//this does not give better results
+				data.true_particle_count = data.fluid_data->numParticles;
+				data.fluid_data->updateActiveParticleNumber(data.count_active + data.count_active_neighbors + count_neighbors_order_2);
+			}
+
+
+			//set a bool to indicate the fullowing system they don't have to recompute the tagging
+			_hasFullTaggingSaved = true;
 		}
 		else {
-			//and backup the tag
-			gpuErrchk(cudaMemcpy(backgroundFluidBufferSet->neighborsDataSet->cell_id_sorted, data.fluid_data->neighborsDataSet->cell_id,
-				data.fluid_data->numParticles * sizeof(unsigned int), cudaMemcpyDeviceToDevice));
+			_hasFullTaggingSaved = false;
 		}
-
-		//if I have kept the air particles then I have to tag the air particles that are neighbors so that they 
-		//have their density computed
-		if (params.keep_air_particles) 
-		{
-			//since I have set a special tag for the air particles that are neighbors of active, I can simply trasnform the tag
-			int numBlocks = calculateNumBlocks(data.fluid_data->numParticles);
-			convert_tag_kernel << <numBlocks, BLOCKSIZE >> > (backgroundFluidBufferSet->neighborsDataSet->cell_id_sorted,
-				data.fluid_data->numParticles, TAG_AIR_ACTIVE_NEIGHBORS, TAG_ACTIVE_NEIGHBORS);
-			gpuErrchk(cudaDeviceSynchronize());
-		}
-
-		//the goal here is to rmv the block of particles that are not used for the stabilization process
-		if (false) {
-			//let's do a retarded test
-			//I'll actually remove any particle that is not acting in the stabilization process and see if it make any difference
-			//this does not give better results
-			data.true_particle_count = data.fluid_data->numParticles;
-			data.fluid_data->updateActiveParticleNumber(data.count_active + data.count_active_neighbors + count_neighbors_order_2);
-		}
-
-
-		//set a bool to indicate the fullowing system they don't have to recompute the tagging
-		_hasFullTaggingSaved = true;
 	}
-	else {
-		_hasFullTaggingSaved = false;
-	}	
+	
+
 
 
 	timings.time_next_point();//time p3
@@ -4197,6 +4702,16 @@ __global__ void compute_air_particle_mass_kernel(SPH::DFSPHCData data, SPH::Unif
 }
 
 void RestFLuidLoader::stabilizeFluid(SPH::DFSPHCData& data, RestFLuidLoaderInterface::StabilizationParameters& params) {
+	if(!isInitialized()) {
+		std::cout << "RestFLuidLoader::stabilizeFluid Loading impossible data was not initialized" << std::endl;
+		return ;
+	}
+
+	if (!isDataTagged()) {
+		std::cout << "!!!!!!!!!!! RestFLuidLoader::stabilizeFluid you are loading untagged data !!!!!!!!!!!" << std::endl;
+		return ;
+	}
+
 
 	if (params.evaluateStabilization) {
 		params.stabilzationEvaluation1 = -1;
@@ -4223,6 +4738,10 @@ void RestFLuidLoader::stabilizeFluid(SPH::DFSPHCData& data, RestFLuidLoaderInter
 		SPH::SegmentedTiming timings(" RestFLuidLoader::stabilizeFluid method simu + damping", timing_names, true);
 		timings.init_step();
 
+		if (params.keep_existing_fluid && params.reloadFluid) {
+			std::cout << "Reloading fluid is impossible currently if keeping the existing fluid is required " << std::endl;
+			params.reloadFluid = false;
+		}
 
 		// I neen to load the data to the simulation however I have to keep the air particles
 		if (params.reloadFluid) {
@@ -4276,128 +4795,147 @@ void RestFLuidLoader::stabilizeFluid(SPH::DFSPHCData& data, RestFLuidLoaderInter
 		data.updateTimeStep(timeStep);
 		data.updateTimeStep(timeStep);
 
-		bool simulate_border_only = true;
+		bool simulate_border_only = params.stabilize_tagged_only;
 		int restriction_type= 1;
 		bool use_tagging = true;
 		bool pretag_neighbors = true;
 		//I can save the tagging so that I don't have to redo it everytimestep
 		static unsigned int* tag_array = NULL;
+		static unsigned int tag_array_max_size = 0;
 		if (simulate_border_only) {
 			if (hasFullTaggingSaved()) {
-				tag_array = backgroundFluidBufferSet->neighborsDataSet->cell_id_sorted;
+				std::cout << "using precomputed tagging" << std::endl;
+				//ok in some situation I had to allocate dedicated memory to store the backup of the tagging ...
+				//so yeah sorry for that "if"
+				if (tag_array_with_existing_fluid_size > 0) {
+					tag_array = tag_array_with_existing_fluid;
+					tag_array_max_size = tag_array_with_existing_fluid_size;
+				}
+				else {
+					tag_array = backgroundFluidBufferSet->neighborsDataSet->cell_id_sorted;
+					tag_array_max_size = backgroundFluidBufferSet->numParticlesMax;
+				}
+
+				for (int i = 0; i < particleSet->numParticles; i++) {
+					//tag_array[i] = TAG_UNTAGGED;
+				}
 			}
 			else {
+				if (tag_array_max_size < data.fluid_data->numParticles) {
+					CUDA_FREE_PTR(tag_array);
+				}
 
 				if (tag_array == NULL) {
-					cudaMallocManaged(&(tag_array), data.fluid_data->numParticles * sizeof(unsigned int));
+					cudaMallocManaged(&(tag_array), data.fluid_data->numParticlesMax * sizeof(unsigned int));
+					tag_array_max_size = data.fluid_data->numParticlesMax;
 				}
 				//init the neighbor structure
 				//data.fluid_data->initNeighborsSearchData(data, false);
 
-				//for now I'll leave some system to full computation and I'll change them if their computation time is high enougth
-				//neighborsearch 
+				//for now I'll leave some system to full computation and I'll change them 
+				//if their computation time is high enougth 
 				cuda_neighborsSearch(data, false);
 
 				//init the tagging and make a backup
-set_buffer_to_value<unsigned int>(data.fluid_data->neighborsDataSet->cell_id, TAG_UNTAGGED, data.fluid_data->numParticles);
-{
-	RealCuda tagging_distance = data.getKernelRadius() * 0.99;
-	int numBlocks = calculateNumBlocks(data.boundaries_data->numParticles);
-	tag_neighborhood_kernel<false, true> << <numBlocks, BLOCKSIZE >> > (data, data.boundaries_data_cuda, data.fluid_data->gpu_ptr,
-		tagging_distance, count_fluid_particles);
-	gpuErrchk(cudaDeviceSynchronize());
-}
+				set_buffer_to_value<unsigned int>(data.fluid_data->neighborsDataSet->cell_id, TAG_UNTAGGED, data.fluid_data->numParticles);
+				{
+					RealCuda tagging_distance = data.getKernelRadius() * 0.99;
+					int numBlocks = calculateNumBlocks(data.boundaries_data->numParticles);
+					tag_neighborhood_kernel<false, true> << <numBlocks, BLOCKSIZE >> > (data, data.boundaries_data_cuda, data.fluid_data->gpu_ptr,
+						tagging_distance, count_fluid_particles);
+					gpuErrchk(cudaDeviceSynchronize());
+				}
 
-int additional_neighbors_order_tagging = 0;
-for (int i = 0; i < (additional_neighbors_order_tagging); ++i) {
-	int numBlocks = calculateNumBlocks(data.fluid_data->numParticles);
+				int additional_neighbors_order_tagging = 0;
+				for (int i = 0; i < (additional_neighbors_order_tagging); ++i) {
+					int numBlocks = calculateNumBlocks(data.fluid_data->numParticles);
 
-	//tag the first order neighbors
-	if (i == 0) {
-		tag_neighbors_of_tagged_kernel<true, true> << <numBlocks, BLOCKSIZE >> > (data, data.fluid_data->gpu_ptr, TAG_ACTIVE, TAG_ACTIVE_NEIGHBORS);
-		gpuErrchk(cudaDeviceSynchronize());
-	}
-
-
-
-	//then the second order
-	tag_neighbors_of_tagged_kernel<true, true> << <numBlocks, BLOCKSIZE >> > (data, data.fluid_data->gpu_ptr, TAG_ACTIVE_NEIGHBORS, TAG_1);
-	gpuErrchk(cudaDeviceSynchronize());
+					//tag the first order neighbors
+					if (i == 0) {
+						tag_neighbors_of_tagged_kernel<true, true> << <numBlocks, BLOCKSIZE >> > (data, data.fluid_data->gpu_ptr, TAG_ACTIVE, TAG_ACTIVE_NEIGHBORS);
+						gpuErrchk(cudaDeviceSynchronize());
+					}
 
 
-	//then cnvert the tags
-	convert_tag_kernel << <numBlocks, BLOCKSIZE >> > (data.fluid_data->gpu_ptr, TAG_ACTIVE_NEIGHBORS, TAG_ACTIVE);
-	gpuErrchk(cudaDeviceSynchronize());
-	if (i < (additional_neighbors_order_tagging - 1)) {
-		convert_tag_kernel << <numBlocks, BLOCKSIZE >> > (data.fluid_data->gpu_ptr, TAG_1, TAG_ACTIVE_NEIGHBORS);
-	}
-	else {
-		convert_tag_kernel << <numBlocks, BLOCKSIZE >> > (data.fluid_data->gpu_ptr, TAG_1, TAG_UNTAGGED);
-	}
-		gpuErrchk(cudaDeviceSynchronize());
-	}
 
-	//count hte number of tagged particles and back the tag array (at the same sime to parralel everything (comp and mem transfer)
-	{
-		int tag = TAG_ACTIVE;
-		int numBlocks = calculateNumBlocks(data.fluid_data->numParticles);
-		*(SVS_CU::get()->tagged_particles_count) = 0;
-		count_particle_with_tag_kernel << <numBlocks, BLOCKSIZE >> > (data.fluid_data->gpu_ptr, tag, SVS_CU::get()->tagged_particles_count);
-		gpuErrchk(cudaDeviceSynchronize());
-
-		std::cout << "tag: " << tag << "   count tagged: " << *(SVS_CU::get()->tagged_particles_count) << std::endl;
-		data.count_active = *(SVS_CU::get()->tagged_particles_count);
-	}
+					//then the second order
+					tag_neighbors_of_tagged_kernel<true, true> << <numBlocks, BLOCKSIZE >> > (data, data.fluid_data->gpu_ptr, TAG_ACTIVE_NEIGHBORS, TAG_1);
+					gpuErrchk(cudaDeviceSynchronize());
 
 
-	//do a wide tagging of their neighbors
-	//by wide I mean you nee to do the tagging like if they had a slightly extended neighborhood
-	//*
-	if (true) {
-		RealCuda tagging_distance = data.getKernelRadius() * 1.1;
-		int numBlocks = calculateNumBlocks(data.fluid_data->numParticles);
-		tag_neighbors_of_tagged_kernel<true, true, false> << <numBlocks, BLOCKSIZE >> > (data, data.fluid_data->gpu_ptr, tagging_distance,
-			TAG_ACTIVE, TAG_ACTIVE_NEIGHBORS, count_fluid_particles);
-		gpuErrchk(cudaDeviceSynchronize());
-	}
-	{
-		int tag = TAG_ACTIVE_NEIGHBORS;
-		int numBlocks = calculateNumBlocks(data.fluid_data->numParticles);
-		*(SVS_CU::get()->tagged_particles_count) = 0;
-		count_particle_with_tag_kernel << <numBlocks, BLOCKSIZE >> > (data.fluid_data->gpu_ptr, tag, SVS_CU::get()->tagged_particles_count);
-		gpuErrchk(cudaDeviceSynchronize());
+					//then cnvert the tags
+					convert_tag_kernel << <numBlocks, BLOCKSIZE >> > (data.fluid_data->gpu_ptr, TAG_ACTIVE_NEIGHBORS, TAG_ACTIVE);
+					gpuErrchk(cudaDeviceSynchronize());
+					if (i < (additional_neighbors_order_tagging - 1)) {
+						convert_tag_kernel << <numBlocks, BLOCKSIZE >> > (data.fluid_data->gpu_ptr, TAG_1, TAG_ACTIVE_NEIGHBORS);
+					}
+					else {
+						convert_tag_kernel << <numBlocks, BLOCKSIZE >> > (data.fluid_data->gpu_ptr, TAG_1, TAG_UNTAGGED);
+					}
+						gpuErrchk(cudaDeviceSynchronize());
+				}
 
-		std::cout << "tag: " << tag << "   count tagged: " << *(SVS_CU::get()->tagged_particles_count) << std::endl;
-		data.count_active_neighbors = *(SVS_CU::get()->tagged_particles_count);
-	}
-	//*/
+				//count hte number of tagged particles and back the tag array (at the same sime to parralel everything (comp and mem transfer)
+				{
+					int tag = TAG_ACTIVE;
+					int numBlocks = calculateNumBlocks(data.fluid_data->numParticles);
+					*(SVS_CU::get()->tagged_particles_count) = 0;
+					count_particle_with_tag_kernel << <numBlocks, BLOCKSIZE >> > (data.fluid_data->gpu_ptr, tag, SVS_CU::get()->tagged_particles_count);
+					gpuErrchk(cudaDeviceSynchronize());
 
-	//sort de data following the tag so that the particles that interest us are stacked at the front
-	if (true) {
-		//run the sort
-		cub::DeviceRadixSort::SortPairs(particleSet->neighborsDataSet->d_temp_storage_pair_sort, particleSet->neighborsDataSet->temp_storage_bytes_pair_sort,
-			data.fluid_data->neighborsDataSet->cell_id, data.fluid_data->neighborsDataSet->cell_id_sorted,
-			particleSet->neighborsDataSet->p_id, particleSet->neighborsDataSet->p_id_sorted, particleSet->numParticles);
-		gpuErrchk(cudaDeviceSynchronize());
+					std::cout << "tag: " << tag << "   count tagged: " << *(SVS_CU::get()->tagged_particles_count) << std::endl;
+					data.count_active = *(SVS_CU::get()->tagged_particles_count);
+				}
 
-		cuda_sortData(*particleSet, particleSet->neighborsDataSet->p_id_sorted);
-		gpuErrchk(cudaDeviceSynchronize());
 
-		//and backup the tag
-		gpuErrchk(cudaMemcpy(tag_array, data.fluid_data->neighborsDataSet->cell_id_sorted, data.fluid_data->numParticles * sizeof(unsigned int), cudaMemcpyDeviceToDevice));
-	}
-	else {
-		//and backup the tag
-		gpuErrchk(cudaMemcpy(tag_array, data.fluid_data->neighborsDataSet->cell_id, data.fluid_data->numParticles * sizeof(unsigned int), cudaMemcpyDeviceToDevice));
-	}
+				//do a wide tagging of their neighbors
+				//by wide I mean you nee to do the tagging like if they had a slightly extended neighborhood
+				//*
+				if (true) {
+					RealCuda tagging_distance = data.getKernelRadius() * 1.1;
+					int numBlocks = calculateNumBlocks(data.fluid_data->numParticles);
+					tag_neighbors_of_tagged_kernel<true, true, false> << <numBlocks, BLOCKSIZE >> > (data, data.fluid_data->gpu_ptr, tagging_distance,
+						TAG_ACTIVE, TAG_ACTIVE_NEIGHBORS, count_fluid_particles);
+					gpuErrchk(cudaDeviceSynchronize());
+				}
+				{
+					int tag = TAG_ACTIVE_NEIGHBORS;
+					int numBlocks = calculateNumBlocks(data.fluid_data->numParticles);
+					*(SVS_CU::get()->tagged_particles_count) = 0;
+					count_particle_with_tag_kernel << <numBlocks, BLOCKSIZE >> > (data.fluid_data->gpu_ptr, tag, SVS_CU::get()->tagged_particles_count);
+					gpuErrchk(cudaDeviceSynchronize());
 
+					std::cout << "tag: " << tag << "   count tagged: " << *(SVS_CU::get()->tagged_particles_count) << std::endl;
+					data.count_active_neighbors = *(SVS_CU::get()->tagged_particles_count);
+				}
+				//*/
+
+				//sort de data following the tag so that the particles that interest us are stacked at the front
+				if (true) {
+					//run the sort
+					cub::DeviceRadixSort::SortPairs(particleSet->neighborsDataSet->d_temp_storage_pair_sort, particleSet->neighborsDataSet->temp_storage_bytes_pair_sort,
+						data.fluid_data->neighborsDataSet->cell_id, data.fluid_data->neighborsDataSet->cell_id_sorted,
+						particleSet->neighborsDataSet->p_id, particleSet->neighborsDataSet->p_id_sorted, particleSet->numParticles);
+					gpuErrchk(cudaDeviceSynchronize());
+
+					cuda_sortData(*particleSet, particleSet->neighborsDataSet->p_id_sorted);
+					gpuErrchk(cudaDeviceSynchronize());
+
+					//and backup the tag
+					gpuErrchk(cudaMemcpy(tag_array, data.fluid_data->neighborsDataSet->cell_id_sorted, data.fluid_data->numParticles * sizeof(unsigned int), cudaMemcpyDeviceToDevice));
+				}
+				else {
+					//and backup the tag
+					gpuErrchk(cudaMemcpy(tag_array, data.fluid_data->neighborsDataSet->cell_id, data.fluid_data->numParticles * sizeof(unsigned int), cudaMemcpyDeviceToDevice));
+				}
+					
 			}
 
 			//this is the line to reload the tagging from the backup
 			//gpuErrchk(cudaMemcpy(data.fluid_data->neighborsDataSet->cell_id, tag_array, data.fluid_data->numParticles * sizeof(unsigned int), cudaMemcpyDeviceToDevice));
 
-
 		}
+
 		//a test changing the mass of air particles to see it it improve anything
 		if(false){
 			particleSet->initNeighborsSearchData(data, false);
@@ -4433,9 +4971,23 @@ for (int i = 0; i < (additional_neighbors_order_tagging); ++i) {
 		
 		timings.time_next_point();
 
+		data.restriction_mode = restriction_type;
+
+		std::cout << "RestFLuidLoader::stabilizeFluid checking the restriction mode and the true particle count " <<
+			data.restriction_mode << "   " << data.true_particle_count << std::endl;
+
+
+
 		int count_lost_particles = 0;
 		int count_lost_particles_limit = params.countLostParticlesLimit;
 		for (int iter = 0; iter < params.stabilizationItersCount; iter++) {
+
+			if (iter != 0) {
+				timings.init_step();
+				timings.time_next_point();
+
+				//data.fluid_data->updateActiveParticleNumber(count_fluid_particles);
+			}
 
 			if (simulate_border_only) {
 
@@ -4445,12 +4997,7 @@ for (int i = 0; i < (additional_neighbors_order_tagging); ++i) {
 					maxErrorD = 0.1;
 				}
 				//*/
-				if (iter != 0) {
-					timings.init_step();
-					timings.time_next_point();
-
-					//data.fluid_data->updateActiveParticleNumber(count_fluid_particles);
-				}
+				
 				//for now I'll leave some system to full computation and I'll change them if their computation time is high enougth
 				//neighborsearch 
 				//cuda_neighborsSearch(data, false);
@@ -4484,7 +5031,6 @@ for (int i = 0; i < (additional_neighbors_order_tagging); ++i) {
 
 
 				timings.time_next_point();
-				data.restriction_mode = restriction_type;
 
 				cuda_updateNeighborsStorage(data, *particleSet, iter);
 
@@ -4507,28 +5053,92 @@ for (int i = 0; i < (additional_neighbors_order_tagging); ++i) {
 				}
 
 				timings.time_next_point();
+				
+				if (true) {
+					if (iter == 0) {
+						SPH::UnifiedParticleSet* studySet = particleSet;
+						Vector3d* pos = new Vector3d[studySet->numParticles];
+						Vector3d* vel = new Vector3d[studySet->numParticles];
+						read_UnifiedParticleSet_cuda(*studySet, pos, vel, NULL, NULL);
 
-				//sometest on the values of the first iteration
-				if (iter == 0) {
-					std::ofstream myfile("temp.csv", std::ofstream::trunc);
-					if (myfile.is_open())
-					{
-						for (int i_test = count_fluid_particles; i_test < particleSet->numParticles; ++i_test) {
-							myfile << i_test<<"   "<<particleSet->density[i_test] <<"  "<< 
-								data.fluid_data->neighborsDataSet->cell_id[i_test] <<std::endl;
+						std::ofstream myfile("temp10.csv", std::ofstream::trunc);
+						if (myfile.is_open())
+						{
+							for (int j = 0; j < studySet->numParticles; j++) {
 
+								myfile << j << "  " << studySet->neighborsDataSet->cell_id[j] << "  " << pos[j].toString() << "  " <<
+									vel[j].toString() << "  " << studySet->acc[j].toString() << "  " <<
+									studySet->density[j] << "  " << std::endl;
+							}
+							myfile.close();
 						}
+
+						delete[] pos;
+						delete[] vel;
+
 					}
 				}
-
+				
 				//external forces
 				if (useExternalForces) {
 					cuda_externalForces(data);
+
+					if (false) {
+						if (iter == 0) {
+							SPH::UnifiedParticleSet* studySet = particleSet;
+							Vector3d* pos = new Vector3d[studySet->numParticles];
+							Vector3d* vel = new Vector3d[studySet->numParticles];
+							read_UnifiedParticleSet_cuda(*studySet, pos, vel, NULL, NULL);
+
+							std::ofstream myfile("temp11.csv", std::ofstream::trunc);
+							if (myfile.is_open())
+							{
+								for (int j = 0; j < studySet->numParticles; j++) {
+
+									myfile << j << "  " << studySet->neighborsDataSet->cell_id[j] << "  " << pos[j].toString() << "  " <<
+										vel[j].toString() << "  " << studySet->acc[j].toString() << "  " <<
+										 studySet->density[j] << "  " << std::endl;
+								}
+								myfile.close();
+							}
+
+							delete[] pos;
+							delete[] vel;
+
+						}
+					}
+
+
 					cuda_update_vel(data);
 				}
 
 				timings.time_next_point();
 				
+				if (false) {
+					if (iter == 0) {
+						SPH::UnifiedParticleSet* studySet = particleSet;
+						Vector3d* pos = new Vector3d[studySet->numParticles];
+						Vector3d* vel = new Vector3d[studySet->numParticles];
+						read_UnifiedParticleSet_cuda(*studySet, pos, vel, NULL, NULL);
+
+						std::ofstream myfile("temp12.csv", std::ofstream::trunc);
+						if (myfile.is_open())
+						{
+							for (int j = 0; j < studySet->numParticles; j++) {
+
+								myfile << j << "  " << studySet->neighborsDataSet->cell_id[j] << "  " << pos[j].toString() << "  " <<
+									vel[j].toString() << "  " << studySet->acc[j].toString() << "  " <<
+									studySet->density[j] << "  " << std::endl;
+							}
+							myfile.close();
+						}
+
+						delete[] pos;
+						delete[] vel;
+
+					}
+				}
+
 
 				//density
 				if (useDensitySolver) {
@@ -4541,6 +5151,31 @@ for (int i = 0; i < (additional_neighbors_order_tagging); ++i) {
 
 				if (preUpdateVelocityClamping) {
 					clamp_buffer_to_value<Vector3d, 4>(data.fluid_data->vel, Vector3d(preUpdateVelocityClamping_val), data.fluid_data->numParticles);
+				}
+
+				if (false) {
+					if (iter == 0) {
+						SPH::UnifiedParticleSet* studySet = particleSet;
+						Vector3d* pos = new Vector3d[studySet->numParticles];
+						Vector3d* vel = new Vector3d[studySet->numParticles];
+						read_UnifiedParticleSet_cuda(*studySet, pos, vel, NULL, NULL);
+
+						std::ofstream myfile("temp13.csv", std::ofstream::trunc);
+						if (myfile.is_open())
+						{
+							for (int j = 0; j < studySet->numParticles; j++) {
+
+								myfile << j << "  " << studySet->neighborsDataSet->cell_id[j] << "  " << pos[j].toString() << "  " <<
+									vel[j].toString() << "  " << studySet->acc[j].toString() << "  " <<
+									studySet->density[j] << "  " << std::endl;
+							}
+							myfile.close();
+						}
+
+						delete[] pos;
+						delete[] vel;
+
+					}
 				}
 
 				if (false) {
@@ -4610,14 +5245,16 @@ for (int i = 0; i < (additional_neighbors_order_tagging); ++i) {
 					int c = data.checkParticlesPositions(2);
 					if (interuptOnLostParticle) {
 						if (c > 0) {
+							std::cout << "fluid stabilization interupted du to the loss of particles" << std::endl;
 							return;
 						}
 					}
-					data.count_active -= c;
+					if (data.restriction_mode == 2) {
+						data.count_active -= c;
+					}
 				}
 
 
-				data.restriction_mode = 0;
 
 				timings.time_next_point();
 				timings.end_step();
@@ -4625,7 +5262,9 @@ for (int i = 0; i < (additional_neighbors_order_tagging); ++i) {
 			}
 			else {
 
-				timings.init_step();
+
+				timings.time_next_point();
+				timings.time_next_point();
 
 				//neighborsearch 
 				cuda_neighborsSearch(data, false);
@@ -4684,18 +5323,19 @@ for (int i = 0; i < (additional_neighbors_order_tagging); ++i) {
 
 
 				timings.time_next_point();
-				timings.end_step();
 
-				//this will have to be commented by the end because it is waiting computation time if  the fluid is stable
 				if (runCheckParticlesPostion) {
 					int c = data.checkParticlesPositions(2);
 					if (interuptOnLostParticle) {
-						count_lost_particles += c;
-						if (count_lost_particles>count_lost_particles_limit) {
+						if (c > 0) {
 							return;
 						}
 					}
 				}
+
+
+				timings.time_next_point();
+				timings.end_step();
 
 				if (reduceDampingAndClamping) {
 					preUpdateVelocityClamping_val *= reduceDampingAndClamping_val;
@@ -4709,9 +5349,15 @@ for (int i = 0; i < (additional_neighbors_order_tagging); ++i) {
 		}
 		read_last_error_cuda("check stable after stabilization");
 		
+		std::cout << "RestFLuidLoader::stabilizeFluid checking the restriction mode and the true particle count after end" <<
+			data.restriction_mode << "   " << data.true_particle_count << std::endl;
+
 		data.fluid_data->updateActiveParticleNumber(count_fluid_particles);
 		//reset that anyway, worse case possible it is already equals to -1
 		data.true_particle_count = -1;
+
+		//and remove the restriction if there is one
+		data.restriction_mode = 0;
 
 		timings.recap_timings();
 
@@ -4775,7 +5421,7 @@ for (int i = 0; i < (additional_neighbors_order_tagging); ++i) {
 		{
 			int numBlocks = calculateNumBlocks(particleSet->numParticles);
 			evaluate_and_tag_high_density_from_buffer_kernel<false, false, false, false> << <numBlocks, BLOCKSIZE >> > (data, particleSet->gpu_ptr, 
-				outInt, 4000, particleSet->numParticles, NULL);
+				outInt, 4000, particleSet->numParticles, NULL, (params.keep_existing_fluid ? data.fluid_data->gpu_ptr : NULL));
 			gpuErrchk(cudaDeviceSynchronize());
 		}
 
@@ -5150,7 +5796,7 @@ for (int i = 0; i < (additional_neighbors_order_tagging); ++i) {
 				{
 					int numBlocks = calculateNumBlocks(particleSet->numParticles);
 					evaluate_and_tag_high_density_from_buffer_kernel<false, false, false, false> << <numBlocks, BLOCKSIZE >> > (data, particleSet->gpu_ptr, 
-						outInt, 4000, particleSet->numParticles, NULL);
+						outInt, 4000, particleSet->numParticles, NULL, (params.keep_existing_fluid ? data.fluid_data->gpu_ptr : NULL));
 					gpuErrchk(cudaDeviceSynchronize());
 				}
 
@@ -5284,7 +5930,7 @@ for (int i = 0; i < (additional_neighbors_order_tagging); ++i) {
 			{
 				int numBlocks = calculateNumBlocks(count_fluid_particles);
 				evaluate_and_tag_high_density_from_buffer_kernel<false, false, false, false> << <numBlocks, BLOCKSIZE >> > (data, particleSet->gpu_ptr, 
-					outInt, 4000, count_fluid_particles, NULL);
+					outInt, 4000, count_fluid_particles, NULL, (params.keep_existing_fluid ? data.fluid_data->gpu_ptr : NULL));
 				gpuErrchk(cudaDeviceSynchronize());
 			}
 
@@ -5498,7 +6144,7 @@ for (int i = 0; i < (additional_neighbors_order_tagging); ++i) {
 	{
 		int numBlocks = calculateNumBlocks(particleSet->numParticles);
 		evaluate_and_tag_high_density_from_buffer_kernel<false, false, false, false> << <numBlocks, BLOCKSIZE >> > (data, particleSet->gpu_ptr,
-			outInt, 4000, particleSet->numParticles, NULL);
+			outInt, 4000, particleSet->numParticles, NULL, (params.keep_existing_fluid ? data.fluid_data->gpu_ptr : NULL));
 		gpuErrchk(cudaDeviceSynchronize());
 	}
 	//let's back the old density
@@ -5775,7 +6421,7 @@ for (int i = 0; i < (additional_neighbors_order_tagging); ++i) {
 			{
 				int numBlocks = calculateNumBlocks(particleSet->numParticles);
 				evaluate_and_tag_high_density_from_buffer_kernel<false, false, false, false> << <numBlocks, BLOCKSIZE >> > (data, particleSet->gpu_ptr,
-					outInt, 4000, particleSet->numParticles, NULL);
+					outInt, 4000, particleSet->numParticles, NULL, (params.keep_existing_fluid ? data.fluid_data->gpu_ptr : NULL));
 				gpuErrchk(cudaDeviceSynchronize());
 			}
 
@@ -5952,7 +6598,7 @@ for (int i = 0; i < (additional_neighbors_order_tagging); ++i) {
 				{
 					int numBlocks = calculateNumBlocks(particleSet->numParticles);
 					evaluate_and_tag_high_density_from_buffer_kernel<false, false, false, false> << <numBlocks, BLOCKSIZE >> > (data, particleSet->gpu_ptr,
-						outInt, 4000, particleSet->numParticles, NULL);
+						outInt, 4000, particleSet->numParticles, NULL, (params.keep_existing_fluid ? data.fluid_data->gpu_ptr : NULL));
 					gpuErrchk(cudaDeviceSynchronize());
 				}
 

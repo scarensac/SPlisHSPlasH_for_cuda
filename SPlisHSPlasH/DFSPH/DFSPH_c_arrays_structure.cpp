@@ -538,6 +538,16 @@ void UnifiedParticleSet::load_from_file(std::string file_path, bool load_velocit
 		}
 		//*/
 
+		//*
+		if (positions_limitations && velocity_impacted_by_fluid_solver) {
+			
+			if ((pos.x > 0)) {
+				NbrLoadedParticles--;
+				i--;
+				continue;
+			}
+		}
+		//*/
 	
 
 #ifdef OCEAN_BOUNDARIES_PROTOTYPE
@@ -1133,7 +1143,7 @@ void DFSPHCData::read_fluid_from_file(bool load_velocities) {
 
 		//read the data to cpu pointer
 		std::string file_name = fluid_files_folder + "fluid_file.txt";
-		fluid_data[0].load_from_file(file_name, load_velocities);
+		fluid_data[0].load_from_file(file_name, load_velocities,NULL,NULL,true);
 
 		//init gpu struct
 		allocate_and_copy_UnifiedParticleSet_vector_cuda(&fluid_data_cuda, fluid_data, 1);
@@ -1177,7 +1187,6 @@ void DFSPHCData::init_fluid_to_simulation(bool keep_existing_fluid) {
 	std::cout << "init fluid to simulation start: " << std::endl;
 
 	{
-		RestFLuidLoaderInterface::init(*this, true,false);
 
 		RestFLuidLoaderInterface::TaggingParameters paramsTagging;
 		if (true) {
@@ -1219,8 +1228,9 @@ void DFSPHCData::init_fluid_to_simulation(bool keep_existing_fluid) {
 			paramsTagging.useRule2 = false;
 			paramsTagging.useRule3 = true;
 			paramsTagging.step_density = 25;
+			paramsTagging.keep_existing_fluid = true;
 			try {
-				RestFLuidLoaderInterface::initializeFluidToSurface(*this, true, paramsTagging, true);
+				RestFLuidLoaderInterface::initializeFluidToSurface(*this, true, paramsTagging);
 			}
 			catch (const std::string& e) { // reference to the base of a polymorphic object
 				std::cout << e << std::endl;

@@ -1437,8 +1437,10 @@ __global__ void DFSPH_viscosityXSPH_kernel(SPH::DFSPHCData m_data, SPH::UnifiedP
 	//I set the gravitation directly here to lover the number of kernels
 	Vector3d ai = Vector3d(0, 0, 0);
 	Vector3d ni = Vector3d(0, 0, 0);
-	const Vector3d &xi = particleSet->pos[i];
-	const Vector3d &vi = particleSet->vel[i];
+	const Vector3d xi = particleSet->pos[i];
+	const Vector3d vi = particleSet->vel[i];
+
+
 
 	//////////////////////////////////////////////////////////////////////////
 	// Fluid
@@ -1447,13 +1449,42 @@ __global__ void DFSPH_viscosityXSPH_kernel(SPH::DFSPHCData m_data, SPH::UnifiedP
 
 	ITER_NEIGHBORS_INIT(m_data, particleSet, i);
 
+	
+
 	//*
 	ITER_NEIGHBORS_FLUID(m_data, particleSet,
 		i,
-		Vector3d xixj = xi - body.pos[neighborIndex];
-	RealCuda mass_div_density = body.getMass(neighborIndex) / body.density[neighborIndex];
-	ai -= m_data.invH * m_data.viscosity * (mass_div_density) * (vi - body.vel[neighborIndex]) * KERNEL_W(m_data,xixj);
-	ni += mass_div_density * KERNEL_GRAD_W(m_data,xixj);
+		{
+
+			Vector3d xixj = xi - body.pos[neighborIndex];
+			RealCuda mass_div_density = body.getMass(neighborIndex) / body.density[neighborIndex];
+			ai -= m_data.invH * m_data.viscosity * (mass_div_density) *  (vi - body.vel[neighborIndex]) * KERNEL_W(m_data, xixj);
+			ni += mass_div_density * KERNEL_GRAD_W(m_data, xixj);
+
+			if (false && i == 9400) {
+				RealCuda radius_sq_j = m_data.getKernelRadius();
+				Vector3d pos_j = body.pos[neighborIndex];
+				Vector3d pos_cell_j = (pos_j / radius_sq_j) + m_data.gridOffset;
+				int x_j = pos_cell_j.x;
+				int y_j = pos_cell_j.y;
+				int z_j = pos_cell_j.z;
+				unsigned int cur_cell_id_j = COMPUTE_CELL_INDEX(x_j , y_j , z_j);
+				printf("neighbor info: %u %u // %i : %i %i %i\n", neighborIndex, body.neighborsDataSet->cell_id[neighborIndex],
+					cur_cell_id_j,x_j,y_j,z_j);
+				printf("massdiv density : %f = %f / %f \n", mass_div_density, body.getMass(neighborIndex), body.density[neighborIndex]);
+				/*
+				printf("density test 1 : (%f, %f, %f) -= %f * %f * %f * [(%f , %f, %f)-(%f , %f, %f)] * %f \n",
+					ai.x, ai.y, ai.z, m_data.invH, m_data.viscosity, (mass_div_density),
+					vi.x, vi.y, vi.z, body.vel[neighborIndex].x, body.vel[neighborIndex].y, body.vel[neighborIndex].z, KERNEL_W(m_data, xixj));
+				//*/
+				/*
+				printf("density test 2 : (%f, %f, %f) -= %f * %f * %f * [(%f , %f, %f)-(%f , %f, %f)] * %f \n",
+					ai.x, ai.y, ai.z, m_data.invH, m_data.viscosity, (mass_div_density),
+					particleSet->vel[i].x, particleSet->vel[i].y, particleSet->vel[i].z,
+					body.vel[neighborIndex].x, body.vel[neighborIndex].y, body.vel[neighborIndex].z, KERNEL_W(m_data, xixj));
+				//*/
+			}
+		}
 	)
 		//*/
 		/*

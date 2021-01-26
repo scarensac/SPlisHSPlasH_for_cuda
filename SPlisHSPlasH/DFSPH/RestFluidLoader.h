@@ -62,7 +62,7 @@ namespace SPH {
 		//ok here I'll test a system to initialize a volume of fluid from
 		//a large wolume of fluid (IE a technique to iinit the fluid at rest)
 		static void initializeFluidToSurface(SPH::DFSPHCData& data, bool center_loaded_fluid, TaggingParameters& params, 
-			bool load_fluid=true, bool keep_existing_fluid=false);
+			bool load_fluid=true);
 
 
 		//this struct is only to be more flexible in the addition of stabilization methods in the stabilizeFluid function 
@@ -71,6 +71,8 @@ namespace SPH {
 			int stabilizationItersCount;
 			RealCuda timeStep;
 			bool reloadFluid;
+			bool keep_existing_fluid;
+			bool stabilize_tagged_only;
 
 			//those are parameters for when using the SPH simulation step to stabilize the fluid
 			bool useDivergenceSolver;
@@ -127,6 +129,8 @@ namespace SPH {
 				stabilizationItersCount = 5;
 				timeStep = 0.003;
 				reloadFluid = true;
+				keep_existing_fluid = false;
+				stabilize_tagged_only = false;
 
 				useDivergenceSolver = true;
 				useDensitySolver = true;
