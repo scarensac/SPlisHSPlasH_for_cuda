@@ -770,26 +770,31 @@ __global__ void particle_selection_rule_1_kernel(SPH::DFSPHCData data, SPH::Unif
 	if ((bufferSet->neighborsDataSet->cell_id[i] == TAG_ACTIVE)) {
 		//printf("dist/density: %f %f\n", factor*min_dist/data.particleRadius,density);
 		//ok if the sum of existing fluid and boundaries is too high I can directly delete the particle
+		//*
 		if (densityConstant > (data.density0*0.70)) {
-			bufferSet->neighborsDataSet->cell_id[i] = TAG_REMOVAL_CANDIDATE;
+			//we can directly remove them without considering them as candidate
+			//since their condition is on a constant value
+			bufferSet->neighborsDataSet->cell_id[i] = TAG_REMOVAL;
 		}
-		else {
+		else
+		//*/
+		{
 			if (density > limit_density) {
 				bufferSet->neighborsDataSet->cell_id[i] =  TAG_REMOVAL_CANDIDATE;
 				//bufferSet->color[i] = Vector3d(0, 1, 0);
 			}
 			else {
-				//*
-				//doing it with atomic is as fast/faster than cub since only a few thread need to add their values
-				//also when chaining atomic it seems that only the first one has a cost
-				atomicAdd(sum_densities, density);
-				atomicAdd(count_summed, 1);
-				//*/
 
 				if (max_density != NULL) {
 					atomicToMax(max_density, density);
 				}
 			}
+			//*
+			//doing it with atomic is as fast/faster than cub since only a few thread need to add their values
+			//also when chaining atomic it seems that only the first one has a cost
+			atomicAdd(sum_densities, density);
+			atomicAdd(count_summed, 1);
+			//*/
 		}
 		
 	}
@@ -1278,8 +1283,8 @@ void RestFLuidLoader::init(DFSPHCData& data, bool center_loaded_fluid, int air_p
 	int simulation_config = 0;
 	if (simulation_config == 0) {
 		S_simulation.setCuboid(Vector3d(0, 2.5, 0), Vector3d(0.5, 2.5, 0.5));
-		//S_fluid.setCuboid(Vector3d(0, 1, 0), Vector3d(0.5, 1, 0.5));
-		S_fluid.setCuboid(Vector3d(0, 0.95, 0), Vector3d(0.5, 1, 0.5));
+		S_fluid.setCuboid(Vector3d(0, 1, 0), Vector3d(0.5, 1, 0.5));
+		//S_fluid.setCuboid(Vector3d(0, 0.95, 0), Vector3d(0.5, 1, 0.5));
 		//S_simulation.setCuboid(Vector3d(0, 1, 0), Vector3d(0.5, 1, 0.5));
 		//S_fluid.move(Vector3d(0, 1, 0));
 	}
@@ -1898,7 +1903,7 @@ void RestFLuidLoader::tagDataToSurface(SPH::DFSPHCData& data, RestFLuidLoaderInt
 			//here I can optimize the comutation by tagging for removal any particle that is extremely close to an existing fluid particle
 			bool remove_close_to_fluid = true;
 			if (remove_close_to_fluid) {
-				RealCuda distance_to_exiting_limit = data.particleRadius*1.05;
+				RealCuda distance_to_exiting_limit = data.particleRadius*0.99;
 				tag_neighborhood_kernel<false, false> << <numBlocks, BLOCKSIZE >> > (data, data.fluid_data->gpu_ptr, backgroundFluidBufferSet->gpu_ptr,
 					distance_to_exiting_limit, backgroundFluidBufferSet->numParticles, TAG_REMOVAL);
 				gpuErrchk(cudaDeviceSynchronize());
@@ -2215,7 +2220,7 @@ void RestFLuidLoader::tagDataToSurface(SPH::DFSPHCData& data, RestFLuidLoaderInt
 				}
 			}
 
-			if (true) {
+			if (false) {
 				{
 					// a test to compare the zone between the fluid-fluid and border-fluid
 					UnifiedParticleSet* particleSet = backgroundFluidBufferSet;
@@ -2368,7 +2373,7 @@ void RestFLuidLoader::tagDataToSurface(SPH::DFSPHCData& data, RestFLuidLoaderInt
 
 		//end the process if avg reach target
 		{
-			if ((avg_density - data.density0) < 1) {
+			if (((avg_density - data.density0) < -1)) {
 				if (show_debug) {
 					std::cout << "Rest density reached at iter/limit_density/avg_density: " << i << "  " << limit_density << "  " << avg_density << std::endl;
 				}
@@ -3354,7 +3359,7 @@ int RestFLuidLoader::loadDataToSimulation(SPH::DFSPHCData& data, RestFLuidLoader
 			//*
 			if (true) {
 				//data.fluid_data->resetColor();
-				RealCuda tagging_distance = data.getKernelRadius() * 1.1;
+				RealCuda tagging_distance = data.getKernelRadius() * 2;
 				int numBlocks = calculateNumBlocks(data.fluid_data->numParticles);
 				tag_neighbors_of_tagged_kernel<false, false, false> << <numBlocks, BLOCKSIZE >> > (data, data.fluid_data->gpu_ptr, tagging_distance,
 					TAG_ACTIVE, TAG_ACTIVE_NEIGHBORS);
@@ -3591,6 +3596,8 @@ int RestFLuidLoader::loadDataToSimulation(SPH::DFSPHCData& data, RestFLuidLoader
 		timings.time_next_point();//time
 
 		if (params.set_up_tagging) {
+			std::cout << "RestFLuidLoader::loadDataToSimulation setting up the tagging for stabilization step" << std::endl;
+
 			//I'll store the tagging in the cell_id of the background buffer since I know it has at least the same number of particles
 			//as the number of particles I have loaded in the fluid 
 			//for now I'll leave some system to full computation and I'll change them if their computation time is high enougth
@@ -3659,7 +3666,7 @@ int RestFLuidLoader::loadDataToSimulation(SPH::DFSPHCData& data, RestFLuidLoader
 			//by wide I mean you nee to do the tagging like if they had a slightly extended neighborhood
 			//*
 			if (true) {
-				RealCuda tagging_distance = data.getKernelRadius() * 1.1;
+				RealCuda tagging_distance = data.getKernelRadius() * 2;
 				int numBlocks = calculateNumBlocks(data.fluid_data->numParticles);
 				tag_neighbors_of_tagged_kernel<false, false, true> << <numBlocks, BLOCKSIZE >> > (data, data.fluid_data->gpu_ptr, tagging_distance,
 					TAG_ACTIVE, TAG_ACTIVE_NEIGHBORS, nbr_fluid_particles, TAG_AIR_ACTIVE_NEIGHBORS);
@@ -3680,7 +3687,7 @@ int RestFLuidLoader::loadDataToSimulation(SPH::DFSPHCData& data, RestFLuidLoader
 			}
 			//*/
 			int count_neighbors_order_2 = 0;
-			if (true) {
+			if (false) {
 				int numBlocks = calculateNumBlocks(data.fluid_data->numParticles);
 				tag_neighbors_of_tagged_kernel<true, true> << <numBlocks, BLOCKSIZE >> > (data, data.fluid_data->gpu_ptr, TAG_ACTIVE_NEIGHBORS, TAG_ACTIVE_NEIGHBORS_ORDER_2);
 				gpuErrchk(cudaDeviceSynchronize());
@@ -4808,10 +4815,12 @@ void RestFLuidLoader::stabilizeFluid(SPH::DFSPHCData& data, RestFLuidLoaderInter
 				//ok in some situation I had to allocate dedicated memory to store the backup of the tagging ...
 				//so yeah sorry for that "if"
 				if (tag_array_with_existing_fluid_size > 0) {
+					std::cout << "using specilized storage" << std::endl;
 					tag_array = tag_array_with_existing_fluid;
 					tag_array_max_size = tag_array_with_existing_fluid_size;
 				}
 				else {
+					std::cout << "using background buffer as storage" << std::endl;
 					tag_array = backgroundFluidBufferSet->neighborsDataSet->cell_id_sorted;
 					tag_array_max_size = backgroundFluidBufferSet->numParticlesMax;
 				}
@@ -5054,7 +5063,7 @@ void RestFLuidLoader::stabilizeFluid(SPH::DFSPHCData& data, RestFLuidLoaderInter
 
 				timings.time_next_point();
 				
-				if (true) {
+				if (false) {
 					if (iter == 0) {
 						SPH::UnifiedParticleSet* studySet = particleSet;
 						Vector3d* pos = new Vector3d[studySet->numParticles];

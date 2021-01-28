@@ -1228,7 +1228,7 @@ void DFSPHCData::init_fluid_to_simulation(bool keep_existing_fluid) {
 			paramsTagging.useRule2 = false;
 			paramsTagging.useRule3 = true;
 			paramsTagging.step_density = 25;
-			paramsTagging.keep_existing_fluid = true;
+			paramsTagging.keep_existing_fluid = false;
 			try {
 				RestFLuidLoaderInterface::initializeFluidToSurface(*this, true, paramsTagging);
 			}
