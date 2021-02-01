@@ -83,7 +83,7 @@ namespace SPH {
 		//an explanation for the air particle range
 		//it is used to limit the amount of air particles that are kept 
 		//-1: no restriction; 0: no air(don't use that...), 1: air that are neighbors to fluid, 2: air that are neigbors to air particles that are neighbors to fluid
-		void init(DFSPHCData& data, bool center_loaded_fluid, int air_particles_restriction, bool keep_existing_fluid);
+		void init(DFSPHCData& data, const RestFLuidLoaderInterface::InitParameters& params);
 
 		bool isInitialized() { return _isInitialized; }
 
@@ -108,8 +108,8 @@ namespace SPH {
 }
 
 
-void RestFLuidLoaderInterface::init(DFSPHCData& data, bool center_loaded_fluid, bool keep_existing_fluid) {
-	RestFLuidLoader::getStructure().init(data, center_loaded_fluid,1, keep_existing_fluid);
+void RestFLuidLoaderInterface::init(DFSPHCData& data, const InitParameters& params) {
+	RestFLuidLoader::getStructure().init(data, params);
 }
 
 bool RestFLuidLoaderInterface::isInitialized() {
@@ -124,7 +124,11 @@ void RestFLuidLoaderInterface::initializeFluidToSurface(SPH::DFSPHCData& data, b
 	timings.init_step();//start point of the current step (if measuring avgs you need to call it at everystart of the loop)
 
 	if (!isInitialized()) {
-		init(data,center_loaded_fluid, params.keep_existing_fluid);
+		InitParameters initParams;
+		initParams.keep_existing_fluid = params.keep_existing_fluid;
+		initParams.center_loaded_fluid = center_loaded_fluid;
+		initParams.air_particles_restriction = 1;
+		init(data,initParams);
 	}
 
 
@@ -783,11 +787,8 @@ __global__ void particle_selection_rule_1_kernel(SPH::DFSPHCData data, SPH::Unif
 				bufferSet->neighborsDataSet->cell_id[i] =  TAG_REMOVAL_CANDIDATE;
 				//bufferSet->color[i] = Vector3d(0, 1, 0);
 			}
-			else {
-
-				if (max_density != NULL) {
-					atomicToMax(max_density, density);
-				}
+			if (max_density != NULL) {
+				atomicToMax(max_density, density);
 			}
 			//*
 			//doing it with atomic is as fast/faster than cub since only a few thread need to add their values
@@ -808,6 +809,22 @@ __global__ void particle_selection_rule_1_kernel(SPH::DFSPHCData data, SPH::Unif
 	}
 }
 
+
+
+__global__ void untag_candidate_below_limit_kernel(SPH::DFSPHCData data, SPH::UnifiedParticleSet* bufferSet, 
+	RealCuda limit_density, int count_potential_fluid) {
+	int i = blockIdx.x * blockDim.x + threadIdx.x;
+	if (i >= count_potential_fluid) { return; }
+
+	if ((bufferSet->neighborsDataSet->cell_id[i] != TAG_REMOVAL_CANDIDATE)) {
+		return;
+	}
+
+	if (bufferSet->density[i] < limit_density) {
+		bufferSet->neighborsDataSet->cell_id[i] = TAG_ACTIVE;
+	}
+
+}
 
 template <bool run_multithread>
 __global__ void save_usefull_candidates_kernel(SPH::DFSPHCData data, SPH::UnifiedParticleSet* bufferSet, int* countRmv, RealCuda limit_density, int count_potential_fluid) {
@@ -1039,7 +1056,8 @@ __global__ void verify_candidate_tagging_multithread_kernel(SPH::DFSPHCData data
 }
 
 
-__global__ void confirm_candidates_kernel( SPH::UnifiedParticleSet* bufferSet, int count_potential_fluid, int* countConfirm) {
+__global__ void confirm_candidates_kernel( SPH::UnifiedParticleSet* bufferSet, int count_potential_fluid, 
+	int* countConfirm, RealCuda* sumDensityConfirm) {
 	int i = blockIdx.x * blockDim.x + threadIdx.x;
 	if (i >= count_potential_fluid) { return; }
 
@@ -1048,6 +1066,10 @@ __global__ void confirm_candidates_kernel( SPH::UnifiedParticleSet* bufferSet, i
 		bufferSet->neighborsDataSet->cell_id[i] = TAG_REMOVAL;
 		if (countConfirm != NULL) {
 			atomicAdd(countConfirm, 1);
+		}
+
+		if (sumDensityConfirm != NULL) {
+			atomicAdd(sumDensityConfirm, bufferSet->density[i]);
 		}
 		
 	}
@@ -1261,7 +1283,11 @@ __global__ void test_kernel(BufferFluidSurface S) {
 
 
 
-void RestFLuidLoader::init(DFSPHCData& data, bool center_loaded_fluid, int air_particles_restriction, bool keep_existing_fluid) {
+void RestFLuidLoader::init(DFSPHCData& data, const RestFLuidLoaderInterface::InitParameters& params) {
+	bool center_loaded_fluid=params.center_loaded_fluid; 
+	int air_particles_restriction = params.air_particles_restriction;
+	bool keep_existing_fluid = params.keep_existing_fluid;
+
 	_isInitialized = false;
 	_isDataTagged = false;
 	//Essencially this function will load the background buffer and initialize it to the desired simulation domain
@@ -1273,14 +1299,14 @@ void RestFLuidLoader::init(DFSPHCData& data, bool center_loaded_fluid, int air_p
 	SurfaceAggregation S_simulation_aggr;
 	SurfaceAggregation S_fluid_aggr;
 
-	std::vector<std::string> timing_names{ "mesh load","void","load and center background","restict to simulation","restrict distance to boundary particles","tag to fluid"," sort by tagging" };
+	std::vector<std::string> timing_names{ "mesh load","void","load", "center background","restict to simulation","restrict distance to boundary particles","tag to fluid"," sort by tagging" };
 	SPH::SegmentedTiming timings("fluid loader init", timing_names, true);
 	timings.init_step();//start point of the current step (if measuring avgs you need to call it at everystart of the loop)
 
 
 	BufferFluidSurface S_simulation;
 	BufferFluidSurface S_fluid;
-	int simulation_config = 0;
+	int simulation_config = params.simulation_config;
 	if (simulation_config == 0) {
 		S_simulation.setCuboid(Vector3d(0, 2.5, 0), Vector3d(0.5, 2.5, 0.5));
 		S_fluid.setCuboid(Vector3d(0, 1, 0), Vector3d(0.5, 1, 0.5));
@@ -1348,7 +1374,14 @@ void RestFLuidLoader::init(DFSPHCData& data, bool center_loaded_fluid, int air_p
 		S_simulation.setCuboid(Vector3d(0, 2.5, 0), Vector3d(1, 2.5, 1));
 		S_fluid.setCuboid(Vector3d(0, 1, 0), Vector3d(1, 1, 1));
 		//S_fluid.setPlane(Vector3d(0, 2, 0), Vector3d(0, -1, 0));
-		
+
+	}
+	else if (simulation_config == 6) {
+		//2m fluid box
+		S_simulation.setCuboid(Vector3d(0, 1, 0), Vector3d(2, 2, 2));
+		S_fluid.setCuboid(Vector3d(0, 1, 0), Vector3d(2, 2, 2));
+		//S_fluid.setPlane(Vector3d(0, 2, 0), Vector3d(0, -1, 0));
+
 	}
 	else {
 		exit(5986);
@@ -1382,14 +1415,32 @@ void RestFLuidLoader::init(DFSPHCData& data, bool center_loaded_fluid, int air_p
 	backgroundFluidBufferSet->load_from_file(data.fluid_files_folder + "background_buffer_file.txt", false, &min_fluid_buffer, &max_fluid_buffer, false);
 	allocate_and_copy_UnifiedParticleSet_vector_cuda(&dummy, backgroundFluidBufferSet, 1);
 
+
+	timings.time_next_point();//time 
+
 	//I'll center the loaded dataset (for now hozontally but in the end I'll also center it vertically)
-	if (center_loaded_fluid) {
-		Vector3d displacement = max_fluid_buffer + min_fluid_buffer;
-		displacement /= 2;
-		//on y I just put the fluid slightly below the simulation space to dodge the special distribution around the borders
-		displacement.y = -min_fluid_buffer.y - 0.2;
-		//displacement.y = 0;
-		std::cout << "background buffer displacement: " << displacement.toString() << std::endl;
+	if (center_loaded_fluid||params.apply_additional_offset) {
+		Vector3d displacement = Vector3d(0, 0, 0);
+
+		if (center_loaded_fluid) {
+			displacement = max_fluid_buffer + min_fluid_buffer;
+			displacement /= 2;
+			//on y I just put the fluid slightly below the simulation space to dodge the special distribution around the borders
+			displacement.y = -min_fluid_buffer.y - 0.2;
+			//displacement.y = 0;
+			std::cout << "background buffer displacement (centering): " << displacement.toString() << std::endl;
+		}
+
+		if (params.apply_additional_offset) {
+			displacement += params.additional_offset;
+
+			std::cout << "background buffer displacement (manual offsest): " << displacement.toString() << std::endl;
+		}
+
+		if (center_loaded_fluid && params.apply_additional_offset) {
+			std::cout << "background buffer displacement (total): " << displacement.toString() << std::endl;
+		}
+
 		{
 			int numBlocks = calculateNumBlocks(backgroundFluidBufferSet->numParticles);
 			apply_delta_to_buffer_kernel << <numBlocks, BLOCKSIZE >> > (backgroundFluidBufferSet->pos, displacement, backgroundFluidBufferSet->numParticles);
@@ -2125,7 +2176,7 @@ void RestFLuidLoader::tagDataToSurface(SPH::DFSPHCData& data, RestFLuidLoaderInt
 	RealCuda limit_density = 0;
 	int total_to_remove = 0;
 
-	std::vector<std::string> timing_names_loop{ "eval","compute_avg","save1","save2","confirm" };
+	std::vector<std::string> timing_names_loop{ "eval","compute_avg","change_step_size","save1","save2","confirm" };
 	SPH::SegmentedTiming timings_loop("tag data loop", timing_names_loop, true);
 
 	RealCuda density_start = params.density_start;
@@ -2154,7 +2205,6 @@ void RestFLuidLoader::tagDataToSurface(SPH::DFSPHCData& data, RestFLuidLoaderInt
 	const bool candidate_validation_separate = true;
 	RealCuda* max_density_first_step= SVS_CU::get()->avg_density_err;
 	*max_density_first_step = 0;
-
 	//clear buffers
 	set_buffer_to_value<RealCuda>(backgroundFluidBufferSet->densityAdv, 0, backgroundFluidBufferSet->numParticles);
 	set_buffer_to_value<RealCuda>(backgroundFluidBufferSet->kappaV, 0, backgroundFluidBufferSet->numParticles);
@@ -2165,6 +2215,10 @@ void RestFLuidLoader::tagDataToSurface(SPH::DFSPHCData& data, RestFLuidLoaderInt
 
 		set_buffer_to_value<RealCuda>(backgroundFluidBufferSet->kappa, 0, backgroundFluidBufferSet->numParticles);
 
+
+		if (max_density_first_step != NULL) {
+			*max_density_first_step = 0;
+		}
 		//set_buffer_to_value<RealCuda>(backgroundFluidBufferSet->density, 0, backgroundFluidBufferSet->numParticles);
 
 		timings_loop.init_step();//start point of the current step (if measuring avgs you need to call it at everystart of the loop)
@@ -2175,6 +2229,8 @@ void RestFLuidLoader::tagDataToSurface(SPH::DFSPHCData& data, RestFLuidLoaderInt
 		}
 		//I will use the kappa buffer to compute the avg density of active particles
 		RealCuda avg_density = 0;
+		RealCuda sum_density_active = 0;
+		RealCuda count_density_active = 0;
 		int count_to_rmv_this_step = 0;
 		if (use_clean_version) {
 			
@@ -2269,7 +2325,10 @@ void RestFLuidLoader::tagDataToSurface(SPH::DFSPHCData& data, RestFLuidLoaderInt
 
 			//exit(0);
 			//avg_density = 1000;//(*outRealCuda) / (*outInt);
-			avg_density = (*outRealCuda) / (*outInt);
+
+			sum_density_active = *outRealCuda;
+			count_density_active = *outInt;
+			avg_density = sum_density_active / count_density_active;
 			//avg_density = (*outRealCuda) / (count_active_ini - total_to_remove);
 
 			if (max_density_first_step != NULL) {
@@ -2277,6 +2336,14 @@ void RestFLuidLoader::tagDataToSurface(SPH::DFSPHCData& data, RestFLuidLoaderInt
 					std::cout << "max density: " << *max_density_first_step << std::endl;
 				}
 				if (limit_density > (*max_density_first_step)) {
+					if (show_debug) {
+						std::cout << "currently limit bellow max so changing max to fit max density (old/new): " << 
+							limit_density<< " / "<< (*max_density_first_step) << std::endl;
+						std::cout << std::endl;
+						std::cout << "initializeFluidToSurface: fitting fluid, iter: " << i << "  skipped"<<std::endl;
+
+					}
+
 					//set a new limit
 					//knowing this valu will be reduced byt the step
 					limit_density = (*max_density_first_step);
@@ -2287,6 +2354,8 @@ void RestFLuidLoader::tagDataToSurface(SPH::DFSPHCData& data, RestFLuidLoaderInt
 					//deactivate that since for next stepsince it isimpossible for it to trigger for 2 steps
 					max_density_first_step = NULL;
 
+
+
 					//go to the next step
 					continue;
 				}
@@ -2296,7 +2365,9 @@ void RestFLuidLoader::tagDataToSurface(SPH::DFSPHCData& data, RestFLuidLoaderInt
 				//Normaly this should NEVER happens exact when there is extremely few remaining particles
 				//when the existing fluid is used this fucking case happens sometime due to some optimizations 
 				//so I might as well use it as an advantage
-				if (params.keep_existing_fluid) {
+				//and now with the step regulator it also happens when there is no existing fluid so i'll keep it activated
+				//if (params.keep_existing_fluid) 
+				{
 					max_density_first_step = SVS_CU::get()->avg_density_err;
 					*max_density_first_step = 0;
 				}
@@ -2371,9 +2442,13 @@ void RestFLuidLoader::tagDataToSurface(SPH::DFSPHCData& data, RestFLuidLoaderInt
 			}
 		}
 
+		if (show_debug) {
+			std::cout << "avg density before check end: " << avg_density << std::endl;
+		}
+
 		//end the process if avg reach target
 		{
-			if (((avg_density - data.density0) < -1)) {
+			if (((avg_density - density_end) < 0)) {
 				if (show_debug) {
 					std::cout << "Rest density reached at iter/limit_density/avg_density: " << i << "  " << limit_density << "  " << avg_density << std::endl;
 				}
@@ -2390,6 +2465,7 @@ void RestFLuidLoader::tagDataToSurface(SPH::DFSPHCData& data, RestFLuidLoaderInt
 				timings_loop.time_next_point();//time
 				timings_loop.time_next_point();//time
 				timings_loop.time_next_point();//time
+				timings_loop.time_next_point();//time
 				timings_loop.end_step();
 
 				successful = true;
@@ -2400,6 +2476,43 @@ void RestFLuidLoader::tagDataToSurface(SPH::DFSPHCData& data, RestFLuidLoaderInt
 		}
 
 		timings_loop.time_next_point();//time
+
+		//if the current avg density is too close to the target with a step toolarge we need to reduce the step so we don't
+		//actually skip the target density too much
+		{
+			if (show_debug) {
+				std::cout << "avg density before step modification: " << avg_density << std::endl;
+			}
+			RealCuda delta_to_target = avg_density - density_end;
+			if (delta_to_target < (params.step_density / 2.0f)) {
+				RealCuda old_step_density = step_density;
+				step_density = static_cast<int>(delta_to_target)*2;
+				step_density = MAX_MACRO_CUDA(step_density, 5);
+				limit_density += old_step_density - step_density;
+				if (show_debug) {
+					std::cout << "changing step size from         " << old_step_density << " to " << step_density << std::endl;
+					std::cout << "resulting in limit density from " << limit_density+step_density-old_step_density << " to " << 
+						limit_density << std::endl;
+				}
+
+				//and if the limit density has changed I need to untag part of the candidates
+				//that are now above the new limit desity
+				{
+					int numBlocks = calculateNumBlocks(count_potential_fluid);
+					untag_candidate_below_limit_kernel << <numBlocks, BLOCKSIZE >> > (data, backgroundFluidBufferSet->gpu_ptr,
+						limit_density, count_potential_fluid);
+					gpuErrchk(cudaDeviceSynchronize());
+				}
+			}
+		}
+
+		timings_loop.time_next_point();//time
+
+		
+		//this is simple an empty line to make the output more lisible
+		if (show_debug) {
+			std::cout << std::endl;
+		}
 
 		//a variable that count te total number of saved particles
 		int count_saved = 0;
@@ -2469,11 +2582,19 @@ void RestFLuidLoader::tagDataToSurface(SPH::DFSPHCData& data, RestFLuidLoaderInt
 		timings_loop.time_next_point();//time
 		
 		if (onepass_removal_counting && candidate_validation_separate) {
+			//*outInt = 0;
+			//*outRealCuda = 0;
 			{
 				int numBlocks = calculateNumBlocks(count_potential_fluid);
-				confirm_candidates_kernel << <numBlocks, BLOCKSIZE >> > (backgroundFluidBufferSet->gpu_ptr, count_potential_fluid, outInt);
+				confirm_candidates_kernel << <numBlocks, BLOCKSIZE >> > (backgroundFluidBufferSet->gpu_ptr, count_potential_fluid, 
+					NULL, NULL);
 				gpuErrchk(cudaDeviceSynchronize());
 			}
+			/*
+			sum_density_active -= *outRealCuda;
+			count_density_active -= *outInt;
+			avg_density = sum_density_active / count_density_active;
+			//*/
 		}
 
 		//convert the remaining cnadidates to actual removal
@@ -2482,7 +2603,8 @@ void RestFLuidLoader::tagDataToSurface(SPH::DFSPHCData& data, RestFLuidLoaderInt
 				*outInt = 0;
 				{
 					int numBlocks = calculateNumBlocks(count_potential_fluid);
-					confirm_candidates_kernel << <numBlocks, BLOCKSIZE >> > (backgroundFluidBufferSet->gpu_ptr, count_potential_fluid, outInt);
+					confirm_candidates_kernel << <numBlocks, BLOCKSIZE >> > (backgroundFluidBufferSet->gpu_ptr, count_potential_fluid, 
+						outInt, NULL);
 					gpuErrchk(cudaDeviceSynchronize());
 				}
 				count_confirm += *outInt;
@@ -2563,7 +2685,11 @@ void RestFLuidLoader::tagDataToSurface(SPH::DFSPHCData& data, RestFLuidLoaderInt
 
 			
 		}
+	
+		
+
 	}
+
 	timings.time_next_point();//time 
 	timings_loop.recap_timings();//writte timming to cout
 

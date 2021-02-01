@@ -12,7 +12,32 @@ namespace SPH {
 
 	public:
 		
-		static void init(DFSPHCData& data, bool center_loaded_fluid, bool keep_existing_fluid);
+		struct InitParameters {
+			bool center_loaded_fluid;
+			bool apply_additional_offset;
+			Vector3d additional_offset;
+
+			bool keep_existing_fluid;
+
+			int air_particles_restriction;
+
+			int simulation_config;
+
+			InitParameters() {
+				center_loaded_fluid = false;
+				apply_additional_offset = false;
+				additional_offset;
+
+				keep_existing_fluid = false;
+
+				air_particles_restriction=1;
+
+				simulation_config = 0;
+			}
+
+		};
+
+		static void init(DFSPHCData& data, const InitParameters& params);
 
 
 		static bool isInitialized();
@@ -32,7 +57,7 @@ namespace SPH {
 
 			TaggingParameters(){
 				density_start = 1900;
-				density_end = 1001;
+				density_end = 1000;
 				step_density = 50;
 
 				useRule2 = false;

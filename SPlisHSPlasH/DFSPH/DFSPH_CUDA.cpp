@@ -13,6 +13,7 @@
 #include <cmath>
 #include <chrono>
 #include <thread>
+#include <random>
 
 // BENDER2019_BOUNDARIES includes
 #include "SPlisHSPlasH/BoundaryModel_Bender2019.h"
@@ -152,7 +153,7 @@ void DFSPHCUDA::step()
                 //params.zeta = 2 * (SQRT_MACRO_CUDA(delta_s) + 1) / delta_s;
             }
             
-            int run_type = 3;
+            int run_type = 6;
             if (run_type==0) {
 
                 if (params.method == 0) {
@@ -637,6 +638,74 @@ void DFSPHCUDA::step()
 
 
 				std::cout << "count particles after init: " << m_data.fluid_data->numParticles << std::endl;
+			}
+			else if (run_type == 6) {
+				//here a test for an avg with vairuous random offsets
+
+				std::chrono::steady_clock::time_point tp0 = std::chrono::steady_clock::now();
+				RestFLuidLoaderInterface::InitParameters paramsInit;
+
+				paramsInit.air_particles_restriction = 1;
+				paramsInit.center_loaded_fluid = true;
+				paramsInit.keep_existing_fluid = false;
+				paramsInit.simulation_config = 0;
+				paramsInit.apply_additional_offset = true;
+				static std::default_random_engine e;
+				static std::uniform_real_distribution<> dis(-1, 1); // rage -1 ; 1
+				paramsInit.additional_offset = Vector3d(dis(e), dis(e), dis(e))*m_data.particleRadius;
+
+				RestFLuidLoaderInterface::init(m_data, paramsInit);
+
+				std::chrono::steady_clock::time_point tp1 = std::chrono::steady_clock::now();
+
+				RestFLuidLoaderInterface::TaggingParameters paramsTagging;
+				paramsTagging.useRule2 = false;
+				paramsTagging.useRule3 = true;
+				paramsTagging.step_density = 25;
+				paramsTagging.keep_existing_fluid = paramsInit.keep_existing_fluid;
+
+				RestFLuidLoaderInterface::initializeFluidToSurface(m_data, true, paramsTagging);
+
+				std::chrono::steady_clock::time_point tp2 = std::chrono::steady_clock::now();
+
+				params.method = 0;
+				params.timeStep = 0.003;
+				{
+					params.keep_existing_fluid = paramsInit.keep_existing_fluid;
+					params.stabilize_tagged_only = true;
+					params.postUpdateVelocityDamping = false;
+					params.postUpdateVelocityClamping = false;
+					params.preUpdateVelocityClamping = false;
+					//*/
+
+					params.maxErrorD = 0.05;
+
+					params.useDivergenceSolver = true;
+					params.useExternalForces = true;
+
+					params.preUpdateVelocityDamping = true;
+					params.preUpdateVelocityDamping_val = 0.8;
+
+					params.stabilizationItersCount = 10;
+
+					params.reduceDampingAndClamping = true;
+					params.reduceDampingAndClamping_val = std::powf(0.2f / params.preUpdateVelocityDamping_val, 1.0f / (params.stabilizationItersCount - 1));
+
+					params.clearWarmstartAfterStabilization = false;
+					//params.maxIterD = 10;
+				}
+				params.runCheckParticlesPostion = true;
+				params.interuptOnLostParticle = false;
+				params.reloadFluid = true;
+				RestFLuidLoaderInterface::stabilizeFluid(m_data, params);
+
+				std::chrono::steady_clock::time_point tp3 = std::chrono::steady_clock::now();
+				RealCuda time_p1 = std::chrono::duration_cast<std::chrono::nanoseconds> (tp2 - tp1).count() / 1000000000.0f;
+				RealCuda time_p2 = std::chrono::duration_cast<std::chrono::nanoseconds> (tp3 - tp2).count() / 1000000000.0f;
+
+
+				std::cout << "fluid initialization finished and took (in s) time_displacement//time_simu_damped: " << time_p1 << "  " << time_p2 << std::endl;
+
 			}
 
 

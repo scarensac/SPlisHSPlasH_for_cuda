@@ -15,6 +15,7 @@
 #include <chrono>
 #include <thread>
 #include <sstream>
+#include <random>
 #include "Utilities/FileSystem.h"
 
 
@@ -1189,6 +1190,7 @@ void DFSPHCData::init_fluid_to_simulation(bool keep_existing_fluid) {
 	{
 
 		RestFLuidLoaderInterface::TaggingParameters paramsTagging;
+		RestFLuidLoaderInterface::InitParameters paramsInit;
 		if (true) {
 			/*
 			paramsTagging.useRule3 = false;
@@ -1225,11 +1227,23 @@ void DFSPHCData::init_fluid_to_simulation(bool keep_existing_fluid) {
 		}
 
 		if (true) {
+			paramsInit.air_particles_restriction = 1;
+			paramsInit.center_loaded_fluid = true;
+			paramsInit.keep_existing_fluid = false;
+			paramsInit.simulation_config = 0;
+			paramsInit.apply_additional_offset = true;
+			static std::default_random_engine e;
+			static std::uniform_real_distribution<> dis(-1 , 1); // rage -1 ; 1
+			paramsInit.additional_offset=Vector3d(dis(e), dis(e), dis(e))*particleRadius;
+
+
 			paramsTagging.useRule2 = false;
 			paramsTagging.useRule3 = true;
 			paramsTagging.step_density = 25;
-			paramsTagging.keep_existing_fluid = false;
+			paramsTagging.keep_existing_fluid = paramsInit.keep_existing_fluid;
 			try {
+				RestFLuidLoaderInterface::init(*this, paramsInit);
+
 				RestFLuidLoaderInterface::initializeFluidToSurface(*this, true, paramsTagging);
 			}
 			catch (const std::string& e) { // reference to the base of a polymorphic object
