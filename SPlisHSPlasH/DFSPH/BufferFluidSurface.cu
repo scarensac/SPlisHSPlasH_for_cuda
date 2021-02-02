@@ -431,16 +431,23 @@ class BufferFluidSurface
 
 	//reverse the surface so that the exterior become the interior
 	bool isReversedSurface;
+
+	//to prevent the destruction when sending a copy to the kernels
+	bool destructorActivated;
 public:
 
 	inline BufferFluidSurface() {
 		type = -1;
 		mesh = NULL;
 		isReversedSurface = false;
+		destructorActivated = false;
 	}
 
 
 	inline ~BufferFluidSurface() {
+		if (destructorActivated) {
+			clear();
+		}
 	}
 
 	void clear(bool in_depth=false) {
@@ -451,6 +458,8 @@ public:
 			CUDA_FREE_PTR(mesh);
 		}
 	}
+
+	void prepareForDestruction() { destructorActivated = true; }
 
 
 	inline BufferFluidSurface& operator = (const BufferFluidSurface& other) {
@@ -792,14 +801,27 @@ class SurfaceAggregation {
 	//false if we are using the intersection of the surfaces
 	bool isUnion;
 
+	//to prevent the destruction when sending a copy to the kernels
+	bool destructorActivated;
 public:
 
 	SurfaceAggregation(bool isUnion_i = false) { 
 		numSurface = 0; numSurfaceMax = 0; surfaces = NULL; 
 		setIsUnion(isUnion_i);
+		destructorActivated = false;
 	}
 
+	~SurfaceAggregation() {
+		if (destructorActivated) {
+			for (int i = 0; i < numSurface; ++i)
+			{
+				surfaces[i].clear();
+			}
+			CUDA_FREE_PTR(surfaces);
+		}
+	}
 
+	void prepareForDestruction() { destructorActivated = true; }
 
 	void setIsUnion(bool val) { isUnion = val; }
 
@@ -819,6 +841,9 @@ public:
 			{
 				surfaces[i] = surfaces_back[i];
 			}	
+
+			//free the old memory space
+			CUDA_FREE_PTR(surfaces_back);
 		}
 		//then add the new surface
 		surfaces[numSurface] = s;

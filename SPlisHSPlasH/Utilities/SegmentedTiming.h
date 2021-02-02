@@ -48,6 +48,8 @@ namespace SPH
 		//constructor for static nbr of points
 		SegmentedTiming(std::string timer_name_i,std::vector<std::string> names_i, bool set_active = true);
 
+		//destructor
+		~SegmentedTiming();
 
 		//call that every start of timmings
 		void init_step();
@@ -62,16 +64,23 @@ namespace SPH
 		//if you want to be able to know the average values use the satically set version with the contructor
 		void add_timestamp(std::string name);
 		
+		//writte the results to the console
 		void recap_timings();
+
+		//get the avg for one particular timming
+		float getTimmingAvg(int i);
 #else
 		SegmentedTiming(std::string timer_name_i, bool set_active = true){}
 		SegmentedTiming(std::string timer_name_i, std::vector<std::string> names_i, bool set_active = true){}
+
+		~SegmentedTiming() {}
 
 		void init_step() {}
 		void time_next_point() {}
 		void end_step(bool force_ending = false) {}
 		void add_timestamp(std::string name) {}
 		void recap_timings() {}
+		float getTimmingAvg(int i) {}
 #endif
 	};
 }

@@ -11,8 +11,11 @@ namespace SPH {
 	class RestFLuidLoaderInterface {
 
 	public:
+		static void clear();
 		
 		struct InitParameters {
+			bool clear_data;
+
 			bool center_loaded_fluid;
 			bool apply_additional_offset;
 			Vector3d additional_offset;
@@ -24,6 +27,7 @@ namespace SPH {
 			int simulation_config;
 
 			InitParameters() {
+				clear_data = false;
 				center_loaded_fluid = false;
 				apply_additional_offset = false;
 				additional_offset;
@@ -37,7 +41,7 @@ namespace SPH {
 
 		};
 
-		static void init(DFSPHCData& data, const InitParameters& params);
+		static void init(DFSPHCData& data, InitParameters& params);
 
 
 		static bool isInitialized();
@@ -55,6 +59,10 @@ namespace SPH {
 
 			bool keep_existing_fluid;
 
+			//here are some output values
+			unsigned int count_iter;
+			RealCuda time_total;
+
 			TaggingParameters(){
 				density_start = 1900;
 				density_end = 1000;
@@ -67,6 +75,8 @@ namespace SPH {
 				density_delta_threshold = 5;
 
 				keep_existing_fluid = false;
+
+				count_iter = 0;
 			}
 		};
 

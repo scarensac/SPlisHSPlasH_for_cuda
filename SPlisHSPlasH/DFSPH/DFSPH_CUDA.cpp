@@ -14,6 +14,7 @@
 #include <chrono>
 #include <thread>
 #include <random>
+#include <algorithm>
 
 // BENDER2019_BOUNDARIES includes
 #include "SPlisHSPlasH/BoundaryModel_Bender2019.h"
@@ -101,7 +102,8 @@ void DFSPHCUDA::step()
         m_data.destructor_activated = false;
 
    //I'll run my tests here so that I can be sure that the loading did not failed before launching them
-        if (true && count_steps==0) {
+        //if (true && count_steps==0) 
+		{
         //*
             RestFLuidLoaderInterface::StabilizationParameters params;
             params.method = 0;
@@ -153,7 +155,7 @@ void DFSPHCUDA::step()
                 //params.zeta = 2 * (SQRT_MACRO_CUDA(delta_s) + 1) / delta_s;
             }
             
-            int run_type = 6;
+            int run_type = 7;
             if (run_type==0) {
 
                 if (params.method == 0) {
@@ -652,7 +654,7 @@ void DFSPHCUDA::step()
 				paramsInit.apply_additional_offset = true;
 				static std::default_random_engine e;
 				static std::uniform_real_distribution<> dis(-1, 1); // rage -1 ; 1
-				paramsInit.additional_offset = Vector3d(dis(e), dis(e), dis(e))*m_data.particleRadius;
+				paramsInit.additional_offset = Vector3d(dis(e), dis(e), dis(e))*m_data.particleRadius*2;
 
 				RestFLuidLoaderInterface::init(m_data, paramsInit);
 
@@ -705,6 +707,102 @@ void DFSPHCUDA::step()
 
 
 				std::cout << "fluid initialization finished and took (in s) time_displacement//time_simu_damped: " << time_p1 << "  " << time_p2 << std::endl;
+
+			}
+			else if (run_type == 7) {
+				//this is the experiment to study the impact of the selection stepsize
+
+				std::vector<unsigned int> vect_step_size;
+				std::vector<RealCuda> vect_t1_medians;
+				std::vector<RealCuda> vect_t2_medians;
+				std::vector<RealCuda> vect_tselection_medians;
+				std::vector<int> vect_count_iter_medians;
+				static std::default_random_engine e;
+				static std::uniform_real_distribution<> dis(-1, 1); // rage -1 ; 1
+
+				bool loopstepsize = true;
+				for (int step_size = 5; step_size < 101; step_size+=5) {
+					//*
+					if (loopstepsize&&step_size == 100) {
+						loopstepsize = false;
+						step_size = 5;
+					}
+					//*/
+
+					std::vector<RealCuda> vect_t1_internal;
+					std::vector<RealCuda> vect_t2_internal;
+					std::vector<RealCuda> vect_tselection_internal;
+					std::vector<int> vect_count_iter_internal;
+					RestFLuidLoaderInterface::InitParameters paramsInit;
+					RestFLuidLoaderInterface::TaggingParameters paramsTagging;
+
+					for (int k = 0; k < 21; ++k) {
+						std::chrono::steady_clock::time_point tp1 = std::chrono::steady_clock::now();
+
+						//handleSimulationLoad(true,false,false,false,false,false);
+
+						//if (k == 0) 
+						{
+							paramsInit.clear_data = false;
+							paramsInit.air_particles_restriction = 1;
+							paramsInit.center_loaded_fluid = true;
+							paramsInit.keep_existing_fluid = false;
+							paramsInit.simulation_config = 0;
+							paramsInit.apply_additional_offset = false;
+							paramsInit.additional_offset = Vector3d(dis(e), dis(e), dis(e))*m_data.particleRadius * 2;
+
+							RestFLuidLoaderInterface::init(m_data, paramsInit);
+						}
+
+						std::chrono::steady_clock::time_point tp2 = std::chrono::steady_clock::now();
+
+						//*
+						paramsTagging.useRule2 = false;
+						paramsTagging.useRule3 = loopstepsize;
+						paramsTagging.step_density =  step_size;
+						paramsTagging.keep_existing_fluid = paramsInit.keep_existing_fluid;
+
+						RestFLuidLoaderInterface::initializeFluidToSurface(m_data, true, paramsTagging, false);
+						//*/
+						std::chrono::steady_clock::time_point tp3 = std::chrono::steady_clock::now();
+						RealCuda time_p1 = std::chrono::duration_cast<std::chrono::nanoseconds> (tp2 - tp1).count() / 1000000000.0f;
+						RealCuda time_p2 = std::chrono::duration_cast<std::chrono::nanoseconds> (tp3 - tp2).count() / 1000000000.0f;
+
+						vect_count_iter_internal.push_back(paramsTagging.count_iter);
+						vect_t1_internal.push_back(time_p1);
+						vect_t2_internal.push_back(time_p2);
+						vect_tselection_internal.push_back(paramsTagging.time_total);
+					}
+
+					/*
+					for (int k = 0; k < vect_t1_internal.size(); ++k) {
+						std::cout << k << "  " << vect_t1_internal[k] << "  " << vect_tselection_internal[k] << "  " <<
+							vect_count_iter_internal[k] << std::endl;
+					}
+					//*/
+
+					std::sort(vect_t1_internal.begin(), vect_t1_internal.end());
+					std::sort(vect_t2_internal.begin(), vect_t2_internal.end());
+					std::sort(vect_tselection_internal.begin(), vect_tselection_internal.end());
+					std::sort(vect_count_iter_internal.begin(), vect_count_iter_internal.end());
+
+
+					int idMedian = std::floor((vect_t2_internal.size() - 1) / 2.0f);
+
+					//std::cout << "median value: " << vect_t2_internal[idMedian] << "  " << vect_count_iter_internal[idMedian] << std::endl;
+
+
+					vect_count_iter_medians.push_back(vect_count_iter_internal[idMedian]);
+					vect_t1_medians.push_back(vect_t1_internal[idMedian]);
+					vect_t2_medians.push_back(vect_t2_internal[idMedian]);
+					vect_tselection_medians.push_back(vect_tselection_internal[idMedian]);
+					vect_step_size.push_back(paramsTagging.step_density);
+				}
+
+				for (int k = 0; k < vect_step_size.size(); ++k) {
+					std::cout << k<<"  "<<vect_step_size[k] << "  " << vect_t1_medians[k] << "  " <<
+						vect_t2_medians[k] << "  " << vect_tselection_medians[k] << "  " << vect_count_iter_medians[k] << std::endl;
+				}
 
 			}
 

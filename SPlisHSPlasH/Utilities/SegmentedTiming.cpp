@@ -30,6 +30,14 @@ SegmentedTiming::SegmentedTiming(std::string timer_name_i, std::vector<std::stri
 	}
 }
 
+SegmentedTiming::~SegmentedTiming() {
+	//*
+	timepoints.clear();
+	time.clear();
+	cumul_time.clear();
+	//*/
+}
+
 void SegmentedTiming::init_step(){
 	if (active) {
 		if (saving) {
@@ -119,6 +127,27 @@ void SegmentedTiming::recap_timings(){
 		oss << "/////////////////////////////////////////////////////////////////////////////////////////" << std::endl;
 		oss << std::endl;
 		std::cout << oss.str();
+	}
+}
+
+
+float SegmentedTiming::getTimmingAvg(int i) {
+	if (active) {
+		if (saving) {
+			std::string msg("SegmentedTiming::getTimmingAvg() you must call end_step() before accesing an avg value once init_step() has been called");
+			std::cout << msg << std::endl;
+			throw(msg);
+		}
+
+		if (i >= timepoints.size()) {
+			std::ostringstream oss;
+			oss << "SegmentedTiming::getTimmingAvg: " + timer_name + " trying to access unknown timepoint (asked/max) " <<
+				i << "/" << timepoints.size();
+			std::string msg = oss.str();
+			std::cout << msg << std::endl;
+			throw(msg);
+		}
+		return (cumul_time[i] / count_steps);
 	}
 }
 

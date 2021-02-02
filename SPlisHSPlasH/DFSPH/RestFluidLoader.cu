@@ -78,12 +78,13 @@ namespace SPH {
 			return rfl;
 		}
 
+		void clear();
 
 		////!!! WARNING after this function is executed we must NEVER sort the particle data in the backgroundBuffer
 		//an explanation for the air particle range
 		//it is used to limit the amount of air particles that are kept 
 		//-1: no restriction; 0: no air(don't use that...), 1: air that are neighbors to fluid, 2: air that are neigbors to air particles that are neighbors to fluid
-		void init(DFSPHCData& data, const RestFLuidLoaderInterface::InitParameters& params);
+		void init(DFSPHCData& data, RestFLuidLoaderInterface::InitParameters& params);
 
 		bool isInitialized() { return _isInitialized; }
 
@@ -107,8 +108,11 @@ namespace SPH {
 	};
 }
 
+void RestFLuidLoaderInterface::clear() {
+	RestFLuidLoader::getStructure().clear();
+}
 
-void RestFLuidLoaderInterface::init(DFSPHCData& data, const InitParameters& params) {
+void RestFLuidLoaderInterface::init(DFSPHCData& data, InitParameters& params) {
 	RestFLuidLoader::getStructure().init(data, params);
 }
 
@@ -149,10 +153,33 @@ void RestFLuidLoaderInterface::initializeFluidToSurface(SPH::DFSPHCData& data, b
 	timings.time_next_point();//time p3
 	timings.end_step();//end point of the current step (if measuring avgs you need to call it at every end of the loop)
 	timings.recap_timings();//writte timming to cout
+
+	params.time_total = timings.getTimmingAvg(1);
 }
 
 void RestFLuidLoaderInterface::stabilizeFluid(SPH::DFSPHCData& data, RestFLuidLoaderInterface::StabilizationParameters& params) {
 	RestFLuidLoader::getStructure().stabilizeFluid(data, params);
+}
+
+
+void RestFLuidLoader::clear() {
+	_isInitialized = false;
+	_isDataTagged = false;
+	_hasFullTaggingSaved = false;
+
+	/*
+	if (backgroundFluidBufferSet != NULL) {
+		backgroundFluidBufferSet->clear();
+		//delete backgroundFluidBufferSet;
+		backgroundFluidBufferSet = NULL;
+	}
+	//*/
+
+	if (tag_array_with_existing_fluid != NULL) {
+		CUDA_FREE_PTR(tag_array_with_existing_fluid);
+	}
+	tag_array_with_existing_fluid_size = 0;
+	//*/
 }
 
 //this will tag certain particles depending on the required restriction type
@@ -1283,14 +1310,20 @@ __global__ void test_kernel(BufferFluidSurface S) {
 
 
 
-void RestFLuidLoader::init(DFSPHCData& data, const RestFLuidLoaderInterface::InitParameters& params) {
+void RestFLuidLoader::init(DFSPHCData& data, RestFLuidLoaderInterface::InitParameters& params) {
 	bool center_loaded_fluid=params.center_loaded_fluid; 
 	int air_particles_restriction = params.air_particles_restriction;
 	bool keep_existing_fluid = params.keep_existing_fluid;
 
+	//clear anything that was loaded before
+	if (params.clear_data) {
+		clear();
+	}
+
 	_isInitialized = false;
 	_isDataTagged = false;
 	//Essencially this function will load the background buffer and initialize it to the desired simulation domain
+
 
 	//surface descibing the simulation space and the fluid space
 	//this most likely need ot be a mesh in the end or at least a union of surfaces
@@ -1307,6 +1340,8 @@ void RestFLuidLoader::init(DFSPHCData& data, const RestFLuidLoaderInterface::Ini
 	BufferFluidSurface S_simulation;
 	BufferFluidSurface S_fluid;
 	int simulation_config = params.simulation_config;
+
+
 	if (simulation_config == 0) {
 		S_simulation.setCuboid(Vector3d(0, 2.5, 0), Vector3d(0.5, 2.5, 0.5));
 		S_fluid.setCuboid(Vector3d(0, 1, 0), Vector3d(0.5, 1, 0.5));
@@ -1408,12 +1443,29 @@ void RestFLuidLoader::init(DFSPHCData& data, const RestFLuidLoaderInterface::Ini
 	timings.time_next_point();//time 
 
 	//First I have to load a new background buffer file
-	Vector3d min_fluid_buffer;
-	Vector3d max_fluid_buffer;
-	SPH::UnifiedParticleSet* dummy = NULL;
-	backgroundFluidBufferSet = new SPH::UnifiedParticleSet();
-	backgroundFluidBufferSet->load_from_file(data.fluid_files_folder + "background_buffer_file.txt", false, &min_fluid_buffer, &max_fluid_buffer, false);
-	allocate_and_copy_UnifiedParticleSet_vector_cuda(&dummy, backgroundFluidBufferSet, 1);
+	static Vector3d min_fluid_buffer;
+	static Vector3d max_fluid_buffer;
+	static Vector3d* background_file_positions = NULL;
+	static RealCuda background_file_positions_size = 0;
+
+	if (background_file_positions == NULL) {
+		SPH::UnifiedParticleSet* dummy = NULL;
+		backgroundFluidBufferSet = new SPH::UnifiedParticleSet();
+		backgroundFluidBufferSet->load_from_file(data.fluid_files_folder + "background_buffer_file.txt", false, &min_fluid_buffer, &max_fluid_buffer, false);
+		allocate_and_copy_UnifiedParticleSet_vector_cuda(&dummy, backgroundFluidBufferSet, 1);
+	
+		//backup the positions
+		cudaMallocManaged(&(background_file_positions), backgroundFluidBufferSet->numParticles * sizeof(Vector3d));
+		gpuErrchk(cudaMemcpy(background_file_positions, backgroundFluidBufferSet->pos, backgroundFluidBufferSet->numParticles * sizeof(Vector3d), cudaMemcpyDeviceToDevice));
+		background_file_positions_size = backgroundFluidBufferSet->numParticles;
+	}
+	else {
+		//backgroundFluidBufferSet = new SPH::UnifiedParticleSet();
+		//backgroundFluidBufferSet->init(background_file_positions_size, true, true, false, true);
+		backgroundFluidBufferSet->updateActiveParticleNumber(background_file_positions_size);
+		gpuErrchk(cudaMemcpy(backgroundFluidBufferSet->pos, background_file_positions, background_file_positions_size * sizeof(Vector3d), cudaMemcpyDeviceToDevice));
+		backgroundFluidBufferSet->resetColor();
+	}
 
 
 	timings.time_next_point();//time 
@@ -1434,7 +1486,7 @@ void RestFLuidLoader::init(DFSPHCData& data, const RestFLuidLoaderInterface::Ini
 		if (params.apply_additional_offset) {
 			displacement += params.additional_offset;
 
-			std::cout << "background buffer displacement (manual offsest): " << displacement.toString() << std::endl;
+			std::cout << "background buffer displacement (manual offsest): " << params.additional_offset.toString() << std::endl;
 		}
 
 		if (center_loaded_fluid && params.apply_additional_offset) {
@@ -1568,21 +1620,24 @@ void RestFLuidLoader::init(DFSPHCData& data, const RestFLuidLoaderInterface::Ini
 	cuda_sortData(*backgroundFluidBufferSet, backgroundFluidBufferSet->neighborsDataSet->p_id_sorted);
 	gpuErrchk(cudaDeviceSynchronize());
 
-	//that buffer is used for tagging in the future so set it to zero now just to be sure
-	set_buffer_to_value<unsigned int>(backgroundFluidBufferSet->neighborsDataSet->cell_id, 0, backgroundFluidBufferSet->numParticles);
+	//that buffer is used for tagging in the future so set it to untagged now just to be sure
+	set_buffer_to_value<unsigned int>(backgroundFluidBufferSet->neighborsDataSet->cell_id, TAG_UNTAGGED, backgroundFluidBufferSet->numParticles);
 
 	_isInitialized = true;
 
 	timings.time_next_point();//time 
 	timings.end_step();//end point of the current step (if measuring avgs you need to call it at every end of the loop)
 	timings.recap_timings();//writte timming to cout
-	{
+
+	//check the min max using existing functions
+	if(false){
 		std::cout << "init end check values" << std::endl;
 		Vector3d min, max;
 		get_UnifiedParticleSet_min_max_naive_cuda(*(backgroundFluidBufferSet), min, max);
 		std::cout << "buffer informations: count particles (potential fluid)" << backgroundFluidBufferSet->numParticles << "  (" << count_potential_fluid << ") ";
 		std::cout << " min/max " << min.toString() << " // " << max.toString() << std::endl;
 	}
+
 	if (false) {
 		//check the min max of flud particles
 		//I dn't want to bother with a kernel so I'll do it by copiing the position info to cpu
@@ -1600,6 +1655,12 @@ void RestFLuidLoader::init(DFSPHCData& data, const RestFLuidLoaderInterface::Ini
 		}
 		std::cout << "fluid min/max " << min.toString() << " // " << max.toString() << std::endl;
 	}
+
+	S_simulation_aggr.prepareForDestruction();
+	S_fluid_aggr.prepareForDestruction();
+	S_simulation.prepareForDestruction();
+	S_fluid.prepareForDestruction();
+
 }
 
 template<bool tag_untagged_only, bool use_neighbors_storage>
@@ -1853,6 +1914,8 @@ void RestFLuidLoader::tagDataToSurface(SPH::DFSPHCData& data, RestFLuidLoaderInt
 		return;
 	}
 
+	//reset the output values
+	params.count_iter = 0;
 
 
 
@@ -1862,7 +1925,7 @@ void RestFLuidLoader::tagDataToSurface(SPH::DFSPHCData& data, RestFLuidLoaderInt
 	//although it might now be but it will do for now
 	///TODO: For this process I only use one unified particle set, as surch, I could just work inside the actual fluid buffer
 	///TODO:  ^	NAH no need for that  
-	bool show_debug = true;
+	bool show_debug = false;
 	bool send_result_to_file = false;
 
 	//let's try to apply the selection on the air particles too (while only keeping one layer of air particles
@@ -1919,7 +1982,6 @@ void RestFLuidLoader::tagDataToSurface(SPH::DFSPHCData& data, RestFLuidLoaderInt
 	set_buffer_to_value<RealCuda>(backgroundFluidBufferSet->kappa, 0, backgroundFluidBufferSet->numParticles);
 	set_buffer_to_value<RealCuda>(backgroundFluidBufferSet->kappaV, 0, backgroundFluidBufferSet->numParticles);
 
-	if(show_debug)
 
 	timings.time_next_point();//time 
 
@@ -2072,6 +2134,7 @@ void RestFLuidLoader::tagDataToSurface(SPH::DFSPHCData& data, RestFLuidLoaderInt
 			}
 		}
 	}
+
 
 	timings.time_next_point();//time 
 
@@ -2690,6 +2753,9 @@ void RestFLuidLoader::tagDataToSurface(SPH::DFSPHCData& data, RestFLuidLoaderInt
 
 	}
 
+	//save the count of iter as an output
+	params.count_iter = i;
+
 	timings.time_next_point();//time 
 	timings_loop.recap_timings();//writte timming to cout
 
@@ -2797,7 +2863,7 @@ void RestFLuidLoader::tagDataToSurface(SPH::DFSPHCData& data, RestFLuidLoaderInt
 		}
 
 		//test the count on cpu
-		if (true) {
+		if (false) {
 			int count_temp1 = 0;
 			int count_temp2 = 0;
 			for (int i_test = 0; i_test < backgroundFluidBufferSet->numParticles; ++i_test) {

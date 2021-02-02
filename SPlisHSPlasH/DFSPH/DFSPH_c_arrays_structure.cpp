@@ -1131,6 +1131,7 @@ void DFSPHCData::write_fluid_to_file() {
 
 void DFSPHCData::read_fluid_from_file(bool load_velocities) {
 
+	bool old_destructor_activated = destructor_activated;
 	destructor_activated = false;
 
 	std::cout << "loading fluid start: " << load_velocities << std::endl;
@@ -1177,7 +1178,7 @@ void DFSPHCData::read_fluid_from_file(bool load_velocities) {
     std::cout << "loading fluid end" << std::endl;
 
 
-	destructor_activated = true;
+	destructor_activated = old_destructor_activated;
 }
 
 
@@ -1285,7 +1286,7 @@ void DFSPHCData::write_boundaries_to_file() {
 }
 
 void DFSPHCData::read_boundaries_from_file(bool load_velocities) {
-
+	bool old_destructor_activated = destructor_activated;
 	destructor_activated = false;
 
 	std::cout << "loading boundaries start: " << load_velocities << std::endl;
@@ -1312,7 +1313,7 @@ void DFSPHCData::read_boundaries_from_file(bool load_velocities) {
 	std::cout << "loading boundaries end" << std::endl;
 
 
-	destructor_activated = true;
+	destructor_activated = old_destructor_activated;
 }
 
 void DFSPHCData::write_solids_to_file() {
