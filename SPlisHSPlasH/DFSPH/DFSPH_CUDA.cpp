@@ -155,7 +155,7 @@ void DFSPHCUDA::step()
                 //params.zeta = 2 * (SQRT_MACRO_CUDA(delta_s) + 1) / delta_s;
             }
             
-            int run_type = 8;
+            int run_type = 10;
             if (run_type==0) {
 
                 if (params.method == 0) {
@@ -1002,6 +1002,306 @@ void DFSPHCUDA::step()
 				m_data.gravitation = normal_gravitation;
 
 			
+			}
+			else if (run_type == 9) {
+				//this is the experiment with the pyramid shaped boundaries
+				//for that experiment with have 3 meters of fluid inside the pyramid
+
+				bool keep_existing_fluid = false;
+				int simulation_config = 1;
+
+				Vector3d normal_gravitation = m_data.gravitation;
+				//m_data.gravitation.y *= 5;
+
+				static std::default_random_engine e;
+				static std::uniform_real_distribution<> dis(-1, 1); // rage -1 ; 1
+
+
+				RestFLuidLoaderInterface::InitParameters paramsInit;
+				RestFLuidLoaderInterface::TaggingParameters paramsTagging;
+				RestFLuidLoaderInterface::LoadingParameters paramsLoading;
+
+				paramsInit.show_debug = false;
+				paramsTagging.show_debug = false;
+				params.show_debug = false;
+				paramsLoading.show_debug = false;
+
+				if (!keep_existing_fluid) {
+					paramsLoading.neighbors_tagging_distance_coef = 4.5;
+				}
+
+				int step_size = 60;
+				{
+					std::vector<RealCuda> vect_t1_internal;
+					std::vector<RealCuda> vect_t2_internal;
+					std::vector<RealCuda> vect_t3_internal;
+
+
+					for (int k = 0; k < 1; ++k) {
+						//if i keep the existing fluid i need to reload it from memory each loop
+						if (keep_existing_fluid) {
+							m_data.read_fluid_from_file(false);
+						}
+
+
+						std::chrono::steady_clock::time_point tp1 = std::chrono::steady_clock::now();
+
+						//handleSimulationLoad(true,false,false,false,false,false);
+
+						//if (k == 0) 
+						{
+							paramsInit.clear_data = false;
+							paramsInit.air_particles_restriction = 1;
+							paramsInit.center_loaded_fluid = true;
+							paramsInit.keep_existing_fluid = keep_existing_fluid;
+							paramsInit.simulation_config = simulation_config;
+							paramsInit.apply_additional_offset = true;
+							paramsInit.additional_offset = Vector3d(dis(e), dis(e), dis(e))*m_data.particleRadius * 2;
+
+							RestFLuidLoaderInterface::init(m_data, paramsInit);
+						}
+
+						std::chrono::steady_clock::time_point tp2 = std::chrono::steady_clock::now();
+
+						//*
+						paramsTagging.useRule2 = false;
+						paramsTagging.useRule3 = true;
+						paramsTagging.step_density = 60;
+						paramsTagging.density_end = 999;
+						paramsTagging.keep_existing_fluid = paramsInit.keep_existing_fluid;
+
+
+						paramsLoading.load_fluid = true;
+						paramsLoading.keep_existing_fluid = keep_existing_fluid;
+
+						RestFLuidLoaderInterface::initializeFluidToSurface(m_data, true, paramsTagging, paramsLoading, false);
+						//*/
+						std::chrono::steady_clock::time_point tp3 = std::chrono::steady_clock::now();
+						//*
+						params.method = 0;
+						params.timeStep = 0.003;
+						{
+							params.stabilize_tagged_only = true;
+							params.postUpdateVelocityDamping = false;
+							params.postUpdateVelocityClamping = false;
+							params.preUpdateVelocityClamping = false;
+
+
+							params.maxErrorD = 0.05;
+
+							params.useDivergenceSolver = true;
+							params.useExternalForces = true;
+
+							params.preUpdateVelocityDamping = true;
+							params.preUpdateVelocityDamping_val = 0.8;
+
+							params.stabilizationItersCount = 10;
+
+							params.reduceDampingAndClamping = true;
+							params.reduceDampingAndClamping_val = std::powf(0.2f / params.preUpdateVelocityDamping_val, 1.0f / (params.stabilizationItersCount - 1));
+
+							params.clearWarmstartAfterStabilization = false;
+						}
+						params.runCheckParticlesPostion = true;
+						params.interuptOnLostParticle = false;
+						params.reloadFluid = false;
+						params.evaluateStabilization = false;
+						params.min_stabilization_iter = 2;
+						params.stable_velocity_target = m_data.particleRadius*0.1 / m_data.get_current_timestep();
+
+						std::chrono::steady_clock::time_point tp5 = std::chrono::steady_clock::now();
+
+						RestFLuidLoaderInterface::stabilizeFluid(m_data, params);
+						//*/
+
+						std::chrono::steady_clock::time_point tp4 = std::chrono::steady_clock::now();
+
+						RealCuda time_p1 = std::chrono::duration_cast<std::chrono::nanoseconds> (tp2 - tp1).count() / 1000000000.0f;
+						RealCuda time_p2 = std::chrono::duration_cast<std::chrono::nanoseconds> (tp3 - tp2).count() / 1000000000.0f;
+						RealCuda time_p3 = std::chrono::duration_cast<std::chrono::nanoseconds> (tp4 - tp3).count() / 1000000000.0f;
+
+						vect_t1_internal.push_back(time_p1);
+						vect_t2_internal.push_back(time_p2);
+						vect_t3_internal.push_back(time_p3);
+
+						std::cout << "direct timmings output: " << time_p1 << "  " << time_p2 << "  " << time_p3 << "  " << std::endl;
+					}
+
+					/*
+					for (int k = 0; k < vect_t1_internal.size(); ++k) {
+					std::cout << k << "  " << vect_t1_internal[k] << "  " << vect_tselection_internal[k] << "  " <<
+					vect_count_iter_internal[k] << "  " << vect_density_min_internal[k] << "  " << vect_density_max_internal[k] << std::endl;
+					}
+					//*/
+
+					std::sort(vect_t1_internal.begin(), vect_t1_internal.end());
+					std::sort(vect_t2_internal.begin(), vect_t2_internal.end());
+					std::sort(vect_t3_internal.begin(), vect_t3_internal.end());
+
+
+					int idMedian = std::floor((vect_t2_internal.size() - 1) / 2.0f);
+
+					std::cout << "median value: " << vect_t1_internal[idMedian] << " + " << vect_t2_internal[idMedian] <<
+						" + " << vect_t3_internal[idMedian] << " = " <<
+						vect_t1_internal[idMedian] + vect_t2_internal[idMedian] + vect_t3_internal[idMedian] << std::endl;
+
+
+
+				}
+
+				m_data.gravitation = normal_gravitation;
+
+
+			}
+			else if (run_type == 10) {
+				//this is the experiment with the floating cube
+				//for this experiment we have a floating cube that was rotated 45 degree on top of the fluid
+
+				bool keep_existing_fluid = false;
+				int simulation_config = 4;
+
+				Vector3d normal_gravitation = m_data.gravitation;
+				//m_data.gravitation.y *= 5;
+
+				static std::default_random_engine e;
+				static std::uniform_real_distribution<> dis(-1, 1); // rage -1 ; 1
+
+
+				RestFLuidLoaderInterface::InitParameters paramsInit;
+				RestFLuidLoaderInterface::TaggingParameters paramsTagging;
+				RestFLuidLoaderInterface::LoadingParameters paramsLoading;
+
+				paramsInit.show_debug = false;
+				paramsTagging.show_debug = true;
+				params.show_debug = true;
+				paramsLoading.show_debug = true;
+
+				if (!keep_existing_fluid) {
+					paramsLoading.neighbors_tagging_distance_coef = 4.5;
+				}
+
+				int step_size = 60;
+				{
+					std::vector<RealCuda> vect_t1_internal;
+					std::vector<RealCuda> vect_t2_internal;
+					std::vector<RealCuda> vect_t3_internal;
+
+
+					for (int k = 0; k < 1; ++k) {
+						//if i keep the existing fluid i need to reload it from memory each loop
+						if (keep_existing_fluid) {
+							m_data.read_fluid_from_file(false);
+						}
+
+
+						std::chrono::steady_clock::time_point tp1 = std::chrono::steady_clock::now();
+
+						//handleSimulationLoad(true,false,false,false,false,false);
+
+						//if (k == 0) 
+						{
+							paramsInit.clear_data = false;
+							paramsInit.air_particles_restriction = 1;
+							paramsInit.center_loaded_fluid = true;
+							paramsInit.keep_existing_fluid = keep_existing_fluid;
+							paramsInit.simulation_config = simulation_config;
+							paramsInit.apply_additional_offset = true;
+							paramsInit.additional_offset = Vector3d(dis(e), dis(e), dis(e))*m_data.particleRadius * 2;
+
+							RestFLuidLoaderInterface::init(m_data, paramsInit);
+						}
+
+						std::chrono::steady_clock::time_point tp2 = std::chrono::steady_clock::now();
+
+						//*
+						paramsTagging.useRule2 = false;
+						paramsTagging.useRule3 = true;
+						paramsTagging.step_density = 60;
+						paramsTagging.density_end = 999;
+						paramsTagging.keep_existing_fluid = paramsInit.keep_existing_fluid;
+
+
+						paramsLoading.load_fluid = true;
+						paramsLoading.keep_existing_fluid = keep_existing_fluid;
+
+						RestFLuidLoaderInterface::initializeFluidToSurface(m_data, true, paramsTagging, paramsLoading, false);
+						//*/
+						std::chrono::steady_clock::time_point tp3 = std::chrono::steady_clock::now();
+						//*
+						params.method = 0;
+						params.timeStep = 0.003;
+						{
+							params.stabilize_tagged_only = true;
+							params.postUpdateVelocityDamping = false;
+							params.postUpdateVelocityClamping = false;
+							params.preUpdateVelocityClamping = false;
+
+
+							params.maxErrorD = 0.05;
+
+							params.useDivergenceSolver = true;
+							params.useExternalForces = true;
+
+							params.preUpdateVelocityDamping = true;
+							params.preUpdateVelocityDamping_val = 0.8;
+
+							params.stabilizationItersCount = 10;
+
+							params.reduceDampingAndClamping = true;
+							params.reduceDampingAndClamping_val = std::powf(0.2f / params.preUpdateVelocityDamping_val, 1.0f / (params.stabilizationItersCount - 1));
+
+							params.clearWarmstartAfterStabilization = false;
+						}
+						params.runCheckParticlesPostion = true;
+						params.interuptOnLostParticle = false;
+						params.reloadFluid = false;
+						params.evaluateStabilization = false;
+						params.min_stabilization_iter = 2;
+						params.stable_velocity_target = m_data.particleRadius*0.1 / m_data.get_current_timestep();
+
+						std::chrono::steady_clock::time_point tp5 = std::chrono::steady_clock::now();
+
+						RestFLuidLoaderInterface::stabilizeFluid(m_data, params);
+						//*/
+
+						std::chrono::steady_clock::time_point tp4 = std::chrono::steady_clock::now();
+
+						RealCuda time_p1 = std::chrono::duration_cast<std::chrono::nanoseconds> (tp2 - tp1).count() / 1000000000.0f;
+						RealCuda time_p2 = std::chrono::duration_cast<std::chrono::nanoseconds> (tp3 - tp2).count() / 1000000000.0f;
+						RealCuda time_p3 = std::chrono::duration_cast<std::chrono::nanoseconds> (tp4 - tp3).count() / 1000000000.0f;
+
+						vect_t1_internal.push_back(time_p1);
+						vect_t2_internal.push_back(time_p2);
+						vect_t3_internal.push_back(time_p3);
+
+						std::cout << "direct timmings output: " << time_p1 << "  " << time_p2 << "  " << time_p3 << "  " << std::endl;
+					}
+
+					/*
+					for (int k = 0; k < vect_t1_internal.size(); ++k) {
+					std::cout << k << "  " << vect_t1_internal[k] << "  " << vect_tselection_internal[k] << "  " <<
+					vect_count_iter_internal[k] << "  " << vect_density_min_internal[k] << "  " << vect_density_max_internal[k] << std::endl;
+					}
+					//*/
+
+					std::sort(vect_t1_internal.begin(), vect_t1_internal.end());
+					std::sort(vect_t2_internal.begin(), vect_t2_internal.end());
+					std::sort(vect_t3_internal.begin(), vect_t3_internal.end());
+
+
+					int idMedian = std::floor((vect_t2_internal.size() - 1) / 2.0f);
+
+					std::cout << "median value: " << vect_t1_internal[idMedian] << " + " << vect_t2_internal[idMedian] <<
+						" + " << vect_t3_internal[idMedian] << " = " <<
+						vect_t1_internal[idMedian] + vect_t2_internal[idMedian] + vect_t3_internal[idMedian] << std::endl;
+
+
+
+				}
+
+				m_data.gravitation = normal_gravitation;
+
+
 			}
 
 

@@ -1465,8 +1465,9 @@ void RestFLuidLoader::init(DFSPHCData& data, RestFLuidLoaderInterface::InitParam
 	else if(simulation_config == 1) {
 		std::string simulation_area_file_name = data.fluid_files_folder + "../models/complex_pyramid_scale075.obj";
 		S_simulation.setMesh(simulation_area_file_name);
-		std::string fluid_area_file_name = data.fluid_files_folder + "../models/complex_pyramid_scale075_cut_1_6m.obj";
-		S_fluid.setMesh(fluid_area_file_name);
+		//std::string fluid_area_file_name = data.fluid_files_folder + "../models/complex_pyramid_scale075_cut_1_6m.obj";
+		//S_fluid.setMesh(fluid_area_file_name);
+		S_fluid.setPlane(Vector3d(0, 2.5, 0), Vector3d(0, -1, 0));
 	}
 	else if(simulation_config == 2) {
 		//box plus sphere
@@ -1547,6 +1548,13 @@ void RestFLuidLoader::init(DFSPHCData& data, RestFLuidLoaderInterface::InitParam
 
 	}
 	else if (simulation_config == 9) {
+		//2.5 m fluid box
+		S_simulation.setCuboid(Vector3d(0, 2.5, 0), Vector3d(1.25, 2.5, 1.25));
+		//S_fluid.setCuboid(Vector3d(0, 1.25, 0), Vector3d(2, 2, 2));
+		S_fluid.setPlane(Vector3d(0, 2.54, 0), Vector3d(0, -1, 0));
+
+	}
+	else if (simulation_config == 10) {
 		//2.5 m fluid box
 		S_simulation.setCuboid(Vector3d(0, 2.5, 0), Vector3d(1.25, 2.5, 1.25));
 		//S_fluid.setCuboid(Vector3d(0, 1.25, 0), Vector3d(2, 2, 2));
@@ -3889,6 +3897,11 @@ int RestFLuidLoader::loadDataToSimulation(SPH::DFSPHCData& data, RestFLuidLoader
 			if (params.show_debug) {
 				std::cout << "keeping air particles" << std::endl;
 			}
+
+			//note on that thorw, I don't know if there are modifications that are needed but you better check
+			throw("this need to be modified to get the new standart where the tagging is read from the already existing tagging");
+
+
 			//here it is more complicated since I want to remove the tagged particles without 
 			//breaking the order of the particles
 
@@ -4048,24 +4061,26 @@ int RestFLuidLoader::loadDataToSimulation(SPH::DFSPHCData& data, RestFLuidLoader
 			if (params.show_debug) {
 				std::cout << "RestFLuidLoader::loadDataToSimulation setting up the tagging for stabilization step" << std::endl;
 			}
+			if (params.keep_air_particles) {
+				//note on that thorw, I don't know if there are modifications that are needed but you better check
+				throw("this need to be modified to get the new standart where the tagging is read from the already existing tagging");
 
-			//I'll store the tagging in the cell_id of the background buffer since I know it has at least the same number of particles
-			//as the number of particles I have loaded in the fluid 
-			//for now I'll leave some system to full computation and I'll change them if their computation time is high enougth
-			//neighborsearch 
+			}
+
+			
+			//then we can init the neighbor structure
 			data.fluid_data->initNeighborsSearchData(data, false);
 
-			//init the tagging and make a backup
-			if (params.keep_air_particles) {
-				set_buffer_to_value<unsigned int>(data.fluid_data->neighborsDataSet->cell_id, TAG_AIR, data.fluid_data->numParticles);
-			}
-			set_buffer_to_value<unsigned int>(data.fluid_data->neighborsDataSet->cell_id, TAG_UNTAGGED, nbr_fluid_particles);
-			{
-				RealCuda tagging_distance = data.getKernelRadius() * 0.99;
-				int numBlocks = calculateNumBlocks(data.boundaries_data->numParticles);
-				tag_neighborhood_kernel<true, true> << <numBlocks, BLOCKSIZE >> > (data, data.boundaries_data_cuda, data.fluid_data->gpu_ptr,
-					tagging_distance, nbr_fluid_particles);
-				gpuErrchk(cudaDeviceSynchronize());
+			//and reload the tagging
+			gpuErrchk(cudaMemcpy(data.fluid_data->neighborsDataSet->cell_id, backgroundFluidBufferSet->neighborsDataSet->cell_id_sorted,
+				data.fluid_data->numParticles * sizeof(unsigned int), cudaMemcpyDeviceToDevice));
+
+			
+			//then set anything that is not the active untagged to be sure
+			for (int i = 0; i < data.fluid_data->numParticles; i++) {
+				if (data.fluid_data->neighborsDataSet->cell_id[i] != TAG_ACTIVE) {
+					data.fluid_data->neighborsDataSet->cell_id[i] = TAG_UNTAGGED;
+				}
 			}
 
 			//set an additional order of neighbors as active 
@@ -5576,6 +5591,20 @@ void RestFLuidLoader::stabilizeFluid(SPH::DFSPHCData& data, RestFLuidLoaderInter
 					}
 				}
 				
+				if (params.show_debug) {
+					RealCuda max_density = 0;
+					int id_max_density = 0;
+					for (int j = 0; j < particleSet->numParticles; ++j) {
+						if (max_density < particleSet->density[j]) {
+							max_density= particleSet->density[j];
+							id_max_density = j;
+						}
+					}
+
+					std::cout << "max density (id/ density / tag): " <<id_max_density<<" / "<<  max_density <<
+						" / "<<particleSet->neighborsDataSet->cell_id[id_max_density]<<std::endl;
+				}
+
 				//external forces
 				if (useExternalForces) {
 					cuda_externalForces(data);
