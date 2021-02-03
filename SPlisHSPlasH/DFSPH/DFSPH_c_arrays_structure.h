@@ -276,7 +276,7 @@ public:
     AdhesionKernelGPU m_kernel_adhesion;
     CohesionKernelGPU m_kernel_cohesion;
 
-    const Vector3d gravitation = Vector3d(0.0f, -9.81, 0.0f);
+	Vector3d gravitation;
 
     //static size and value all time
 

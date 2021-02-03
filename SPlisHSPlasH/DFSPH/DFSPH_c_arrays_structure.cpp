@@ -539,16 +539,32 @@ void UnifiedParticleSet::load_from_file(std::string file_path, bool load_velocit
 		}
 		//*/
 
-		//*
-		if (positions_limitations && velocity_impacted_by_fluid_solver) {
+		//all the restrictions on the position should be in that if
+		if (positions_limitations) {
+			/*
+			//keep only the particles with positive x
+			if (velocity_impacted_by_fluid_solver) {
 			
-			if ((pos.x > 0)) {
-				NbrLoadedParticles--;
-				i--;
-				continue;
+				if ((pos.x > 0)) {
+					NbrLoadedParticles--;
+					i--;
+					continue;
+				}
 			}
+			//*/
+
+			//*
+			//remove anyparticle within a 2m box centered on x and z and at 0.5m of the bottom
+			if (velocity_impacted_by_fluid_solver) {
+
+				if (((pos.y > 0.5)&& (fabsf(pos.x) < 1)&& (fabsf(pos.z) < 1))|| (pos.y > 2.5)) {
+					NbrLoadedParticles--;
+					i--;
+					continue;
+				}
+			}
+			//*/
 		}
-		//*/
 	
 
 #ifdef OCEAN_BOUNDARIES_PROTOTYPE
@@ -705,7 +721,7 @@ void UnifiedParticleSet::resetColor() {
 
 DFSPHCData::DFSPHCData() {
 
-
+	gravitation = Vector3d(0.0f, -9.81, 0.0f);
 
 	destructor_activated = false;;
 	W_zero=0;
@@ -1192,6 +1208,7 @@ void DFSPHCData::init_fluid_to_simulation(bool keep_existing_fluid) {
 
 		RestFLuidLoaderInterface::TaggingParameters paramsTagging;
 		RestFLuidLoaderInterface::InitParameters paramsInit;
+		RestFLuidLoaderInterface::LoadingParameters paramsLoading;
 		if (true) {
 			/*
 			paramsTagging.useRule3 = false;
@@ -1230,8 +1247,8 @@ void DFSPHCData::init_fluid_to_simulation(bool keep_existing_fluid) {
 		if (true) {
 			paramsInit.air_particles_restriction = 1;
 			paramsInit.center_loaded_fluid = true;
-			paramsInit.keep_existing_fluid = false;
-			paramsInit.simulation_config = 0;
+			paramsInit.keep_existing_fluid = true;
+			paramsInit.simulation_config = 8;
 			paramsInit.apply_additional_offset = true;
 			static std::default_random_engine e;
 			static std::uniform_real_distribution<> dis(-1 , 1); // rage -1 ; 1
@@ -1240,12 +1257,17 @@ void DFSPHCData::init_fluid_to_simulation(bool keep_existing_fluid) {
 
 			paramsTagging.useRule2 = false;
 			paramsTagging.useRule3 = true;
-			paramsTagging.step_density = 25;
+			paramsTagging.step_density = 50;
 			paramsTagging.keep_existing_fluid = paramsInit.keep_existing_fluid;
+
+
+			paramsLoading.load_fluid = true;
+			paramsLoading.keep_existing_fluid = keep_existing_fluid;
+
 			try {
 				RestFLuidLoaderInterface::init(*this, paramsInit);
 
-				RestFLuidLoaderInterface::initializeFluidToSurface(*this, true, paramsTagging);
+				RestFLuidLoaderInterface::initializeFluidToSurface(*this, true, paramsTagging, paramsLoading);
 			}
 			catch (const std::string& e) { // reference to the base of a polymorphic object
 				std::cout << e << std::endl;

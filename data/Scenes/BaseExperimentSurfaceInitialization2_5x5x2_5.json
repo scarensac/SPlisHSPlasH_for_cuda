@@ -28,7 +28,7 @@
 			"translation": [0,2.5,0],
 			"rotationAxis": [1, 0, 0],
 			"rotationAngle": 0,
-			"scale": [1, 5, 1],
+			"scale": [2.5, 5, 2.5],
 			"color": [0.1, 0.4, 0.6, 1.0], 
 			"isDynamic": false,
 			"isWall": true,

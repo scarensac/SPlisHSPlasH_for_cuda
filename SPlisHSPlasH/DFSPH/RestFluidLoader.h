@@ -16,6 +16,8 @@ namespace SPH {
 		struct InitParameters {
 			bool clear_data;
 
+			bool show_debug;
+
 			bool center_loaded_fluid;
 			bool apply_additional_offset;
 			Vector3d additional_offset;
@@ -28,6 +30,7 @@ namespace SPH {
 
 			InitParameters() {
 				clear_data = false;
+				show_debug = false;
 				center_loaded_fluid = false;
 				apply_additional_offset = false;
 				additional_offset;
@@ -47,9 +50,13 @@ namespace SPH {
 		static bool isInitialized();
 
 		struct TaggingParameters {
+			bool show_debug;
+			bool keep_existing_fluid;
+
 			RealCuda density_start ;
 			RealCuda density_end;
 			RealCuda step_density;
+			RealCuda min_step_density;
 
 			bool useRule2;
 			RealCuda min_density;
@@ -57,16 +64,22 @@ namespace SPH {
 			bool useRule3;
 			RealCuda density_delta_threshold;
 
-			bool keep_existing_fluid;
 
 			//here are some output values
 			unsigned int count_iter;
 			RealCuda time_total;
 
+			RealCuda min_density_o;
+			RealCuda max_density_o;
+			RealCuda avg_density_o;
+
 			TaggingParameters(){
+				show_debug = false;
+
 				density_start = 1900;
 				density_end = 1000;
 				step_density = 50;
+				min_step_density = 5;
 
 				useRule2 = false;
 				min_density = 905;
@@ -76,7 +89,11 @@ namespace SPH {
 
 				keep_existing_fluid = false;
 
-				count_iter = 0;
+				count_iter = 0; 
+				time_total=0;
+				min_density_o = 10000;
+				max_density_o = 0;
+				avg_density_o = 0;
 			}
 		};
 
@@ -86,18 +103,24 @@ namespace SPH {
 			bool set_up_tagging;
 			bool keep_existing_fluid;
 
+			bool show_debug;
+
+			RealCuda neighbors_tagging_distance_coef;
+
 			LoadingParameters() {
 				load_fluid=true;
 				keep_air_particles = false;
 				set_up_tagging = true;
 				keep_existing_fluid = false;
+				show_debug = false;
+				neighbors_tagging_distance_coef = 2;
 			}
 		};
 
 		//ok here I'll test a system to initialize a volume of fluid from
 		//a large wolume of fluid (IE a technique to iinit the fluid at rest)
-		static void initializeFluidToSurface(SPH::DFSPHCData& data, bool center_loaded_fluid, TaggingParameters& params, 
-			bool load_fluid=true);
+		static void initializeFluidToSurface(SPH::DFSPHCData& data, bool center_loaded_fluid, TaggingParameters& params,
+			LoadingParameters& params_loading, bool output_min_max_density = false);
 
 
 		//this struct is only to be more flexible in the addition of stabilization methods in the stabilizeFluid function 
@@ -108,6 +131,8 @@ namespace SPH {
 			bool reloadFluid;
 			bool keep_existing_fluid;
 			bool stabilize_tagged_only;
+
+			bool show_debug;
 
 			//those are parameters for when using the SPH simulation step to stabilize the fluid
 			bool useDivergenceSolver;
@@ -132,6 +157,9 @@ namespace SPH {
 			RealCuda reduceDampingAndClamping_val;
 			RealCuda countLostParticlesLimit;
 
+
+			int min_stabilization_iter;
+			RealCuda stable_velocity_target;
 
 
 			bool runCheckParticlesPostion;
@@ -167,6 +195,8 @@ namespace SPH {
 				keep_existing_fluid = false;
 				stabilize_tagged_only = false;
 
+				show_debug = false;
+
 				useDivergenceSolver = true;
 				useDensitySolver = true;
 				useExternalForces = true;
@@ -187,6 +217,10 @@ namespace SPH {
 				postUpdateVelocityDamping = false;
 				postUpdateVelocityDamping_val = 0;
 				countLostParticlesLimit = 10;
+
+
+				min_stabilization_iter = 2;
+				stable_velocity_target = 0;
 
 				runCheckParticlesPostion = true;
 				interuptOnLostParticle = true;
