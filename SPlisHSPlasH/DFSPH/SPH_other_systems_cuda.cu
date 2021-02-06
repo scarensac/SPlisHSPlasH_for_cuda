@@ -42,8 +42,12 @@ namespace OtherSystemsCuda
 	}
 }
 
-void read_last_error_cuda(std::string msg) {
-	std::cout << msg << cudaGetErrorString(cudaGetLastError()) <<"  "<< std::endl;
+cudaError_t read_last_error_cuda(std::string msg, bool show_message) {
+	cudaError_t error_code = cudaGetLastError();
+	if (show_message) {
+		std::cout << msg << cudaGetErrorString(error_code) <<"  "<< std::endl;
+	}
+	return error_code;
 }
 
 
@@ -1600,7 +1604,8 @@ __global__ void add_id_to_buffer_kernel(T* buffer, int countElems) {
 
 //NOTE the index_array_sorted is just a memory space that must be of the same type as the index_array, any value in it would be erased
 template<class T>
-void remove_tagged_particles(SPH::UnifiedParticleSet* particleSet, T* index_array, T* index_array_sorted, int countToRemove, bool forceKeepOrder) {
+void remove_tagged_particles(SPH::UnifiedParticleSet* particleSet, T* index_array, T* index_array_sorted, int countToRemove, 
+	bool forceKeepOrder, bool runDebug) {
 
 	if (forceKeepOrder) {
 		//add the index of each particles to it's tag to maintain the order
@@ -1612,11 +1617,15 @@ void remove_tagged_particles(SPH::UnifiedParticleSet* particleSet, T* index_arra
 	}
 
 
+
+
 	//now use the same process as when creating the neighbors structure to put the particles to be removed at the end
 	cub::DeviceRadixSort::SortPairs(particleSet->neighborsDataSet->d_temp_storage_pair_sort, particleSet->neighborsDataSet->temp_storage_bytes_pair_sort,
 		index_array, index_array_sorted,
 		particleSet->neighborsDataSet->p_id, particleSet->neighborsDataSet->p_id_sorted, particleSet->numParticles);
 	gpuErrchk(cudaDeviceSynchronize());
+
+	
 
 	cuda_sortData(*particleSet, particleSet->neighborsDataSet->p_id_sorted);
 	gpuErrchk(cudaDeviceSynchronize());
@@ -1626,4 +1635,4 @@ void remove_tagged_particles(SPH::UnifiedParticleSet* particleSet, T* index_arra
 	particleSet->updateActiveParticleNumber(new_num_particles);
 	//*/
 }
-template void remove_tagged_particles<unsigned int>(SPH::UnifiedParticleSet* particleSet, unsigned int* index_array, unsigned int* index_array_sorted, int countToRemove, bool forceKeepOrder);
+template void remove_tagged_particles<unsigned int>(SPH::UnifiedParticleSet* particleSet, unsigned int* index_array, unsigned int* index_array_sorted, int countToRemove, bool forceKeepOrder, bool runDebug);

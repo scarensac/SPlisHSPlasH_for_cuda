@@ -555,6 +555,8 @@ void UnifiedParticleSet::load_from_file(std::string file_path, bool load_velocit
 
 			//*
 			//remove anyparticle within a 2m box centered on x and z and at 0.5m of the bottom
+			//used for one of the fluid init system test
+			//you may comment it but do not delete it
 			if (velocity_impacted_by_fluid_solver) {
 
 				if (((pos.y > 0.5)&& (fabsf(pos.x) < 1)&& (fabsf(pos.z) < 1))|| (pos.y > 2.5)) {

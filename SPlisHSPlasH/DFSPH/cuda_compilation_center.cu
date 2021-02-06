@@ -33,5 +33,6 @@
 #include "SPH_other_systems_cuda.cu"
 #include "SPH_dynamic_window_buffer.cu"
 #include "RestFluidLoader.cu"
+#include "OpenBoundariesSimple.cu"
 
 //test2

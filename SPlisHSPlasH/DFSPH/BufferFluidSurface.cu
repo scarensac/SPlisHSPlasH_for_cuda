@@ -446,14 +446,16 @@ public:
 
 	inline ~BufferFluidSurface() {
 		if (destructorActivated) {
-			clear();
+			clear(true);
 		}
 	}
 
 	void clear(bool in_depth=false) {
 		if (type == 3) {
 			if (in_depth) {
-				mesh->clear();
+				if (mesh != NULL) {
+					mesh->clear();
+				}
 			}
 			CUDA_FREE_PTR(mesh);
 		}
@@ -813,11 +815,13 @@ public:
 
 	~SurfaceAggregation() {
 		if (destructorActivated) {
-			for (int i = 0; i < numSurface; ++i)
-			{
-				surfaces[i].clear();
-			}
-			CUDA_FREE_PTR(surfaces);
+			//actually I must not clear the surfaces since when i add a surface to an aggregation I do not do a a deep copy
+			//this is most likely not good but it's life for now
+			//anyway since I have to delete the array the destructor will be called so it's fucked anyway
+			///TODO repair that by adding a deep copy when adding a surface to the aggeration
+			///		see the clear function for more detail on the problem
+			//*
+			clear(true);
 		}
 	}
 
@@ -852,10 +856,18 @@ public:
 	}
 
 	void clear(bool in_depth = false) {
+		///TODO repair that by adding a deep copy when adding a surface to the aggeration
+		///		this is the same problem as the destructor is if it is solved there it is fine here
+		///		and btw the porblem comme from the fact that the mesh based surface
+		///		has a pointer to a mesh which gets deleted when clear but since
+		///		we do not have a pointer on the structure but a top level copy
+		///		we explose the mesh memory allocation but the surface we copied do not know it has been destroyed...
+		/*
 		for (int i = 0; i < numSurface; ++i)
 		{
 			surfaces[i].clear(in_depth);
 		}
+		//*/
 		CUDA_FREE_PTR(surfaces);
 		numSurface = 0;
 		numSurfaceMax = 0;

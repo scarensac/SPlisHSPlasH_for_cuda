@@ -102,7 +102,7 @@ void DFSPHCUDA::step()
         m_data.destructor_activated = false;
 
    //I'll run my tests here so that I can be sure that the loading did not failed before launching them
-        if (true && count_steps==0) 
+        if (false && count_steps==0) 
 		{
         //*
             RestFLuidLoaderInterface::StabilizationParameters params;
@@ -342,7 +342,7 @@ void DFSPHCUDA::step()
 				RestFLuidLoaderInterface::LoadingParameters paramsLoading;
 				paramsLoading.load_fluid = true;
 				paramsLoading.keep_existing_fluid = false;
-				RestFLuidLoaderInterface::initializeFluidToSurface(m_data, true, tagging_params, paramsLoading, false);
+				RestFLuidLoaderInterface::initializeFluidToSurface(m_data, true, tagging_params, paramsLoading);
 				
 				//*/
                 
@@ -723,33 +723,54 @@ void DFSPHCUDA::step()
 				std::vector<unsigned int> vect_step_size;
 				std::vector<RealCuda> vect_t1_medians;
 				std::vector<RealCuda> vect_t2_medians;
+				std::vector<RealCuda> vect_t3_medians;
 				std::vector<RealCuda> vect_tselection_medians;
 				std::vector<RealCuda> vect_density_min_medians;
 				std::vector<RealCuda> vect_density_max_medians;
+				std::vector<RealCuda> vect_density_avg_medians;
+				std::vector<RealCuda> vect_density_stdev_medians;
 				std::vector<int> vect_count_iter_medians;
 				static std::default_random_engine e;
 				static std::uniform_real_distribution<> dis(-1, 1); // rage -1 ; 1
 
+
+				RestFLuidLoaderInterface::InitParameters paramsInit;
+				RestFLuidLoaderInterface::TaggingParameters paramsTagging;
+				RestFLuidLoaderInterface::LoadingParameters paramsLoading;
+
+				params.show_debug = false;
+				paramsInit.show_debug = false;
+				paramsTagging.show_debug = false;
+				paramsLoading.show_debug = false;
+
+				paramsInit.keep_existing_fluid = false;
+
+				bool use_protection_rule = true;
+				bool use_step_size_regulator = true;
+				bool run_stabilization = true;
+
 				bool loopstepsize = true;
-				for (int step_size = 95; step_size < 101; step_size += 5) {
+				for (int step_size = 60; step_size < 66; step_size += 1) {
 					//*
-					if (loopstepsize&&step_size == 100) {
+					if (loopstepsize&&step_size == 65) {
 						loopstepsize = false;
-						step_size = 95;
+						use_protection_rule = false;
+						step_size = 60;
 					}
 					//*/
 
 					std::vector<RealCuda> vect_t1_internal;
 					std::vector<RealCuda> vect_t2_internal;
+					std::vector<RealCuda> vect_t3_internal;
 					std::vector<RealCuda> vect_tselection_internal;
 					std::vector<RealCuda> vect_density_min_internal;
 					std::vector<RealCuda> vect_density_max_internal;
+					std::vector<RealCuda> vect_density_avg_internal;
+					std::vector<RealCuda> vect_density_stdev_internal;
 					std::vector<int> vect_count_iter_internal;
 
-					RestFLuidLoaderInterface::InitParameters paramsInit;
-					RestFLuidLoaderInterface::TaggingParameters paramsTagging;
 
-					for (int k = 0; k < 1; ++k) {
+					for (int k = 0; k < 51; ++k) {
 						std::chrono::steady_clock::time_point tp1 = std::chrono::steady_clock::now();
 
 						//handleSimulationLoad(true,false,false,false,false,false);
@@ -760,7 +781,7 @@ void DFSPHCUDA::step()
 							paramsInit.air_particles_restriction = 1;
 							paramsInit.center_loaded_fluid = true;
 							paramsInit.keep_existing_fluid = false;
-							paramsInit.simulation_config = 0;
+							paramsInit.simulation_config = 6;
 							paramsInit.apply_additional_offset = true;
 							paramsInit.additional_offset = Vector3d(dis(e), dis(e), dis(e))*m_data.particleRadius * 2;
 
@@ -771,24 +792,70 @@ void DFSPHCUDA::step()
 
 						//*
 						paramsTagging.useRule2 = false;
-						paramsTagging.useRule3 = loopstepsize;
+						paramsTagging.useRule3 = use_protection_rule;
+						paramsTagging.useStepSizeRegulator = use_step_size_regulator;
 						paramsTagging.step_density = step_size;
+						paramsTagging.min_step_density = 5;
 						paramsTagging.keep_existing_fluid = paramsInit.keep_existing_fluid;
+						paramsTagging.output_density_information = true;
 
-
-						RestFLuidLoaderInterface::LoadingParameters paramsLoading;
 						paramsLoading.load_fluid = true;
 						paramsLoading.keep_existing_fluid = paramsInit.keep_existing_fluid;
 
-						RestFLuidLoaderInterface::initializeFluidToSurface(m_data, true, paramsTagging, paramsLoading, true);
+						RestFLuidLoaderInterface::initializeFluidToSurface(m_data, true, paramsTagging, paramsLoading);
 						//*/
 						std::chrono::steady_clock::time_point tp3 = std::chrono::steady_clock::now();
+
+						if (run_stabilization) {
+							params.method = 0;
+							params.timeStep = 0.003;
+							{
+								params.stabilize_tagged_only = true;
+								params.postUpdateVelocityDamping = false;
+								params.postUpdateVelocityClamping = false;
+								params.preUpdateVelocityClamping = false;
+
+
+								params.maxErrorD = 0.05;
+								params.useMaxErrorDPreciseAtMinIter = false;
+								params.maxErrorDPrecise = 0.01;
+
+								params.useDivergenceSolver = true;
+								params.useExternalForces = true;
+
+								params.preUpdateVelocityDamping = true;
+								params.preUpdateVelocityDamping_val = 0.8;
+
+								params.stabilizationItersCount = 10;
+
+								params.reduceDampingAndClamping = true;
+								params.reduceDampingAndClamping_val = std::powf(0.2f / params.preUpdateVelocityDamping_val, 1.0f / (params.stabilizationItersCount - 1));
+
+								params.clearWarmstartAfterStabilization = false;
+							}
+							params.runCheckParticlesPostion = true;
+							params.interuptOnLostParticle = false;
+							params.reloadFluid = false;
+							params.evaluateStabilization = false;
+							params.min_stabilization_iter = 2;
+							params.stable_velocity_max_target = m_data.particleRadius*0.25 / m_data.get_current_timestep();
+							params.stable_velocity_avg_target = m_data.particleRadius*0.05 / m_data.get_current_timestep();
+
+
+							RestFLuidLoaderInterface::stabilizeFluid(m_data, params);
+							//*/
+
+						}
+						std::chrono::steady_clock::time_point tp4 = std::chrono::steady_clock::now();
+
 						RealCuda time_p1 = std::chrono::duration_cast<std::chrono::nanoseconds> (tp2 - tp1).count() / 1000000000.0f;
 						RealCuda time_p2 = std::chrono::duration_cast<std::chrono::nanoseconds> (tp3 - tp2).count() / 1000000000.0f;
+						RealCuda time_p3 = std::chrono::duration_cast<std::chrono::nanoseconds> (tp4 - tp3).count() / 1000000000.0f;
 
 						vect_count_iter_internal.push_back(paramsTagging.count_iter);
 						vect_t1_internal.push_back(time_p1);
 						vect_t2_internal.push_back(time_p2);
+						vect_t3_internal.push_back(time_p3);
 						vect_tselection_internal.push_back(paramsTagging.time_total);
 
 						//I would also like to know the min and max density
@@ -813,6 +880,8 @@ void DFSPHCUDA::step()
 						//and also only repport the densities of active particles
 						vect_density_min_internal.push_back(paramsTagging.min_density_o);
 						vect_density_max_internal.push_back(paramsTagging.max_density_o);
+						vect_density_avg_internal.push_back(paramsTagging.avg_density_o);
+						vect_density_stdev_internal.push_back(paramsTagging.stdev_density_o);
 
 					}
 
@@ -825,31 +894,54 @@ void DFSPHCUDA::step()
 
 					std::sort(vect_t1_internal.begin(), vect_t1_internal.end());
 					std::sort(vect_t2_internal.begin(), vect_t2_internal.end());
+					std::sort(vect_t3_internal.begin(), vect_t3_internal.end());
 					std::sort(vect_tselection_internal.begin(), vect_tselection_internal.end());
 					std::sort(vect_count_iter_internal.begin(), vect_count_iter_internal.end());
 					std::sort(vect_density_min_internal.begin(), vect_density_min_internal.end());
 					std::sort(vect_density_max_internal.begin(), vect_density_max_internal.end());
+					std::sort(vect_density_avg_internal.begin(), vect_density_avg_internal.end());
+					std::sort(vect_density_stdev_internal.begin(), vect_density_stdev_internal.end());
+
+					/*
+					for (int k = 0; k < vect_t1_internal.size(); ++k) {
+					std::cout << k << "  " << vect_t1_internal[k] << "  " << vect_tselection_internal[k] << "  " <<
+					vect_count_iter_internal[k] << "  " << vect_density_min_internal[k] << "  " << vect_density_max_internal[k] << std::endl;
+					}
+					//*/
 
 
 					int idMedian = std::floor((vect_t2_internal.size() - 1) / 2.0f);
 
-					//std::cout << "median value: " << vect_t2_internal[idMedian] << "  " << vect_count_iter_internal[idMedian] << std::endl;
+					//std::cout << "id median: " << idMedian << std::endl;
 
 
 					vect_count_iter_medians.push_back(vect_count_iter_internal[idMedian]);
 					vect_t1_medians.push_back(vect_t1_internal[idMedian]);
 					vect_t2_medians.push_back(vect_t2_internal[idMedian]);
+					vect_t3_medians.push_back(vect_t3_internal[idMedian]);
 					vect_tselection_medians.push_back(vect_tselection_internal[idMedian]);
 					vect_step_size.push_back(paramsTagging.step_density);
 					vect_density_min_medians.push_back(vect_density_min_internal[idMedian]);
 					vect_density_max_medians.push_back(vect_density_max_internal[idMedian]);
+					vect_density_avg_medians.push_back(vect_density_avg_internal[idMedian]);
+					vect_density_stdev_medians.push_back(vect_density_stdev_internal[idMedian]);
 				}
 
 				std::cout << std::endl;
+
+				std::cout << "iter" << " ; " << "step size" << " ; " << "time init" << " ; " <<
+					" time selection" << " ; " << " time stabilization" << " ; " << 
+					"time stabilization internal" << " ; " << " count iter stabilization"
+					<< " ; " << "avg density"
+					<< " ; " << "min density" << " ; " << "max density" << " ; " << "stdev density" << std::endl;
+
 				for (int k = 0; k < vect_step_size.size(); ++k) {
-					std::cout << k << "  " << vect_step_size[k] << "  " << vect_t1_medians[k] << "  " <<
-						vect_t2_medians[k] << "  " << vect_tselection_medians[k] << "  " << vect_count_iter_medians[k]
-						<< "  " << vect_density_min_medians[k] << "  " << vect_density_max_medians[k] << std::endl;
+					std::cout << k << " ; " << vect_step_size[k] << " ; " << vect_t1_medians[k] << " ; " <<
+						vect_t2_medians[k] << " ; " << vect_t3_medians[k] << " ; " <<
+						vect_tselection_medians[k] << " ; " << vect_count_iter_medians[k]
+						<< " ; " << vect_density_avg_medians[k]
+						<< " ; " << vect_density_min_medians[k] << " ; " << vect_density_max_medians[k] <<
+						" ; " << vect_density_stdev_medians[k] << std::endl;
 				}
 
 			}
@@ -857,7 +949,7 @@ void DFSPHCUDA::step()
 				//this is the experiment to compare the fluif-fluif initialization with the fluid-boundary initialization
 				//normaly config 7 is the boundary-fluid and config 8 is the fluid-fluid one
 
-				bool keep_existing_fluid = true;
+				bool keep_existing_fluid = false;
 				int simulation_config = (keep_existing_fluid?8:7);
 				
 				Vector3d normal_gravitation = m_data.gravitation;
@@ -871,13 +963,14 @@ void DFSPHCUDA::step()
 				RestFLuidLoaderInterface::TaggingParameters paramsTagging;
 				RestFLuidLoaderInterface::LoadingParameters paramsLoading;
 
-				paramsInit.show_debug = false;
-				paramsTagging.show_debug = false;
-				params.show_debug = false;
-				paramsLoading.show_debug = false;
+
+				paramsInit.show_debug = true;
+				paramsTagging.show_debug = true;
+				params.show_debug = true;
+				paramsLoading.show_debug = true;
 
 				if (!keep_existing_fluid) {
-					paramsLoading.neighbors_tagging_distance_coef = 4.5;
+					paramsLoading.neighbors_tagging_distance_coef = 5;
 				}
 
 				int step_size = 60;
@@ -885,9 +978,12 @@ void DFSPHCUDA::step()
 					std::vector<RealCuda> vect_t1_internal;
 					std::vector<RealCuda> vect_t2_internal;
 					std::vector<RealCuda> vect_t3_internal;
+					std::vector<int> vect_count_stabilization_iter_internal;
+					std::vector<int> vect_count_selection_iter_internal;
 
 
-					for (int k = 0; k < 21; ++k) {
+
+					for (int k = 0; k < 2; ++k) {
 						//if i keep the existing fluid i need to reload it from memory each loop
 						if (keep_existing_fluid) {
 							m_data.read_fluid_from_file(false);
@@ -916,15 +1012,17 @@ void DFSPHCUDA::step()
 						//*
 						paramsTagging.useRule2 = false;
 						paramsTagging.useRule3 = true;
-						paramsTagging.step_density = 60;
+						paramsTagging.useStepSizeRegulator = true;
+						paramsTagging.min_step_density = 5;
+						paramsTagging.step_density = step_size;
 						paramsTagging.density_end = 999;
 						paramsTagging.keep_existing_fluid = paramsInit.keep_existing_fluid;
-
+						paramsTagging.output_density_information = true;
 
 						paramsLoading.load_fluid = true;
 						paramsLoading.keep_existing_fluid = keep_existing_fluid;
-
-						RestFLuidLoaderInterface::initializeFluidToSurface(m_data, true, paramsTagging, paramsLoading, false);
+						
+						RestFLuidLoaderInterface::initializeFluidToSurface(m_data, true, paramsTagging, paramsLoading);
 						//*/
 						std::chrono::steady_clock::time_point tp3 = std::chrono::steady_clock::now();
 						//*
@@ -957,7 +1055,8 @@ void DFSPHCUDA::step()
 						params.reloadFluid = false;
 						params.evaluateStabilization = false;
 						params.min_stabilization_iter = 2;
-						params.stable_velocity_target = m_data.particleRadius*0.1/m_data.get_current_timestep();
+						params.stable_velocity_max_target = m_data.particleRadius*0.25/m_data.get_current_timestep();
+						params.stable_velocity_avg_target = m_data.particleRadius*0.025 / m_data.get_current_timestep();
 
 						std::chrono::steady_clock::time_point tp5 = std::chrono::steady_clock::now();
 
@@ -973,27 +1072,44 @@ void DFSPHCUDA::step()
 						vect_t1_internal.push_back(time_p1);
 						vect_t2_internal.push_back(time_p2);
 						vect_t3_internal.push_back(time_p3);
+						vect_count_selection_iter_internal.push_back(paramsTagging.count_iter);
+						vect_count_stabilization_iter_internal.push_back(params.count_iter_o);
 
-						std::cout << "direct timmings output: " << time_p1 << "  " << time_p2 << "  " << time_p3 << "  " << std::endl;
+						//std::cout << "direct timmings output: " << time_p1 << "  " << time_p2 << "  " << time_p3 << "  " << std::endl;
 					}
 
-					/*
-					for (int k = 0; k < vect_t1_internal.size(); ++k) {
-						std::cout << k << "  " << vect_t1_internal[k] << "  " << vect_tselection_internal[k] << "  " <<
-							vect_count_iter_internal[k] << "  " << vect_density_min_internal[k] << "  " << vect_density_max_internal[k] << std::endl;
-					}
-					//*/
 
 					std::sort(vect_t1_internal.begin(), vect_t1_internal.end());
 					std::sort(vect_t2_internal.begin(), vect_t2_internal.end());
 					std::sort(vect_t3_internal.begin(), vect_t3_internal.end());
+					std::sort(vect_count_selection_iter_internal.begin(), vect_count_selection_iter_internal.end());
+					std::sort(vect_count_stabilization_iter_internal.begin(), vect_count_stabilization_iter_internal.end());
+
+					//*
+					for (int k = 0; k < vect_t1_internal.size(); ++k) {
+						std::cout << k << "   " << vect_t1_internal[k] << " + " << vect_t2_internal[k] <<
+							" + " << vect_t3_internal[k] << " = " <<
+							vect_t1_internal[k] + vect_t2_internal[k] + vect_t3_internal[k] <<
+							" // " << vect_count_selection_iter_internal[k] << " // " << vect_count_stabilization_iter_internal[k] << std::endl;
+					}
+					//*/
+					//some density informations
+					std::cout << "density info: " << paramsTagging.avg_density_o << "  " << paramsTagging.min_density_o << "  " <<
+						paramsTagging.max_density_o << "  " << paramsTagging.stdev_density_o/ paramsTagging.avg_density_o*100 << "  " << std::endl;
 
 
 					int idMedian = std::floor((vect_t2_internal.size() - 1) / 2.0f);
 
-					std::cout << "median value: " << vect_t1_internal[idMedian] << " + " << vect_t2_internal[idMedian] <<
-						" + " << vect_t3_internal[idMedian] << " = " << 
-						vect_t1_internal[idMedian] + vect_t2_internal[idMedian] + vect_t3_internal[idMedian] << std::endl;
+
+					std::cout << "median values" << std::endl;
+					std::cout << "time init" << " ; " << "time selection" <<
+						" ; " << "time stabilization" << " ; " <<
+						"total time" <<
+						" ; " << "coutn iter selection" << " ; " << "count iter stabilization" << std::endl;
+					std::cout << vect_t1_internal[idMedian] << " ; " << vect_t2_internal[idMedian] <<
+						" ; " << vect_t3_internal[idMedian] << " ; " << 
+						vect_t1_internal[idMedian] + vect_t2_internal[idMedian] + vect_t3_internal[idMedian] << 
+						" ; " << vect_count_selection_iter_internal[idMedian] << " ; " << vect_count_stabilization_iter_internal[idMedian] << std::endl;
 
 
 
@@ -1026,18 +1142,17 @@ void DFSPHCUDA::step()
 				params.show_debug = false;
 				paramsLoading.show_debug = false;
 
-				if (!keep_existing_fluid) {
-					paramsLoading.neighbors_tagging_distance_coef = 4.5;
-				}
-
 				int step_size = 60;
 				{
 					std::vector<RealCuda> vect_t1_internal;
 					std::vector<RealCuda> vect_t2_internal;
 					std::vector<RealCuda> vect_t3_internal;
+					std::vector<int> vect_count_stabilization_iter_internal;
+					std::vector<int> vect_count_selection_iter_internal;
 
 
-					for (int k = 0; k < 1; ++k) {
+
+					for (int k = 0; k <51; ++k) {
 						//if i keep the existing fluid i need to reload it from memory each loop
 						if (keep_existing_fluid) {
 							m_data.read_fluid_from_file(false);
@@ -1053,7 +1168,7 @@ void DFSPHCUDA::step()
 							paramsInit.clear_data = false;
 							paramsInit.air_particles_restriction = 1;
 							paramsInit.center_loaded_fluid = true;
-							paramsInit.keep_existing_fluid = keep_existing_fluid;
+							paramsInit.keep_existing_fluid = false;
 							paramsInit.simulation_config = simulation_config;
 							paramsInit.apply_additional_offset = true;
 							paramsInit.additional_offset = Vector3d(dis(e), dis(e), dis(e))*m_data.particleRadius * 2;
@@ -1066,15 +1181,17 @@ void DFSPHCUDA::step()
 						//*
 						paramsTagging.useRule2 = false;
 						paramsTagging.useRule3 = true;
-						paramsTagging.step_density = 60;
+						paramsTagging.useStepSizeRegulator = true;
+						paramsTagging.min_step_density = 5;
+						paramsTagging.step_density = step_size;
 						paramsTagging.density_end = 999;
 						paramsTagging.keep_existing_fluid = paramsInit.keep_existing_fluid;
-
+						paramsTagging.output_density_information = true;
 
 						paramsLoading.load_fluid = true;
 						paramsLoading.keep_existing_fluid = keep_existing_fluid;
 
-						RestFLuidLoaderInterface::initializeFluidToSurface(m_data, true, paramsTagging, paramsLoading, false);
+						RestFLuidLoaderInterface::initializeFluidToSurface(m_data, true, paramsTagging, paramsLoading);
 						//*/
 						std::chrono::steady_clock::time_point tp3 = std::chrono::steady_clock::now();
 						//*
@@ -1107,11 +1224,17 @@ void DFSPHCUDA::step()
 						params.reloadFluid = false;
 						params.evaluateStabilization = false;
 						params.min_stabilization_iter = 2;
-						params.stable_velocity_target = m_data.particleRadius*0.1 / m_data.get_current_timestep();
+						params.stable_velocity_max_target = m_data.particleRadius*0.25 / m_data.get_current_timestep();
+						params.stable_velocity_avg_target = m_data.particleRadius*0.025 / m_data.get_current_timestep();
 
 						std::chrono::steady_clock::time_point tp5 = std::chrono::steady_clock::now();
 
 						RestFLuidLoaderInterface::stabilizeFluid(m_data, params);
+
+						//if there was a fail do not count the run in the values
+						if (!params.stabilization_sucess) {
+							continue;
+						}
 						//*/
 
 						std::chrono::steady_clock::time_point tp4 = std::chrono::steady_clock::now();
@@ -1123,29 +1246,49 @@ void DFSPHCUDA::step()
 						vect_t1_internal.push_back(time_p1);
 						vect_t2_internal.push_back(time_p2);
 						vect_t3_internal.push_back(time_p3);
+						vect_count_selection_iter_internal.push_back(paramsTagging.count_iter);
+						vect_count_stabilization_iter_internal.push_back(params.count_iter_o);
 
-						std::cout << "direct timmings output: " << time_p1 << "  " << time_p2 << "  " << time_p3 << "  " << std::endl;
+						//std::cout << "direct timmings output: " << time_p1 << "  " << time_p2 << "  " << time_p3 << "  " << std::endl;
 					}
 
-					/*
-					for (int k = 0; k < vect_t1_internal.size(); ++k) {
-					std::cout << k << "  " << vect_t1_internal[k] << "  " << vect_tselection_internal[k] << "  " <<
-					vect_count_iter_internal[k] << "  " << vect_density_min_internal[k] << "  " << vect_density_max_internal[k] << std::endl;
+					if (!vect_t1_internal.empty()) {
+
+
+						std::sort(vect_t1_internal.begin(), vect_t1_internal.end());
+						std::sort(vect_t2_internal.begin(), vect_t2_internal.end());
+						std::sort(vect_t3_internal.begin(), vect_t3_internal.end());
+						std::sort(vect_count_selection_iter_internal.begin(), vect_count_selection_iter_internal.end());
+						std::sort(vect_count_stabilization_iter_internal.begin(), vect_count_stabilization_iter_internal.end());
+
+						//*
+						for (int k = 0; k < vect_t1_internal.size(); ++k) {
+							std::cout << k << "   " << vect_t1_internal[k] << " + " << vect_t2_internal[k] <<
+								" + " << vect_t3_internal[k] << " = " <<
+								vect_t1_internal[k] + vect_t2_internal[k] + vect_t3_internal[k] <<
+								" // " << vect_count_selection_iter_internal[k] << " // " << vect_count_stabilization_iter_internal[k] << std::endl;
+						}
+						//*/
+						//some density informations
+						std::cout << "density info: " << paramsTagging.avg_density_o << "  " << paramsTagging.min_density_o << "  " <<
+							paramsTagging.max_density_o << "  " << paramsTagging.stdev_density_o / paramsTagging.avg_density_o * 100 << "  " << std::endl;
+
+
+						int idMedian = std::floor((vect_t2_internal.size() - 1) / 2.0f);
+
+
+						std::cout << "median values" << std::endl;
+						std::cout << "count valid runs: " << vect_t1_internal.size() << std::endl;
+						std::cout << "time init" << " ; " << "time selection" <<
+							" ; " << "time stabilization" << " ; " <<
+							"total time" <<
+							" ; " << "coutn iter selection" << " ; " << "count iter stabilization" << std::endl;
+						std::cout << vect_t1_internal[idMedian] << " ; " << vect_t2_internal[idMedian] <<
+							" ; " << vect_t3_internal[idMedian] << " ; " <<
+							vect_t1_internal[idMedian] + vect_t2_internal[idMedian] + vect_t3_internal[idMedian] <<
+							" ; " << vect_count_selection_iter_internal[idMedian] << " ; " << vect_count_stabilization_iter_internal[idMedian] << std::endl;
+
 					}
-					//*/
-
-					std::sort(vect_t1_internal.begin(), vect_t1_internal.end());
-					std::sort(vect_t2_internal.begin(), vect_t2_internal.end());
-					std::sort(vect_t3_internal.begin(), vect_t3_internal.end());
-
-
-					int idMedian = std::floor((vect_t2_internal.size() - 1) / 2.0f);
-
-					std::cout << "median value: " << vect_t1_internal[idMedian] << " + " << vect_t2_internal[idMedian] <<
-						" + " << vect_t3_internal[idMedian] << " = " <<
-						vect_t1_internal[idMedian] + vect_t2_internal[idMedian] + vect_t3_internal[idMedian] << std::endl;
-
-
 
 				}
 
@@ -1171,23 +1314,23 @@ void DFSPHCUDA::step()
 				RestFLuidLoaderInterface::TaggingParameters paramsTagging;
 				RestFLuidLoaderInterface::LoadingParameters paramsLoading;
 
-				paramsInit.show_debug = false;
+				paramsInit.show_debug = true;
 				paramsTagging.show_debug = true;
 				params.show_debug = true;
 				paramsLoading.show_debug = true;
 
-				if (!keep_existing_fluid) {
-					paramsLoading.neighbors_tagging_distance_coef = 4.5;
-				}
-
+				
 				int step_size = 60;
 				{
 					std::vector<RealCuda> vect_t1_internal;
 					std::vector<RealCuda> vect_t2_internal;
 					std::vector<RealCuda> vect_t3_internal;
+					std::vector<int> vect_count_stabilization_iter_internal;
+					std::vector<int> vect_count_selection_iter_internal;
 
 
-					for (int k = 0; k < 1; ++k) {
+
+					for (int k = 0; k <1; ++k) {
 						//if i keep the existing fluid i need to reload it from memory each loop
 						if (keep_existing_fluid) {
 							m_data.read_fluid_from_file(false);
@@ -1203,7 +1346,7 @@ void DFSPHCUDA::step()
 							paramsInit.clear_data = false;
 							paramsInit.air_particles_restriction = 1;
 							paramsInit.center_loaded_fluid = true;
-							paramsInit.keep_existing_fluid = keep_existing_fluid;
+							paramsInit.keep_existing_fluid = false;
 							paramsInit.simulation_config = simulation_config;
 							paramsInit.apply_additional_offset = true;
 							paramsInit.additional_offset = Vector3d(dis(e), dis(e), dis(e))*m_data.particleRadius * 2;
@@ -1216,15 +1359,17 @@ void DFSPHCUDA::step()
 						//*
 						paramsTagging.useRule2 = false;
 						paramsTagging.useRule3 = true;
-						paramsTagging.step_density = 60;
+						paramsTagging.useStepSizeRegulator = true;
+						paramsTagging.min_step_density = 5;
+						paramsTagging.step_density = step_size;
 						paramsTagging.density_end = 999;
 						paramsTagging.keep_existing_fluid = paramsInit.keep_existing_fluid;
-
+						paramsTagging.output_density_information = true;
 
 						paramsLoading.load_fluid = true;
 						paramsLoading.keep_existing_fluid = keep_existing_fluid;
 
-						RestFLuidLoaderInterface::initializeFluidToSurface(m_data, true, paramsTagging, paramsLoading, false);
+						RestFLuidLoaderInterface::initializeFluidToSurface(m_data, true, paramsTagging, paramsLoading);
 						//*/
 						std::chrono::steady_clock::time_point tp3 = std::chrono::steady_clock::now();
 						//*
@@ -1257,11 +1402,17 @@ void DFSPHCUDA::step()
 						params.reloadFluid = false;
 						params.evaluateStabilization = false;
 						params.min_stabilization_iter = 2;
-						params.stable_velocity_target = m_data.particleRadius*0.1 / m_data.get_current_timestep();
+						params.stable_velocity_max_target = m_data.particleRadius*0.25 / m_data.get_current_timestep();
+						params.stable_velocity_avg_target = m_data.particleRadius*0.025 / m_data.get_current_timestep();
 
 						std::chrono::steady_clock::time_point tp5 = std::chrono::steady_clock::now();
 
 						RestFLuidLoaderInterface::stabilizeFluid(m_data, params);
+
+						//if there was a fail do not count the run in the values
+						if (!params.stabilization_sucess) {
+							continue;
+						}
 						//*/
 
 						std::chrono::steady_clock::time_point tp4 = std::chrono::steady_clock::now();
@@ -1273,29 +1424,49 @@ void DFSPHCUDA::step()
 						vect_t1_internal.push_back(time_p1);
 						vect_t2_internal.push_back(time_p2);
 						vect_t3_internal.push_back(time_p3);
+						vect_count_selection_iter_internal.push_back(paramsTagging.count_iter);
+						vect_count_stabilization_iter_internal.push_back(params.count_iter_o);
 
-						std::cout << "direct timmings output: " << time_p1 << "  " << time_p2 << "  " << time_p3 << "  " << std::endl;
+						//std::cout << "direct timmings output: " << time_p1 << "  " << time_p2 << "  " << time_p3 << "  " << std::endl;
 					}
 
-					/*
-					for (int k = 0; k < vect_t1_internal.size(); ++k) {
-					std::cout << k << "  " << vect_t1_internal[k] << "  " << vect_tselection_internal[k] << "  " <<
-					vect_count_iter_internal[k] << "  " << vect_density_min_internal[k] << "  " << vect_density_max_internal[k] << std::endl;
+					if (!vect_t1_internal.empty()) {
+
+
+						std::sort(vect_t1_internal.begin(), vect_t1_internal.end());
+						std::sort(vect_t2_internal.begin(), vect_t2_internal.end());
+						std::sort(vect_t3_internal.begin(), vect_t3_internal.end());
+						std::sort(vect_count_selection_iter_internal.begin(), vect_count_selection_iter_internal.end());
+						std::sort(vect_count_stabilization_iter_internal.begin(), vect_count_stabilization_iter_internal.end());
+
+						//*
+						for (int k = 0; k < vect_t1_internal.size(); ++k) {
+							std::cout << k << "   " << vect_t1_internal[k] << " + " << vect_t2_internal[k] <<
+								" + " << vect_t3_internal[k] << " = " <<
+								vect_t1_internal[k] + vect_t2_internal[k] + vect_t3_internal[k] <<
+								" // " << vect_count_selection_iter_internal[k] << " // " << vect_count_stabilization_iter_internal[k] << std::endl;
+						}
+						//*/
+						//some density informations
+						std::cout << "density info: " << paramsTagging.avg_density_o << "  " << paramsTagging.min_density_o << "  " <<
+							paramsTagging.max_density_o << "  " << paramsTagging.stdev_density_o / paramsTagging.avg_density_o * 100 << "  " << std::endl;
+
+
+						int idMedian = std::floor((vect_t2_internal.size() - 1) / 2.0f);
+
+
+						std::cout << "median values" << std::endl;
+						std::cout << "count valid runs: " << vect_t1_internal.size() << std::endl;
+						std::cout << "time init" << " ; " << "time selection" <<
+							" ; " << "time stabilization" << " ; " <<
+							"total time" <<
+							" ; " << "coutn iter selection" << " ; " << "count iter stabilization" << std::endl;
+						std::cout << vect_t1_internal[idMedian] << " ; " << vect_t2_internal[idMedian] <<
+							" ; " << vect_t3_internal[idMedian] << " ; " <<
+							vect_t1_internal[idMedian] + vect_t2_internal[idMedian] + vect_t3_internal[idMedian] <<
+							" ; " << vect_count_selection_iter_internal[idMedian] << " ; " << vect_count_stabilization_iter_internal[idMedian] << std::endl;
+
 					}
-					//*/
-
-					std::sort(vect_t1_internal.begin(), vect_t1_internal.end());
-					std::sort(vect_t2_internal.begin(), vect_t2_internal.end());
-					std::sort(vect_t3_internal.begin(), vect_t3_internal.end());
-
-
-					int idMedian = std::floor((vect_t2_internal.size() - 1) / 2.0f);
-
-					std::cout << "median value: " << vect_t1_internal[idMedian] << " + " << vect_t2_internal[idMedian] <<
-						" + " << vect_t3_internal[idMedian] << " = " <<
-						vect_t1_internal[idMedian] + vect_t2_internal[idMedian] + vect_t3_internal[idMedian] << std::endl;
-
-
 
 				}
 
@@ -1324,7 +1495,7 @@ void DFSPHCUDA::step()
     //test boundries height control
 	//if (TimeManager::getCurrent()->getTime() < 1.5) 
 	{
-	//	m_data.handleBoundariesHeightTest();
+		m_data.handleBoundariesHeightTest();
 	}
 
 

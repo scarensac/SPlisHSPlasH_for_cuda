@@ -11,8 +11,11 @@
 #define ABS_MACRO(x) ABS_MACRO_CUDA(x)
 #else
 #define FUNCTION 
-#define SQRT_MACRO(x) std::sqrt(x)
-#define ABS_MACRO(x) std::abs(x)
+#define SQRT_MACRO(x) SQRT_MACRO_CUDA(x)
+#define ABS_MACRO(x) ABS_MACRO_CUDA(x)
+//should be that but using the one for cuda will not harms since they are pure c
+//#define SQRT_MACRO(x) std::sqrt(x)
+//#define ABS_MACRO(x) std::abs(x)
 #endif
 
 

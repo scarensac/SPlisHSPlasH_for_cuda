@@ -9,7 +9,7 @@
 
 using namespace SPH;
 
-void read_last_error_cuda(std::string msg);
+cudaError_t read_last_error_cuda(std::string msg, bool show_message = true);
 
 void get_UnifiedParticleSet_min_max_naive_cuda(SPH::UnifiedParticleSet& particleSet, Vector3d& min, Vector3d& max);
 
@@ -43,6 +43,7 @@ Vector3d get_avg_velocity_cuda(SPH::UnifiedParticleSet* particleSet);
 void evaluate_density_field(SPH::DFSPHCData& data, SPH::UnifiedParticleSet* particleSet);
 
 template<class T>
-void remove_tagged_particles(SPH::UnifiedParticleSet* particleSet, T* index_array, T* index_array_sorted, int countToRemove, bool forceKeepOrder=false);
+void remove_tagged_particles(SPH::UnifiedParticleSet* particleSet, T* index_array, T* index_array_sorted, int countToRemove,
+	bool forceKeepOrder = false, bool runDebug = false);
 
 #endif //DFSPH_STATIC_VAR_STRUCT

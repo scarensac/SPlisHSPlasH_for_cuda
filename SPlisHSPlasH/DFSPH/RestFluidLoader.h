@@ -56,7 +56,6 @@ namespace SPH {
 			RealCuda density_start ;
 			RealCuda density_end;
 			RealCuda step_density;
-			RealCuda min_step_density;
 
 			bool useRule2;
 			RealCuda min_density;
@@ -64,14 +63,19 @@ namespace SPH {
 			bool useRule3;
 			RealCuda density_delta_threshold;
 
+			bool useStepSizeRegulator;
+			RealCuda min_step_density;
+
 
 			//here are some output values
 			unsigned int count_iter;
 			RealCuda time_total;
 
+			bool output_density_information;
 			RealCuda min_density_o;
 			RealCuda max_density_o;
 			RealCuda avg_density_o;
+			RealCuda stdev_density_o;
 
 			TaggingParameters(){
 				show_debug = false;
@@ -79,7 +83,6 @@ namespace SPH {
 				density_start = 1900;
 				density_end = 1000;
 				step_density = 50;
-				min_step_density = 5;
 
 				useRule2 = false;
 				min_density = 905;
@@ -87,13 +90,19 @@ namespace SPH {
 				useRule3 = false;
 				density_delta_threshold = 5;
 
+				useStepSizeRegulator = true;
+				min_step_density = 5;
+
 				keep_existing_fluid = false;
 
 				count_iter = 0; 
 				time_total=0;
+				
+				output_density_information = false;
 				min_density_o = 10000;
 				max_density_o = 0;
 				avg_density_o = 0;
+				stdev_density_o = 0;
 			}
 		};
 
@@ -120,7 +129,7 @@ namespace SPH {
 		//ok here I'll test a system to initialize a volume of fluid from
 		//a large wolume of fluid (IE a technique to iinit the fluid at rest)
 		static void initializeFluidToSurface(SPH::DFSPHCData& data, bool center_loaded_fluid, TaggingParameters& params,
-			LoadingParameters& params_loading, bool output_min_max_density = false);
+			LoadingParameters& params_loading);
 
 
 		//this struct is only to be more flexible in the addition of stabilization methods in the stabilizeFluid function 
@@ -131,6 +140,7 @@ namespace SPH {
 			bool reloadFluid;
 			bool keep_existing_fluid;
 			bool stabilize_tagged_only;
+			bool stabilization_sucess;
 
 			bool show_debug;
 
@@ -142,6 +152,8 @@ namespace SPH {
 			RealCuda maxIterV;
 			RealCuda maxErrorD;
 			RealCuda maxIterD;
+			bool useMaxErrorDPreciseAtMinIter;
+			RealCuda maxErrorDPrecise;
 
 			bool clearWarmstartAfterStabilization;
 
@@ -159,7 +171,8 @@ namespace SPH {
 
 
 			int min_stabilization_iter;
-			RealCuda stable_velocity_target;
+			RealCuda stable_velocity_max_target;
+			RealCuda stable_velocity_avg_target;
 
 
 			bool runCheckParticlesPostion;
@@ -187,6 +200,9 @@ namespace SPH {
 			RealCuda timeStepEval;
 			int max_iterEval;
 
+			//some output values for details
+			int count_iter_o;
+
 			StabilizationParameters() {
 				method = -1;
 				stabilizationItersCount = 5;
@@ -194,6 +210,7 @@ namespace SPH {
 				reloadFluid = true;
 				keep_existing_fluid = false;
 				stabilize_tagged_only = false;
+				stabilization_sucess = true;
 
 				show_debug = false;
 
@@ -204,6 +221,9 @@ namespace SPH {
 				maxIterV = 100;
 				maxErrorD = 0.01;
 				maxIterD = 100;
+				useMaxErrorDPreciseAtMinIter=false;
+				maxErrorDPrecise=0.01;
+
 				clearWarmstartAfterStabilization = true;
 
 				preUpdateVelocityClamping = false;
@@ -220,7 +240,8 @@ namespace SPH {
 
 
 				min_stabilization_iter = 2;
-				stable_velocity_target = 0;
+				stable_velocity_max_target = 0;
+				stable_velocity_avg_target = 0;
 
 				runCheckParticlesPostion = true;
 				interuptOnLostParticle = true;
@@ -242,6 +263,8 @@ namespace SPH {
 				maxIterDEval = 100;
 				timeStepEval = 0.003;
 				max_iterEval = 5;
+
+				count_iter_o = 0;
 			}
 		};
 

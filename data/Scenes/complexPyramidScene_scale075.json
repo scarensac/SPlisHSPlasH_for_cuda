@@ -24,7 +24,7 @@
 	},
 	"RigidBodies": [
 		{
-			"geometryFile": "../models/complex_pyramid.obj",
+			"geometryFile": "../models/complex_pyramid_scale075.obj",
 			"translation": [0,0,0],
 			"rotationAxis": [1, 0, 0],
 			"rotationAngle": 0,

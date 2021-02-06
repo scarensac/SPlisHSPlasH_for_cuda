@@ -1176,9 +1176,9 @@ void allocate_neighbors_search_data_set(SPH::NeighborsSearchDataSet& dataSet, bo
 	bool allocate_gpu) {
 
 	//result buffers
-	cudaMalloc(&(dataSet.p_id_sorted), dataSet.numParticlesMax * sizeof(unsigned int));
+	cudaMallocManaged(&(dataSet.p_id_sorted), dataSet.numParticlesMax * sizeof(unsigned int));
 	if (!particle_related_only) {
-		cudaMalloc(&(dataSet.cell_start_end), (CELL_COUNT + 1) * sizeof(unsigned int));
+		cudaMallocManaged(&(dataSet.cell_start_end), (CELL_COUNT + 1) * sizeof(unsigned int));
 	}
 
 	//allocate the mem for fluid particles

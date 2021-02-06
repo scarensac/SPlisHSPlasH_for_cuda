@@ -62,6 +62,7 @@ set(DFSPH_HEADER_FILES
 	DFSPH/TimeStepDFSPH.h
 	DFSPH/SPH_dynamic_window_buffer.h
 	DFSPH/RestFluidLoader.h
+	DFSPH/OpenBoundariesSimple.h
 	)
 	
 set(DFSPH_SOURCE_FILES
