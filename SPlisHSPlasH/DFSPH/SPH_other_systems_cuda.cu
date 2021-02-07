@@ -1625,13 +1625,18 @@ void remove_tagged_particles(SPH::UnifiedParticleSet* particleSet, T* index_arra
 		particleSet->neighborsDataSet->p_id, particleSet->neighborsDataSet->p_id_sorted, particleSet->numParticles);
 	gpuErrchk(cudaDeviceSynchronize());
 
-	
 
 	cuda_sortData(*particleSet, particleSet->neighborsDataSet->p_id_sorted);
 	gpuErrchk(cudaDeviceSynchronize());
 
 	//and now you can update the number of particles
 	int new_num_particles = particleSet->numParticles - countToRemove;
+	if (new_num_particles <= 0) {
+		std::cout << "wtf you are switching an impossible number of particles  oldnbr/new_nbr: " << particleSet->numParticles <<
+			"  /  "<<new_num_particles<<std::endl;
+		exit(0);
+	}
+
 	particleSet->updateActiveParticleNumber(new_num_particles);
 	//*/
 }

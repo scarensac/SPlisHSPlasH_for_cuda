@@ -6,6 +6,7 @@
 #include "DFSPH_c_arrays_structure.h"
 #include "SPH_dynamic_window_buffer.h"
 #include "RestFLuidLoader.h"
+#include "openBoundariesSimple.h"
 
 using namespace SPH;
 

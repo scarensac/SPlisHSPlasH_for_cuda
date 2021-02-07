@@ -489,6 +489,9 @@ public:
 	}
 
 	int getType() { return type; }
+	RealCuda getRadius() { return radius; }
+	Vector3d getCenter() { return center; }
+	Vector3d getHalfLength() { return halfLengths; }
 
 	void setReversedSurface(bool v) { isReversedSurface = v; }
 	bool getReversedSurface() { return isReversedSurface ; }
@@ -643,7 +646,35 @@ public:
 		return oss.str();
 	}
 
+	//warning most of thos are not coded yet...
+	//the normal will point toward the inside of the surface
+	FUNCTION inline Vector3d getNormal(Vector3d p) {
+		Vector3d result;
+		//*
+		switch (type) {
+		case 0: {
+			break;
+		}
+		case 1: {
+			break;
+		}
+		case 2: {
+			result = center - p;
+			break;
+		}
+		case 3: {
+			break;
+		}
+		default: {; }//it should NEVER reach here
+		}
+		//*/
 
+		if (getReversedSurface()) {
+			result *= -1;
+		}
+
+		return result.unit();
+	}
 
 	//to know if we are on the inside of each plane we can simply use the dot product*
 	FUNCTION inline bool isinside(Vector3d p) {

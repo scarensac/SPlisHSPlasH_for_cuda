@@ -15,6 +15,7 @@
 #include <thread>
 #include <random>
 #include <algorithm>
+#include "SPlisHSPlasH\DFSPH\OpenBoundariesSimple.h" 
 
 // BENDER2019_BOUNDARIES includes
 #include "SPlisHSPlasH/BoundaryModel_Bender2019.h"
@@ -1492,10 +1493,37 @@ void DFSPHCUDA::step()
         static int count_moving_steps = 0;
         //*
 
-    //test boundries height control
+		//test the simple open boundaries
+		if (true) {
+			if (count_steps == 0) {
+				OpenBoundariesSimpleInterface::InitParameters initParams;
+				initParams.show_debug = true;
+				initParams.simulation_config = 1;
+				OpenBoundariesSimpleInterface::init(m_data, initParams);
+				
+				//std::this_thread::sleep_for(std::chrono::nanoseconds(10));
+				//std::this_thread::sleep_until(std::chrono::system_clock::now() + std::chrono::seconds(2));
+
+				count_steps++;
+				return;
+			}
+
+			OpenBoundariesSimpleInterface::ApplyParameters applyParams;
+			applyParams.show_debug = true;
+			applyParams.allowedNewDistance = m_data.particleRadius*2;
+			applyParams.useInflow = true;
+			applyParams.useOutflow = true;
+			OpenBoundariesSimpleInterface::applyOpenBoundary(m_data, applyParams);
+
+
+
+
+		}
+		
+		//test boundries height control
 	//if (TimeManager::getCurrent()->getTime() < 1.5) 
 	{
-		m_data.handleBoundariesHeightTest();
+		//m_data.handleBoundariesHeightTest();
 	}
 
 

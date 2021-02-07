@@ -776,7 +776,6 @@ void allocate_and_copy_UnifiedParticleSet_vector_cuda(SPH::UnifiedParticleSet** 
 	for (int i = 0; i < numSets; ++i) {
 		in_vector[i].gpu_ptr = *out_vector + i;
 	}
-
 	//before being able to fill the gpu array we need to make a copy of the data structure since
 	//we will have to change the neighborsdataset from the cpu to the gpu
 	//*

@@ -116,6 +116,7 @@ void timeStep ()
 
 		//load the simulation state if asked
 		sim->handleSimulationLoad(base.getLoadLiquid() || base.getLoadSimulation(), true, base.getLoadSimulation(), true, base.getLoadSimulation(), true);
+		sim->handleSimulationLoad(base.getLoadLiquid() || base.getLoadSimulation(), true, base.getLoadSimulation(), true, false, false);
 		//I'll handle the load as token so I need to consume them
 		base.setLoadLiquid(false);
 		base.setLoadSimulation(false);

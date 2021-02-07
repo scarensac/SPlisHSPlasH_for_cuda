@@ -220,7 +220,8 @@ void RestFLuidLoader::clear() {
 //1==> inside
 //2==> away from the surface
 template<int restrictionType, bool override_existing_tagging>
-__global__ void surface_restrict_particleset_kernel(SPH::UnifiedParticleSet* particleSet, BufferFluidSurface S, RealCuda offset, int* countRmv) {
+__global__ void surface_restrict_particleset_kernel(SPH::UnifiedParticleSet* particleSet, BufferFluidSurface S, RealCuda offset, 
+	int* countTagged) {
 	int i = blockIdx.x * blockDim.x + threadIdx.x;
 	if (i >= particleSet->numParticles) { return; }
 
@@ -230,20 +231,20 @@ __global__ void surface_restrict_particleset_kernel(SPH::UnifiedParticleSet* par
 	if (restrictionType == 0) {
 		if (S.distanceToSurfaceSigned(particleSet->pos[i]) < (-offset)) {
 			particleSet->neighborsDataSet->cell_id[i] += particleSet->numParticles;
-			atomicAdd(countRmv, 1);
+			atomicAdd(countTagged, 1);
 		}
 	}
 	else if (restrictionType == 1) {
 		if (S.distanceToSurfaceSigned(particleSet->pos[i]) > (-offset)) {
 			particleSet->neighborsDataSet->cell_id[i] += particleSet->numParticles;
-			atomicAdd(countRmv, 1);
+			atomicAdd(countTagged, 1);
 		}
 
 	}
 	else if (restrictionType == 2) {
 		if (S.distanceToSurface(particleSet->pos[i]) > (offset)) {
 			particleSet->neighborsDataSet->cell_id[i] += particleSet->numParticles;
-			atomicAdd(countRmv, 1);
+			atomicAdd(countTagged, 1);
 		}
 	}
 	else {
@@ -251,6 +252,25 @@ __global__ void surface_restrict_particleset_kernel(SPH::UnifiedParticleSet* par
 	}
 
 }
+
+template<bool retagSameTag>
+__global__ void tag_outside_of_surface_kernel(SPH::UnifiedParticleSet* particleSet, BufferFluidSurface S,
+	int* countTagged, unsigned int tag) {
+	int i = blockIdx.x * blockDim.x + threadIdx.x;
+	if (i >= particleSet->numParticles) { return; }
+
+	if (!retagSameTag) {
+		if (particleSet->neighborsDataSet->cell_id[i] == tag) {
+			return;
+		}
+	}
+
+	if (!S.isinside(particleSet->pos[i]) ) {
+		particleSet->neighborsDataSet->cell_id[i] = tag;
+		atomicAdd(countTagged, 1);
+	}
+}
+
 
 
 //so this is the offset version for using when using a surface aggregation
@@ -880,7 +900,7 @@ __global__ void compute_density_and_extract_large_contribution_kernel(SPH::DFSPH
 	RealCuda densityConstant = 0;
 
 	{
-		ITER_NEIGHBORS_INIT(m_data, bufferSet, i);
+		ITER_NEIGHBORS_INIT(data, bufferSet, i);
 		SPH::UnifiedParticleSet* otherSet;
 
 		//I need to skip the fluid particles from the buffer since I only whan the constant contribution
