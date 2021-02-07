@@ -1555,6 +1555,7 @@ void DFSPHCUDA::step()
 				paramsLoading.show_debug = false;
 				paramsStabilization.show_debug = false;
 
+
 				//qsdqs
 				{
 					paramsTagging.displacement = Vector3d(-m_data.getKernelRadius() * 3, 0, 0);

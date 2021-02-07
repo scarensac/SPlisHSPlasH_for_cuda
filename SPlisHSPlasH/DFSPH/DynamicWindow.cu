@@ -2568,9 +2568,13 @@ int DynamicWindow::loadDataToSimulation(SPH::DFSPHCData& data, DynamicWindowInte
 		//also have to update the bounding box btw maybe I should simply redo the init of the offset and bounding box
 		//but it would take way more time that those simples add
 		//note: updating that offset means I also have to update the neighbors structure of the boundaries
-		data.gridOffset = data.gridOffsetAfterLastLoading+ ((data.dynamicWindowTotalDisplacement / data.getKernelRadius()).toFloor());
+		data.gridOffset = data.gridOffsetAfterLastLoading- ((data.dynamicWindowTotalDisplacement / data.getKernelRadius()).toFloor());
 		data.boundingBoxMin = data.boundingBoxMinAfterLastLoading+ data.dynamicWindowTotalDisplacement;
 		data.boundingBoxMax = data.boundingBoxMaxAfterLastLoading+ data.dynamicWindowTotalDisplacement;
+
+		
+		std::cout << "grid_offsets after displacement offset: " << data.gridOffset.toString() << std::endl;
+
 		data.boundaries_data->initNeighborsSearchData(data, false, false);
 
 		//ok so when keeping existing fluid i can't simply stock it in the background structure
