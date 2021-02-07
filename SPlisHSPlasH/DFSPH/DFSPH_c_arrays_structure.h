@@ -56,7 +56,8 @@ public:
     bool internal_buffers_allocated;
 
     Vector3d* intermediate_buffer_v3d ;
-    RealCuda* intermediate_buffer_real;
+	RealCuda* intermediate_buffer_real;
+	unsigned int* intermediate_buffer_uint;
 
     //pointer for the gpu storage (that should be a copy of this item but allocated on the gpu)
     NeighborsSearchDataSet* gpu_ptr;
@@ -308,6 +309,9 @@ public:
     RealCuda viscosity;
     RealCuda m_surfaceTension;
 	Vector3i gridOffset;
+	//this contains the initial offset I had after loading the data
+	//it is usefull for the dynamic boundary
+	Vector3i gridOffsetAfterLastLoading;
 	Vector3d dynamicWindowTotalDisplacement;
 
     RealCuda h;
@@ -370,6 +374,9 @@ public:
 	//this is a debug functionality
 	Vector3d boundingBoxMin;
 	Vector3d boundingBoxMax;
+	Vector3d boundingBoxMinAfterLastLoading;
+	Vector3d boundingBoxMaxAfterLastLoading;
+	
 
     //this variable is to make posssible the simulation of a restricted part of the simulation domain
     //it has 3 possible values: 0==>full simulation ; 1==>restricted by CellID ; 2==> restricted to the first part of the particle buffer

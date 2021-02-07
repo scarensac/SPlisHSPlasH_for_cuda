@@ -8,18 +8,18 @@
 
 
 namespace SPH {
-	class DynamicWindowInterface {
+	class DynamicWindowV1Interface {
 
 	public:
 
-		static void initDynamicWindow(DFSPHCData& data);
+		static void initDynamicWindowV1(DFSPHCData& data);
 
 		static bool isInitialized();
 
 
 		static void handleFluidBoundaries(SPH::DFSPHCData& data, SPH::Vector3d movement = SPH::Vector3d(0, 0, 0));
 
-		static void clearDynamicWindow();
+		static void clearDynamicWindowV1();
 
 		static void handleOceanBoundariesTest(SPH::DFSPHCData& data);
 

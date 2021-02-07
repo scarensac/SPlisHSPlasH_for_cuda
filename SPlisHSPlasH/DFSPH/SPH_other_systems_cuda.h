@@ -7,6 +7,7 @@
 #include "SPH_dynamic_window_buffer.h"
 #include "RestFLuidLoader.h"
 #include "openBoundariesSimple.h"
+#include "DynamicWindow.h"
 
 using namespace SPH;
 

@@ -16,6 +16,7 @@
 #include <random>
 #include <algorithm>
 #include "SPlisHSPlasH\DFSPH\OpenBoundariesSimple.h" 
+#include "SPlisHSPlasH\DFSPH\DynamicWindow.h" 
 
 // BENDER2019_BOUNDARIES includes
 #include "SPlisHSPlasH/BoundaryModel_Bender2019.h"
@@ -97,7 +98,7 @@ void DFSPHCUDA::step()
     m_data.viscosity = 0.02;
 #endif //SPLISHSPLASH_FRAMEWORK
 
-
+	std::chrono::steady_clock::time_point tpStartSimuStep = std::chrono::steady_clock::now();
 
     if (true) {
         m_data.destructor_activated = false;
@@ -1494,7 +1495,7 @@ void DFSPHCUDA::step()
         //*
 
 		//test the simple open boundaries
-		if (true) {
+		if (false) {
 			if (count_steps == 0) {
 				OpenBoundariesSimpleInterface::InitParameters initParams;
 				initParams.show_debug = true;
@@ -1517,6 +1518,121 @@ void DFSPHCUDA::step()
 
 
 
+
+		}
+
+		if (true) {
+			if (count_steps == 0) {
+				DynamicWindowInterface::InitParameters initParams;
+				initParams.show_debug = false;
+				initParams.simulation_config = 0;
+				initParams.air_particles_restriction = 1;
+				initParams.keep_existing_fluid = false;
+				initParams.clear_data = false;
+				initParams.max_allowed_displacement = m_data.getKernelRadius() * 4;
+				DynamicWindowInterface::init(m_data, initParams);
+
+				std::this_thread::sleep_for(std::chrono::nanoseconds(10));
+				std::this_thread::sleep_until(std::chrono::system_clock::now() + std::chrono::seconds(2));
+
+				count_steps++;
+				return;
+			}
+
+			//if (count_steps == 1)
+			if ((count_steps % 10) == 0) 
+			{
+
+
+				std::chrono::steady_clock::time_point tp1 = std::chrono::steady_clock::now();
+
+
+				DynamicWindowInterface::TaggingParameters paramsTagging;
+				DynamicWindowInterface::LoadingParameters paramsLoading;
+				DynamicWindowInterface::StabilizationParameters paramsStabilization;
+
+				paramsTagging.show_debug = false;
+				paramsLoading.show_debug = false;
+				paramsStabilization.show_debug = false;
+
+				//qsdqs
+				{
+					paramsTagging.displacement = Vector3d(-m_data.getKernelRadius() * 3, 0, 0);
+					paramsTagging.useRule2 = false;
+					paramsTagging.useRule3 = true;
+					paramsTagging.useStepSizeRegulator = true;
+					paramsTagging.min_step_density = 5;
+					paramsTagging.step_density = 60;
+					paramsTagging.density_end = 999;
+					paramsTagging.keep_existing_fluid = true;
+					paramsTagging.output_density_information = true;
+
+
+					paramsLoading.load_fluid = true;
+					paramsLoading.keep_existing_fluid = true;
+
+					DynamicWindowInterface::initializeFluidToSurface(m_data, paramsTagging, paramsLoading);
+				}
+
+
+				std::chrono::steady_clock::time_point tp2 = std::chrono::steady_clock::now();
+
+				{
+					paramsStabilization.max_iterEval = 30;
+
+					
+					paramsStabilization.method = 0;
+					paramsStabilization.timeStep = 0.003;
+					{
+						paramsStabilization.stabilize_tagged_only = true;
+						paramsStabilization.postUpdateVelocityDamping = false;
+						paramsStabilization.postUpdateVelocityClamping = false;
+						paramsStabilization.preUpdateVelocityClamping = false;
+
+
+						paramsStabilization.maxErrorD = 0.05;
+
+						paramsStabilization.useDivergenceSolver = true;
+						paramsStabilization.useExternalForces = true;
+
+						paramsStabilization.preUpdateVelocityDamping = true;
+						paramsStabilization.preUpdateVelocityDamping_val = 0.8;
+
+						paramsStabilization.stabilizationItersCount = 10;
+
+						paramsStabilization.reduceDampingAndClamping = true;
+						paramsStabilization.reduceDampingAndClamping_val = std::powf(0.2f / 
+							paramsStabilization.preUpdateVelocityDamping_val, 1.0f / (paramsStabilization.stabilizationItersCount - 1));
+
+						paramsStabilization.clearWarmstartAfterStabilization = false;
+					}
+					paramsStabilization.runCheckParticlesPostion = true;
+					paramsStabilization.interuptOnLostParticle = false;
+					paramsStabilization.reloadFluid = false;
+					paramsStabilization.evaluateStabilization = false;
+					paramsStabilization.min_stabilization_iter = 2;
+					paramsStabilization.stable_velocity_max_target = m_data.particleRadius*0.25 / m_data.get_current_timestep();
+					paramsStabilization.stable_velocity_avg_target = m_data.particleRadius*0.025 / m_data.get_current_timestep();
+
+
+					DynamicWindowInterface::stabilizeFluid(m_data, paramsStabilization);
+				}
+
+
+				std::chrono::steady_clock::time_point tp3 = std::chrono::steady_clock::now();
+
+				//this gives results in miliseconds
+				RealCuda time_p1 = std::chrono::duration_cast<std::chrono::nanoseconds> (tp2 - tp1).count() / 1000000.0f;
+				RealCuda time_p2 = std::chrono::duration_cast<std::chrono::nanoseconds> (tp3 - tp2).count() / 1000000.0f;
+
+				std::cout << " time dynamic window tag+load/stab/total: "<< time_p1 <<"  "<< time_p2 <<"  "<<
+					time_p1 + time_p2<< std::endl;
+				//std::this_thread::sleep_for(std::chrono::nanoseconds(10));
+				//std::this_thread::sleep_until(std::chrono::system_clock::now() + std::chrono::seconds(2));
+
+				//count_steps++;
+				//return;
+			}
 
 		}
 		
@@ -2067,6 +2183,12 @@ void DFSPHCUDA::step()
 #endif //SPLISHSPLASH_FRAMEWORK
 
 
+	std::chrono::steady_clock::time_point tpEndSimuStep = std::chrono::steady_clock::now();
+
+	//this gives results in miliseconds
+	RealCuda time_simu_step = std::chrono::duration_cast<std::chrono::nanoseconds> (tpEndSimuStep - tpStartSimuStep).count() / 1000000.0f;
+
+	std::cout << "time simu step: " << time_simu_step << std::endl;
 
 
     if(show_fluid_timings)

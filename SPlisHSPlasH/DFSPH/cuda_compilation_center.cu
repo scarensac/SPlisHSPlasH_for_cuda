@@ -34,5 +34,6 @@
 #include "SPH_dynamic_window_buffer.cu"
 #include "RestFluidLoader.cu"
 #include "OpenBoundariesSimple.cu"
+#include "DynamicWindow.cu"
 
 //test2

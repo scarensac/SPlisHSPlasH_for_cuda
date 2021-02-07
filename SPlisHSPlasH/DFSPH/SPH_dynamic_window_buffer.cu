@@ -85,7 +85,7 @@ __device__ void atomicToMax(RealCuda* addr, RealCuda value)
 
 
 namespace SPH {
-	class DynamicWindow {
+	class DynamicWindowV1 {
 
 	public:
 		bool initialized;
@@ -113,7 +113,7 @@ namespace SPH {
 		BorderHeightMap borderHeightMap;
 	
 	public:
-		DynamicWindow() {
+		DynamicWindowV1() {
 			initialized = false;
 
 			backgroundFluidBufferSet = NULL;
@@ -125,12 +125,12 @@ namespace SPH {
 			numParticles_base_from_surface = 0;
 		}
 
-		~DynamicWindow() {
+		~DynamicWindowV1() {
 
 		}
 
-		static DynamicWindow& getStructure() {
-			static DynamicWindow dwb;
+		static DynamicWindowV1& getStructure() {
+			static DynamicWindowV1 dwb;
 			return dwb;
 		}
 
@@ -198,31 +198,31 @@ namespace SPH {
 
 
 
-void DynamicWindowInterface::initDynamicWindow(DFSPHCData& data) {
-	DynamicWindow::getStructure().init(data);
+void DynamicWindowV1Interface::initDynamicWindowV1(DFSPHCData& data) {
+	DynamicWindowV1::getStructure().init(data);
 }
 
-bool DynamicWindowInterface::isInitialized() {
-	return DynamicWindow::getStructure().isInitialized();
+bool DynamicWindowV1Interface::isInitialized() {
+	return DynamicWindowV1::getStructure().isInitialized();
 }
 
-void DynamicWindowInterface::handleFluidBoundaries(SPH::DFSPHCData& data, Vector3d movement ) {
-	DynamicWindow::getStructure().handleFluidBoundaries(data, movement);
+void DynamicWindowV1Interface::handleFluidBoundaries(SPH::DFSPHCData& data, Vector3d movement ) {
+	DynamicWindowV1::getStructure().handleFluidBoundaries(data, movement);
 }
 
-void DynamicWindowInterface::clearDynamicWindow() {
-	DynamicWindow::getStructure().clear();
+void DynamicWindowV1Interface::clearDynamicWindowV1() {
+	DynamicWindowV1::getStructure().clear();
 }
 
 
-void DynamicWindowInterface::handleOceanBoundariesTest(SPH::DFSPHCData& data) {
-	//DynamicWindow::getStructure().handleOceanBoundariesTest(data); 
-	DynamicWindow::getStructure().handleOceanBoundariesTestCurrent(data);
+void DynamicWindowV1Interface::handleOceanBoundariesTest(SPH::DFSPHCData& data) {
+	//DynamicWindowV1::getStructure().handleOceanBoundariesTest(data); 
+	DynamicWindowV1::getStructure().handleOceanBoundariesTestCurrent(data);
 }
 
 /*
-void DynamicWindowInterface::initializeFluidToSurface(SPH::DFSPHCData& data) {
-	DynamicWindow::getStructure().initializeFluidToSurface(data);
+void DynamicWindowV1Interface::initializeFluidToSurface(SPH::DFSPHCData& data) {
+	DynamicWindowV1::getStructure().initializeFluidToSurface(data);
 }
 //*/
 
@@ -1382,9 +1382,9 @@ __global__ void DFSPH_particle_shifting_density_grid_kernel(SPH::DFSPHCData data
 }
 
 
-void DynamicWindow::init(DFSPHCData& data) {
+void DynamicWindowV1::init(DFSPHCData& data) {
 	if (initialized) {
-		throw("DynamicWindow::init the structure has already been initialized");
+		throw("DynamicWindowV1::init the structure has already been initialized");
 	}
 
 	int surfaceType = 1;
@@ -1392,7 +1392,7 @@ void DynamicWindow::init(DFSPHCData& data) {
 	if (surfaceType == 0) {
 		/*
 		std::ostringstream oss;
-		oss << "DynamicWindow::init The initialization for this type of surface has not been defined (type=" << surfaceType << std::endl;
+		oss << "DynamicWindowV1::init The initialization for this type of surface has not been defined (type=" << surfaceType << std::endl;
 		throw(oss.str());
 		//*/
 		//S_initial.setPlane(Vector3d(-1.8, 0, 0), Vector3d(1, 0, 0));
@@ -1425,7 +1425,7 @@ void DynamicWindow::init(DFSPHCData& data) {
 	}
 	else {
 		std::ostringstream oss;
-		oss << "DynamicWindow::init The initialization for this type of surface has not been defined (type=" << surfaceType << std::endl;
+		oss << "DynamicWindowV1::init The initialization for this type of surface has not been defined (type=" << surfaceType << std::endl;
 		throw(oss.str());
 	}
 	std::cout << "Initial surface description: " << S_initial.toString() << std::endl;
@@ -1592,7 +1592,7 @@ void DynamicWindow::init(DFSPHCData& data) {
 }
 
 
-void DynamicWindow::initStep(DFSPHCData& data, Vector3d movement, bool init_buffers_neighbors, bool init_fluid_neighbors) {
+void DynamicWindowV1::initStep(DFSPHCData& data, Vector3d movement, bool init_buffers_neighbors, bool init_fluid_neighbors) {
 	UnifiedParticleSet* particleSet = data.fluid_data;
 
 
@@ -1666,7 +1666,7 @@ void DynamicWindow::initStep(DFSPHCData& data, Vector3d movement, bool init_buff
 }
 
 
-void DynamicWindow::lightenBuffers(DFSPHCData& data) {
+void DynamicWindowV1::lightenBuffers(DFSPHCData& data) {
 	UnifiedParticleSet* particleSet = data.fluid_data;
 
 	//first let's lighten the buffers to reduce the computation times
@@ -1814,7 +1814,7 @@ void DynamicWindow::lightenBuffers(DFSPHCData& data) {
 
 }
 
-void DynamicWindow::fitFluidBuffer(DFSPHCData& data) {
+void DynamicWindowV1::fitFluidBuffer(DFSPHCData& data) {
 	UnifiedParticleSet* particleSet = data.fluid_data;
 
 	//ok since sampling the space regularly with particles to close the gap between the fluid and the buffer is realy f-ing hard
@@ -2024,7 +2024,7 @@ void DynamicWindow::fitFluidBuffer(DFSPHCData& data) {
 
 }
 
-void DynamicWindow::computeFluidBufferVelocities(DFSPHCData& data) {
+void DynamicWindowV1::computeFluidBufferVelocities(DFSPHCData& data) {
 	//I'll save the velocity field by setting the velocity of each particle to the weighted average of the three nearest
 		//or set it to 0, maybe I need to do smth intermediary
 	{
@@ -2035,7 +2035,7 @@ void DynamicWindow::computeFluidBufferVelocities(DFSPHCData& data) {
 	}
 }
 
-void DynamicWindow::addFluidBufferToSimulation(DFSPHCData& data) {
+void DynamicWindowV1::addFluidBufferToSimulation(DFSPHCData& data) {
 
 	UnifiedParticleSet* particleSet = data.fluid_data;
 	static int* countRmv = NULL;
@@ -2098,7 +2098,7 @@ void DynamicWindow::addFluidBufferToSimulation(DFSPHCData& data) {
 
 
 
-void DynamicWindow::applyParticleShiftNearSurface(DFSPHCData& data) {
+void DynamicWindowV1::applyParticleShiftNearSurface(DFSPHCData& data) {
 	UnifiedParticleSet* particleSet = data.fluid_data;
 	static int* outInt = NULL;
 	static RealCuda* outReal = NULL;
@@ -2530,9 +2530,9 @@ void DynamicWindow::applyParticleShiftNearSurface(DFSPHCData& data) {
 }
 
 
-void DynamicWindow::handleFluidBoundaries(SPH::DFSPHCData& data, Vector3d movement) {
+void DynamicWindowV1::handleFluidBoundaries(SPH::DFSPHCData& data, Vector3d movement) {
 	if (!isInitialized()) {
-		throw("DynamicWindow::handleFluidBoundaries the structure must be initialized before calling this function");
+		throw("DynamicWindowV1::handleFluidBoundaries the structure must be initialized before calling this function");
 	}
 
 
@@ -2556,7 +2556,7 @@ void DynamicWindow::handleFluidBoundaries(SPH::DFSPHCData& data, Vector3d moveme
 		evaluate_density_field(data, data.fluid_data);
 		
 		//reset the buffers
-		DynamicWindow::getStructure().initStep(data, movement, false);
+		DynamicWindowV1::getStructure().initStep(data, movement, false);
 
 
 		std::cout << "after boundary movement" << std::endl;
@@ -2565,24 +2565,24 @@ void DynamicWindow::handleFluidBoundaries(SPH::DFSPHCData& data, Vector3d moveme
 		timings.time_next_point();
 		
 		//lighten the buffer to lower computation time
-		DynamicWindow::getStructure().lightenBuffers(data);
+		DynamicWindowV1::getStructure().lightenBuffers(data);
 
 		//remove particles from the buffer that are inside the fluid that we will kepp so that
 		//the buffer will fit in the space where we will remove particles
-		DynamicWindow::getStructure().fitFluidBuffer(data);
+		DynamicWindowV1::getStructure().fitFluidBuffer(data);
 
 		timings.time_next_point();
 		
-		DynamicWindow::getStructure().computeFluidBufferVelocities(data);
+		DynamicWindowV1::getStructure().computeFluidBufferVelocities(data);
 
 		timings.time_next_point();
 
-		DynamicWindow::getStructure().addFluidBufferToSimulation(data);
+		DynamicWindowV1::getStructure().addFluidBufferToSimulation(data);
 
 		timings.time_next_point();
 
 	
-		DynamicWindow::getStructure().applyParticleShiftNearSurface(data);
+		DynamicWindowV1::getStructure().applyParticleShiftNearSurface(data);
 
 
 		timings.time_next_point();
@@ -2636,7 +2636,7 @@ void DynamicWindow::handleFluidBoundaries(SPH::DFSPHCData& data, Vector3d moveme
 
 		}
 
-		SPH::UnifiedParticleSet* fluidBufferSet = DynamicWindow::getStructure().fluidBufferSet;
+		SPH::UnifiedParticleSet* fluidBufferSet = DynamicWindowV1::getStructure().fluidBufferSet;
 
 		//re-init the neighbor structure to be able to compute the density
 		particleSet->initNeighborsSearchData(data, false);
@@ -3409,7 +3409,7 @@ __global__ void add_mass_delta_kernel(SPH::UnifiedParticleSet* particleSet, Real
 	particleSet->mass[i] += massDeltas[i];
 }
 
-void DynamicWindow::handleOceanBoundariesTestCurrent(SPH::DFSPHCData& data) {
+void DynamicWindowV1::handleOceanBoundariesTestCurrent(SPH::DFSPHCData& data) {
 	UnifiedParticleSet* particleSet = data.fluid_data;
 	
 	//just to be surre I have the necessary space to manipulate the particle number

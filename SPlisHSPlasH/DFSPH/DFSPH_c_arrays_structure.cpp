@@ -47,6 +47,7 @@ NeighborsSearchDataSet::NeighborsSearchDataSet()
 
 	intermediate_buffer_v3d = NULL;
 	intermediate_buffer_real = NULL;
+	intermediate_buffer_uint = NULL;
 
     gpu_ptr=NULL;
 
@@ -743,6 +744,7 @@ DFSPHCData::DFSPHCData() {
 	viscosity=0;
     m_surfaceTension=0.05;
     gridOffset=Vector3i(50);
+	gridOffsetAfterLastLoading = gridOffset;
 	dynamicWindowTotalDisplacement = Vector3d(0, 0, 0);
 
 
@@ -1008,6 +1010,8 @@ void DFSPHCData::initGridOffset(bool readInput, Vector3d min, Vector3d max) {
 
 	boundingBoxMin = min;
 	boundingBoxMax = max;
+	boundingBoxMinAfterLastLoading = boundingBoxMin;
+	boundingBoxMaxAfterLastLoading = boundingBoxMax;
 
 	Vector3i required_grid_size = ((max - min) / getKernelRadius()).toFloor();
 
@@ -1040,9 +1044,10 @@ void DFSPHCData::initGridOffset(bool readInput, Vector3d min, Vector3d max) {
 	}
 
 	//compute the offset
-	//just take the id of the min minus 1 (the minus 2 is just to be safe ad be compatible when the dynamic area is used)
+	//just take the id of the min minus 1 (the minus 5 is just to be safe and be compatible when the dynamic area is used)
 	//of course you need to take the negative of the result...
-	gridOffset = ((min / getKernelRadius()).toFloor() - 2)*-1;
+	gridOffset = ((min / getKernelRadius()).toFloor() - 5)*-1;
+	gridOffsetAfterLastLoading = gridOffset;
 
 	std::cout << "new grid offset(x y z): " << gridOffset.x << " " << gridOffset.y << " " << gridOffset.z << std::endl;
 }
@@ -1600,18 +1605,18 @@ void DFSPHCData::loadBender2019BoundariesFromCPU(RealCuda* V_rigids_i, Vector3d*
 
 
 void DFSPHCData::handleFluidBoundries( Vector3d movement) {
-	if (!DynamicWindowInterface::isInitialized()) {
-		DynamicWindowInterface::initDynamicWindow(*this);
+	if (!DynamicWindowV1Interface::isInitialized()) {
+		DynamicWindowV1Interface::initDynamicWindowV1(*this);
 	}
-	DynamicWindowInterface::handleFluidBoundaries(*this, movement);
+	DynamicWindowV1Interface::handleFluidBoundaries(*this, movement);
 }
 
 
 void DFSPHCData::handleBoundariesHeightTest() {
-	if (!DynamicWindowInterface::isInitialized()) {
-		DynamicWindowInterface::initDynamicWindow(*this);
+	if (!DynamicWindowV1Interface::isInitialized()) {
+		DynamicWindowV1Interface::initDynamicWindowV1(*this);
 	}
-	DynamicWindowInterface::handleOceanBoundariesTest(*this);
+	DynamicWindowV1Interface::handleOceanBoundariesTest(*this);
 }
 
 void DFSPHCData::initAdvancedRendering(int width, int height) {

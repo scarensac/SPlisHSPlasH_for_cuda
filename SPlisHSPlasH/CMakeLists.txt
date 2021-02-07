@@ -63,7 +63,9 @@ set(DFSPH_HEADER_FILES
 	DFSPH/SPH_dynamic_window_buffer.h
 	DFSPH/RestFluidLoader.h
 	DFSPH/OpenBoundariesSimple.h
+	DFSPH/DynamicWindow.h
 	)
+	
 	
 set(DFSPH_SOURCE_FILES
 	DFSPH/DFSPH_c_arrays_structure.cpp

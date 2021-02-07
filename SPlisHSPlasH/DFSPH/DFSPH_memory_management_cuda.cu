@@ -1189,7 +1189,10 @@ void allocate_neighbors_search_data_set(SPH::NeighborsSearchDataSet& dataSet, bo
 
 		cudaMalloc(&(dataSet.intermediate_buffer_v3d), dataSet.numParticlesMax * sizeof(Vector3d));
 		cudaMalloc(&(dataSet.intermediate_buffer_real), dataSet.numParticlesMax * sizeof(RealCuda));
+		cudaMalloc(&(dataSet.intermediate_buffer_uint), dataSet.numParticlesMax * sizeof(unsigned int));
 
+
+		
 		//reset the particle id
 		int numBlocks = calculateNumBlocks(dataSet.numParticlesMax);
 		DFSPH_setBufferValueToItself_kernel << <numBlocks, BLOCKSIZE >> > (dataSet.p_id, dataSet.numParticlesMax);
@@ -1258,6 +1261,7 @@ void release_neighbors_search_data_set(SPH::NeighborsSearchDataSet& dataSet, boo
 
 	CUDA_FREE_PTR(dataSet.intermediate_buffer_v3d);
 	CUDA_FREE_PTR(dataSet.intermediate_buffer_real);
+	CUDA_FREE_PTR(dataSet.intermediate_buffer_uint);
 
 	if (!keep_grid_related) {
 		CUDA_FREE_PTR(dataSet.hist);

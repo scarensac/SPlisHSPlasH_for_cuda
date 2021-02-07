@@ -195,17 +195,18 @@ void OpenBoundariesSimple::init(DFSPHCData& data, OpenBoundariesSimpleInterface:
 
 
 	//a test that replaces the fluid data with the inflow buffer data to see what is hapening
-	if(false){
-		data.fluid_data->updateActiveParticleNumber(inflowPositionsSet->numParticles);
+	if (false) {
+		UnifiedParticleSet* setToLoad = inflowPositionsSet;
+		data.fluid_data->updateActiveParticleNumber(setToLoad->numParticles);
 
-		gpuErrchk(cudaMemcpy(data.fluid_data->mass, inflowPositionsSet->mass, 
-			inflowPositionsSet->numParticles * sizeof(RealCuda), cudaMemcpyDeviceToDevice));
-		gpuErrchk(cudaMemcpy(data.fluid_data->pos, inflowPositionsSet->pos,
-			inflowPositionsSet->numParticles * sizeof(Vector3d), cudaMemcpyDeviceToDevice));
-		gpuErrchk(cudaMemcpy(data.fluid_data->vel, inflowPositionsSet->vel,
-			inflowPositionsSet->numParticles * sizeof(Vector3d), cudaMemcpyDeviceToDevice));
-		gpuErrchk(cudaMemcpy(data.fluid_data->color, inflowPositionsSet->color,
-			inflowPositionsSet->numParticles * sizeof(Vector3d), cudaMemcpyDeviceToDevice));
+		gpuErrchk(cudaMemcpy(data.fluid_data->mass, setToLoad->mass,
+			setToLoad->numParticles * sizeof(RealCuda), cudaMemcpyDeviceToDevice));
+		gpuErrchk(cudaMemcpy(data.fluid_data->pos, setToLoad->pos,
+			setToLoad->numParticles * sizeof(Vector3d), cudaMemcpyDeviceToDevice));
+		gpuErrchk(cudaMemcpy(data.fluid_data->vel, setToLoad->vel,
+			setToLoad->numParticles * sizeof(Vector3d), cudaMemcpyDeviceToDevice));
+		gpuErrchk(cudaMemcpy(data.fluid_data->color, setToLoad->color,
+			setToLoad->numParticles * sizeof(Vector3d), cudaMemcpyDeviceToDevice));
 
 	}
 

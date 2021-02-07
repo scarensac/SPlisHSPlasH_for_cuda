@@ -834,6 +834,9 @@ class SurfaceAggregation {
 	//false if we are using the intersection of the surfaces
 	bool isUnion;
 
+	//reverse the surface so that the exterior become the interior
+	bool isReversedSurface;
+
 	//to prevent the destruction when sending a copy to the kernels
 	bool destructorActivated;
 public:
@@ -860,6 +863,9 @@ public:
 
 	void setIsUnion(bool val) { isUnion = val; }
 
+	void setReversedSurface(bool v) { isReversedSurface = v; }
+	bool getReversedSurface() { return isReversedSurface; }
+
 	void addSurface(const BufferFluidSurface& s) {
 		//first make some space if needed
 		if (numSurface + 1 > numSurfaceMax) {
@@ -884,6 +890,14 @@ public:
 		surfaces[numSurface] = s;
 
 		numSurface++;
+	}
+
+	inline void setSurface(unsigned int i, const BufferFluidSurface& s) {
+		if (i >= numSurface) {
+			std::cout << "trying to acces a surface with ann id greate than the current number of existing surface in this aggregation" << std::endl;
+			gpuErrchk(cudaError_t::cudaErrorUnknown);
+		}
+		surfaces[i] = s;
 	}
 
 	void clear(bool in_depth = false) {
@@ -916,29 +930,37 @@ public:
 
 	//check if the point is inside the aggregatio of surface depending on the type of aggregation
 	FUNCTION bool isinside(Vector3d p) {
+		bool result = true;
+
+		//setthe result if not triggered during the loop
+		if (isUnion) {
+			//not iside a single surface
+			result = false;
+		}
+		else {
+			//inside all surfaces
+			result = true;
+		}
+
 		for (int i = 0; i < numSurface; ++i)
 		{
 			bool val = surfaces[i].isinside(p);
 
 			if (isUnion) {
 				//for a union I can return true as long as the point is inside at least one surface
-				if (val) { return true; }
+				if (val) { result = true; break; }
 			}
 			else {
 				//for an intersection I can return false is the point is outside of even one surface
-				if (!val) { return false; }
+				if (!val) { result = false; break; }
 			}
 		}
 
-		//if we reach each we know the result depending on the union bool
-		if (isUnion) {
-			//not iside a single surface
-			return false; 
+		if (getReversedSurface()) {
+			result = !result;
 		}
-		else {
-			//inside all surfaces
-			return true;
-		}
+
+		return result;
 	}
 
 	//WARNING curretnly this can only be used for intersection type of aggregation 

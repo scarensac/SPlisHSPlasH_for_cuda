@@ -267,9 +267,34 @@ __global__ void tag_outside_of_surface_kernel(SPH::UnifiedParticleSet* particleS
 
 	if (!S.isinside(particleSet->pos[i]) ) {
 		particleSet->neighborsDataSet->cell_id[i] = tag;
-		atomicAdd(countTagged, 1);
+		particleSet->color[i] = Vector3d(1,0,1);
+		if (countTagged != NULL) {
+			atomicAdd(countTagged, 1);
+		}
 	}
 }
+
+template<bool retagSameTag>
+__global__ void tag_outside_of_surface_kernel(SPH::UnifiedParticleSet* particleSet, SurfaceAggregation S,
+	int* countTagged, unsigned int tag) {
+	int i = blockIdx.x * blockDim.x + threadIdx.x;
+	if (i >= particleSet->numParticles) { return; }
+
+	if (!retagSameTag) {
+		if (particleSet->neighborsDataSet->cell_id[i] == tag) {
+			return;
+		}
+	}
+
+	if (!S.isinside(particleSet->pos[i]) ) {
+		particleSet->neighborsDataSet->cell_id[i] = tag;
+		particleSet->color[i] = Vector3d(1,0,1);
+		if (countTagged != NULL) {
+			atomicAdd(countTagged, 1);
+		}
+	}
+}
+
 
 
 
@@ -417,8 +442,11 @@ __global__ void tag_neighborhood_kernel(SPH::DFSPHCData data, SPH::UnifiedPartic
 	int i = blockIdx.x * blockDim.x + threadIdx.x;
 	if (i >= particleSet->numParticles) { return; }
 
-	ITER_NEIGHBORS_INIT_CELL_COMPUTATION(particleSet->pos[i], data.getKernelRadius(), data.gridOffset);
+	if (particleSet->neighborsDataSet->cell_id[i] == TAG_REMOVAL) {
+		return;
+	}
 
+	ITER_NEIGHBORS_INIT_CELL_COMPUTATION(particleSet->pos[i], data.getKernelRadius(), data.gridOffset);
 
 	//override the kernel distance
 	radius_sq = limit_distance * limit_distance;
@@ -608,8 +636,10 @@ __global__ void evaluate_and_tag_high_density_from_buffer_kernel(SPH::DFSPHCData
 		ITER_NEIGHBORS_INIT_FROM_STRUCTURE(data, bufferSet, i);
 		ITER_NEIGHBORS_FROM_STRUCTURE(existingFluidSet->neighborsDataSet, existingFluidSet->pos,
 			{
-				RealCuda density_delta = existingFluidSet->getMass(j) * KERNEL_W(data, p_i - existingFluidSet->pos[j]);
-				density += density_delta;
+				if (existingFluidSet->neighborsDataSet->cell_id[j] != TAG_REMOVAL) {
+					RealCuda density_delta = existingFluidSet->getMass(j) * KERNEL_W(data, p_i - existingFluidSet->pos[j]);
+					density += density_delta;
+				}
 			});
 	}
 
@@ -956,8 +986,10 @@ __global__ void compute_density_and_extract_large_contribution_kernel(SPH::DFSPH
 		ITER_NEIGHBORS_INIT_FROM_STRUCTURE(data, bufferSet, i);
 		ITER_NEIGHBORS_FROM_STRUCTURE(existingFluidSet->neighborsDataSet, existingFluidSet->pos,
 			{
-				RealCuda density_delta = existingFluidSet->getMass(j) * KERNEL_W(data, p_i - existingFluidSet->pos[j]);
-				densityConstant += density_delta;
+				if (existingFluidSet->neighborsDataSet->cell_id[j] != TAG_REMOVAL) {
+					RealCuda density_delta = existingFluidSet->getMass(j) * KERNEL_W(data, p_i - existingFluidSet->pos[j]);
+					densityConstant += density_delta;
+				}
 			});
 	}
 
