@@ -2559,10 +2559,11 @@ int DynamicWindow::loadDataToSimulation(SPH::DFSPHCData& data, DynamicWindowInte
 
 		timings.time_next_point();//time
 
-		std::cout << "count particle after fusion actual/expected" <<
-			data.fluid_data->numParticles << "  " <<
-			count_existing_fluid_particles+ count_potential_fluid -count_to_rmv << "  " << std::endl;
-
+		if (params.show_debug) {
+			std::cout << "count particle after fusion actual/expected" <<
+				data.fluid_data->numParticles << "  " <<
+				count_existing_fluid_particles+ count_potential_fluid -count_to_rmv << "  " << std::endl;
+		}
 		//and now I can update the offset that is used for the neighbors grid
 		//for that I can simply look at the total displacement that the dynamic windo has ever made
 		//also have to update the bounding box btw maybe I should simply redo the init of the offset and bounding box
@@ -2572,8 +2573,10 @@ int DynamicWindow::loadDataToSimulation(SPH::DFSPHCData& data, DynamicWindowInte
 		data.boundingBoxMin = data.boundingBoxMinAfterLastLoading+ data.dynamicWindowTotalDisplacement;
 		data.boundingBoxMax = data.boundingBoxMaxAfterLastLoading+ data.dynamicWindowTotalDisplacement;
 
-		
-		std::cout << "grid_offsets after displacement offset: " << data.gridOffset.toString() << std::endl;
+
+		if (params.show_debug) {
+			std::cout << "offsets after displacement offset: " << data.gridOffset.toString() << std::endl;
+		}
 
 		data.boundaries_data->initNeighborsSearchData(data, false, false);
 

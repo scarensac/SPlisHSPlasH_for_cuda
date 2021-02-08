@@ -149,6 +149,100 @@ void timeStep ()
 			else {
 				updateBoundaryForces();
 		
+				bool controlBoat = true;
+				if (controlBoat) {
+					FluidModel::RigidBodyParticleObject *rbpo = base.getSimulationMethod().model.getRigidBodyParticleObject(1);
+					RigidBodyObject *rbo = rbpo->m_rigidBody;
+					if (rbo->isDynamic())
+					{
+						//std::cout << "test nbr particle boat: " << rbpo->numberOfParticles() << std::endl;
+						//Vector3r angles= rbo->getRotation().eulerAngles(0, 1, 2);
+						//std::cout << "boat euler angles: " << angles[0] << "  " << angles[1] << "  " << angles[2] << std::endl;
+
+						//a system to counter gravity to debug the boat control
+						if (false&&rbo->getPosition()[1] < 1.5) {
+							Vector3r f_counter_grav(0, 1200, 0);
+							rbo->addForce(f_counter_grav);
+						}
+
+						//a system that deactivate a boat control key when the oposite key is pressed
+						static bool boatForward_old = false;
+						static bool boatBackward_old = false;
+						static bool boatLeft_old = false;
+						static bool boatRight_old = false;
+
+						if (boatForward_old&&base.getBoatBackward()) {
+							base.setBoatForward(false);
+						}
+
+						if (boatBackward_old&&base.getBoatForward()) {
+							base.setBoatBackward(false);
+						}
+
+						if (boatLeft_old&&base.getBoatRight()) {
+							base.setBoatLeft(false);
+						}
+
+						if (boatRight_old&&base.getBoatLeft()) {
+							base.setBoatRight(false);
+						}
+
+						//and save the keyboard state for next iter
+						boatForward_old = base.getBoatForward();
+						boatBackward_old = base.getBoatBackward();
+						boatLeft_old = base.getBoatLeft();
+						boatRight_old = base.getBoatRight();
+
+						//apply the boat control
+						Matrix3r rot_marix=rbo->getRotation();
+						//*
+						//this should have the boat base direction as a default value
+						Vector3r boatControlForce(1,0,0);
+						float controlForceIntensity = base.getBoatForceIntensity();
+						if (base.getBoatForward()) {
+							boatControlForce *= controlForceIntensity;
+						}
+						else if (base.getBoatBackward()) {
+							boatControlForce *= -controlForceIntensity;
+						}
+						else {
+							boatControlForce = Vector3r(0, 0, 0);
+						}
+						if (boatControlForce.norm() > 1e-6) {
+							//convert the force to global coordinates
+							boatControlForce= rot_marix*boatControlForce;
+
+							//apply the force
+							rbo->addForce(boatControlForce);
+						}
+						//*/
+
+						//*
+						Vector3r boatControlTorque(0, 0, -1);
+						float controlTorqueIntensity = base.getBoatTorqueIntensity();
+						if (base.getBoatLeft()) {
+							boatControlTorque *= controlTorqueIntensity;
+						}
+						else if (base.getBoatRight()) {
+							boatControlTorque *= -controlTorqueIntensity;
+						}
+						else {
+							boatControlTorque = Vector3r(0, 0, 0);
+						}
+						if (boatControlTorque.norm() > 1e-6) {
+							//convert the torque to global coordinates
+							boatControlTorque = rot_marix * boatControlTorque;
+
+							//apply the torque
+							rbo->addTorque(boatControlTorque);
+						}
+						//*/
+
+						//std::cout << "control intensity force/torque: " << controlForceIntensity << "  " << controlTorqueIntensity << std::endl;
+
+					}
+				}
+
 			//////////////////////////////////////////////////////////////////////////
 			// PBD
 			//////////////////////////////////////////////////////////////////////////

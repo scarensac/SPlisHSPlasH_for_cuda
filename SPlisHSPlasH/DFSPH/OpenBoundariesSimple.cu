@@ -47,9 +47,14 @@ namespace SPH {
 		//an unified particle set to load it I might as well keep it it may be usefull oneday
 		UnifiedParticleSet* inflowPositionsSet;
 
+		//variable to rememeber the current displacement that has been applyed due to the dynamic window
+		Vector3d currentWindowDisplacement;
+
+
 		OpenBoundariesSimple() {
 			_isinitialized = false;
 			inflowPositionsSet = NULL;
+			currentWindowDisplacement = Vector3d(0, 0, 0);
 		};
 
 		~OpenBoundariesSimple() {
@@ -355,6 +360,35 @@ void OpenBoundariesSimple::applyOpenBoundary(DFSPHCData& data, OpenBoundariesSim
 	if (!isInitialized()) {
 		std::cout << "OpenBoundariesSimple::applyOpenBoundary the structure need to be initialized before" << std::endl;
 		return;
+	}
+
+	//ok so this is the integration to make the open boundaries work with the dynamic window
+	//I'll only takethe easy way out.
+	//the best way to do it would be to add the window displacement to the positions when doing the computations I guess
+	//but adding it all at once should be fine
+	//I just need to memorize the displacement that is currently applied
+	//to cancel it out when a new one is set
+	Vector3d deltaDisplacement = data.dynamicWindowTotalDisplacement - currentWindowDisplacement;
+	if (deltaDisplacement.squaredNorm() > 1e-6) {
+		//first let's move the surfaces
+		S_boundary.move(deltaDisplacement);
+		S_fluidInterior.move(deltaDisplacement);
+		S_fluidSurface.move(deltaDisplacement);
+
+		//and we also nee to move the inflow set
+		{
+			int numBlocks = calculateNumBlocks(inflowPositionsSet->numParticles);
+			apply_delta_to_buffer_kernel << <numBlocks, BLOCKSIZE >> > (inflowPositionsSet->pos, deltaDisplacement, inflowPositionsSet->numParticles);
+			gpuErrchk(cudaDeviceSynchronize());
+		}
+
+		//and update the current displacement
+		currentWindowDisplacement = data.dynamicWindowTotalDisplacement;
+
+		if (params.show_debug) {
+			std::cout << "had to displace the buffers total/delta: " << currentWindowDisplacement.toString() << " // " <<
+				deltaDisplacement.toString() << std::endl;
+		}
 	}
 
 	//first let's apply the inflow

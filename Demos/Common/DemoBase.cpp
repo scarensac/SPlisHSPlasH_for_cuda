@@ -49,6 +49,14 @@ DemoBase::DemoBase()
 	m_moveForwardZ = false;
 	m_moveBackwardZ = false;
 
+	m_boatForward = false;
+	m_boatBackward = false;
+	m_boatLeft = false;
+	m_boatRight = false;
+	m_boatForceIntensity=10;
+	m_boatTorqueIntensity=5;
+
+
 	m_adaptFluidLevel=false;
 	m_targetFluidLevel=1.0;
 }
@@ -248,10 +256,13 @@ void DemoBase::initParameters()
 	TwAddVarRW(MiniGL::getTweakBar(), "SaveSimulation", TW_TYPE_BOOLCPP, &m_saveSimulation, " label='save simulation state' group=Simulation key=b ");
 	TwAddVarRW(MiniGL::getTweakBar(), "LoadSimulation", TW_TYPE_BOOLCPP, &m_loadSimulation, " label='load simulation state' group=Simulation key=c ");
 	TwAddVarRW(MiniGL::getTweakBar(), "zeroVelocities", TW_TYPE_BOOLCPP, &m_zeroVelocities, " label='set fluid velocities to zero' group=Simulation key=m ");
-	TwAddVarRW(MiniGL::getTweakBar(), "moveBackwardX", TW_TYPE_BOOLCPP, &m_moveBackwardX, " label='moveBackwardX' group=Simulation key=y ");
-	TwAddVarRW(MiniGL::getTweakBar(), "moveFowardX", TW_TYPE_BOOLCPP, &m_moveForwardX, " label='moveFowardX' group=Simulation key=u");
-	TwAddVarRW(MiniGL::getTweakBar(), "moveBackwardZ", TW_TYPE_BOOLCPP, &m_moveBackwardZ, " label='moveBackwardZ' group=Simulation key=h ");
-	TwAddVarRW(MiniGL::getTweakBar(), "moveFowardZ", TW_TYPE_BOOLCPP, &m_moveForwardZ, " label='moveFowardZ' group=Simulation key=j ");
+	TwAddVarRW(MiniGL::getTweakBar(), "boatForward", TW_TYPE_BOOLCPP, &m_boatForward, " label='boatForward (z)' group=Simulation key=z");
+	TwAddVarRW(MiniGL::getTweakBar(), "boatBackward", TW_TYPE_BOOLCPP, &m_boatBackward, " label='boatBackward (s)' group=Simulation key=s ");
+	TwAddVarRW(MiniGL::getTweakBar(), "boatLeft", TW_TYPE_BOOLCPP, &m_boatLeft, " label='boatLeft (q)' group=Simulation key=q");
+	TwAddVarRW(MiniGL::getTweakBar(), "boatRight", TW_TYPE_BOOLCPP, &m_boatRight, " label='boatRight (d)' group=Simulation key=d");
+	TwAddVarRW(MiniGL::getTweakBar(), "boatForceIntensity", TW_TYPE_REAL, &m_boatForceIntensity, " label='boatForceIntensity' step=1 precision=3 group=Simulation ");
+	TwAddVarRW(MiniGL::getTweakBar(), "boatTorqueIntensity", TW_TYPE_REAL, &m_boatTorqueIntensity, " label='boatTorqueIntensity' step=1 precision=3 group=Simulation ");
+
 	TwAddVarRW(MiniGL::getTweakBar(), "AdaptFluidLevel", TW_TYPE_BOOLCPP, &m_adaptFluidLevel, " label='AdaptLiquidLevel' group=Simulation key=p ");
 	TwAddVarRW(MiniGL::getTweakBar(), "TargetFluidLevel", TW_TYPE_REAL, &m_targetFluidLevel, " label='TargetFluidLevel' step=0.05 precision=3 group=Simulation ");
 	TwAddVarRW(MiniGL::getTweakBar(), "PauseAt", TW_TYPE_REAL, &m_pauseAt, " label='Pause simulation at' step=0.001 precision=4 group=Simulation ");

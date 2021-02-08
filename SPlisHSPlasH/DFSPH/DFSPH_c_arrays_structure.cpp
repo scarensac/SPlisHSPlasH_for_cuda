@@ -282,7 +282,7 @@ void UnifiedParticleSet::updateDynamicBodiesParticles(T* particleObj) {
 		
 			updateDynamicBodiesParticles(position, velocity, q, angular_vel);
 
-			//*
+			/*
 			static Vector3d angles(0);
 			angles += 0.003*angular_vel;
 			std::cout << "Pos obj: " << position.toString() <<"   "<<angular_vel.toString()<<"  "<<angles.toString()<< std::endl;

@@ -92,6 +92,14 @@ namespace SPH
 		bool m_moveForwardZ;
 		bool m_moveBackwardZ;
 
+		//for the boat control
+		bool m_boatForward;
+		bool m_boatBackward;
+		bool m_boatLeft;
+		bool m_boatRight;
+		Real m_boatForceIntensity;
+		Real m_boatTorqueIntensity;
+
 		//for the control of the fluid level
 		bool m_adaptFluidLevel;
 		Real m_targetFluidLevel;
@@ -159,6 +167,17 @@ namespace SPH
 		void resetSimulationMovement() { m_moveForwardX = false; m_moveBackwardX = false; m_moveForwardZ = false; m_moveBackwardZ = false;}
 		Real getFLuidLevelTarget() { return (m_adaptFluidLevel) ? m_targetFluidLevel : -1.0f; }
 		void setFluidLevelControl(bool val) { m_adaptFluidLevel = val; }
+		bool getBoatForward() { return m_boatForward; }
+		bool getBoatBackward() { return m_boatBackward; }
+		bool getBoatLeft() { return m_boatLeft; }
+		bool getBoatRight() { return m_boatRight; }
+		void setBoatForward(bool val) { m_boatForward = val; }
+		void setBoatBackward(bool val) { m_boatBackward = val; }
+		void setBoatLeft(bool val) { m_boatLeft = val; }
+		void setBoatRight(bool val) { m_boatRight = val; }
+		Real getBoatForceIntensity() { return m_boatForceIntensity; }
+		Real getBoatTorqueIntensity() { return m_boatTorqueIntensity; }
+
 
 		std::vector<unsigned int>& getSelectedParticles() { return m_selectedParticles; }
 		bool getUseParticleCaching() const { return m_useParticleCaching; }

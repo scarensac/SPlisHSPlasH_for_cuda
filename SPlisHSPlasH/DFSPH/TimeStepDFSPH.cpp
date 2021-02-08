@@ -122,7 +122,7 @@ void TimeStepDFSPH::step()
 	//*
 	static int count_step = 0;
 	count_step++;
-	std::cout << count_step << " " << m_iterations << " " << m_iterationsV << std::endl;
+	//std::cout << count_step << " " << m_iterations << " " << m_iterationsV << std::endl;
 	//*/
 }
 
