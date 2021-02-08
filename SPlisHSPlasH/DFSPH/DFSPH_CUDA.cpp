@@ -1523,6 +1523,7 @@ void DFSPHCUDA::step()
 
 
 
+
 		}
 
 		if (true) {
@@ -1538,12 +1539,28 @@ void DFSPHCUDA::step()
 
 			}
 			else {
+				Vector3d potentialDisplacement(3 * m_data.getKernelRadius(), 0, 0);
+				if (m_data.numDynamicBodies > 0) {
+					Vector3d current_center=m_data.dynamicWindowTotalDisplacement;
+					Vector3d cur_interest_position=m_data.vector_dynamic_bodies_data[0].rigidBody_cpu->position;
+					potentialDisplacement = cur_interest_position - current_center;
+					potentialDisplacement.y = 0;
+				}
+
 
 				//m_data.vector_dynamic_bodies_data->rigidBody_cpu->position;
 				//if (count_steps == 1)
 				//if ((count_steps % 10) == 0)
-				if(false)
+				//if (false)
+				if (potentialDisplacement.norm()>(m_data.getKernelRadius()*2.5))
 				{
+					//set a limit to the displacement
+					RealCuda max_displacement_norm = (m_data.getKernelRadius()*3.5);
+					if (potentialDisplacement.norm() > max_displacement_norm) {
+						potentialDisplacement.toUnit();
+						potentialDisplacement *= max_displacement_norm;
+					}
+
 
 
 					std::chrono::steady_clock::time_point tp1 = std::chrono::steady_clock::now();
@@ -1560,7 +1577,8 @@ void DFSPHCUDA::step()
 
 					//qsdqs
 					{
-						paramsTagging.displacement = Vector3d(-m_data.getKernelRadius() * 3, 0, 0);
+						//paramsTagging.displacement = Vector3d(-m_data.getKernelRadius() * 3, 0, 0);
+						paramsTagging.displacement = potentialDisplacement;
 						paramsTagging.useRule2 = false;
 						paramsTagging.useRule3 = true;
 						paramsTagging.useStepSizeRegulator = true;
@@ -1616,6 +1634,7 @@ void DFSPHCUDA::step()
 						paramsStabilization.min_stabilization_iter = 2;
 						paramsStabilization.stable_velocity_max_target = m_data.particleRadius*0.25 / m_data.get_current_timestep();
 						paramsStabilization.stable_velocity_avg_target = m_data.particleRadius*0.025 / m_data.get_current_timestep();
+
 
 
 						DynamicWindowInterface::stabilizeFluid(m_data, paramsStabilization);
@@ -1961,6 +1980,9 @@ void DFSPHCUDA::step()
         static float total_time = 0;
         total_time += time_iter;
 
+		
+		//std::cout << "check density and divergence targetsand iter densityiter/diviter/densityerr/diverr: " <<
+		//	m_maxError << "  " << m_maxIterations << "  " << m_maxErrorV << "  " << m_maxIterationsV << std::endl;
 
         static float iter_pressure_avg = 0;
         static float iter_divergence_avg = 0;

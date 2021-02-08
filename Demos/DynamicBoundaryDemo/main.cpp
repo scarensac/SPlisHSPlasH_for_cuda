@@ -197,7 +197,7 @@ void timeStep ()
 						Matrix3r rot_marix=rbo->getRotation();
 						//*
 						//this should have the boat base direction as a default value
-						Vector3r boatControlForce(1,0,0);
+						Vector3r boatControlForce(-1,0,0);
 						float controlForceIntensity = base.getBoatForceIntensity();
 						if (base.getBoatForward()) {
 							boatControlForce *= controlForceIntensity;

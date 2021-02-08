@@ -25,10 +25,10 @@
 	"RigidBodies": [
 		{
 			"geometryFile": "../models/UnitBox.obj",
-			"translation": [0,2.5,0],
+			"translation": [0,-1,0],
 			"rotationAxis": [1, 0, 0],
 			"rotationAngle": 0,
-			"scale": [1, 5, 1],
+			"scale": [0.5, 0.5, 0.5],
 			"color": [0.1, 0.4, 0.6, 1.0], 
 			"isDynamic": false,
 			"isWall": true,
@@ -37,12 +37,12 @@
 			"mapResolution": [40,30,15]
 		},
 		{
-			"geometryFile": "../models/simple_boat.obj",
-			"density":600, 
+			"geometryFile": "../models/simple_boatv2.obj",
+			"density":800, 
 			"translation": [-0.5,1.4,0],
 			"rotationAxis": [1, 0, 0],
 			"rotationAngle": 0,
-			"scale": [0.25, 0.25, 0.25],
+			"scale": [0.3, 0.3, 0.3],
 			"color": [0.1, 0.4, 0.6, 1.0], 
 			"isDynamic": true,
 			"isWall": false,
@@ -54,8 +54,8 @@
 	"FluidBlocks": [
 		{
 			"denseMode": 0,
-			"start": [-0.2, 0.0, -0.2],
-			"end": [0.2, 0.5, 0.2],
+			"start": [-0.1, -1.1, -0.1],
+			"end": [0.1, -0.9, 0.1],
 			"translation": [0.0, 0.0, 0.0],
 			"scale": [1, 1, 1]
 		}

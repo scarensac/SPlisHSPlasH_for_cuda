@@ -2414,6 +2414,9 @@ int DynamicWindow::loadDataToSimulation(SPH::DFSPHCData& data, DynamicWindowInte
 			set_buffer_to_value<Vector3d>(backgroundFluidBufferSet->color, Vector3d(0,1,0), backgroundFluidBufferSet->numParticles);
 		}
 
+		//set the buffer velocities to 0 to be sure
+		set_buffer_to_value<Vector3d>(backgroundFluidBufferSet->vel, Vector3d(0, 0, 0), count_existing_fluid_particles);
+
 		gpuErrchk(cudaMemcpy(data.fluid_data->mass + count_existing_fluid_particles, backgroundFluidBufferSet->mass,
 			count_potential_fluid * sizeof(RealCuda), cudaMemcpyDeviceToDevice));
 		gpuErrchk(cudaMemcpy(data.fluid_data->pos + count_existing_fluid_particles, backgroundFluidBufferSet->pos,
@@ -2551,9 +2554,7 @@ int DynamicWindow::loadDataToSimulation(SPH::DFSPHCData& data, DynamicWindowInte
 		set_buffer_to_value<RealCuda>(data.fluid_data->kappa, 0, data.fluid_data->numParticles);
 		set_buffer_to_value<RealCuda>(data.fluid_data->kappaV, 0, data.fluid_data->numParticles);
 
-		//I'll also clear the velocities for now since I'll load fluid at rest
-		//this will have to be removed at some point in the future
-		set_buffer_to_value<Vector3d>(data.fluid_data->vel, Vector3d(0, 0, 0), data.fluid_data->numParticles);
+		
 
 		nbr_fluid_particles = data.fluid_data->numParticles;
 
@@ -2741,6 +2742,24 @@ int DynamicWindow::loadDataToSimulation(SPH::DFSPHCData& data, DynamicWindowInte
 
 	return nbr_fluid_particles;
 }
+
+
+template<class T> __global__ void cuda_applyFactorToTaggedParticles_kernel(T* buff, T value, unsigned int buff_size,
+	unsigned int* tag_array, unsigned int tag) {
+	int i = blockIdx.x * blockDim.x + threadIdx.x;
+	if (i >= buff_size) { return; }
+
+	if (tag_array[i] == tag) {
+		buff[i] *= value;
+	}
+}
+template __global__ void cuda_applyFactorToTaggedParticles_kernel<Vector3d>(Vector3d* buff, Vector3d value, unsigned int buff_size,
+	unsigned int* tag_array, unsigned int tag);
+template __global__ void cuda_applyFactorToTaggedParticles_kernel<int>(int* buff, int value, unsigned int buff_size,
+	unsigned int* tag_array, unsigned int tag);
+template __global__ void cuda_applyFactorToTaggedParticles_kernel<RealCuda>(RealCuda* buff, RealCuda value, unsigned int buff_size,
+	unsigned int* tag_array, unsigned int tag);
+
 
 
 
@@ -3266,13 +3285,19 @@ void DynamicWindow::stabilizeFluid(SPH::DFSPHCData& data, DynamicWindowInterface
 					}
 				}
 
-
+				
 				if (preUpdateVelocityDamping) {
-					apply_factor_to_buffer(data.fluid_data->vel, Vector3d(preUpdateVelocityDamping_val), data.fluid_data->numParticles);
+					int numBlocks = calculateNumBlocks(data.fluid_data->numParticles);
+					cuda_applyFactorToTaggedParticles_kernel<Vector3d> << <numBlocks, BLOCKSIZE >> > (data.fluid_data->vel,
+						Vector3d(preUpdateVelocityDamping_val), data.fluid_data->numParticles,
+						data.fluid_data->neighborsDataSet->cell_id, TAG_ACTIVE);
+					gpuErrchk(cudaDeviceSynchronize());
 				}
 
 				if (preUpdateVelocityClamping) {
-					clamp_buffer_to_value<Vector3d, 4>(data.fluid_data->vel, Vector3d(preUpdateVelocityClamping_val), data.fluid_data->numParticles);
+					std::cout << "currently unsusable, need to create a function that clamp tagged only to be reactivated" << std::endl;
+					gpuErrchk(cudaError_t::cudaErrorUnknown);
+					//clamp_buffer_to_value<Vector3d, 4>(data.fluid_data->vel, Vector3d(preUpdateVelocityClamping_val), data.fluid_data->numParticles);
 				}
 
 				if (false) {
@@ -3353,11 +3378,17 @@ void DynamicWindow::stabilizeFluid(SPH::DFSPHCData& data, DynamicWindowInterface
 
 
 				if (postUpdateVelocityDamping) {
-					apply_factor_to_buffer(data.fluid_data->vel, Vector3d(postUpdateVelocityDamping_val), data.fluid_data->numParticles);
+					int numBlocks = calculateNumBlocks(data.fluid_data->numParticles);
+					cuda_applyFactorToTaggedParticles_kernel<Vector3d> << <numBlocks, BLOCKSIZE >> > (data.fluid_data->vel,
+						Vector3d(postUpdateVelocityDamping_val), data.fluid_data->numParticles,
+						data.fluid_data->neighborsDataSet->cell_id, TAG_ACTIVE);
+					gpuErrchk(cudaDeviceSynchronize());
 				}
 
 				if (postUpdateVelocityClamping) {
-					clamp_buffer_to_value<Vector3d, 4>(data.fluid_data->vel, Vector3d(postUpdateVelocityClamping_val), data.fluid_data->numParticles);
+					std::cout << "currently unsusable, need to create a function that clamp tagged only to be reactivated" << std::endl;
+					gpuErrchk(cudaError_t::cudaErrorUnknown);
+					//clamp_buffer_to_value<Vector3d, 4>(data.fluid_data->vel, Vector3d(postUpdateVelocityClamping_val), data.fluid_data->numParticles);
 				}
 
 				//I need to force 0 on the density adv buffer since the neighbors may change between iterations
@@ -3478,8 +3509,10 @@ void DynamicWindow::stabilizeFluid(SPH::DFSPHCData& data, DynamicWindowInterface
 		}
 		gpuErrchk(read_last_error_cuda("check stable after stabilization ", params.show_debug));
 		
-		std::cout << "DynamicWindow::stabilizeFluid checking the restriction mode and the true particle count after end" <<
-			data.restriction_mode << "   " << data.true_particle_count << std::endl;
+		if(params.show_debug) {
+			std::cout << "DynamicWindow::stabilizeFluid checking the restriction mode and the true particle count after end" <<
+				data.restriction_mode << "   " << data.true_particle_count << std::endl;
+		}
 
 		data.fluid_data->updateActiveParticleNumber(count_fluid_particles);
 		//reset that anyway, worse case possible it is already equals to -1
@@ -3497,7 +3530,16 @@ void DynamicWindow::stabilizeFluid(SPH::DFSPHCData& data, DynamicWindowInterface
 			set_buffer_to_value<RealCuda>(data.fluid_data->kappa, 0, data.fluid_data->numParticles);
 			set_buffer_to_value<RealCuda>(data.fluid_data->kappaV, 0, data.fluid_data->numParticles);
 		}
-		set_buffer_to_value<Vector3d>(data.fluid_data->vel, Vector3d(0), data.fluid_data->numParticles);
+
+		//zero the velocity of actives particles
+		{
+			int numBlocks = calculateNumBlocks(data.fluid_data->numParticles);
+			cuda_applyFactorToTaggedParticles_kernel<Vector3d> << <numBlocks, BLOCKSIZE >> > (data.fluid_data->vel,
+				Vector3d(0), data.fluid_data->numParticles,
+				data.fluid_data->neighborsDataSet->cell_id, TAG_ACTIVE);
+			gpuErrchk(cudaDeviceSynchronize());
+		}
+
 
 		//set the timestep back to the previous one
 		data.updateTimeStep(old_timeStep);

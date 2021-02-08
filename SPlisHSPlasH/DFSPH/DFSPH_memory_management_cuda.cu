@@ -1044,7 +1044,8 @@ void add_particles_cuda(SPH::UnifiedParticleSet& container, int num_additional_p
 
 }
 
-template<class T> void set_buffer_to_value(T* buff, T val, int size) {
+template<class T> 
+void set_buffer_to_value(T* buff, T val, int size) {
 	if (size < 1) {
 		return;
 	}
@@ -1058,7 +1059,8 @@ template<class T> void set_buffer_to_value(T* buff, T val, int size) {
 template void set_buffer_to_value<Vector3d>(Vector3d* buff, Vector3d val, int size);
 template void set_buffer_to_value<int>(int* buff, int val, int size);
 
-template<class T> void apply_factor_to_buffer(T* buff, T val, int size) {
+template<class T> 
+void apply_factor_to_buffer(T* buff, T val, int size) {
 	//can't use memeset for the mass so I have to make a kernel for the  set
 	int numBlocks = calculateNumBlocks(size);
 	cuda_applyFactorToBuffer_kernel<T> << <numBlocks, BLOCKSIZE >> > (buff, val, size);
