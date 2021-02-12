@@ -341,7 +341,7 @@ __global__ void surface_restrict_particleset_kernel(SPH::UnifiedParticleSet* par
 	dist = S_simu_aggr.distanceSigned<true, false>(particleSet->pos[i]);
 
 	if (dist <= offset_simu) {
-		particleSet->neighborsDataSet->cell_id[i] += particleSet->numParticles;
+		particleSet->neighborsDataSet->cell_id[i] = TAG_REMOVAL;
 		atomicAdd(countRmv, 1);
 		return;
 	}
@@ -352,7 +352,7 @@ __global__ void surface_restrict_particleset_kernel(SPH::UnifiedParticleSet* par
 	dist = S_fluid.distanceToSurfaceSigned(particleSet->pos[i]);
 	//particleSet->densityAdv[i] = dist;
 	if (dist <= offset_fluid) {
-		particleSet->neighborsDataSet->cell_id[i] += particleSet->numParticles;
+		particleSet->neighborsDataSet->cell_id[i] = TAG_REMOVAL;
 		atomicAdd(countRmv, 1);
 		return;
 	}
@@ -1516,6 +1516,7 @@ void RestFLuidLoader::init(DFSPHCData& data, RestFLuidLoaderInterface::InitParam
 	BufferFluidSurface S_fluid;
 	int simulation_config = params.simulation_config;
 
+	bool center_fluid_on_vertical_axis = false;
 
 	if (simulation_config == 0) {
 		S_simulation.setCuboid(Vector3d(0, 2.5, 0), Vector3d(0.5, 2.5, 0.5));
@@ -1626,6 +1627,22 @@ void RestFLuidLoader::init(DFSPHCData& data, RestFLuidLoaderInterface::InitParam
 		S_fluid.setPlane(Vector3d(0, 2.54, 0), Vector3d(0, -1, 0));
 
 	}
+	else if (simulation_config == 11) {
+		//the 1.5m sphere config
+		//2.5 m fluid box
+		S_simulation.setSphere(Vector3d(0, 1, 0), 1.5);
+		//S_fluid.setCuboid(Vector3d(0, 1.25, 0), Vector3d(2, 2, 2));
+		S_fluid.setPlane(Vector3d(0, 2, 0), Vector3d(0, -1, 0));
+		center_fluid_on_vertical_axis = true;
+	}
+	else if (simulation_config == 12) {
+		//the 1.5m sphere config
+		//2.5 m fluid box
+		S_simulation.setSphere(Vector3d(0, 1, 0), 1.5);
+		//S_fluid.setCuboid(Vector3d(0, 1.25, 0), Vector3d(2, 2, 2));
+		S_fluid.setPlane(Vector3d(0, 2, 0), Vector3d(0, -1, 0));
+		center_fluid_on_vertical_axis = true;
+	}
 	else {
 		exit(5986);
 	}
@@ -1686,8 +1703,11 @@ void RestFLuidLoader::init(DFSPHCData& data, RestFLuidLoaderInterface::InitParam
 		if (center_loaded_fluid) {
 			displacement = max_fluid_buffer + min_fluid_buffer;
 			displacement /= 2;
+			displacement *= -1;
 			//on y I just put the fluid slightly below the simulation space to dodge the special distribution around the borders
-			displacement.y = -min_fluid_buffer.y - 0.2;
+			if (!center_fluid_on_vertical_axis) {
+				displacement.y = +min_fluid_buffer.y - 0.2;
+			}
 			//displacement.y = 0;
 			if (params.show_debug) {
 				std::cout << "background buffer displacement (centering): " << displacement.toString() << std::endl;
@@ -1922,7 +1942,7 @@ __global__ void tag_neighbors_of_tagged_kernel(SPH::DFSPHCData data, SPH::Unifie
 
 			ITER_NEIGHBORS_FROM_STRUCTURE_BASE(particleSet->neighborsDataSet, particleSet->pos,
 				if (i != j) {
-					if (particleSet->neighborsDataSet->cell_id[j] == TAG_UNTAGGED) {
+					if ((!tag_untagged_only)||(particleSet->neighborsDataSet->cell_id[j] == TAG_UNTAGGED)) {
 						particleSet->neighborsDataSet->cell_id[j] = tag_o;
 					}
 				}
@@ -1931,6 +1951,50 @@ __global__ void tag_neighbors_of_tagged_kernel(SPH::DFSPHCData data, SPH::Unifie
 
 	}
 }
+
+template<bool tag_untagged_only, bool use_neighbors_storage>
+__global__ void tag_and_count_neighbors_of_tagged_kernel(SPH::DFSPHCData data, SPH::UnifiedParticleSet* particleSet, 
+	int tag_i, int tag_o, int* countTagged) {
+	int i = blockIdx.x * blockDim.x + threadIdx.x;
+	if (i >= particleSet->numParticles) { return; }
+
+	if (particleSet->neighborsDataSet->cell_id[i] == tag_i) {
+		Vector3d p_i = particleSet->pos[i];
+
+
+		if (use_neighbors_storage) {
+			ITER_NEIGHBORS_INIT_FROM_STORAGE(data, particleSet, i);
+
+			ITER_NEIGHBORS_SELF_FROM_STORAGE(data, particleSet, i,
+				if (i != neighborIndex) {
+					if ((!tag_untagged_only) || (particleSet->neighborsDataSet->cell_id[neighborIndex] == TAG_UNTAGGED)) {
+						particleSet->neighborsDataSet->cell_id[neighborIndex] = tag_o;
+						if (countTagged != NULL) {
+							atomicAdd(countTagged, 1);
+						}
+					}
+				}
+			);
+		}
+		else {
+			ITER_NEIGHBORS_INIT_CELL_COMPUTATION(p_i, data.getKernelRadius(), data.gridOffset);
+
+
+			ITER_NEIGHBORS_FROM_STRUCTURE_BASE(particleSet->neighborsDataSet, particleSet->pos,
+				if (i != j) {
+					if ((!tag_untagged_only) || (particleSet->neighborsDataSet->cell_id[j] == TAG_UNTAGGED)) {
+						particleSet->neighborsDataSet->cell_id[j] = tag_o;
+						if (countTagged != NULL) {
+							atomicAdd(countTagged, 1);
+						}
+					}
+				}
+			);
+		}
+
+	}
+}
+
 
 template<bool tag_untagged_only, bool tag_candidate_only, bool tag_air_separate>
 __global__ void tag_neighbors_of_tagged_kernel(SPH::DFSPHCData data, SPH::UnifiedParticleSet* particleSet, 
@@ -3827,6 +3891,21 @@ int RestFLuidLoader::loadDataToSimulation(SPH::DFSPHCData& data, RestFLuidLoader
 		return -1;
 	}
 
+	//that flag allows loading the background buffer no matter of the tag (all but the air particles)
+	if (params.load_raw_untaged_data) {
+		//just copy all the potential values to the fluid
+		data.fluid_data->updateActiveParticleNumber(count_potential_fluid);
+
+		gpuErrchk(cudaMemcpy(data.fluid_data->mass, backgroundFluidBufferSet->mass, count_potential_fluid * sizeof(RealCuda), cudaMemcpyDeviceToDevice));
+		gpuErrchk(cudaMemcpy(data.fluid_data->pos, backgroundFluidBufferSet->pos, count_potential_fluid * sizeof(Vector3d), cudaMemcpyDeviceToDevice));
+		gpuErrchk(cudaMemcpy(data.fluid_data->vel, backgroundFluidBufferSet->vel, count_potential_fluid * sizeof(Vector3d), cudaMemcpyDeviceToDevice));
+		gpuErrchk(cudaMemcpy(data.fluid_data->color, backgroundFluidBufferSet->color, count_potential_fluid * sizeof(Vector3d), cudaMemcpyDeviceToDevice));
+		//data.fluid_data->resetColor();
+
+		return data.fluid_data->numParticles;
+	}
+
+
 	if (!isDataTagged()) {
 		std::cout << "!!!!!!!!!!! RestFLuidLoader::loadDataToSimulation you are loading untagged data !!!!!!!!!!!" << std::endl;
 		return -1;
@@ -4257,6 +4336,7 @@ int RestFLuidLoader::loadDataToSimulation(SPH::DFSPHCData& data, RestFLuidLoader
 			gpuErrchk(cudaMemcpy(data.fluid_data->vel, backgroundFluidBufferSet->vel, count_potential_fluid * sizeof(Vector3d), cudaMemcpyDeviceToDevice));
 			gpuErrchk(cudaMemcpy(data.fluid_data->color, backgroundFluidBufferSet->color, count_potential_fluid * sizeof(Vector3d), cudaMemcpyDeviceToDevice));
 			//data.fluid_data->resetColor();
+
 
 			//we can remove all that is not fluid
 
@@ -5797,7 +5877,6 @@ void RestFLuidLoader::stabilizeFluid(SPH::DFSPHCData& data, RestFLuidLoaderInter
 			}
 
 			if (simulate_border_only) {
-				data.computeFluidLevel();
 				/*
 				if (iter >= 3) {
 					//maxErrorD *= 0.8;

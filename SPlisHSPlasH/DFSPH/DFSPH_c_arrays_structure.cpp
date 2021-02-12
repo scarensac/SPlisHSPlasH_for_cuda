@@ -500,8 +500,6 @@ void UnifiedParticleSet::load_from_file(std::string file_path, bool load_velocit
 	RealCuda* mass_temp = new RealCuda[numParticles];
 
 
-    Vector3d min=Vector3d(1000);
-    Vector3d max=Vector3d(-1000);
 	int NbrLoadedParticles = numParticles;
 	Vector3d max_pos(-100, -100, -100);
 	Vector3d min_pos(100, 100, 100);
@@ -515,9 +513,6 @@ void UnifiedParticleSet::load_from_file(std::string file_path, bool load_velocit
 		myfile >> pos.x; myfile >> pos.y; myfile >> pos.z;
 		myfile >> vel.x; myfile >> vel.y; myfile >> vel.z;
 
-
-		max_pos.toMax(pos);
-		min_pos.toMin(pos);
 
 		if (!load_velocities) {
 			vel = Vector3d(0, 0, 0);
@@ -571,7 +566,7 @@ void UnifiedParticleSet::load_from_file(std::string file_path, bool load_velocit
 			//*
 			if (velocity_impacted_by_fluid_solver) {
 
-				if (pos.y > 1) {
+				if (pos.y >1) {
 					NbrLoadedParticles--;
 					i--;
 					continue;
@@ -601,9 +596,9 @@ void UnifiedParticleSet::load_from_file(std::string file_path, bool load_velocit
         pos_temp[i] = pos;
         vel_temp[i] = vel;
 
-        min.toMin(pos);
-        max.toMax(pos);
 
+		max_pos.toMax(pos);
+		min_pos.toMin(pos);
 
 
 	}
@@ -625,10 +620,10 @@ void UnifiedParticleSet::load_from_file(std::string file_path, bool load_velocit
 
     //the min and max do not work for dynamic bodies (well for the dynamic bodies they are the min and max of the local coordinates
     if (min_o!=NULL){
-        *min_o=min;
+		*min_o = min_pos;
     }
     if (max_o!=NULL){
-        *max_o=max;
+        *max_o= max_pos;
     }
 
 

@@ -7,6 +7,7 @@
 #include <thread>
 #include <sstream>
 #include <fstream>
+#include "math_constants.h"
 
 #include "DFSPH_define_cuda.h"
 #include "DFSPH_macro_cuda.h"
@@ -119,25 +120,79 @@ void OpenBoundariesSimple::init(DFSPHCData& data, OpenBoundariesSimpleInterface:
 		return;
 	}
 
+	//it is a test to test a star shaped boundary
+	if (false) {
+		std::string filename = "temp75.csv";
+		std::remove(filename.c_str());
+		
+		std::ofstream myfile;
+		myfile.open(filename, std::ios_base::app);
+		if (myfile.is_open()) {
+			BufferFluidSurface S_test_star;
+			S_test_star.setStar(Vector3d(0, 0, 0), 1, 0.3, 9);
 
+			for (int i = 0; i < 1000; ++i) {
+				RealCuda alpha = i*2*CUDART_PI_F/1000.0f;
+
+				Vector3d p_temp(cosf(alpha),0,sinf(alpha));
+				p_temp.toUnit();
+				for (int j = 0; j < 100; ++j) {
+					Vector3d p_temp_scaled = p_temp * (j + 1)*0.01;
+
+					bool is_inside = S_test_star.isinside(p_temp_scaled);
+					myfile << p_temp_scaled.x << " ; "<<p_temp_scaled.z<<" ; " << is_inside << 
+						" ; "<<S_test_star.getHalfLength().x << " ; " << S_test_star.getHalfLength().z << " ; " <<
+						std::endl;
+
+				}
+
+			}
+
+
+			//myfile << total_time / (count_steps + 1) << ", " << m_iterations << ", " << m_iterationsV << std::endl;;
+			myfile.close();
+		}
+		exit(0);
+	}
+
+	std::string inflowFileFolder = "inflowFolder/";
+	std::string inflowFileName = "";
 
 	//init the surfaces
 	if (params.simulation_config == 0) {
 		S_boundary.setCylinder(Vector3d(0, 0, 0), 10, 1.5);
 		S_fluidInterior.setCylinder(Vector3d(0, 0, 0), 10, S_boundary.getRadius() - data.particleRadius * 3);
 		S_fluidSurface.setPlane(Vector3d(0, 1, 0), Vector3d(0, -1, 0));
+		inflowFileName = "inflowPositionsSet_cylinder.txt";
 	}
 	else if (params.simulation_config == 1) {
 		//S_boundary.setCylinder(Vector3d(0, 0, 0), 10, 1.5);
 		//S_fluidInterior.setCylinder(Vector3d(0, 0, 0), 10, S_boundary.getradius() - data.particleRadius * 3);
 
 		S_boundary.setCuboid(Vector3d(0, 0, 0), Vector3d(1, 10, 5));
-		S_fluidInterior.setCuboid(Vector3d(0, 0, -1), Vector3d(1, 10, 1+S_boundary.getHalfLength().z - data.particleRadius * 5));
-		
+		S_fluidInterior.setCuboid(Vector3d(0, 0, -1), Vector3d(1, 10, 1 + S_boundary.getHalfLength().z - data.particleRadius * 5));
+
 		S_fluidSurface.setPlane(Vector3d(0, 1, 0), Vector3d(0, -1, 0));
+		inflowFileName = "inflowPositionsSet_corridor.txt";
+	}
+	else if (params.simulation_config == 2) {
+		//S_boundary.setCylinder(Vector3d(0, 0, 0), 10, 1.5);
+		//S_fluidInterior.setCylinder(Vector3d(0, 0, 0), 10, S_boundary.getradius() - data.particleRadius * 3);
+
+		S_boundary.setSphere(Vector3d(0, 1, 0), 1.5);
+		S_fluidInterior.setSphere(S_boundary.getCenter(), S_boundary.getRadius() - data.particleRadius * 3);
+
+		S_fluidSurface.setPlane(Vector3d(0, 1, 0), Vector3d(0, -1, 0));
+		inflowFileName = "inflowPositionsSet_sphere.txt";
+	}
+	else if (params.simulation_config == 3) {
+		S_boundary.setCylinder(Vector3d(0, 0, 0), 10, 2.5);
+		S_fluidInterior.setCylinder(Vector3d(0, 0, 0), 10, S_boundary.getRadius() - data.particleRadius * 3);
+		S_fluidSurface.setPlane(Vector3d(0, 1, 0), Vector3d(0, -1, 0));
+		inflowFileName = "inflowPositionsSet_cylinder_r2_5m.txt";
 	}
 	else {
-		std::cout << "OpenBoundariesSimple::init no existing config detected" << std::endl;
+		std::cout << "OpenBoundariesSimple::init no existing config detected (requested config): " <<params.simulation_config<< std::endl;
 		exit(5986);
 	}
 
@@ -146,7 +201,7 @@ void OpenBoundariesSimple::init(DFSPHCData& data, OpenBoundariesSimpleInterface:
 	Vector3d max_fluid_buffer;
 	SPH::UnifiedParticleSet* dummy = NULL;
 	inflowPositionsSet = new SPH::UnifiedParticleSet();
-	inflowPositionsSet->load_from_file(data.fluid_files_folder + "inflowPositionsSet_file.txt", false, &min_fluid_buffer, &max_fluid_buffer, false);
+	inflowPositionsSet->load_from_file(data.fluid_files_folder + inflowFileFolder + inflowFileName, false, &min_fluid_buffer, &max_fluid_buffer, false);
 	allocate_and_copy_UnifiedParticleSet_vector_cuda(&dummy, inflowPositionsSet, 1);
 
 
@@ -158,19 +213,22 @@ void OpenBoundariesSimple::init(DFSPHCData& data, OpenBoundariesSimpleInterface:
 		int* outInt = SVS_CU::get()->count_invalid_position;
 		*outInt = 0;
 
-		//we have to reverse that surface here 
-		S_fluidInterior.setReversedSurface(true);
 		
 		//clear the buffer used for tagging
 		set_buffer_to_value<unsigned int>(inflowPositionsSet->neighborsDataSet->cell_id, TAG_UNTAGGED, inflowPositionsSet->numParticles);
 
 		//find the particles to rmv
 		//by limiting to the area near boundary
+
+		//we have to reverse that surface here 
+		S_fluidInterior.setReversedSurface(true);
 		{
 			int numBlocks = calculateNumBlocks(inflowPositionsSet->numParticles);
 			tag_outside_of_surface_kernel<false> << <numBlocks, BLOCKSIZE >> > (inflowPositionsSet->gpu_ptr, S_fluidInterior, outInt, TAG_REMOVAL);
 			gpuErrchk(cudaDeviceSynchronize());
 		}
+		//return the surface to normal
+		S_fluidInterior.setReversedSurface(false);
 
 		//and restricting it to the height decided by the inflow
 		///TODO move this so that th inflow height can by dynamic through the simulation if desired
@@ -192,8 +250,6 @@ void OpenBoundariesSimple::init(DFSPHCData& data, OpenBoundariesSimpleInterface:
 			//*/
 		}
 
-		//return the surface to normal
-		S_fluidInterior.setReversedSurface(false);
 	}
 
 
@@ -219,7 +275,8 @@ void OpenBoundariesSimple::init(DFSPHCData& data, OpenBoundariesSimpleInterface:
 	gpuErrchk(read_last_error_cuda("OpenBoundariesSimple::init before computing constant contrib: ", params.show_debug));
 
 	//compute the contribution of the boundaries and store it
-	//no need or that a density based condition for adding the particle does not work...
+	//this need to be reactiveate if there is a density contition used (which should be the case currendtly
+	///TODO reactivate this
 	if (false){
 		int numBlocks = calculateNumBlocks(inflowPositionsSet->numParticles);
 		inflow_compute_and_store_constant_density_contribution_kernel << <numBlocks, BLOCKSIZE >> > (data,
@@ -236,7 +293,7 @@ void OpenBoundariesSimple::init(DFSPHCData& data, OpenBoundariesSimpleInterface:
 }
 
 __global__ void inflow_with_predefined_positions_kernel(DFSPHCData data, SPH::UnifiedParticleSet* particleSet, 
-	int* countAdded, RealCuda allowedNewDistance, BufferFluidSurface S_boundary){
+	int* countAdded, RealCuda allowedNewDistance, RealCuda allowedNewDensity, BufferFluidSurface S_boundary){
 	int i = blockIdx.x * blockDim.x + threadIdx.x;
 	if (i >= particleSet->numParticles) { return; }
 	
@@ -278,8 +335,11 @@ __global__ void inflow_with_predefined_positions_kernel(DFSPHCData data, SPH::Un
 		//first compute the velocity of the new particle
 		//do it with a pondered avg
 		Vector3d v(0, 0, 0);
+		RealCuda density = data.W_zero*particleSet->mass[i];
 		bool add_particle = true;
-		if(false){
+		bool integrate_boundaries_in_velocity = true;
+		bool integrate_mass_in_weight = true;
+		if(true){
 			RealCuda sum_weights = 0;
 			ITER_NEIGHBORS_INIT_FROM_STRUCTURE(data, particleSet, i);
 
@@ -288,10 +348,29 @@ __global__ void inflow_with_predefined_positions_kernel(DFSPHCData data, SPH::Un
 			ITER_NEIGHBORS_FROM_STRUCTURE(otherSet->neighborsDataSet, otherSet->pos,
 				{
 					RealCuda weight = KERNEL_W(data, p_i - otherSet->pos[j]);
+					if (integrate_mass_in_weight) {
+						weight *= otherSet->mass[j];
+					}
+					density += weight;
 					v += otherSet->vel[j] * weight;
 					sum_weights += weight;
 				}
 			);
+
+			//the boundaries do not have a velocity no need to add it we can simply increase 
+			//the total weight
+			otherSet = data.boundaries_data_cuda;
+			ITER_NEIGHBORS_FROM_STRUCTURE(otherSet->neighborsDataSet, otherSet->pos,
+				{
+					RealCuda weight = KERNEL_W(data, p_i - otherSet->pos[j]);
+					if (integrate_mass_in_weight) {
+						weight *= otherSet->mass[j];
+					}
+					sum_weights += weight;
+					density += weight;
+				}
+			);
+
 			if (sum_weights > 0) {
 				v /= sum_weights;
 			}
@@ -299,8 +378,22 @@ __global__ void inflow_with_predefined_positions_kernel(DFSPHCData data, SPH::Un
 			//check that the velocity is not toward the boundary
 			Vector3d surface_normal=S_boundary.getNormal(p_i);
 			
+			if (density > allowedNewDensity) {
+				add_particle = false;
+				//printf("rejected by density %f\n", density);
+			}
+
 			if (v.dot(surface_normal) < 0){
 				add_particle = false;
+			}
+			else {
+				//we have to lower the vertical component or keeping the velocity will accumulate acceleration on the vertical component
+				//I think we could lower it by the aceleration but for now I'll just won't consider the vertical velocity
+				//I'll jsut note that it's a a random choice, a lot of open boundaries do not cosider the vertical compoennt when adding a paticle
+				//for exemple Verbrugghe et al. - 2019 - Wave generation and absorption via SPH inlet/outlet conditions
+				//although it does not seems necessary if the boundary particles are taken into acount in the velocity computation
+				//			speak of setting the horizontal velocity 
+				//v.y = 0;
 			}
 		}
 
@@ -398,7 +491,12 @@ void OpenBoundariesSimple::applyOpenBoundary(DFSPHCData& data, OpenBoundariesSim
 	int* outInt = SVS_CU::get()->count_invalid_position;
 	if(params.useInflow){
 		if (params.allowedNewDistance <= 0) {
-			std::cout << "OpenBoundariesSimple::applyOpenBoundary: an invalid min distance was spacified for inflow: " <<
+			std::cout << "OpenBoundariesSimple::applyOpenBoundary: an invalid min distance was specified for inflow: " <<
+				params.allowedNewDistance << std::endl;
+			exit(1256);
+		}
+		if (params.allowedNewDensity <= 0) {
+			std::cout << "OpenBoundariesSimple::applyOpenBoundary: an invalid min density was specified for inflow: " <<
 				params.allowedNewDistance << std::endl;
 			exit(1256);
 		}
@@ -414,12 +512,12 @@ void OpenBoundariesSimple::applyOpenBoundary(DFSPHCData& data, OpenBoundariesSim
 
 		gpuErrchk(read_last_error_cuda("OpenBoundariesSimple::applyOpenBoundary before applying inflow: ", params.show_debug))
 
-
+			
 		*outInt = 0;
 		{
 			int numBlocks = calculateNumBlocks(inflowPositionsSet->numParticles);
 			inflow_with_predefined_positions_kernel << <numBlocks, BLOCKSIZE >> > (data, inflowPositionsSet->gpu_ptr, 
-				outInt, params.allowedNewDistance, S_boundary);
+				outInt, params.allowedNewDistance, params.allowedNewDensity, S_boundary);
 			gpuErrchk(cudaDeviceSynchronize());
 		}
 		int count_to_add = *outInt;

@@ -111,6 +111,7 @@ namespace SPH {
 			bool keep_air_particles;
 			bool set_up_tagging;
 			bool keep_existing_fluid;
+			bool load_raw_untaged_data;
 
 			bool show_debug;
 
@@ -121,6 +122,7 @@ namespace SPH {
 				keep_air_particles = false;
 				set_up_tagging = true;
 				keep_existing_fluid = false;
+				load_raw_untaged_data = false;
 				show_debug = false;
 				neighbors_tagging_distance_coef = 2;
 			}

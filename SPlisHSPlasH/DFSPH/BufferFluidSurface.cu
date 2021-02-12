@@ -1,5 +1,6 @@
 #include<fstream>
 #include "OBJ_Loader.h"
+#include "math_constants.h"
 
 namespace objl {
 	SPH::Vector3d vector3ToVector3d(const Vector3& v) {
@@ -413,6 +414,13 @@ public:
 
 class BufferFluidSurface
 {
+	//for information
+	//0 : plane
+	//1 : cuboid
+	//2 : cylinder
+	//3 : mesh
+	//4 : sphere
+	//5 : star shaped infnite prism with linear segments, first point directed toward (1,0,0)
 	int type;
 
 	//this is for the planes
@@ -428,6 +436,10 @@ class BufferFluidSurface
 
 	//and this is the mesh for the mesh based geometries
 	MeshPerso* mesh;
+
+	//for the star shaped form
+	RealCuda radiusInternal;
+	unsigned int pointsCount;
 
 	//reverse the surface so that the exterior become the interior
 	bool isReversedSurface;
@@ -480,6 +492,9 @@ public:
 
 		//and this is the mesh for the mesh based geometries
 		mesh = other.mesh;
+
+		radiusInternal = other.radiusInternal;
+		pointsCount = other.pointsCount;
 
 		//reverse the surface so that the exterior become the interior
 		isReversedSurface = other.isReversedSurface;
@@ -564,6 +579,34 @@ public:
 		return 0;
 	}
 
+	inline int setSphere(Vector3d c_i, RealCuda r) {
+		if (type < 0) {
+			type = 4;
+		}
+		else if (type != 4) {
+			return -1;
+		}
+
+		center = c_i;
+		radius = r;
+		return 0;
+	}
+
+	inline int setStar(Vector3d c_i, RealCuda rExternal, RealCuda rInternal, unsigned int pointCount_i) {
+		if (type < 0) {
+			type = 5;
+		}
+		else if (type != 5) {
+			return -1;
+		}
+
+		center = c_i;
+		radius = rExternal;
+		radiusInternal = rInternal;
+		pointsCount = pointCount_i;
+		return 0;
+	}
+
 	inline void copy (const BufferFluidSurface& other) {
 		type = -1;
 		switch (other.type) {
@@ -582,6 +625,14 @@ public:
 		case 3: {
 			cudaMallocManaged(&(mesh), sizeof(MeshPerso));
 			mesh->cpy(other.mesh);
+			break;
+		}
+		case 4: {
+			setSphere(other.center, other.radius);
+			break;
+		}
+		case 5: {
+			setStar(other.center, other.radius, other.radiusInternal, other.pointsCount);
 			break;
 		}
 		default: {; }//it should NEVER reach here
@@ -604,6 +655,14 @@ public:
 		}
 		case 3: {
 			mesh->applyOffset(d);
+			break;
+		}
+		case 4: {
+			center += d;
+			break;
+		}
+		case 5: {
+			center += d;
 			break;
 		}
 		default: {; }//it should NEVER reach here
@@ -640,6 +699,16 @@ public:
 			}
 			break;
 		}
+		case 4: {
+			oss << "Sphere center: " << center.toString() << "  radius: " << radius << std::endl;
+			break;
+		}
+		case 5: {
+			oss << "Star-Linear  center: " << center.toString() << "  radius external: " << radius << 
+				"  radius internal: " << radiusInternal << "  points count: " << pointsCount <<
+				std::endl;
+			break;
+		}
 		default: {; }//it should NEVER reach here
 		};
 		//*/
@@ -649,7 +718,7 @@ public:
 	//warning most of thos are not coded yet...
 	//the normal will point toward the inside of the surface
 	FUNCTION inline Vector3d getNormal(Vector3d p) {
-		Vector3d result;
+		Vector3d result(0,0,0);
 		//*
 		switch (type) {
 		case 0: {
@@ -665,6 +734,16 @@ public:
 		case 3: {
 			break;
 		}
+		case 4: {
+			result = center - p;
+			break;
+		}
+		case 5: {
+			//for now let's only consider the same normal as a sphere
+			//idk even how to compute a norma for that shit srly
+			result = center - p;
+			break;
+		}
 		default: {; }//it should NEVER reach here
 		}
 		//*/
@@ -673,7 +752,11 @@ public:
 			result *= -1;
 		}
 
-		return result.unit();
+		if (!result.isZero()) {
+			result.toUnit();
+		}
+
+		return result;
 	}
 
 	//to know if we are on the inside of each plane we can simply use the dot product*
@@ -713,6 +796,55 @@ public:
 			}
 			result = inside;
 		
+			break;
+		}
+		case 4: {
+			Vector3d v = p - center;
+			result = (v.norm() < radius);
+			break;
+		}
+		case 5: {
+			Vector3d v = p - center;
+			v.y = 0;
+			if(v.norm()<radiusInternal){
+				result = true;
+			}
+			else {
+				Vector3d firstPoint(1, 0, 0);
+				//first I'll need the angle
+			
+				//from the cos
+				float dot_prod = v.unit().dot(firstPoint);
+				float alpha=acosf(dot_prod);
+
+				//a star patern is symetrical so I don't need to have the full andlge info only the coss is necessary
+				//then compute the angle for each point
+				float alpha_0 = 2*CUDART_PI_F/pointsCount;
+
+				float k = alpha / alpha_0;
+				//fml seen there is no modulo on cuda
+				//so lets of it manualy
+				while (k > 1) {
+					k -= 1;
+				}
+				float x = k * 2 - 1;
+				x = ABS_MACRO_CUDA(x);
+
+				//this is a linear sided star
+				//ok fml this give rounded sides (ofc it does Im a retard)
+				//nvm it's good enougth for now
+				float d = (radius - radiusInternal)*x + radiusInternal;
+
+			
+				result = v.norm() <= d;
+			
+
+				//halfLengths.x = v.norm();
+				//halfLengths.z = d;
+
+			}
+
+
 			break;
 		}
 		default: {; }//it should NEVER reach here
@@ -783,6 +915,50 @@ public:
 			if (res != 0) {
 				printf("BufferFluidSurface::distanceToSurface: the is distance function of the mesh returned an error\n");
 			}
+		}
+		case 4: {
+			Vector3d v = p - center;
+			dist = v.norm() - radius;
+			dist = ABS_MACRO_CUDA(dist);
+			break;
+		}
+		case 5: {
+			Vector3d firstPoint(1, 0, 0);
+			//first I'll need the angle
+
+			//from the cos
+			Vector3d v = p - center;
+			v.y = 0;
+			float dot_prod = v.unit().dot(firstPoint);
+			float alpha = acosf(dot_prod);
+
+			//a star patern is symetrical so I don't need to have the full andlge info only the coss is necessary
+			//then compute the angle for each point
+			float alpha_0 = 2 * CUDART_PI_F / pointsCount;
+
+			float k = alpha / alpha_0;
+			//fml seen there is no modulo on cuda
+			//so lets of it manualy
+			while (k > 1) {
+				k -= 1;
+			}
+			float x = k * 2 - 1;
+			x = ABS_MACRO_CUDA(x);
+
+			//this is a linear sided star
+			//ok fml this give rounded sides (ofc it does Im a retard)
+			//nvm it's good enougth for now
+			float d = (radius - radiusInternal)*x + radiusInternal;
+
+			//ok this is not the actual distance to the border but i'll give me a distance f this
+			dist = v.norm() - d;
+			dist = ABS_MACRO_CUDA(dist);
+
+			//halfLengths.x = v.norm();
+			//halfLengths.z = d;
+
+
+			break;
 		}
 		default: {; }//it should NEVER reach here
 		}

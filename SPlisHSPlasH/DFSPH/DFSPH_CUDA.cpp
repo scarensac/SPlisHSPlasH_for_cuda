@@ -104,6 +104,7 @@ void DFSPHCUDA::step()
         m_data.destructor_activated = false;
 
    //I'll run my tests here so that I can be sure that the loading did not failed before launching them
+		//this is the initialization system
         if (false && count_steps==0) 
 		{
         //*
@@ -157,7 +158,7 @@ void DFSPHCUDA::step()
                 //params.zeta = 2 * (SQRT_MACRO_CUDA(delta_s) + 1) / delta_s;
             }
             
-            int run_type = 10;
+            int run_type = 11;
             if (run_type==0) {
 
                 if (params.method == 0) {
@@ -1476,6 +1477,184 @@ void DFSPHCUDA::step()
 
 
 			}
+			else if (run_type == 11) {
+				//this can be used to load any boundary shape that has a config and no existing fluid
+
+				bool keep_existing_fluid = false;
+				int simulation_config = 12;
+
+				Vector3d normal_gravitation = m_data.gravitation;
+				//m_data.gravitation.y *= 5;
+
+				static std::default_random_engine e;
+				static std::uniform_real_distribution<> dis(-1, 1); // rage -1 ; 1
+
+
+				RestFLuidLoaderInterface::InitParameters paramsInit;
+				RestFLuidLoaderInterface::TaggingParameters paramsTagging;
+				RestFLuidLoaderInterface::LoadingParameters paramsLoading;
+
+				paramsInit.show_debug = true;
+				paramsTagging.show_debug = true;
+				params.show_debug = true;
+				paramsLoading.show_debug = true;
+
+				paramsLoading.load_raw_untaged_data = false;
+
+				int step_size = 60;
+				{
+					std::vector<RealCuda> vect_t1_internal;
+					std::vector<RealCuda> vect_t2_internal;
+					std::vector<RealCuda> vect_t3_internal;
+					std::vector<int> vect_count_stabilization_iter_internal;
+					std::vector<int> vect_count_selection_iter_internal;
+
+
+
+					for (int k = 0; k <1; ++k) {
+						//if i keep the existing fluid i need to reload it from memory each loop
+						if (keep_existing_fluid) {
+							m_data.read_fluid_from_file(false);
+						}
+
+
+						std::chrono::steady_clock::time_point tp1 = std::chrono::steady_clock::now();
+
+						//handleSimulationLoad(true,false,false,false,false,false);
+
+						//if (k == 0) 
+						{
+							paramsInit.clear_data = false;
+							paramsInit.air_particles_restriction = 1;
+							paramsInit.center_loaded_fluid = true;
+							paramsInit.keep_existing_fluid = false;
+							paramsInit.simulation_config = simulation_config;
+							paramsInit.apply_additional_offset = true;
+							paramsInit.additional_offset = Vector3d(dis(e), dis(e), dis(e))*m_data.particleRadius * 2;
+
+							RestFLuidLoaderInterface::init(m_data, paramsInit);
+						}
+
+						std::chrono::steady_clock::time_point tp2 = std::chrono::steady_clock::now();
+
+						//*
+						paramsTagging.useRule2 = false;
+						paramsTagging.useRule3 = true;
+						paramsTagging.useStepSizeRegulator = true;
+						paramsTagging.min_step_density = 5;
+						paramsTagging.step_density = step_size;
+						paramsTagging.density_end = 999;
+						paramsTagging.keep_existing_fluid = paramsInit.keep_existing_fluid;
+						paramsTagging.output_density_information = true;
+
+						paramsLoading.load_fluid = true;
+						paramsLoading.keep_existing_fluid = keep_existing_fluid;
+
+						RestFLuidLoaderInterface::initializeFluidToSurface(m_data, true, paramsTagging, paramsLoading);
+						//*/
+						std::chrono::steady_clock::time_point tp3 = std::chrono::steady_clock::now();
+						/*
+						params.method = 0;
+						params.timeStep = 0.003;
+						{
+							params.stabilize_tagged_only = true;
+							params.postUpdateVelocityDamping = false;
+							params.postUpdateVelocityClamping = false;
+							params.preUpdateVelocityClamping = false;
+
+
+							params.maxErrorD = 0.05;
+
+							params.useDivergenceSolver = true;
+							params.useExternalForces = true;
+
+							params.preUpdateVelocityDamping = true;
+							params.preUpdateVelocityDamping_val = 0.8;
+
+							params.stabilizationItersCount = 10;
+
+							params.reduceDampingAndClamping = true;
+							params.reduceDampingAndClamping_val = std::powf(0.2f / params.preUpdateVelocityDamping_val, 1.0f / (params.stabilizationItersCount - 1));
+
+							params.clearWarmstartAfterStabilization = false;
+						}
+						params.runCheckParticlesPostion = true;
+						params.interuptOnLostParticle = false;
+						params.reloadFluid = false;
+						params.evaluateStabilization = false;
+						params.min_stabilization_iter = 2;
+						params.stable_velocity_max_target = m_data.particleRadius*0.25 / m_data.get_current_timestep();
+						params.stable_velocity_avg_target = m_data.particleRadius*0.025 / m_data.get_current_timestep();
+
+						std::chrono::steady_clock::time_point tp5 = std::chrono::steady_clock::now();
+
+						RestFLuidLoaderInterface::stabilizeFluid(m_data, params);
+
+						//if there was a fail do not count the run in the values
+						if (!params.stabilization_sucess) {
+							continue;
+						}
+						//*/
+
+						std::chrono::steady_clock::time_point tp4 = std::chrono::steady_clock::now();
+
+						RealCuda time_p1 = std::chrono::duration_cast<std::chrono::nanoseconds> (tp2 - tp1).count() / 1000000000.0f;
+						RealCuda time_p2 = std::chrono::duration_cast<std::chrono::nanoseconds> (tp3 - tp2).count() / 1000000000.0f;
+						RealCuda time_p3 = std::chrono::duration_cast<std::chrono::nanoseconds> (tp4 - tp3).count() / 1000000000.0f;
+
+						vect_t1_internal.push_back(time_p1);
+						vect_t2_internal.push_back(time_p2);
+						vect_t3_internal.push_back(time_p3);
+						vect_count_selection_iter_internal.push_back(paramsTagging.count_iter);
+						vect_count_stabilization_iter_internal.push_back(params.count_iter_o);
+
+						//std::cout << "direct timmings output: " << time_p1 << "  " << time_p2 << "  " << time_p3 << "  " << std::endl;
+					}
+
+					if (!vect_t1_internal.empty()) {
+
+
+						std::sort(vect_t1_internal.begin(), vect_t1_internal.end());
+						std::sort(vect_t2_internal.begin(), vect_t2_internal.end());
+						std::sort(vect_t3_internal.begin(), vect_t3_internal.end());
+						std::sort(vect_count_selection_iter_internal.begin(), vect_count_selection_iter_internal.end());
+						std::sort(vect_count_stabilization_iter_internal.begin(), vect_count_stabilization_iter_internal.end());
+
+						//*
+						for (int k = 0; k < vect_t1_internal.size(); ++k) {
+							std::cout << k << "   " << vect_t1_internal[k] << " + " << vect_t2_internal[k] <<
+								" + " << vect_t3_internal[k] << " = " <<
+								vect_t1_internal[k] + vect_t2_internal[k] + vect_t3_internal[k] <<
+								" // " << vect_count_selection_iter_internal[k] << " // " << vect_count_stabilization_iter_internal[k] << std::endl;
+						}
+						//*/
+						//some density informations
+						std::cout << "density info: " << paramsTagging.avg_density_o << "  " << paramsTagging.min_density_o << "  " <<
+							paramsTagging.max_density_o << "  " << paramsTagging.stdev_density_o / paramsTagging.avg_density_o * 100 << "  " << std::endl;
+
+
+						int idMedian = std::floor((vect_t2_internal.size() - 1) / 2.0f);
+
+
+						std::cout << "median values" << std::endl;
+						std::cout << "count valid runs: " << vect_t1_internal.size() << std::endl;
+						std::cout << "time init" << " ; " << "time selection" <<
+							" ; " << "time stabilization" << " ; " <<
+							"total time" <<
+							" ; " << "coutn iter selection" << " ; " << "count iter stabilization" << std::endl;
+						std::cout << vect_t1_internal[idMedian] << " ; " << vect_t2_internal[idMedian] <<
+							" ; " << vect_t3_internal[idMedian] << " ; " <<
+							vect_t1_internal[idMedian] + vect_t2_internal[idMedian] + vect_t3_internal[idMedian] <<
+							" ; " << vect_count_selection_iter_internal[idMedian] << " ; " << vect_count_stabilization_iter_internal[idMedian] << std::endl;
+
+					}
+
+				}
+
+				m_data.gravitation = normal_gravitation;
+
+
+			}
 
 
             std::this_thread::sleep_for(std::chrono::nanoseconds(10));
@@ -1489,17 +1668,22 @@ void DFSPHCUDA::step()
 
 
 
+
+
 #ifdef OCEAN_BOUNDARIES_PROTOTYPE
         bool moving_borders = false;
         static int count_moving_steps = 0;
         //*
 		//test the simple open boundaries
-		if (true) {
+		if (false) {
 			if (count_steps == 0) {
 				OpenBoundariesSimpleInterface::InitParameters initParams;
-				initParams.show_debug = false;
-				initParams.simulation_config = 0;
+				initParams.show_debug = true;
+				initParams.simulation_config = 3;
 				OpenBoundariesSimpleInterface::init(m_data, initParams);
+
+
+
 
 
 			}else{
@@ -1507,7 +1691,8 @@ void DFSPHCUDA::step()
 
 				OpenBoundariesSimpleInterface::ApplyParameters applyParams;
 				applyParams.show_debug = false;
-				applyParams.allowedNewDistance = m_data.particleRadius*2.2;
+				applyParams.allowedNewDistance = m_data.particleRadius*1.5;
+				applyParams.allowedNewDensity = 850;
 				applyParams.useInflow = true;
 				applyParams.useOutflow = true;
 				OpenBoundariesSimpleInterface::applyOpenBoundary(m_data, applyParams);
@@ -1521,16 +1706,85 @@ void DFSPHCUDA::step()
 
 
 
+			//this is the output for the experiment to study how well the openboundary absorb the perturbations
+			if (false) {
+				//essencially I only what to measure the energy left in the fluid
+				//the energy is the sum of the square of the velocities of all particles
+				//read data to CPU
+				static Vector3d* vel = NULL;
+				static Vector3d* pos = NULL;
+				int size = 0;
+				if (m_data.fluid_data->numParticles > size) {
+					if (vel != NULL) {
+						delete[] vel;
+					}
+					if (pos != NULL) {
+						delete[] pos;
+					}
+					vel = new Vector3d[m_data.fluid_data->numParticlesMax];
+					pos = new Vector3d[m_data.fluid_data->numParticlesMax];
+					size = m_data.fluid_data->numParticlesMax;
 
+				}
+				read_UnifiedParticleSet_cuda(*(m_data.fluid_data), pos, vel, NULL);
+
+				//read the actual evaluation
+				RealCuda stabilzationEvaluation = -1;
+
+				RealCuda sumSqVelLeft = 0;
+				RealCuda sumSqVelRight = 0;
+				int countParticlesLeft = 0;
+				int countParticlesRight = 0;
+				for (int i = 0; i < m_data.fluid_data->numParticles; ++i) {
+					if (pos[i].z < 0) {
+						sumSqVelLeft += vel[i].squaredNorm();
+						countParticlesLeft++;
+					}
+					else {
+						sumSqVelRight += vel[i].squaredNorm();
+						countParticlesRight++;
+					}
+				}
+
+				std::cout << count_steps << " ; " << count_steps * 0.003
+					<< " ; " << countParticlesLeft
+					<< " ; " << countParticlesRight
+					<< " ; " << sumSqVelLeft
+					<< " ; " << sumSqVelRight
+					<< std::endl;
+
+				std::string filename = "temp56.csv";
+				if (count_steps == 0) {
+					std::remove(filename.c_str());
+				}
+				ofstream myfile;
+				myfile.open(filename, std::ios_base::app);
+				if (myfile.is_open()) {
+						myfile << count_steps << " ; " << count_steps * 0.003
+							<< " ; " << countParticlesLeft
+							<< " ; " << countParticlesRight
+							<< " ; " << sumSqVelLeft
+							<< " ; " << sumSqVelRight
+							<< std::endl;
+
+					
+					//myfile << total_time / (count_steps + 1) << ", " << m_iterations << ", " << m_iterationsV << std::endl;;
+					myfile.close();
+				}
+				else {
+					std::cout << "failed to open file: " << filename << "   reason: " << std::strerror(errno) << std::endl;
+				}
+			}
 
 
 		}
 
+		//the dynamic windows diplacment
 		if (true) {
 			if (count_steps == 0) {
 				DynamicWindowInterface::InitParameters initParams;
-				initParams.show_debug = false;
-				initParams.simulation_config = 0;
+				initParams.show_debug = true;
+				initParams.simulation_config = 2;
 				initParams.air_particles_restriction = 1;
 				initParams.keep_existing_fluid = false;
 				initParams.clear_data = false;
@@ -1539,12 +1793,17 @@ void DFSPHCUDA::step()
 
 			}
 			else {
-				Vector3d potentialDisplacement(3 * m_data.getKernelRadius(), 0, 0);
+				Vector3d potentialDisplacement(0, 0, 0);
 				if (m_data.numDynamicBodies > 0) {
 					Vector3d current_center=m_data.dynamicWindowTotalDisplacement;
 					Vector3d cur_interest_position=m_data.vector_dynamic_bodies_data[0].rigidBody_cpu->position;
 					potentialDisplacement = cur_interest_position - current_center;
 					potentialDisplacement.y = 0;
+				}
+				else {
+					if (count_steps%10 == 0) {
+						potentialDisplacement=Vector3d(m_data.getKernelRadius()*3, 0, 0);
+					}
 				}
 
 
@@ -1574,6 +1833,7 @@ void DFSPHCUDA::step()
 					paramsLoading.show_debug = false;
 					paramsStabilization.show_debug = false;
 
+					bool run_stabilization = true;
 
 					//qsdqs
 					{
@@ -1586,19 +1846,27 @@ void DFSPHCUDA::step()
 						paramsTagging.step_density = 60;
 						paramsTagging.density_end = 999;
 						paramsTagging.keep_existing_fluid = true;
-						paramsTagging.output_density_information = true;
+						paramsTagging.output_density_information = false;
+						paramsTagging.output_timming_information = false;
+
+
 
 
 						paramsLoading.load_fluid = true;
+						paramsLoading.set_up_tagging = run_stabilization;
 						paramsLoading.keep_existing_fluid = true;
+						paramsLoading.tag_active_neigbors = false;
+						paramsLoading.neighbors_tagging_distance_coef = 2;
+						paramsLoading.tag_active_neigbors_use_repetition_approach = false;
 
 						DynamicWindowInterface::initializeFluidToSurface(m_data, paramsTagging, paramsLoading);
 					}
 
 
+
 					std::chrono::steady_clock::time_point tp2 = std::chrono::steady_clock::now();
 
-					{
+					if(run_stabilization){
 						paramsStabilization.max_iterEval = 30;
 
 
@@ -1613,7 +1881,7 @@ void DFSPHCUDA::step()
 
 							paramsStabilization.maxErrorD = 0.05;
 
-							paramsStabilization.useDivergenceSolver = true;
+							paramsStabilization.useDivergenceSolver = false;
 							paramsStabilization.useExternalForces = true;
 
 							paramsStabilization.preUpdateVelocityDamping = true;
@@ -1621,24 +1889,29 @@ void DFSPHCUDA::step()
 
 							paramsStabilization.stabilizationItersCount = 10;
 
+
 							paramsStabilization.reduceDampingAndClamping = true;
 							paramsStabilization.reduceDampingAndClamping_val = std::powf(0.2f /
 								paramsStabilization.preUpdateVelocityDamping_val, 1.0f / (paramsStabilization.stabilizationItersCount - 1));
 
 							paramsStabilization.clearWarmstartAfterStabilization = false;
+
+
+							paramsStabilization.stabilizationItersCount = 10;
 						}
-						paramsStabilization.runCheckParticlesPostion = true;
+						paramsStabilization.runCheckParticlesPostion = false;
 						paramsStabilization.interuptOnLostParticle = false;
 						paramsStabilization.reloadFluid = false;
 						paramsStabilization.evaluateStabilization = false;
-						paramsStabilization.min_stabilization_iter = 2;
+						//making that number laarge essencially desactivete the system
+						paramsStabilization.min_stabilization_iter = 1000;
 						paramsStabilization.stable_velocity_max_target = m_data.particleRadius*0.25 / m_data.get_current_timestep();
 						paramsStabilization.stable_velocity_avg_target = m_data.particleRadius*0.025 / m_data.get_current_timestep();
 
 
-
 						DynamicWindowInterface::stabilizeFluid(m_data, paramsStabilization);
 					}
+
 
 
 					std::chrono::steady_clock::time_point tp3 = std::chrono::steady_clock::now();
@@ -1785,7 +2058,7 @@ void DFSPHCUDA::step()
        // std::cout << "self density: " << m_data.W_zero * 0.1 << std::endl;
 
 
-        //*
+        /*
         RealCuda min_density = 10000;
         RealCuda max_density = 0;
         for (int j = 0; j < m_data.fluid_data->numParticles; ++j) {
@@ -1981,8 +2254,8 @@ void DFSPHCUDA::step()
         total_time += time_iter;
 
 		
-		//std::cout << "check density and divergence targetsand iter densityiter/diviter/densityerr/diverr: " <<
-		//	m_maxError << "  " << m_maxIterations << "  " << m_maxErrorV << "  " << m_maxIterationsV << std::endl;
+		std::cout << "check density and divergence targetsand iter densityiter/diviter/densityerr/diverr: " <<
+			m_maxError << "  " << m_maxIterations << "  " << m_maxErrorV << "  " << m_maxIterationsV << std::endl;
 
         static float iter_pressure_avg = 0;
         static float iter_divergence_avg = 0;

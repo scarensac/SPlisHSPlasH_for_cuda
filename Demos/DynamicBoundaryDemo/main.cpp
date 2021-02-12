@@ -48,6 +48,7 @@ int main( int argc, char **argv )
 
 	base.init(argc, argv, "DynamicBoundaryDemo");
 
+
 	//////////////////////////////////////////////////////////////////////////
 	// PBD
 	//////////////////////////////////////////////////////////////////////////
@@ -97,6 +98,8 @@ void reset()
 
 void timeStep ()
 {
+
+
 	if ((base.getPauseAt() > 0.0) && (base.getPauseAt() < TimeManager::getCurrent()->getTime()))
 		base.setPause(true);
 
@@ -127,6 +130,29 @@ void timeStep ()
 
 	if (base.getPause())
 		return;
+
+
+
+	/*
+	static int k = 0;
+	k++;
+	std::cout << k << std::endl;
+	
+	if (k == 1) {
+		MiniGL::rotateY(0.001*1454);
+		MiniGL::rotateX(0.00001*4784);
+		MiniGL::move(0.001*1305, 0, 0);
+	}
+	
+	
+
+	//MiniGL::move(0.001, 0, 0);
+	//MiniGL::move(0, 0.001, 0);
+	//MiniGL::move(0, 0, 0.001);
+	//MiniGL::move();
+	//MiniGL::rotateX(0.00001);
+	//MiniGL::rotateY(-0.0001);
+	//*/
 
 	// Simulation code
 	for (unsigned int i = 0; i < base.getNumberOfStepsPerRenderUpdate(); i++)
@@ -211,6 +237,12 @@ void timeStep ()
 						if (boatControlForce.norm() > 1e-6) {
 							//convert the force to global coordinates
 							boatControlForce= rot_marix*boatControlForce;
+							
+							//in fact I want the force to be in the horizontal plane.
+							// I'll go the easy and dirty way
+							Real norm_f = boatControlForce.norm();
+							boatControlForce[1] = 0;
+							boatControlForce *= norm_f / boatControlForce.norm();
 
 							//apply the force
 							rbo->addForce(boatControlForce);
@@ -218,7 +250,11 @@ void timeStep ()
 						//*/
 
 						//*
-						Vector3r boatControlTorque(0, 0, -1);
+						bool apply_local_torque = false;
+						Vector3r boatControlTorque(0, 1, 0);
+						if (apply_local_torque) {
+							boatControlTorque= Vector3r(0, 0, -1);
+						}
 						float controlTorqueIntensity = base.getBoatTorqueIntensity();
 						if (base.getBoatLeft()) {
 							boatControlTorque *= controlTorqueIntensity;
@@ -231,7 +267,9 @@ void timeStep ()
 						}
 						if (boatControlTorque.norm() > 1e-6) {
 							//convert the torque to global coordinates
-							boatControlTorque = rot_marix * boatControlTorque;
+							if (apply_local_torque) {
+								boatControlTorque = rbo->getRotation() * boatControlTorque;
+							}
 
 							//apply the torque
 							rbo->addTorque(boatControlTorque);

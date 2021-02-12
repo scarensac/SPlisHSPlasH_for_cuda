@@ -30,6 +30,7 @@ namespace SPH {
 			//inflow parameters
 			bool useInflow;
 			RealCuda allowedNewDistance;
+			RealCuda allowedNewDensity;
 
 			//outflow parameters
 			bool useOutflow;
@@ -37,6 +38,7 @@ namespace SPH {
 			ApplyParameters() {
 				show_debug = false;
 				allowedNewDistance = -1;
+				allowedNewDensity = -1;
 				useInflow = true;
 				useOutflow = true;
 			}

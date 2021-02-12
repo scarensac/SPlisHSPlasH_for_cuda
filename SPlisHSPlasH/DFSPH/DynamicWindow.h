@@ -85,6 +85,8 @@ namespace SPH {
 			RealCuda avg_density_o;
 			RealCuda stdev_density_o;
 
+			bool output_timming_information;
+
 			TaggingParameters(){
 				show_debug = false;
 
@@ -113,6 +115,8 @@ namespace SPH {
 				max_density_o = 0;
 				avg_density_o = 0;
 				stdev_density_o = 0;
+
+				output_timming_information = false;
 			}
 		};
 
@@ -125,6 +129,8 @@ namespace SPH {
 			bool show_debug;
 
 			RealCuda neighbors_tagging_distance_coef;
+			bool tag_active_neigbors;
+			bool tag_active_neigbors_use_repetition_approach;
 
 			LoadingParameters() {
 				load_fluid=true;
@@ -132,7 +138,9 @@ namespace SPH {
 				set_up_tagging = true;
 				keep_existing_fluid = false;
 				show_debug = false;
+				tag_active_neigbors=true;
 				neighbors_tagging_distance_coef = 2;
+				tag_active_neigbors_use_repetition_approach=false;
 			}
 		};
 
