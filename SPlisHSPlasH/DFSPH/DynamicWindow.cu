@@ -357,6 +357,8 @@ void DynamicWindow::init(DFSPHCData& data, DynamicWindowInterface::InitParameter
 
 	}
 	else if (params.simulation_config == 2) {
+		//2.5m cylinder
+
 		S_simulation.setCylinder(Vector3d(0, 0, 0), 10, 2.5);
 
 		if ((S_simulation.getRadius() - params.max_allowed_displacement) < data.getKernelRadius() * 4) {
@@ -382,6 +384,44 @@ void DynamicWindow::init(DFSPHCData& data, DynamicWindowInterface::InitParameter
 		SA_keptExistingFluidArea.addSurface(S_boundaryRange);
 
 		backgroundFileName = "dynamicWindow_cylinder_r2_5m.txt";
+
+	}
+	else if (params.simulation_config == 3) {
+		//2.5m cylinder
+
+		RealCuda ri = 2 / 2.0;
+		RealCuda re = 3.5 / 2.0;
+		int pointCount = 5;
+		Vector3d firstPointDir = Vector3d(0, 0, 1);
+		S_simulation.setStar(Vector3d(0, 0, 0), 10, re, ri, pointCount, firstPointDir);
+
+		if ((S_simulation.getRadiusInternal() - params.max_allowed_displacement) < data.getKernelRadius() * 4) {
+			std::cout << "the simulation area is too small relative to the required buffers size for the dynamix window area/buffer_size/reuired_min_diff" <<
+				S_simulation.getRadiusInternal() << " / " << params.max_allowed_displacement << " / " << data.getKernelRadius() * 4 << " / " << std::endl;
+			gpuErrchk(cudaError_t::cudaErrorUnknown);
+		}
+
+		//those are mostly used to remove some of the existing fluid
+		S_boundaryRange.setStar(Vector3d(0, 0, 0), 10, re - (data.getKernelRadius()*1.5), 
+			ri - (data.getKernelRadius()*1.5), pointCount, firstPointDir);
+
+		S_fluidInterior.setStar(Vector3d(0, 0, 0), 10, re - data.particleRadius * 3,
+			ri - data.particleRadius * 3, pointCount, firstPointDir);
+
+		//those are specific the the bancground buffer particles
+
+		S_bufferInterior.setStar(Vector3d(0, 0, 0), 10, re - (params.max_allowed_displacement + data.getKernelRadius()*1.5), 
+			ri - (params.max_allowed_displacement + data.getKernelRadius()*1.5), pointCount, firstPointDir);
+		S_bufferInterior.setReversedSurface(true);
+
+
+		S_fluid.setPlane(Vector3d(0, 1, 0), Vector3d(0, -1, 0));
+
+
+		SA_keptExistingFluidArea.addSurface(S_fluidInterior);
+		SA_keptExistingFluidArea.addSurface(S_boundaryRange);
+
+		backgroundFileName = "dynamicWindow_star_re1_75_ri1.txt";
 
 	}
 	else {

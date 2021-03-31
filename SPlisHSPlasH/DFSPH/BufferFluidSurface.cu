@@ -420,7 +420,7 @@ class BufferFluidSurface
 	//2 : cylinder
 	//3 : mesh
 	//4 : sphere
-	//5 : star shaped infnite prism with linear segments, first point directed toward (1,0,0)
+	//5 : star shaped infnite prism with linear segments, first point directed toward the direction member
 	int type;
 
 	//this is for the planes
@@ -440,6 +440,7 @@ class BufferFluidSurface
 	//for the star shaped form
 	RealCuda radiusInternal;
 	unsigned int pointsCount;
+	Vector3d direction;
 
 	//reverse the surface so that the exterior become the interior
 	bool isReversedSurface;
@@ -495,6 +496,7 @@ public:
 
 		radiusInternal = other.radiusInternal;
 		pointsCount = other.pointsCount;
+		direction = other.direction;
 
 		//reverse the surface so that the exterior become the interior
 		isReversedSurface = other.isReversedSurface;
@@ -505,6 +507,7 @@ public:
 
 	int getType() { return type; }
 	RealCuda getRadius() { return radius; }
+	RealCuda getRadiusInternal() { return radiusInternal; }
 	Vector3d getCenter() { return center; }
 	Vector3d getHalfLength() { return halfLengths; }
 
@@ -592,7 +595,8 @@ public:
 		return 0;
 	}
 
-	inline int setStar(Vector3d c_i, RealCuda rExternal, RealCuda rInternal, unsigned int pointCount_i) {
+	inline int setStar(Vector3d c_i, RealCuda half_h, RealCuda rExternal, RealCuda rInternal, 
+		unsigned int pointCount_i, Vector3d direction_i) {
 		if (type < 0) {
 			type = 5;
 		}
@@ -601,9 +605,11 @@ public:
 		}
 
 		center = c_i;
+		halfLengths = Vector3d(0, half_h, 0);
 		radius = rExternal;
 		radiusInternal = rInternal;
 		pointsCount = pointCount_i;
+		direction = direction_i;
 		return 0;
 	}
 
@@ -632,7 +638,7 @@ public:
 			break;
 		}
 		case 5: {
-			setStar(other.center, other.radius, other.radiusInternal, other.pointsCount);
+			setStar(other.center,other.halfLengths.y, other.radius, other.radiusInternal, other.pointsCount, other.direction);
 			break;
 		}
 		default: {; }//it should NEVER reach here
@@ -704,8 +710,9 @@ public:
 			break;
 		}
 		case 5: {
-			oss << "Star-Linear  center: " << center.toString() << "  radius external: " << radius << 
-				"  radius internal: " << radiusInternal << "  points count: " << pointsCount <<
+			oss << "Star-Linear  center: " << center.toString() << "   height: " << halfLengths.y <<
+				"  radius external: " << radius << "  radius internal: " << radiusInternal <<
+				"  points count: " << pointsCount << " dir first point: " << direction.toString() << 
 				std::endl;
 			break;
 		}
@@ -782,7 +789,7 @@ public:
 		}
 		case 2: {
 			Vector3d v = p - center;
-			if (abs(v.y) > halfLengths.y) { return false; }
+			if (abs(v.y) > halfLengths.y) { result = false; break; }
 
 			v.y = 0;
 			result = (v.norm() < radius);
@@ -805,42 +812,70 @@ public:
 		}
 		case 5: {
 			Vector3d v = p - center;
+			if (abs(v.y) > halfLengths.y) { result = false; break; }
+
 			v.y = 0;
-			if(v.norm()<radiusInternal){
+			if (v.norm()<radiusInternal) {
 				result = true;
 			}
+			else if (v.norm()>radius) {
+				result = false;
+			}
 			else {
-				Vector3d firstPoint(1, 0, 0);
-				//first I'll need the angle
-			
+				//first I'll need the angle			
 				//from the cos
-				float dot_prod = v.unit().dot(firstPoint);
+				float dot_prod = v.unit().dot(direction);
+				
+				//this retruns and alpha between 0 an pi
 				float alpha=acosf(dot_prod);
+
 
 				//a star patern is symetrical so I don't need to have the full andlge info only the coss is necessary
 				//then compute the angle for each point
 				float alpha_0 = 2*CUDART_PI_F/pointsCount;
 
-				float k = alpha / alpha_0;
+
 				//fml seen there is no modulo on cuda
 				//so lets of it manualy
+				float k = alpha / alpha_0;
 				while (k > 1) {
 					k -= 1;
 				}
-				float x = k * 2 - 1;
-				x = ABS_MACRO_CUDA(x);
+				float x = k;
+
+				//back to polar coordinates
+				x *= alpha_0;
+
+
+				float alpha1=0;
+				float r1=radius;
+				float alpha2= alpha1+alpha_0/2;
+				float r2=radiusInternal;
+
+				if (x > (alpha_0 / 2)) {
+					r1 = radiusInternal;
+					r2 = radius;
+					alpha1 = alpha2;
+					alpha2 = alpha1 + alpha_0 / 2;
+				}
+
+				float x1=r1*cosf(alpha1);
+				float y1=r1*sinf(alpha1);
+				float x2=r2*cosf(alpha2);
+				float y2=r2*sinf(alpha2);
+
+				float m = (y2 - y1) / (x2 - x1);
+
+				float a=-m;
+				float b=1;
+				float c=-x1*m+y1;
 
 				//this is a linear sided star
-				//ok fml this give rounded sides (ofc it does Im a retard)
-				//nvm it's good enougth for now
-				float d = (radius - radiusInternal)*x + radiusInternal;
+				//float d = radiusInternal / (sinf(x) - (radius - radiusInternal)*cosf(x));
+				float d = c / (a*cosf(x) + b * sinf(x));
 
-			
 				result = v.norm() <= d;
 			
-
-				//halfLengths.x = v.norm();
-				//halfLengths.z = d;
 
 			}
 
@@ -923,40 +958,74 @@ public:
 			break;
 		}
 		case 5: {
-			Vector3d firstPoint(1, 0, 0);
-			//first I'll need the angle
-
-			//from the cos
 			Vector3d v = p - center;
+
+
+			//first you have to check the distance relative to the top and botom planes
+			dist = halfLengths.y - ABS_MACRO_CUDA(v.y);
+			dist = ABS_MACRO_CUDA(dist);
+
+			//next the distinace to the star border
+			//this version is realy basic an compute the distance by thinking that the normal is the same has if
+			//we had a cylinder and not a sphere
 			v.y = 0;
-			float dot_prod = v.unit().dot(firstPoint);
+
+			//first I'll need the angle			
+			//from the cos
+			float dot_prod = v.unit().dot(direction);
+
+			//this retruns and alpha between 0 an pi
 			float alpha = acosf(dot_prod);
+
 
 			//a star patern is symetrical so I don't need to have the full andlge info only the coss is necessary
 			//then compute the angle for each point
 			float alpha_0 = 2 * CUDART_PI_F / pointsCount;
 
-			float k = alpha / alpha_0;
+
 			//fml seen there is no modulo on cuda
 			//so lets of it manualy
+			float k = alpha / alpha_0;
 			while (k > 1) {
 				k -= 1;
 			}
-			float x = k * 2 - 1;
-			x = ABS_MACRO_CUDA(x);
+			float x = k;
+
+			//back to polar coordinates
+			x *= alpha_0;
+
+
+			float alpha1 = 0;
+			float r1 = radius;
+			float alpha2 = alpha1 + alpha_0 / 2;
+			float r2 = radiusInternal;
+
+			if (x > (alpha_0 / 2)) {
+				r1 = radiusInternal;
+				r2 = radius;
+				alpha1 = alpha2;
+				alpha2 = alpha1 + alpha_0 / 2;
+			}
+
+			float x1 = r1 * cosf(alpha1);
+			float y1 = r1 * sinf(alpha1);
+			float x2 = r2 * cosf(alpha2);
+			float y2 = r2 * sinf(alpha2);
+
+			float m = (y2 - y1) / (x2 - x1);
+
+			float a = -m;
+			float b = 1;
+			float c = -x1 * m + y1;
 
 			//this is a linear sided star
-			//ok fml this give rounded sides (ofc it does Im a retard)
-			//nvm it's good enougth for now
-			float d = (radius - radiusInternal)*x + radiusInternal;
+			//float d = radiusInternal / (sinf(x) - (radius - radiusInternal)*cosf(x));
+			float d = c / (a*cosf(x) + b * sinf(x));
 
-			//ok this is not the actual distance to the border but i'll give me a distance f this
-			dist = v.norm() - d;
-			dist = ABS_MACRO_CUDA(dist);
+			float dist_star = v.norm() - d;
+			dist_star = ABS_MACRO_CUDA(dist);
 
-			//halfLengths.x = v.norm();
-			//halfLengths.z = d;
-
+			dist = MIN_MACRO_CUDA(dist, dist_star);
 
 			break;
 		}

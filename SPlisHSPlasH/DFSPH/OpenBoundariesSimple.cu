@@ -129,10 +129,10 @@ void OpenBoundariesSimple::init(DFSPHCData& data, OpenBoundariesSimpleInterface:
 		myfile.open(filename, std::ios_base::app);
 		if (myfile.is_open()) {
 			BufferFluidSurface S_test_star;
-			S_test_star.setStar(Vector3d(0, 0, 0), 1, 0.3, 9);
+			S_test_star.setStar(Vector3d(0, 0, 0),5, 1, 0.3, 9, Vector3d(0,0,1));
 
-			for (int i = 0; i < 1000; ++i) {
-				RealCuda alpha = i*2*CUDART_PI_F/1000.0f;
+			for (int i = 0; i < 100; ++i) {
+				RealCuda alpha = i*2*CUDART_PI_F/100.0f;
 
 				Vector3d p_temp(cosf(alpha),0,sinf(alpha));
 				p_temp.toUnit();
@@ -190,6 +190,15 @@ void OpenBoundariesSimple::init(DFSPHCData& data, OpenBoundariesSimpleInterface:
 		S_fluidInterior.setCylinder(Vector3d(0, 0, 0), 10, S_boundary.getRadius() - data.particleRadius * 3);
 		S_fluidSurface.setPlane(Vector3d(0, 1, 0), Vector3d(0, -1, 0));
 		inflowFileName = "inflowPositionsSet_cylinder_r2_5m.txt";
+	}
+	else if (params.simulation_config == 4) {
+		//star shape
+		S_boundary.setStar(Vector3d(0, 0, 0), 10, 3.5 / 2.0, 2 / 2.0, 5, Vector3d(0, 0, 1));
+		S_fluidInterior.setStar(Vector3d(0, 0, 0), 10, 3.5 / 2.0 - data.particleRadius * 3, 
+			2 / 2.0 - data.particleRadius * 3, 5, Vector3d(0, 0, 1));
+
+		S_fluidSurface.setPlane(Vector3d(0, 1, 0), Vector3d(0, -1, 0));
+		inflowFileName = "inflowPositionsSet_star_re1_75_ri1.txt";
 	}
 	else {
 		std::cout << "OpenBoundariesSimple::init no existing config detected (requested config): " <<params.simulation_config<< std::endl;

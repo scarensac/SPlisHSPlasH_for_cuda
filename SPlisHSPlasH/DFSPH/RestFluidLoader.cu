@@ -1643,6 +1643,18 @@ void RestFLuidLoader::init(DFSPHCData& data, RestFLuidLoaderInterface::InitParam
 		S_fluid.setPlane(Vector3d(0, 2, 0), Vector3d(0, -1, 0));
 		center_fluid_on_vertical_axis = true;
 	}
+	else if (simulation_config == 13) {
+		//the star shaped border here
+		//the parameters for the star are 5 points, re=3.5, ri=2, direction=(0,0,1), h=5
+		//with 2m of fluid
+
+		S_simulation.setStar(Vector3d(0, 2.5, 0),2.5, 3.5/2.0, 2/2.0, 5, Vector3d(0, 0, 1));
+		//S_simulation.setStar(Vector3d(0, 2.5, 0),2.5, 0.8, 0.4, 5, Vector3d(0, 0, 1));
+
+		//S_fluid.setCuboid(Vector3d(0, 1.25, 0), Vector3d(2, 2, 2));
+		S_fluid.setPlane(Vector3d(0, 2, 0), Vector3d(0, -1, 0));
+		center_fluid_on_vertical_axis = true;
+	}
 	else {
 		exit(5986);
 	}
