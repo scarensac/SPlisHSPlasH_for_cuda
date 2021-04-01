@@ -387,7 +387,9 @@ void DynamicWindow::init(DFSPHCData& data, DynamicWindowInterface::InitParameter
 
 	}
 	else if (params.simulation_config == 3) {
-		//2.5m cylinder
+
+		//the star shaped border here
+		//the parameters for the star are 5 points, re=3.5/2, ri=2/2, direction=(0,0,1), h=5
 
 		RealCuda ri = 2 / 2.0;
 		RealCuda re = 3.5 / 2.0;
@@ -422,6 +424,80 @@ void DynamicWindow::init(DFSPHCData& data, DynamicWindowInterface::InitParameter
 		SA_keptExistingFluidArea.addSurface(S_boundaryRange);
 
 		backgroundFileName = "dynamicWindow_star_re1_75_ri1.txt";
+
+	}
+	else if (params.simulation_config == 4) {
+
+		//the 2.5m sphere config
+
+		S_simulation.setSphere(Vector3d(0, 1, 0), 2.5);
+		//S_fluid.setCuboid(Vector3d(0, 1.25, 0), Vector3d(2, 2, 2));
+		S_fluid.setPlane(Vector3d(0, 1, 0), Vector3d(0, -1, 0));
+
+
+		if ((S_simulation.getRadius() - params.max_allowed_displacement) < data.getKernelRadius() * 4) {
+			std::cout << "the simulation area is too small relative to the required buffers size for the dynamix window area/buffer_size/reuired_min_diff" <<
+				S_simulation.getRadius() << " / " << params.max_allowed_displacement << " / " << data.getKernelRadius() * 4 << " / " << std::endl;
+			gpuErrchk(cudaError_t::cudaErrorUnknown);
+		}
+
+		//those are mostly used to remove some of the existing fluid
+		S_boundaryRange.setSphere(S_simulation.getCenter(), S_simulation.getRadius() - (data.getKernelRadius()*1.5));
+		S_fluidInterior.setSphere(S_simulation.getCenter(), S_simulation.getRadius() - data.particleRadius * 3);
+
+		//those are specific the the bancground buffer particles
+		S_bufferInterior.setSphere(S_fluidInterior.getCenter(),
+			S_fluidInterior.getRadius() - (params.max_allowed_displacement + data.getKernelRadius()*1.5));
+		S_bufferInterior.setReversedSurface(true);
+
+
+
+
+		SA_keptExistingFluidArea.addSurface(S_fluidInterior);
+		SA_keptExistingFluidArea.addSurface(S_boundaryRange);
+
+
+		backgroundFileName = "dynamicWindow_sphere_2_5m.txt";
+
+	}
+	else if (params.simulation_config == 5) {
+
+		//the star shaped border here
+		//the parameters for the star are 5 points, re=3.5, ri=2, direction=(0,0,1), h=5
+
+		RealCuda ri = 2 ;
+		RealCuda re = 3.5 ;
+		int pointCount = 5;
+		Vector3d firstPointDir = Vector3d(0, 0, 1);
+		S_simulation.setStar(Vector3d(0, 0, 0), 10, re, ri, pointCount, firstPointDir);
+
+		if ((S_simulation.getRadiusInternal() - params.max_allowed_displacement) < data.getKernelRadius() * 4) {
+			std::cout << "the simulation area is too small relative to the required buffers size for the dynamix window area/buffer_size/reuired_min_diff" <<
+				S_simulation.getRadiusInternal() << " / " << params.max_allowed_displacement << " / " << data.getKernelRadius() * 4 << " / " << std::endl;
+			gpuErrchk(cudaError_t::cudaErrorUnknown);
+		}
+
+		//those are mostly used to remove some of the existing fluid
+		S_boundaryRange.setStar(Vector3d(0, 0, 0), 10, re - (data.getKernelRadius()*1.5),
+			ri - (data.getKernelRadius()*1.5), pointCount, firstPointDir);
+
+		S_fluidInterior.setStar(Vector3d(0, 0, 0), 10, re - data.particleRadius * 3,
+			ri - data.particleRadius * 3, pointCount, firstPointDir);
+
+		//those are specific the the bancground buffer particles
+
+		S_bufferInterior.setStar(Vector3d(0, 0, 0), 10, re - (params.max_allowed_displacement + data.getKernelRadius()*1.5),
+			ri - (params.max_allowed_displacement + data.getKernelRadius()*1.5), pointCount, firstPointDir);
+		S_bufferInterior.setReversedSurface(true);
+
+
+		S_fluid.setPlane(Vector3d(0, 1, 0), Vector3d(0, -1, 0));
+
+
+		SA_keptExistingFluidArea.addSurface(S_fluidInterior);
+		SA_keptExistingFluidArea.addSurface(S_boundaryRange);
+
+		backgroundFileName = "dynamicWindow_star_re3_5_ri2.txt";
 
 	}
 	else {

@@ -1481,7 +1481,7 @@ void DFSPHCUDA::step()
 				//this can be used to load any boundary shape that has a config and no existing fluid
 
 				bool keep_existing_fluid = false;
-				int simulation_config = 13;
+				int simulation_config = 15;
 
 				Vector3d normal_gravitation = m_data.gravitation;
 				//m_data.gravitation.y *= 5;
@@ -1680,7 +1680,7 @@ void DFSPHCUDA::step()
 				if (count_steps == 0) {
 					OpenBoundariesSimpleInterface::InitParameters initParams;
 					initParams.show_debug = true;
-					initParams.simulation_config = 2;
+					initParams.simulation_config = 6;
 					OpenBoundariesSimpleInterface::init(m_data, initParams);
 
 
@@ -1777,13 +1777,13 @@ void DFSPHCUDA::step()
 
 
 			}
-
+			//qzdqs
 			//the dynamic windows diplacment
 			if (true) {
 				if (count_steps == 0) {
 					DynamicWindowInterface::InitParameters initParams;
 					initParams.show_debug = true;
-					initParams.simulation_config = 1;
+					initParams.simulation_config = 5;
 					initParams.air_particles_restriction = 1;
 					initParams.keep_existing_fluid = false;
 					initParams.clear_data = false;

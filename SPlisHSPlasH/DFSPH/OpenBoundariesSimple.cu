@@ -183,7 +183,7 @@ void OpenBoundariesSimple::init(DFSPHCData& data, OpenBoundariesSimpleInterface:
 		S_fluidInterior.setSphere(S_boundary.getCenter(), S_boundary.getRadius() - data.particleRadius * 3);
 
 		S_fluidSurface.setPlane(Vector3d(0, 1, 0), Vector3d(0, -1, 0));
-		inflowFileName = "inflowPositionsSet_sphere.txt";
+		inflowFileName = "inflowPositionsSet_sphere_1_5m.txt";
 	}
 	else if (params.simulation_config == 3) {
 		S_boundary.setCylinder(Vector3d(0, 0, 0), 10, 2.5);
@@ -192,13 +192,39 @@ void OpenBoundariesSimple::init(DFSPHCData& data, OpenBoundariesSimpleInterface:
 		inflowFileName = "inflowPositionsSet_cylinder_r2_5m.txt";
 	}
 	else if (params.simulation_config == 4) {
-		//star shape
+
+		//the star shaped border here
+		//the parameters for the star are 5 points, re=3.5/2, ri=2/2, direction=(0,0,1), h=5
 		S_boundary.setStar(Vector3d(0, 0, 0), 10, 3.5 / 2.0, 2 / 2.0, 5, Vector3d(0, 0, 1));
 		S_fluidInterior.setStar(Vector3d(0, 0, 0), 10, 3.5 / 2.0 - data.particleRadius * 3, 
 			2 / 2.0 - data.particleRadius * 3, 5, Vector3d(0, 0, 1));
 
 		S_fluidSurface.setPlane(Vector3d(0, 1, 0), Vector3d(0, -1, 0));
 		inflowFileName = "inflowPositionsSet_star_re1_75_ri1.txt";
+	}
+	else if (params.simulation_config == 5) {
+		//2.5m sphere
+
+		S_boundary.setSphere(Vector3d(0, 1, 0), 2.5);
+		S_fluidInterior.setSphere(S_boundary.getCenter(), S_boundary.getRadius() - data.particleRadius * 3);
+
+		S_fluidSurface.setPlane(Vector3d(0, 1, 0), Vector3d(0, -1, 0));
+		inflowFileName = "inflowPositionsSet_sphere_2_5m.txt";
+	}
+	else if (params.simulation_config == 6) {
+
+		//the star shaped border here
+		//the parameters for the star are 5 points, re=3.5, ri=2, direction=(0,0,1), h=5
+		RealCuda ri = 2;
+		RealCuda re = 3.5;
+		int pointCount = 5;
+		Vector3d firstPointDir = Vector3d(0, 0, 1);
+		S_boundary.setStar(Vector3d(0, 0, 0), 10, re, ri, pointCount, firstPointDir);
+		S_fluidInterior.setStar(Vector3d(0, 0, 0), 10, re - data.particleRadius * 3,
+			ri - data.particleRadius * 3, 5, Vector3d(0, 0, 1));
+
+		S_fluidSurface.setPlane(Vector3d(0, 1, 0), Vector3d(0, -1, 0));
+		inflowFileName = "inflowPositionsSet_star_re3_5_ri2.txt";
 	}
 	else {
 		std::cout << "OpenBoundariesSimple::init no existing config detected (requested config): " <<params.simulation_config<< std::endl;

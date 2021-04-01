@@ -1632,9 +1632,9 @@ void remove_tagged_particles(SPH::UnifiedParticleSet* particleSet, T* index_arra
 	//and now you can update the number of particles
 	int new_num_particles = particleSet->numParticles - countToRemove;
 	if (new_num_particles <= 0) {
-		std::cout << "wtf you are switching an impossible number of particles  oldnbr/new_nbr: " << particleSet->numParticles <<
+		std::cout << "wtf you are switching to an impossible number of particles  oldnbr/new_nbr: " << particleSet->numParticles <<
 			"  /  "<<new_num_particles<<std::endl;
-		exit(0);
+		gpuErrchk(cudaError_t::cudaErrorUnknown);
 	}
 
 	particleSet->updateActiveParticleNumber(new_num_particles);
