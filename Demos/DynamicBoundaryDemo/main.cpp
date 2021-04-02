@@ -177,6 +177,9 @@ void timeStep ()
 		
 				bool controlBoat = true;
 				if (controlBoat) {
+					bool manualBoatVelocityControl = false;
+					bool manualBoatOrientationControl = false;
+
 					FluidModel::RigidBodyParticleObject *rbpo = base.getSimulationMethod().model.getRigidBodyParticleObject(1);
 					RigidBodyObject *rbo = rbpo->m_rigidBody;
 					if (rbo->isDynamic())
@@ -190,6 +193,8 @@ void timeStep ()
 							Vector3r f_counter_grav(0, 1200, 0);
 							rbo->addForce(f_counter_grav);
 						}
+
+
 
 						//a system that deactivate a boat control key when the oposite key is pressed
 						static bool boatForward_old = false;
@@ -219,16 +224,32 @@ void timeStep ()
 						boatLeft_old = base.getBoatLeft();
 						boatRight_old = base.getBoatRight();
 
+						//some intermediary boleans to integrate the atomatic boat control easily
+						bool boatForward = false;
+						bool boatBackward = false;
+						bool boatLeft = false;
+						bool boatRight = false;
+
+						float controlForceIntensity = base.getBoatForceIntensity();
+						if (manualBoatVelocityControl) {
+							boatForward = boatForward_old;
+							boatBackward = boatBackward_old;
+						}
+						else {
+							//here code the scenarios you want for the automatic control
+							controlForceIntensity = 800;
+							boatForward = true;
+						}
+
 						//apply the boat control
 						Matrix3r rot_marix=rbo->getRotation();
 						//*
 						//this should have the boat base direction as a default value
 						Vector3r boatControlForce(-1,0,0);
-						float controlForceIntensity = base.getBoatForceIntensity();
-						if (base.getBoatForward()) {
+						if (boatForward) {
 							boatControlForce *= controlForceIntensity;
 						}
-						else if (base.getBoatBackward()) {
+						else if (boatBackward) {
 							boatControlForce *= -controlForceIntensity;
 						}
 						else {
@@ -250,16 +271,52 @@ void timeStep ()
 						//*/
 
 						//*
+
+						float controlTorqueIntensity = base.getBoatTorqueIntensity();
+						if (manualBoatOrientationControl) {
+							boatLeft = boatLeft_old;
+							boatRight = boatRight_old;
+						}
+						else {
+							//here code the scenarios you want for the automatic control
+							Vector3r boatDirLocal(-1, 0, 0);
+							Vector3r boatDirGlobal=rbo->getRotation()*boatDirLocal;
+							
+							//I want the direction in the Horizontal plane 
+							boatDirGlobal[1] = 0;
+							boatDirGlobal.normalize();
+
+							Vector3r targetDir(-1, 0, 0);
+
+							//and now depending on the target direction activatethe left or right control
+							//for the intensity I want the actual angle
+							//most likely I need a pd-controler for that
+							float angleToTarget=acosf(targetDir.dot(boatDirGlobal));
+
+							//currently using a fixed intesity since it works well
+							controlTorqueIntensity = 50;
+
+							//and wealso need to know the direction
+							float crossProdRes = targetDir.cross(boatDirGlobal).y();
+							if (crossProdRes > 0) {
+								boatRight = true;
+							}
+							else {
+								boatLeft = true;
+							}
+
+							//std::cout << "automatic boat control internal values: " << angleToTarget << "   " << crossProdRes << std::endl;
+						}
+
 						bool apply_local_torque = false;
 						Vector3r boatControlTorque(0, 1, 0);
 						if (apply_local_torque) {
 							boatControlTorque= Vector3r(0, 0, -1);
 						}
-						float controlTorqueIntensity = base.getBoatTorqueIntensity();
-						if (base.getBoatLeft()) {
+						if (boatLeft) {
 							boatControlTorque *= controlTorqueIntensity;
 						}
-						else if (base.getBoatRight()) {
+						else if (boatRight) {
 							boatControlTorque *= -controlTorqueIntensity;
 						}
 						else {
@@ -281,6 +338,8 @@ void timeStep ()
 					}
 				}
 
+				
+
 			//////////////////////////////////////////////////////////////////////////
 			// PBD
 			//////////////////////////////////////////////////////////////////////////
@@ -289,6 +348,41 @@ void timeStep ()
 				STOP_TIMING_AVG;
 
 				updateBoundaryParticles(false);
+
+				bool camera_follow_boat = true;
+				if (camera_follow_boat) {
+					FluidModel::RigidBodyParticleObject *rbpo = base.getSimulationMethod().model.getRigidBodyParticleObject(1);
+					RigidBodyObject *rbo = rbpo->m_rigidBody;
+					if (rbo->isDynamic())
+					{
+						Vector3r newBoatpos;
+						newBoatpos = rbo->getPosition();
+
+						//let's use the lookat procedure from the setViewport function since it's easier for now
+						Vector3r eyePos = newBoatpos;
+						Vector3r lookAt = newBoatpos;
+						
+						//the type of camera used
+						//0: folow small boat
+						//1: follow large boat
+						int camera_type = 0;
+						if (camera_type == 0) {
+							eyePos[0] += 0.5;
+							eyePos[1] = 3;
+							eyePos[2] += 5;
+							lookAt[1] = 1;
+						}
+						else if (camera_type == 1) {
+							eyePos[0] += 0.5;
+							eyePos[1] = 3;
+							eyePos[2] += 5;
+							lookAt[1] = 1;
+						}
+						
+
+						MiniGL::setViewport(40.0, 0.1f, 500.0, eyePos, lookAt);
+					}
+				}
 			}
 		}
 
@@ -371,6 +465,8 @@ void renderBoundary()
 
 void render()
 {
+
+
 	MiniGL::coordinateSystem();
 
 	base.renderFluid();

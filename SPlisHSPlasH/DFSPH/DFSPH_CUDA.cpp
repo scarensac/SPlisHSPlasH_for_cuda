@@ -1680,7 +1680,7 @@ void DFSPHCUDA::step()
 				if (count_steps == 0) {
 					OpenBoundariesSimpleInterface::InitParameters initParams;
 					initParams.show_debug = true;
-					initParams.simulation_config = 6;
+					initParams.simulation_config = 0;
 					OpenBoundariesSimpleInterface::init(m_data, initParams);
 
 
@@ -1700,7 +1700,7 @@ void DFSPHCUDA::step()
 					std::chrono::steady_clock::time_point tp2 = std::chrono::steady_clock::now();
 					RealCuda time_p1 = std::chrono::duration_cast<std::chrono::nanoseconds> (tp2 - tp1).count() / 1000000.0f;
 
-					std::cout << "time handling open boundaries: " << time_p1 << std::endl;
+					//std::cout << "time handling open boundaries: " << time_p1 << std::endl;
 				}
 
 
@@ -1783,7 +1783,7 @@ void DFSPHCUDA::step()
 				if (count_steps == 0) {
 					DynamicWindowInterface::InitParameters initParams;
 					initParams.show_debug = true;
-					initParams.simulation_config = 5;
+					initParams.simulation_config = 0;
 					initParams.air_particles_restriction = 1;
 					initParams.keep_existing_fluid = false;
 					initParams.clear_data = false;
@@ -2252,9 +2252,10 @@ void DFSPHCUDA::step()
         static float total_time = 0;
         total_time += time_iter;
 
-		
-		std::cout << "check density and divergence targetsand iter densityiter/diviter/densityerr/diverr: " <<
-			m_maxError << "  " << m_maxIterations << "  " << m_maxErrorV << "  " << m_maxIterationsV << std::endl;
+		if (false) {
+			std::cout << "check density and divergence targetsand iter densityiter/diviter/densityerr/diverr: " <<
+				m_maxError << "  " << m_maxIterations << "  " << m_maxErrorV << "  " << m_maxIterationsV << std::endl;
+		}
 
         static float iter_pressure_avg = 0;
         static float iter_divergence_avg = 0;
@@ -2376,7 +2377,9 @@ void DFSPHCUDA::step()
 			}
         }
 
-		if (true) {
+
+		//some less spammy timming message
+		if (false) {
 			if ((count_steps % 50) == 0) {
 				std::cout << "time computation for "<< count_steps <<" steps: " << total_time << std::endl;
 			}
@@ -2494,7 +2497,7 @@ void DFSPHCUDA::step()
 	//this gives results in miliseconds
 	RealCuda time_simu_step = std::chrono::duration_cast<std::chrono::nanoseconds> (tpEndSimuStep - tpStartSimuStep).count() / 1000000.0f;
 
-	std::cout << "time simu step: " << time_simu_step << std::endl;
+	//std::cout << "time simu step: " << time_simu_step << std::endl;
 
 
     if(show_fluid_timings)

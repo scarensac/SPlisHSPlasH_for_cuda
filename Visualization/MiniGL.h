@@ -147,7 +147,9 @@ namespace SPH
 		static void initTexture ();
 		static void bindTexture();
 		static void unbindTexture();
-		static void move (Real x, Real y, Real z);
+		static void move(Real x, Real y, Real z);
+		static void setPosition(Real x, Real y, Real z);
+		static Vector3r getPosition();
 		static void rotateX (Real x);
 		static void rotateY (Real y);
 		static void setProjectionMatrix (int width, int height);

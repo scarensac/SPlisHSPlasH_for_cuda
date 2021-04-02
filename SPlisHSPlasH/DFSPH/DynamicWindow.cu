@@ -295,6 +295,8 @@ void DynamicWindow::init(DFSPHCData& data, DynamicWindowInterface::InitParameter
 
 	//init the surfaces
 	if (params.simulation_config == 0) {
+		//cylinder with 1.5m radius
+
 		S_simulation.setCylinder(Vector3d(0, 0, 0), 10, 1.5);
 
 		if ((S_simulation.getRadius() - params.max_allowed_displacement) < data.getKernelRadius()*4) {
@@ -325,7 +327,7 @@ void DynamicWindow::init(DFSPHCData& data, DynamicWindowInterface::InitParameter
 	else if (params.simulation_config == 1) {
 
 		//the 1.5m sphere config
-		//2.5 m fluid box
+
 		S_simulation.setSphere(Vector3d(0, 1, 0), 1.5);
 		//S_fluid.setCuboid(Vector3d(0, 1.25, 0), Vector3d(2, 2, 2));
 		S_fluid.setPlane(Vector3d(0, 1, 0), Vector3d(0, -1, 0));
