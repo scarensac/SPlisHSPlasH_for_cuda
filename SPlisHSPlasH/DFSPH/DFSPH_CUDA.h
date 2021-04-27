@@ -117,7 +117,11 @@ public:
     void handleSimulationSave(bool save_liquid, bool save_solids, bool save_boundaries);
     void handleSimulationLoad(bool load_liquid, bool load_liquid_velocities, bool load_solids, bool load_solids_velocities,
                               bool load_boundaries, bool load_boundaries_velocities);
-	void handleFluidInit();
+	void handleFluidInit(); 
+	void handleFluidInitExperiments();
+
+	void applyOpenBoundaries();
+	void applyDynamicWindow();
 
     void handleSimulationMovement(Vector3d movement);
 

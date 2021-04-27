@@ -15,6 +15,13 @@
 #include "Utilities/FileSystem.h"
 #include "SPlisHSPlasH/DFSPH/DFSPH_CUDA.h"
 
+
+#define FFMPEG_RENDER
+#ifdef FFMPEG_RENDER
+FILE* ffmpeg = NULL;
+//#define USE_MULTIPLES_SHADER
+#endif
+
 // Enable memory leak detection
 #ifdef _DEBUG
 #ifndef EIGEN_ALIGN
@@ -98,14 +105,31 @@ void reset()
 
 void timeStep ()
 {
+	{
+		static bool firstTime = false;
+		if (firstTime) {
+			firstTime = false;
 
+			MiniGL::setViewport(40.0, 0.1f, 500.0, Vector3r(-11.0, 3.0, 0.0), Vector3r(0.0, 2.0, 0.0));
+		}
+	}
 
 	if ((base.getPauseAt() > 0.0) && (base.getPauseAt() < TimeManager::getCurrent()->getTime()))
 		base.setPause(true);
 
+	float pauseRbAfterTime = 0.72;
+	if (pauseRbAfterTime > 0) {
+		if (TimeManager::getCurrent()->getTime() > pauseRbAfterTime) {
+			base.setRbPause(true);
+		}
+	}
+
 	if (base.getSimulationMethod().simulationMethod == DemoBase::SimulationMethods::DFSPH_CUDA) {
 		DFSPHCUDA* sim = dynamic_cast<DFSPHCUDA*>(base.getSimulationMethod().simulation);
+
+
 		sim->handleDynamicBodiesPause(base.getRbPause());
+		
 
 		//save th simulation state if asked
 		sim->handleSimulationSave(base.getSaveLiquid()|| base.getSaveSimulation(), base.getSaveSimulation(), base.getSaveSimulation());
@@ -175,7 +199,7 @@ void timeStep ()
 			else {
 				updateBoundaryForces();
 		
-				bool controlBoat = true;
+				bool controlBoat = false;
 				if (controlBoat) {
 					bool manualBoatVelocityControl = false;
 					bool manualBoatOrientationControl = false;
@@ -237,7 +261,7 @@ void timeStep ()
 						}
 						else {
 							//here code the scenarios you want for the automatic control
-							controlForceIntensity = 800;
+							controlForceIntensity = 5000; // 800;
 							boatForward = true;
 						}
 
@@ -288,13 +312,26 @@ void timeStep ()
 
 							Vector3r targetDir(-1, 0, 0);
 
+							bool with_animation = true;
+							if (with_animation) {
+								if (TimeManager::getCurrent()->getTime() > 20) {
+									targetDir = Vector3r(-0.25, 0, -0.75);
+									targetDir.normalize();
+								}else if (TimeManager::getCurrent()->getTime() > 10) {
+									targetDir = Vector3r(-0.25, 0, 0.75);
+									targetDir.normalize();
+								}
+							}
+
+
 							//and now depending on the target direction activatethe left or right control
 							//for the intensity I want the actual angle
 							//most likely I need a pd-controler for that
-							float angleToTarget=acosf(targetDir.dot(boatDirGlobal));
+							//float angleToTarget=acosf(targetDir.dot(boatDirGlobal));
 
 							//currently using a fixed intesity since it works well
-							controlTorqueIntensity = 50;
+							//controlTorqueIntensity = 50;
+							controlTorqueIntensity = 400;
 
 							//and wealso need to know the direction
 							float crossProdRes = targetDir.cross(boatDirGlobal).y();
@@ -349,7 +386,7 @@ void timeStep ()
 
 				updateBoundaryParticles(false);
 
-				bool camera_follow_boat = true;
+				bool camera_follow_boat = false;
 				if (camera_follow_boat) {
 					FluidModel::RigidBodyParticleObject *rbpo = base.getSimulationMethod().model.getRigidBodyParticleObject(1);
 					RigidBodyObject *rbo = rbpo->m_rigidBody;
@@ -365,7 +402,7 @@ void timeStep ()
 						//the type of camera used
 						//0: folow small boat
 						//1: follow large boat
-						int camera_type = 0;
+						int camera_type = 1;
 						if (camera_type == 0) {
 							eyePos[0] += 0.5;
 							eyePos[1] = 3;
@@ -373,9 +410,9 @@ void timeStep ()
 							lookAt[1] = 1;
 						}
 						else if (camera_type == 1) {
-							eyePos[0] += 0.5;
-							eyePos[1] = 3;
-							eyePos[2] += 5;
+							eyePos[0] += 0.5*1.66;
+							eyePos[1] = 2*1.66;
+							eyePos[2] += 5*1.66;
 							lookAt[1] = 1;
 						}
 						
@@ -385,6 +422,8 @@ void timeStep ()
 				}
 			}
 		}
+
+		
 
 		if (base.getEnablePartioExport())
 		{
@@ -396,6 +435,16 @@ void timeStep ()
 			}
 		}
 	}
+
+#ifdef FFMPEG_RENDER
+	//the part to save to file
+	if (ffmpeg != NULL) {
+		if (TimeManager::getCurrent()->getTime()>20) {
+			_pclose(ffmpeg);
+			exit(0);
+		}
+	}
+#endif
 }
 
 void simulationMethodChanged()
@@ -465,11 +514,38 @@ void renderBoundary()
 
 void render()
 {
-
-
 	MiniGL::coordinateSystem();
 
+	static int width = glutGet(GLUT_WINDOW_WIDTH);
+	static int height = glutGet(GLUT_WINDOW_HEIGHT);
+
+
+#ifdef FFMPEG_RENDER
+	static int* buffer = new int[width*height];
+
+	if (!base.getPause()) {
+		if (ffmpeg == NULL) {
+			int framerate = (1 / TimeManager::getCurrent()->getTimeStepSize());
+			std::cout << "video framerate: " << framerate << std::endl;
+			std::ostringstream oss;
+			// start ffmpeg telling it to expect raw rgba 720p-60hz frames
+			// -i - tells it to read frames from stdin
+			oss << "D:\\ffmpeg-4.1.3-win64-static\\bin\\ffmpeg " <<
+				" -r " << framerate << " -f rawvideo -pix_fmt rgba -s " << width << "x" << height << " -i - " <<
+				"-threads 0 -preset fast -y -pix_fmt yuv420p -crf 21 -vf vflip output.mp4";
+
+
+
+			// open pipe to ffmpeg's stdin in binary write mode
+			ffmpeg = _popen(oss.str().c_str(), "wb");
+		}
+	}
+#endif
+
 	base.renderFluid();
+
+
+
 	renderBoundary();
 
 	//////////////////////////////////////////////////////////////////////////
@@ -510,6 +586,17 @@ void render()
 	pbdWrapper.renderTetModels();
 	pbdWrapper.renderConstraints();
 	pbdWrapper.renderBVH();
+
+
+#ifdef FFMPEG_RENDER
+	if (ffmpeg != NULL) {
+		glReadPixels(0, 0, width, height, GL_RGBA, GL_UNSIGNED_BYTE, buffer);
+
+		fwrite(buffer, sizeof(int)*width*height, 1, ffmpeg);
+	}
+
+#endif
+
 }
 
 void initBoundaryData()

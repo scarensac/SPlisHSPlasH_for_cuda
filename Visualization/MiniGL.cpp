@@ -396,6 +396,7 @@ void MiniGL::drawTetrahedron(const Vector3r &a, const Vector3r &b, const Vector3
 
 void MiniGL::setViewport(float pfovy, float pznear, float pzfar, const Vector3r &peyepoint, const Vector3r &plookat)
 {
+
 	fovy = pfovy;
 	znear = pznear;
 	zfar = pzfar;

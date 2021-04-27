@@ -1218,88 +1218,9 @@ void DFSPHCData::init_fluid_to_simulation(bool keep_existing_fluid) {
 	std::cout << "init fluid to simulation start: " << std::endl;
 
 	{
-
-		RestFLuidLoaderInterface::TaggingParameters paramsTagging;
-		RestFLuidLoaderInterface::InitParameters paramsInit;
-		RestFLuidLoaderInterface::LoadingParameters paramsLoading;
-		if (true) {
-			/*
-			paramsTagging.useRule3 = false;
-			paramsTagging.useRule2 = false;
-			for (int i = 1; i < 100; ++i) {
-			paramsTagging.step_density = i;
-			RestFLuidLoaderInterface::initializeFluidToSurface(*this, true, paramsTagging, false);
-			}
-			//*/
-			/*
-			paramsTagging.useRule3 = true;
-			paramsTagging.useRule2 = false;
-			for (int i = 1; i < 100; ++i) {
-			paramsTagging.step_density = i;
-			RestFLuidLoaderInterface::initializeFluidToSurface(*this, true, paramsTagging, false);
-			}
-			//*/
-			/*
-			paramsTagging.useRule3 = false;
-			paramsTagging.useRule2 = true;
-			for (int i = 1; i < 100; ++i) {
-			paramsTagging.step_density = i;
-			RestFLuidLoaderInterface::initializeFluidToSurface(*this, true, paramsTagging, false);
-			}
-			//*/
-			/*
-			paramsTagging.useRule3 = true;
-			paramsTagging.useRule2 = true;
-			for (int i = 1; i < 100; ++i) {
-			paramsTagging.step_density = i;
-			RestFLuidLoaderInterface::initializeFluidToSurface(*this, true, paramsTagging, false);
-			}
-			//*/
-		}
-
-		if (true) {
-			paramsInit.air_particles_restriction = 1;
-			paramsInit.center_loaded_fluid = true;
-			paramsInit.keep_existing_fluid = true;
-			paramsInit.simulation_config = 8;
-			paramsInit.apply_additional_offset = true;
-			static std::default_random_engine e;
-			static std::uniform_real_distribution<> dis(-1 , 1); // rage -1 ; 1
-			paramsInit.additional_offset=Vector3d(dis(e), dis(e), dis(e))*particleRadius;
-
-
-			paramsTagging.useRule2 = false;
-			paramsTagging.useRule3 = true;
-			paramsTagging.step_density = 50;
-			paramsTagging.keep_existing_fluid = paramsInit.keep_existing_fluid;
-
-
-			paramsLoading.load_fluid = true;
-			paramsLoading.keep_existing_fluid = keep_existing_fluid;
-
-			try {
-				RestFLuidLoaderInterface::init(*this, paramsInit);
-
-				RestFLuidLoaderInterface::initializeFluidToSurface(*this, true, paramsTagging, paramsLoading);
-			}
-			catch (const std::string& e) { // reference to the base of a polymorphic object
-				std::cout << e << std::endl;
-				exit(0);
-			}
-			catch (const char* e) { // reference to the base of a polymorphic object
-				std::cout << std::string(e) << std::endl;
-				exit(0);
-			}
-			catch (...) {
-				std::cout << "unknown exception detected" << std::endl;
-				exit(0);
-			}
-		}
-
-		RestFLuidLoaderInterface::StabilizationParameters paramsStab;
-		paramsStab.method = 0;
-		paramsStab.stabilizationItersCount = 10;
-		//RestFLuidLoaderInterface::stabilizeFluid(*this, params);
+		std::string msg = "DFSPHCData::init_fluid_to_simulation has currently been deleted use the loader directly in the step function";
+		std::cout << msg << std::endl;
+		throw(msg);
 	}
 
 	std::cout << "init fluid to simulation end" << std::endl;
