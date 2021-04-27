@@ -16,7 +16,7 @@
 #include "SPlisHSPlasH/DFSPH/DFSPH_CUDA.h"
 
 
-#define FFMPEG_RENDER
+//#define FFMPEG_RENDER
 #ifdef FFMPEG_RENDER
 FILE* ffmpeg = NULL;
 //#define USE_MULTIPLES_SHADER

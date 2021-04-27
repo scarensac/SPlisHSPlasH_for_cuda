@@ -126,7 +126,7 @@ void DFSPHCUDA::step()
         //*
 		//test the simple open boundaries
 		
-		if (true) {
+		if (false) {
 			bool useOpenBoundaries = true;
 			bool useDynamicWindow = false;
 
@@ -629,6 +629,25 @@ void DFSPHCUDA::step()
 				}
 			}
 		}
+
+		//output some information ot a file
+		if (false) {
+			std::string filename = "particle_count_evolution_wedge.csv";
+			if (count_steps == 0) {
+				std::remove(filename.c_str());
+			}
+			ofstream myfile;
+			myfile.open(filename, std::ios_base::app);
+			if (myfile.is_open()) {
+				myfile << count_steps<< "  "<<m_data.getFluidParticlesCount() << std::endl;;
+				myfile.close();
+			}
+			else {
+				std::cout << "failed to open file: " << filename << "   reason: " << std::strerror(errno) << std::endl;
+			}
+		}
+
+
 
 		//std::cout << "fluid level: " << getFluidLevel() << std::endl;
 

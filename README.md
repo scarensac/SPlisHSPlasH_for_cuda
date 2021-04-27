@@ -21,3 +21,13 @@ This project also contains the following systems that can be activated inside th
 
 	- a dynamic window that can be used to move the simulated area to follow a subject of interect (e.g. a boat)
 		See the DynamicWindow.h file to explore this system
+		
+		
+		
+Installation:
+
+This project require having CUDA installed on top of the dependencies from the SPlisHSPlasH framework:
+
+For storage space reasons the "save_folder" that should contain the scene saved for loading purpose is not included in the repository.
+As such to ensure proper functioning of some component it is required to create a folder named "save_folder" in the "data" folder.
+The Open boundary and Dynamic component expect some subfolders to be present in the save folder. We recommend reading the init function of those two systems if their use is desired.
