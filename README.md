@@ -13,6 +13,7 @@ The GPU implementation in this repository contains multiples optimizations that 
 
 
 This project also contains the following systems that can be activated inside the stap function in the DFSPH_CUDA class:
+
 	- an implemantation of a special initializations system to start a simulation with a fluid at rest for any shape of boundary
 		See the RestFluidLoader.h file to explore this system
 
