@@ -5,7 +5,27 @@
 #include "SPlisHSPlasH\Vector.h"
 #include "DFSPH_c_arrays_structure.h"
 
+/**
+Rest FLuid Loader
 
+This system allow the user to initialize a volume of fluid in a rest state for any boundary shape.
+The calls to the actual class function should be done through the class RestFLuidLoaderInterface 
+
+Requirements:
+	- Specify the simulation boundary shape and fluid volume shape in a configuration in the init() function
+		- this can be done either by using the BufferFluidSurface, by using either geometric primitives or actual triangular meshes
+
+	- Create a file containing a volume of fluid at rest larger than the desired boundary shapes used in the actual simulation
+		- the easy way is simply to simulate once a large cube of fluid untill it reahc a rest state.
+		- This file should be named: background_buffer_file.txt
+
+System use:
+
+- first call the init function after having create the boundary particles
+- then call the initializeFluidToSurface to restrict the particles to the desired density
+- if desired call the StabilizeFluid function to run a stabilization algorithm on the fluid particle to improve the stability of the result
+
+*/
 
 namespace SPH {
 	class RestFLuidLoaderInterface {

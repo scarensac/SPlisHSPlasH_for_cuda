@@ -29,5 +29,5 @@ Installation:
 This project require having CUDA installed on top of the dependencies from the SPlisHSPlasH framework:
 
 For storage space reasons the "save_folder" that should contain the scene saved for loading purpose is not included in the repository.
-As such to ensure proper functioning of some component it is required to create a folder named "save_folder" in the "data" folder.
-The Open boundary and Dynamic component expect some subfolders to be present in the save folder. We recommend reading the init function of those two systems if their use is desired.
+As such to ensure proper functioning of some component it is required to create a folder named "save_folder" in the "data" folder. 
+If you want to rename this folder you may do it in the constructor of the DFSPHCData class.

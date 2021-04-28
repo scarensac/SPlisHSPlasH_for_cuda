@@ -5,8 +5,28 @@
 #include "SPlisHSPlasH\Vector.h"
 #include "DFSPH_c_arrays_structure.h"
 
+/**
+Dynamic Window
 
+This system allow the user to move the simulated area around as if there was an infinite ocean.
+	- this system is a specialization of the RestFluidLoader system.
+The calls to the actual class function should be done through the class DynamicWindowInterface
 
+Requirements:
+- Specify the simulation boundary shape in a configuration in the init() function
+	this can be done either by using the BufferFluidSurface, by using either geometric primitives or actual triangular meshes
+
+- create a file containing a distribution of particles that represent the sampling point that can be used to add new fluid particles
+	- This should be done by simulating a fluid for the same boundary shape until it is at rest
+	- the name of this file should be specified in the init function and should be located in
+		a folder named folderDynamicWindow in the folder used to save fluid distribution
+
+System use:
+
+- first call the init function after having create the boundary particles
+- then call the applyOpenBoundary function at the start of the simulation step
+
+*/
 namespace SPH {
 	class DynamicWindowInterface {
 
