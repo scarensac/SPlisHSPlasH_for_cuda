@@ -771,6 +771,9 @@ DFSPHCData::DFSPHCData() {
     damp_borders_steps_count = 0;
     cancel_wave=false;
     cancel_wave_steps_count = 0;
+	cancel_wave_planes=NULL;
+	cancel_wave_lowest_point=0;
+
 
 	bmin=NULL;
 	bmax=NULL;
