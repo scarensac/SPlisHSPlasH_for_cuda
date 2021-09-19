@@ -66,6 +66,12 @@ inline __host__ __device__ void operator+=(float3 &a, float3 b)
     a.z += b.z;
 }
 
+inline __host__ __device__ void applyOperation(float3 &a, float3& b, float& factor)
+{
+	a.x += b.x*factor;
+	a.y += b.y*factor;
+	a.z += b.z*factor;
+}
 
 
 template<typename T>
@@ -73,7 +79,14 @@ __global__ void test_vector_type_kernel(T* v1, T* v2, RealCuda factor, int count
     int i = blockIdx.x * blockDim.x + threadIdx.x;
     if (i >= count_elem) { return; }
 
-    v1[i]+=v2[i]*factor;
+	if (false) {
+		v1[i]+=v2[i]*factor;
+	}
+	else {
+		v1[i].x += v2[i].x*factor;
+		v1[i].y += v2[i].y*factor;
+		v1[i].z += v2[i].z*factor;
+	}
 }
 
 void compare_vector3_struct_speed(){

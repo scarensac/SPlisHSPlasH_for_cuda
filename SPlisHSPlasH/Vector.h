@@ -4,6 +4,7 @@
 #include <cmath>
 #include <string>
 #include "SPlisHSPlasH\BasicTypes.h"
+#include "DFSPH\DFSPH_define_c.h"
 
 #ifdef __NVCC__
 #define FUNCTION __host__ __device__
@@ -18,23 +19,53 @@
 //#define ABS_MACRO(x) std::abs(x)
 #endif
 
+/*
+#if defined(__CUDACC__) // NVCC
+#define MY_ALIGN(n) __align__(n)
+#elif defined(__GNUC__) // GCC
+#define MY_ALIGN(n) __attribute__((aligned(n)))
+#elif defined(_MSC_VER) // MSVC
+#define MY_ALIGN(n) __declspec(align(n))
+#else
+#error "Please provide a definition for MY_ALIGN macro for your host compiler!"
+#endif
+//*/
+
+
+
+
 
 namespace SPH
 {
 
 	template <typename T>
-	class Vector3 {
+	class /*MY_ALIGN(16)*/ Vector3 {
 	public:
 		T x, y, z;
 
-		FUNCTION Vector3(T a, T b, T c) { x = a; y = b; z = c; }
+#ifdef USE_PADDING_FOR_MEMORY_ALIGNMENT
+		T w;
+#endif
+
+
+	 	FUNCTION Vector3(T a, T b, T c) { x = a; y = b; z = c; }
+
+
+
+
+
 		FUNCTION Vector3(T val) { x = val; y = val; z = val; }
 		//init from array without check
 		template<typename T2>
 		FUNCTION Vector3(T2 val[]) { x = val[0]; y = val[1]; z = val[2]; }
 
 		template<typename T2>
-		FUNCTION Vector3(const Vector3<T2>& v) { x = v.x; y = v.y; z = v.z; }
+		FUNCTION Vector3(const Vector3<T2>& v) { 
+			x = v.x; y = v.y; z = v.z; 
+#ifdef USE_VECTOR_PADDING_FOR_STORAGE
+			w = v.w;
+#endif
+		}
 
 		FUNCTION Vector3() { setZero(); }
 
@@ -45,7 +76,13 @@ namespace SPH
 		FUNCTION inline static Vector3 Zero() { return Vector3(0, 0, 0); }
 
 		template<typename T2>
-		FUNCTION inline Vector3& operator = (const Vector3<T2> &o) { x = o.x; y = o.y; z = o.z; return *this; }
+		FUNCTION inline Vector3& operator = (const Vector3<T2> &o) { 
+			x = o.x; y = o.y; z = o.z; 
+#ifdef USE_VECTOR_PADDING_FOR_STORAGE
+			w = o.w;
+#endif
+			return *this; 
+		}
 
 		template<typename T2>
 		FUNCTION inline friend bool operator == (const Vector3& lhs, const Vector3<T2>& rhs) {

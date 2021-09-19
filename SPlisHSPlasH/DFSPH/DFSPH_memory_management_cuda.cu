@@ -505,15 +505,18 @@ void allocate_UnifiedParticleSet_cuda(SPH::UnifiedParticleSet& container) {
 
 	//cudaMalloc(&(container.pos), container.numParticles * sizeof(Vector3d)); //use opengl buffer with cuda interop
 	//cudaMalloc(&(container.vel), container.numParticles * sizeof(Vector3d)); //use opengl buffer with cuda interop
+#ifndef STORE_MASS_IN_POSITION_PADDING
 	cudaMallocManaged(&(container.mass), container.numParticlesMax * sizeof(RealCuda));
-
+#endif
 
 	if (container.has_factor_computation) {
 		//*
 		cudaMallocManaged(&(container.numberOfNeighbourgs), container.numParticlesMax * 3 * sizeof(int));
 		cudaMallocManaged(&(container.neighbourgs), container.numParticlesMax * MAX_NEIGHBOURS * sizeof(int));
 
+#ifndef	STORE_DENSITY_IN_VELOCITY_PADDING
 		cudaMallocManaged(&(container.density), container.numParticlesMax * sizeof(RealCuda));
+#endif
 		cudaMallocManaged(&(container.factor), container.numParticlesMax * sizeof(RealCuda));
 		cudaMallocManaged(&(container.densityAdv), container.numParticlesMax * sizeof(RealCuda));
 
@@ -611,7 +614,10 @@ void load_UnifiedParticleSet_cuda(SPH::UnifiedParticleSet& container, Vector3d* 
 
 	gpuErrchk(cudaMemcpy(container.pos, pos, container.numParticles * sizeof(Vector3d), cudaMemcpyHostToDevice));
 	gpuErrchk(cudaMemcpy(container.vel, vel, container.numParticles * sizeof(Vector3d), cudaMemcpyHostToDevice));
+
+#ifndef	STORE_MASS_IN_POSITION_PADDING
 	gpuErrchk(cudaMemcpy(container.mass, mass, container.numParticles * sizeof(RealCuda), cudaMemcpyHostToDevice));
+#endif
 
 	if (container.is_dynamic_object) {
 		int numBlocks = calculateNumBlocks(container.numParticles);
@@ -639,7 +645,9 @@ void read_UnifiedParticleSet_cuda(SPH::UnifiedParticleSet& container, Vector3d* 
 	}
 
 	if (mass != NULL) {
+#ifndef	STORE_MASS_IN_POSITION_PADDING
 		gpuErrchk(cudaMemcpy(mass, container.mass, container.numParticles * sizeof(RealCuda), cudaMemcpyDeviceToHost));
+#endif
 	}
 
 	if (container.is_dynamic_object&&pos0 != NULL) {
@@ -658,7 +666,9 @@ void copy_UnifiedParticleSet_cuda(SPH::UnifiedParticleSet& dst, SPH::UnifiedPart
 	
 	gpuErrchk(cudaMemcpy(dst.vel, src.vel, dst.numParticles * sizeof(Vector3d), cudaMemcpyDeviceToDevice));
 
+#ifndef	STORE_MASS_IN_POSITION_PADDING
 	gpuErrchk(cudaMemcpy(dst.mass, src.mass, dst.numParticles * sizeof(RealCuda), cudaMemcpyDeviceToDevice));
+#endif 
 
 	gpuErrchk(cudaMemcpy(dst.color, src.color, dst.numParticles * sizeof(Vector3d), cudaMemcpyDeviceToDevice));	
 }
@@ -986,7 +996,9 @@ void change_max_particle_number(SPH::UnifiedParticleSet& container, int numParti
 	allocate_UnifiedParticleSet_cuda(container);
 
 	//and fill it with the old data for buffers that need to be kept
+#ifndef	STORE_MASS_IN_POSITION_PADDING
 	gpuErrchk(cudaMemcpy(container.mass, dummy.mass, dummy.numParticles * sizeof(RealCuda), cudaMemcpyDeviceToDevice));
+#endif
 	gpuErrchk(cudaMemcpy(container.kappa, dummy.kappa, dummy.numParticles * sizeof(RealCuda), cudaMemcpyDeviceToDevice));
 	gpuErrchk(cudaMemcpy(container.kappaV, dummy.kappaV, dummy.numParticles * sizeof(RealCuda), cudaMemcpyDeviceToDevice));
 
@@ -1021,11 +1033,17 @@ void change_max_particle_number(SPH::NeighborsSearchDataSet& dataSet, int numPar
 
 
 
-void add_particles_cuda(SPH::UnifiedParticleSet& container, int num_additional_particles, const Vector3d* pos, const Vector3d* vel) {
+void add_particles_cuda(SPH::UnifiedParticleSet& container, int num_additional_particles, Vector3d* pos, const Vector3d* vel) {
 	//can't use memeset for the mass so I have to make a kernel for the set
 	int numBlocks = calculateNumBlocks(num_additional_particles);
+#ifndef	STORE_MASS_IN_POSITION_PADDING
 	cuda_setBufferToValue_kernel<RealCuda> << <numBlocks, BLOCKSIZE >> > (container.mass,
 		container.m_V*container.density0, container.numParticles + num_additional_particles);
+#else
+	for (int i = 0; i < num_additional_particles; ++i) {
+		pos[i].w = container.m_V*container.density0;
+	}
+#endif
 
 
 

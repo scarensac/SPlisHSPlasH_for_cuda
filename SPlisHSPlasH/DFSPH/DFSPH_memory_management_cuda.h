@@ -40,7 +40,7 @@ void change_fluid_max_particle_number(SPH::DFSPHCData& data, int numParticlesMax
 void change_max_particle_number(SPH::UnifiedParticleSet& container, int numParticlesMax);
 void change_max_particle_number(SPH::NeighborsSearchDataSet& dataSet, int numParticlesMax);
 
-void add_particles_cuda(SPH::UnifiedParticleSet& container, int num_additional_particles, const Vector3d* pos, const Vector3d* vel);
+void add_particles_cuda(SPH::UnifiedParticleSet& container, int num_additional_particles, Vector3d* pos, const Vector3d* vel);
 
 template<class T> void set_buffer_to_value(T* buff, T val, int size);
 template<class T> void apply_factor_to_buffer(T* buff, T val, int size);

@@ -125,7 +125,10 @@ void DemoBase::initShaders()
 	string vertFile;
 	string fragFile;
 	bool transparent_shader = false;
+	if(sizeof(SPH::Vector3d)==(sizeof(float)*3))
 	{
+		std::cout << "loading shaders for v3d format" << std::endl;
+
 		vertFile = getDataPath() + "/shaders/vs_points_manual_color.glsl";
 		if (transparent_shader) {
 			fragFile = getDataPath() + "/shaders/fs_points_transparent_with_manual.glsl";
@@ -134,6 +137,19 @@ void DemoBase::initShaders()
 			fragFile = getDataPath() + "/shaders/fs_points_manual_color.glsl";
 		}
 	}
+	else if (sizeof(SPH::Vector3d) == (sizeof(float) * 4))
+	{
+		std::cout << "loading shaders for v4d format" << std::endl;
+
+		vertFile = getDataPath() + "/shaders/vs_points_manual_color_v4d.glsl";
+		fragFile = getDataPath() + "/shaders/fs_points_manual_color_v4d.glsl";
+	}
+	else {
+		std::cout << "unrecognised format of vector3D" << std::endl;
+		exit(-1259);
+	}
+	//*/
+
 	m_shader.compileShaderFile(GL_VERTEX_SHADER, vertFile);
 	m_shader.compileShaderFile(GL_FRAGMENT_SHADER, fragFile);
 	m_shader.createAndLinkProgram();
@@ -160,6 +176,7 @@ void DemoBase::initShaders()
 	m_meshShader.addUniform("shininess");
 	m_meshShader.addUniform("specular_factor");
 	m_meshShader.end();
+
 
 	vertFile = getDataPath() + "/shaders/vs_points.glsl";
 	fragFile = getDataPath() + "/shaders/fs_points_transparent.glsl";

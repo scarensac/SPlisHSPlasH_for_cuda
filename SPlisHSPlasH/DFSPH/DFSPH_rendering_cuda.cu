@@ -239,6 +239,7 @@ void cuda_opengl_initParticleRendering(ParticleSetRenderingData& renderingData, 
 	glGenVertexArrays(1, &renderingData.vao); // Créer le VAO
 	glBindVertexArray(renderingData.vao); // Lier le VAO pour l'utiliser
 
+	int elemSizeRelToReal = sizeof(Vector3d) / sizeof(RealCuda);
 
 	glGenBuffers(1, &renderingData.pos_buffer);
 	// selectionne le buffer pour l'initialiser
@@ -250,7 +251,7 @@ void cuda_opengl_initParticleRendering(ParticleSetRenderingData& renderingData, 
 		/* usage */     GL_DYNAMIC_DRAW);
 	//set it to the attribute
 	glEnableVertexAttribArray(0);
-	glVertexAttribPointer(0, 3, GL_FORMAT, GL_FALSE, 0, 0);
+	glVertexAttribPointer(0, elemSizeRelToReal, GL_FORMAT, GL_FALSE, 0, 0);
 
 	glGenBuffers(1, &renderingData.vel_buffer);
 	// selectionne le buffer pour l'initialiser
@@ -262,7 +263,7 @@ void cuda_opengl_initParticleRendering(ParticleSetRenderingData& renderingData, 
 		/* usage */     GL_DYNAMIC_DRAW);
 	//set it to the attribute
 	glEnableVertexAttribArray(1);
-	glVertexAttribPointer(1, 3, GL_FORMAT, GL_FALSE, 0, 0);
+	glVertexAttribPointer(1, elemSizeRelToReal, GL_FORMAT, GL_FALSE, 0, 0);
 
 	if (need_color_buffer) {
 		glGenBuffers(1, &renderingData.color_buffer);
@@ -275,7 +276,7 @@ void cuda_opengl_initParticleRendering(ParticleSetRenderingData& renderingData, 
 			/* usage */     GL_DYNAMIC_DRAW);
 		//set it to the attribute
 		glEnableVertexAttribArray(2);
-		glVertexAttribPointer(2, 3, GL_FORMAT, GL_FALSE, 0, 0);
+		glVertexAttribPointer(2, elemSizeRelToReal, GL_FORMAT, GL_FALSE, 0, 0);
 	}
 
 	// nettoyage

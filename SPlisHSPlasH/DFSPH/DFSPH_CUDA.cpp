@@ -81,6 +81,8 @@ DFSPHCUDA::~DFSPHCUDA(void)
 
 void DFSPHCUDA::step()
 {
+	//compare_vector3_struct_speed();
+	//exit(0);
    
     m_data.fluid_data->resetColor();
 

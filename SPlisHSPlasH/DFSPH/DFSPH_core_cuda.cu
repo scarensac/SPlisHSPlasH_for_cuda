@@ -334,7 +334,7 @@ __global__ void DFSPH_divergence_warmstart_init_kernel(SPH::DFSPHCData m_data, S
 		// Compute pressure stiffness denominator
 		//////////////////////////////////////////////////////////////////////////
 		particleSet->factor[i] = (-m_data.invH / (MAX_MACRO_CUDA(sum_grad_p_k, m_eps)));
-		particleSet->density[i] = density;
+		particleSet->setDensity(i, density);
 		/*
 		if ((particleSet->neighborsDataSet->cell_id[i] == TAG_ACTIVE_NEIGHBORS)) {
 			printf("mass/height/density: %f %f %f\n", particleSet->mass[i], xi.y, density);
@@ -698,7 +698,7 @@ __global__ void DFSPH_divergence_init_kernel(SPH::DFSPHCData m_data, SPH::Unifie
 			// Compute pressure stiffness denominator
 			//////////////////////////////////////////////////////////////////////////
 			particleSet->factor[i] = (-m_data.invH / (MAX_MACRO_CUDA(sum_grad_p_k, m_eps)));
-			particleSet->density[i] = density;
+			particleSet->setDensity(i, density);
 
 		}
 #endif
@@ -1053,7 +1053,7 @@ __global__ void DFSPH_pressure_compute_p1_kernel(SPH::DFSPHCData m_data, SPH::Un
 		//////////////////////////////////////////////////////////////////////////
 		// Compute pressure stiffness denominator
 		//////////////////////////////////////////////////////////////////////////
-		particleSet->density[i] = density;
+		particleSet->setDensity(i, density);
 		RealCuda C = density / m_data.density0 - 1;
 		RealCuda lambda = 0;
 		if (C > 0) {
@@ -1204,7 +1204,7 @@ __device__ void computeDensityAdv(SPH::DFSPHCData& m_data, SPH::UnifiedParticleS
 		delta += body.getMass(neighborIndex) * (vi - body.vel[neighborIndex]).dot(KERNEL_GRAD_W(m_data,xi - body.pos[neighborIndex]));
 	)
 
-		particleSet->densityAdv[index] = MAX_MACRO_CUDA(particleSet->density[index] + m_data.h_future*delta - m_data.density0, 0.0);
+		particleSet->densityAdv[index] = MAX_MACRO_CUDA(particleSet->getDensity(index) + m_data.h_future*delta - m_data.density0, 0.0);
 
 
 #ifdef USE_WARMSTART
@@ -1276,7 +1276,7 @@ __global__ void DFSPH_pressure_loop_end_kernel(SPH::DFSPHCData m_data, SPH::Unif
 	}
 
 #ifdef USE_POSITION_BASED_DENSITY_CONTRAINT
-	particleSet->densityAdv[i] = MAX_MACRO_CUDA(particleSet->density[i] - m_data.density0, 0.0);
+	particleSet->densityAdv[i] = MAX_MACRO_CUDA(particleSet->getDensity(i) - m_data.density0, 0.0);
 #else
 	computeDensityAdv(m_data, particleSet, i);
 #endif 
@@ -1457,7 +1457,7 @@ __global__ void DFSPH_viscosityXSPH_kernel(SPH::DFSPHCData m_data, SPH::UnifiedP
 		{
 
 			Vector3d xixj = xi - body.pos[neighborIndex];
-			RealCuda mass_div_density = body.getMass(neighborIndex) / body.density[neighborIndex];
+			RealCuda mass_div_density = body.getMass(neighborIndex) / body.getDensity(neighborIndex);
 			ai -= m_data.invH * m_data.viscosity * (mass_div_density) *  (vi - body.vel[neighborIndex]) * KERNEL_W(m_data, xixj);
 			ni += mass_div_density * KERNEL_GRAD_W(m_data, xixj);
 
@@ -1471,7 +1471,7 @@ __global__ void DFSPH_viscosityXSPH_kernel(SPH::DFSPHCData m_data, SPH::UnifiedP
 				unsigned int cur_cell_id_j = COMPUTE_CELL_INDEX(x_j , y_j , z_j);
 				printf("neighbor info: %u %u // %i : %i %i %i\n", neighborIndex, body.neighborsDataSet->cell_id[neighborIndex],
 					cur_cell_id_j,x_j,y_j,z_j);
-				printf("massdiv density : %f = %f / %f \n", mass_div_density, body.getMass(neighborIndex), body.density[neighborIndex]);
+				printf("massdiv density : %f = %f / %f \n", mass_div_density, body.getMass(neighborIndex), body.getDensity(neighborIndex));
 				/*
 				printf("density test 1 : (%f, %f, %f) -= %f * %f * %f * [(%f , %f, %f)-(%f , %f, %f)] * %f \n",
 					ai.x, ai.y, ai.z, m_data.invH, m_data.viscosity, (mass_div_density),
@@ -1491,7 +1491,7 @@ __global__ void DFSPH_viscosityXSPH_kernel(SPH::DFSPHCData m_data, SPH::UnifiedP
 		//viscosity only
 		ITER_NEIGHBORS_FLUID(
 		i,
-		ai -= m_data.invH * m_data.viscosity * (body.getMass(neighborIndex) / body.density[neighborIndex]) *
+		ai -= m_data.invH * m_data.viscosity * (body.getMass(neighborIndex) / body.getDensity(neighborIndex)) *
 		(vi - body.vel[neighborIndex]) * KERNEL_W(m_data,xi - body.pos[neighborIndex]);
 
 		)//*/
@@ -1519,7 +1519,7 @@ __global__ void DFSPH_applySurfaceAkinci2013SurfaceTension_kernel(SPH::DFSPHCDat
 	//I set the gravitation directly here to lover the number of kernels
 	Vector3d ai = Vector3d(0, 0, 0);
 	Vector3d ni = normals[i];
-	RealCuda rhoi = particleSet->density[i];
+	RealCuda rhoi = particleSet->getDensity(i);
 	const Vector3d &xi = particleSet->pos[i];
 
 	ITER_NEIGHBORS_INIT(m_data, particleSet, i);
@@ -1530,7 +1530,7 @@ __global__ void DFSPH_applySurfaceAkinci2013SurfaceTension_kernel(SPH::DFSPHCDat
 
 	ITER_NEIGHBORS_FLUID(m_data, particleSet,
 		i,
-		RealCuda K_ij = 2.0*density0 / (rhoi + body.density[neighborIndex]);
+		RealCuda K_ij = 2.0*density0 / (rhoi + body.getDensity(neighborIndex));
 
 	Vector3d accel = Vector3d(0, 0, 0);
 
@@ -2082,9 +2082,11 @@ void cuda_sortData(SPH::UnifiedParticleSet& particleSet, unsigned int * sort_id)
 	}
 	
 	//mass
+#ifndef STORE_MASS_IN_POSITION_PADDING
 	DFSPH_sortFromIndex_kernel<RealCuda> << <numBlocks, BLOCKSIZE >> > (particleSet.mass, intermediate_buffer_real, p_id_sorted, numParticles);
 	gpuErrchk(cudaDeviceSynchronize());
 	gpuErrchk(cudaMemcpy(particleSet.mass, intermediate_buffer_real, numParticles * sizeof(RealCuda), cudaMemcpyDeviceToDevice));
+#endif
 
 
 	if (particleSet.has_factor_computation) {
@@ -2183,9 +2185,11 @@ void cuda_shuffleData(SPH::UnifiedParticleSet& particleSet) {
 	gpuErrchk(cudaMemcpy(particleSet.vel, intermediate_buffer_v3d, numParticles * sizeof(Vector3d), cudaMemcpyDeviceToDevice));
 
 	//mass
+#ifndef STORE_MASS_IN_POSITION_PADDING
 	DFSPH_sortFromIndex_kernel<RealCuda> << <numBlocks, BLOCKSIZE >> > (particleSet.mass, intermediate_buffer_real, p_id_sorted, numParticles);
 	gpuErrchk(cudaDeviceSynchronize());
 	gpuErrchk(cudaMemcpy(particleSet.mass, intermediate_buffer_real, numParticles * sizeof(RealCuda), cudaMemcpyDeviceToDevice));
+#endif
 
 	if (particleSet.has_factor_computation) {
 		//kappa
@@ -3063,7 +3067,7 @@ __global__ void DFSPH_update_pos_kernel(SPH::DFSPHCData data, SPH::UnifiedPartic
 	}
 
 	/*
-	if (particleSet->density[i] < 900) {
+	if (particleSet->getDensity(i) < 900) {
 		particleSet->color[i] = Vector3d(0, 1, 0);
 	}
 	//*/
@@ -3344,8 +3348,8 @@ __global__ void compute_dynamic_body_particle_mass_kernel(SPH::DFSPHCData data, 
 
 
 	const Real volume = 1.0 / delta;
-	particleSet->mass[i] = particleSet->density0 * volume;
-	particleSet->mass[i] = data.fluid_data_cuda->getMass(0);
+	particleSet->setMass(i, particleSet->density0 * volume);
+	particleSet->setMass(i, data.fluid_data_cuda->getMass(0));
 }
 
 
@@ -3355,8 +3359,9 @@ __global__ void refine_dynamic_body_particle_mass_kernel(SPH::DFSPHCData data, S
 	if (i >= particleSet->numParticles) { return; }
 
 	//the factor is due to the fact that we compensate only a part of the error (proportional to the importance of the mass in the density
-	//particleSet->getMass(i) += (particleSet->getMass(i) * data.W_zero / particleSet->density[i])*(data.density0 - particleSet->density[i]) / (data.W_zero);
-	particleSet->mass[i] += (0.3)*(data.density0 - particleSet->density[i]) / (data.W_zero);
+	//particleSet->getMass(i) += (particleSet->getMass(i) * data.W_zero / particleSet->getDensity(i))*(data.density0 - particleSet->getDensity(i)) / (data.W_zero);
+	RealCuda newMass=particleSet->getMass(i)+ (0.3)*(data.density0 - particleSet->getDensity(i)) / (data.W_zero);
+	particleSet->setMass(i, newMass);
 }
 
 
@@ -3409,7 +3414,7 @@ __global__ void compute_boundaries_density_error_kernel(SPH::DFSPHCData data, SP
 	}
 	//*/
 
-	particleSet->density[i] = density;
+	particleSet->setDensity(i, density);
 	const RealCuda error =  abs(data.density0-density);
 	atomicAdd(err, error);
 	atomicMax(err_max, (int)(error*10000));
@@ -3493,7 +3498,7 @@ void compute_UnifiedParticleSet_particles_mass_cuda(SPH::DFSPHCData& data, SPH::
 					myfile << i << ", " << container.getNumberOfNeighbourgs(i, 0)
 						<< ", " << container.getNumberOfNeighbourgs(i, 1)
 						<< ", " << container.getNumberOfNeighbourgs(i, 2)
-						<< ", " << container.density[i] << std::endl;
+						<< ", " << container.getDensity(i) << std::endl;
 				}
 				//myfile << total_time / (count_steps + 1) << ", " << m_iterations << ", " << m_iterationsV << std::endl;;
 				myfile.close();

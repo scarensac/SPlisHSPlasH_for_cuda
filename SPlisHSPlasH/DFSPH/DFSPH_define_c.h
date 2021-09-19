@@ -32,7 +32,23 @@
 //use the bender 2019 boundaries
 //#define BENDER2019_BOUNDARIES
 
-//juste a define to active the ocean boundaries prototype
+//just a define to active the ocean boundaries prototype
 #define OCEAN_BOUNDARIES_PROTOTYPE
 
+//this define conctrol if there is an additional float in the vec3 structure
+//this additional float ensure that you a have a bettermemory allignment
+#define USE_PADDING_FOR_MEMORY_ALIGNMENT
+
+
+#ifdef USE_PADDING_FOR_MEMORY_ALIGNMENT
+//if we have the additional float, this defien make it usable in the copies of the array 
+#define USE_VECTOR_PADDING_FOR_STORAGE
+#endif
+
+#ifdef USE_VECTOR_PADDING_FOR_STORAGE
+//those define allow you to use the padding from the position and velocity arrays to store some values
+#define STORE_MASS_IN_POSITION_PADDING
+#define STORE_DENSITY_IN_VELOCITY_PADDING
 #endif 
+
+#endif

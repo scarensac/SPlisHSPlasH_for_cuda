@@ -334,7 +334,12 @@ template<class T>
 void UnifiedParticleSet::reset(T* particleObj) {
 	Vector3d* pos_temp = new Vector3d[numParticles];
 	Vector3d* vel_temp = new Vector3d[numParticles];
+
+#ifndef	STORE_MASS_IN_POSITION_PADDING
 	RealCuda* mass_temp = new RealCuda[numParticles];
+#else
+	RealCuda* mass_temp = NULL;
+#endif
 
 	if (dynamic_cast<FluidModel::RigidBodyParticleObject*>(particleObj) != NULL) {
 		FluidModel::RigidBodyParticleObject* obj = reinterpret_cast<FluidModel::RigidBodyParticleObject*>(particleObj);
@@ -346,9 +351,14 @@ void UnifiedParticleSet::reset(T* particleObj) {
 				pos_temp[i] = vector3rTo3d(obj->m_x[i]);
 			}
 			vel_temp[i] = vector3rTo3d(obj->m_v[i]);
+
+#ifndef	STORE_MASS_IN_POSITION_PADDING
 			mass_temp[i] = obj->m_boundaryPsi[i];
+#else
+			pos_temp[i].w= obj->m_boundaryPsi[i];
+#endif
 		}
-	
+
 		load_UnifiedParticleSet_cuda(*this, pos_temp, vel_temp, mass_temp);
 
 		updateDynamicBodiesParticles<FluidModel::RigidBodyParticleObject>(obj);
@@ -373,7 +383,12 @@ void UnifiedParticleSet::reset(T* particleObj) {
 
 			pos_temp[i] = vector3rTo3d(model->getPosition(0, i));
 			vel_temp[i] = vector3rTo3d(model->getVelocity(0, i));
+
+#ifndef	STORE_MASS_IN_POSITION_PADDING
 			mass_temp[i] = model->getMass(i);
+#else
+			pos_temp[i].w = model->getMass(i);
+#endif
 		}
 	
 		std::cout << "nbr of particles loaded: "<< NbrLoadedParticles << "    from nbrModelParticles: "<<model->getNumActiveParticles0()<<std::endl;
@@ -387,7 +402,10 @@ void UnifiedParticleSet::reset(T* particleObj) {
 	
 	delete[] pos_temp;
 	delete[] vel_temp;
+
+#ifndef	STORE_MASS_IN_POSITION_PADDING
 	delete[] mass_temp;
+#endif
 	
 	
 }
@@ -408,7 +426,12 @@ void UnifiedParticleSet::write_to_file(std::string file_path) {
 
 	Vector3d* pos_temp = new Vector3d[numParticles];
 	Vector3d* vel_temp = new Vector3d[numParticles];
+
+#ifndef	STORE_MASS_IN_POSITION_PADDING
 	RealCuda* mass_temp = new RealCuda[numParticles];
+#else
+	RealCuda* mass_temp = NULL;
+#endif
 	Vector3d* pos0_temp = pos_temp;
 	DynamicBody rb_simulation_state;
 	
@@ -432,7 +455,12 @@ void UnifiedParticleSet::write_to_file(std::string file_path) {
 
 	//write the particle information
 	for (int i = 0; i <numParticles; ++i) {
+
+#ifndef	STORE_MASS_IN_POSITION_PADDING
 		oss << mass_temp[i] << " ";
+#else
+		oss << pos_temp[i].w << " ";
+#endif
 		oss << pos_temp[i].x << " " << pos_temp[i].y << " " << pos_temp[i].z << " ";
 		oss << vel_temp[i].x << " " << vel_temp[i].y << " " << vel_temp[i].z << " ";
 		oss << std::endl;
@@ -440,7 +468,10 @@ void UnifiedParticleSet::write_to_file(std::string file_path) {
 
 	delete[] pos_temp;
 	delete[] vel_temp;
+
+#ifndef	STORE_MASS_IN_POSITION_PADDING
 	delete[] mass_temp;
+#endif
 
 
 	ofstream myfile;
@@ -497,7 +528,12 @@ void UnifiedParticleSet::load_from_file(std::string file_path, bool load_velocit
 	//now we can read the particles informations
 	Vector3d* pos_temp = new Vector3d[numParticles];
 	Vector3d* vel_temp = new Vector3d[numParticles];
+
+#ifndef	STORE_MASS_IN_POSITION_PADDING
 	RealCuda* mass_temp = new RealCuda[numParticles];
+#else
+	RealCuda* mass_temp = NULL;
+#endif
 
 
 	int NbrLoadedParticles = numParticles;
@@ -592,7 +628,13 @@ void UnifiedParticleSet::load_from_file(std::string file_path, bool load_velocit
 		//*/
 #endif
 		
+
+#ifndef	STORE_MASS_IN_POSITION_PADDING
         mass_temp[i] = mass;
+#else
+		pos.w = mass;
+#endif
+		
         pos_temp[i] = pos;
         vel_temp[i] = vel;
 
@@ -614,7 +656,10 @@ void UnifiedParticleSet::load_from_file(std::string file_path, bool load_velocit
 
 	delete[] pos_temp;
 	delete[] vel_temp;
+
+#ifndef	STORE_MASS_IN_POSITION_PADDING
 	delete[] mass_temp;
+#endif
 
     updateDynamicBodiesParticles();
 
@@ -990,7 +1035,7 @@ void DFSPHCData::reset(FluidModel *model) {
 	fluid_data->initNeighborsSearchData(*this, true, false);
 
 	//redo the rigid bodies mass computation
-	computeRigidBodiesParticlesMass();
+	//computeRigidBodiesParticlesMass();
 
 
 

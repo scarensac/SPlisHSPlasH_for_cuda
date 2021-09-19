@@ -225,7 +225,36 @@ public:
     void write_forces_to_file(std::string file_path);
 
 	FUNCTION inline RealCuda getMass(int particle_id) const {
-		return mass[particle_id] + ((mass_flow == NULL) ? 0 : mass_flow[particle_id]);
+		//return mass[particle_id] + ((mass_flow == NULL) ? 0 : mass_flow[particle_id]);
+#ifdef STORE_MASS_IN_POSITION_PADDING
+		return pos[particle_id].w;
+#else
+		return mass[particle_id];
+#endif
+	}
+
+	FUNCTION inline void setMass(int particle_id, RealCuda val) const {
+#ifdef STORE_MASS_IN_POSITION_PADDING
+		pos[particle_id].w = val;
+#else
+		mass[particle_id] = val;
+#endif
+	}
+
+	FUNCTION inline RealCuda getDensity(int particle_id) const {
+#ifdef STORE_DENSITY_IN_VELOCITY_PADDING
+		return vel[particle_id].w;
+#else
+		return density[particle_id];
+#endif
+	}
+
+	FUNCTION inline void setDensity(int particle_id, RealCuda val) const {
+#ifdef STORE_DENSITY_IN_VELOCITY_PADDING
+		vel[particle_id].w = val;
+#else
+		density[particle_id] = val;
+#endif
 	}
 
     FUNCTION inline int* getNeighboursPtr(int particle_id) {
