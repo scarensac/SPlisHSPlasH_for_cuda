@@ -34,6 +34,7 @@ void TimeStepDFSPH::step()
 
 	static int count_steps = 0;
 	 std::chrono::steady_clock::time_point start = std::chrono::steady_clock::now();
+	 std::chrono::steady_clock::time_point tpStartSimuStep = std::chrono::steady_clock::now();
 
 	const unsigned int numParticles = m_model->numActiveParticles();
 
@@ -59,7 +60,9 @@ void TimeStepDFSPH::step()
 
 	computeNonPressureForces();
 
-	updateTimeStepSize();
+	if (false) {
+		updateTimeStepSize();
+	}
 
 	#pragma omp parallel default(shared)
 	{
@@ -91,7 +94,37 @@ void TimeStepDFSPH::step()
 	// Compute new time	
 	tm->setTime (tm->getTime () + h);
 
+	//count the simulation time and end the simulation after 5s
+	if (true) {
+		std::chrono::steady_clock::time_point tpEndSimuStep = std::chrono::steady_clock::now();
+		RealCuda time_simu_step = std::chrono::duration_cast<std::chrono::nanoseconds> (tpEndSimuStep - tpStartSimuStep).count() / 1000000.0f;
 
+		static RealCuda total_simu_time = 0;
+		total_simu_time += time_simu_step;
+
+		std::cout<< count_steps << " , " << total_simu_time << " , " << time_simu_step << std::endl;
+
+		std::string filename = "fluid_simulation_timmings_cpu.csv";
+		if (count_steps == 0) {
+			std::remove(filename.c_str());
+		}
+		ofstream myfile;
+		myfile.open(filename, std::ios_base::app);
+		if (myfile.is_open()) {
+			myfile << count_steps << " , " << total_simu_time << " , " << time_simu_step << std::endl;;
+			myfile.close();
+		}
+		else {
+			std::cout << "failed to open file: " << filename << "   reason: " << std::strerror(errno) << std::endl;
+		}
+
+		RealCuda timeLimit = 5;
+		if (TimeManager::getCurrent()->getTime()>timeLimit) {
+			exit(0);
+		}
+	}
+
+	count_steps++;
 	/*
 
 	 std::chrono::steady_clock::time_point end = std::chrono::steady_clock::now();

@@ -729,8 +729,34 @@ void DFSPHCUDA::step()
 	//this gives results in miliseconds
 	RealCuda time_simu_step = std::chrono::duration_cast<std::chrono::nanoseconds> (tpEndSimuStep - tpStartSimuStep).count() / 1000000.0f;
 
-	std::cout << "time simu step: " << time_simu_step << std::endl;
+	static RealCuda total_simu_time = 0;
+	total_simu_time += time_simu_step;
+	//std::cout << "time simu step (iter , avg , cur_step): "<<<< " // " << time_simu_step << std::endl;
+	
+	//count the simulation time and end the simulation after 5s
+	if (true) {
+		std::string filename = "fluid_simulation_timmings_cuda_64bits.csv";
+#ifndef USE_DOUBLE_CUDA
+		filename = "fluid_simulation_timmings_cuda_32bits.csv";
+#endif
+		if (count_steps == 0) {
+			std::remove(filename.c_str());
+		}
+		ofstream myfile;
+		myfile.open(filename, std::ios_base::app);
+		if (myfile.is_open()) {
+			myfile << count_steps << " , " << total_simu_time<<" , "<<time_simu_step << std::endl;;
+			myfile.close();
+		}
+		else {
+			std::cout << "failed to open file: " << filename << "   reason: " << std::strerror(errno) << std::endl;
+		}
 
+		RealCuda timeLimit = 5;
+		if (TimeManager::getCurrent()->getTime()>timeLimit) {
+			exit(0);
+		}
+	}
 
     if(show_fluid_timings)
     {

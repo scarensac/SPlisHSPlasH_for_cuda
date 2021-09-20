@@ -1461,6 +1461,7 @@ __global__ void DFSPH_viscosityXSPH_kernel(SPH::DFSPHCData m_data, SPH::UnifiedP
 			ai -= m_data.invH * m_data.viscosity * (mass_div_density) *  (vi - body.vel[neighborIndex]) * KERNEL_W(m_data, xixj);
 			ni += mass_div_density * KERNEL_GRAD_W(m_data, xixj);
 
+			/*
 			if (false && i == 9400) {
 				RealCuda radius_sq_j = m_data.getKernelRadius();
 				Vector3d pos_j = body.pos[neighborIndex];
@@ -1472,18 +1473,21 @@ __global__ void DFSPH_viscosityXSPH_kernel(SPH::DFSPHCData m_data, SPH::UnifiedP
 				printf("neighbor info: %u %u // %i : %i %i %i\n", neighborIndex, body.neighborsDataSet->cell_id[neighborIndex],
 					cur_cell_id_j,x_j,y_j,z_j);
 				printf("massdiv density : %f = %f / %f \n", mass_div_density, body.getMass(neighborIndex), body.getDensity(neighborIndex));
-				/*
-				printf("density test 1 : (%f, %f, %f) -= %f * %f * %f * [(%f , %f, %f)-(%f , %f, %f)] * %f \n",
-					ai.x, ai.y, ai.z, m_data.invH, m_data.viscosity, (mass_div_density),
-					vi.x, vi.y, vi.z, body.vel[neighborIndex].x, body.vel[neighborIndex].y, body.vel[neighborIndex].z, KERNEL_W(m_data, xixj));
-				//*/
-				/*
-				printf("density test 2 : (%f, %f, %f) -= %f * %f * %f * [(%f , %f, %f)-(%f , %f, %f)] * %f \n",
-					ai.x, ai.y, ai.z, m_data.invH, m_data.viscosity, (mass_div_density),
-					particleSet->vel[i].x, particleSet->vel[i].y, particleSet->vel[i].z,
-					body.vel[neighborIndex].x, body.vel[neighborIndex].y, body.vel[neighborIndex].z, KERNEL_W(m_data, xixj));
-				//*/
+				if (false) {
+
+					printf("density test 1 : (%f, %f, %f) -= %f * %f * %f * [(%f , %f, %f)-(%f , %f, %f)] * %f \n",
+						ai.x, ai.y, ai.z, m_data.invH, m_data.viscosity, (mass_div_density),
+						vi.x, vi.y, vi.z, body.vel[neighborIndex].x, body.vel[neighborIndex].y, body.vel[neighborIndex].z, KERNEL_W(m_data, xixj));
+				}
+				if (false) {
+
+					printf("density test 2 : (%f, %f, %f) -= %f * %f * %f * [(%f , %f, %f)-(%f , %f, %f)] * %f \n",
+						ai.x, ai.y, ai.z, m_data.invH, m_data.viscosity, (mass_div_density),
+						particleSet->vel[i].x, particleSet->vel[i].y, particleSet->vel[i].z,
+						body.vel[neighborIndex].x, body.vel[neighborIndex].y, body.vel[neighborIndex].z, KERNEL_W(m_data, xixj));
+				}
 			}
+			//*/
 		}
 	)
 		//*/
@@ -2756,6 +2760,141 @@ void cuda_neighborsSearch(SPH::DFSPHCData& data, bool need_sort) {
 			DFSPH_neighborsSearch_kernel<false> << <numBlocks, BLOCKSIZE >> > (data, data.boundaries_data_cuda);
 		}
 		gpuErrchk(cudaDeviceSynchronize());
+		//*/
+
+
+		//*
+		//a test that will count the nummber of neighbors that are adjacent to at least another neighbor
+		if(false){
+			float countAdjacentNeighborsTotal = 0;
+			float countAdjacentNeighborsTotalPercent = 0;
+			int countConsideredParticles = data.fluid_data->numParticles;
+			int rangeTested = 4;
+			for (int j = 0; j < data.fluid_data->numParticles; j++)
+			{
+				int countAdjacentLocal = 0;
+				//the number of fluid neigours
+				int count_neighbors = data.fluid_data->getNumberOfNeighbourgs(j, 0);
+			
+				if (count_neighbors > 2) {
+
+					ITER_NEIGHBORS_INIT(data, data.fluid_data, j);
+
+					ITER_NEIGHBORS_FLUID(data, (data.fluid_data),
+						j,
+				
+						int* neighbors_start_ptr=data.fluid_data->getNeighboursPtr(j);
+						for (unsigned int k = 0; k < count_neighbors; ++k) {
+							READ_AND_ADVANCE_NEIGHBOR(neighborId2, neighbors_start_ptr);
+							if ((neighborIndex != neighborId2) && 
+								(ABS_MACRO(static_cast<int>(neighborIndex) - static_cast<int>(neighborId2))<=rangeTested)) {
+								countAdjacentLocal++;
+								break;
+							}
+						}
+					);
+
+					countAdjacentNeighborsTotal += countAdjacentLocal;
+					countAdjacentNeighborsTotalPercent += countAdjacentLocal / static_cast<float>(count_neighbors);
+
+				}
+				else {
+					countConsideredParticles--;
+				}
+			}
+			countAdjacentNeighborsTotal /= countConsideredParticles;
+			countAdjacentNeighborsTotalPercent /= countConsideredParticles;
+			static int iter = 0;
+			std::cout << iter<<", " << countAdjacentNeighborsTotal<< ", "<<countAdjacentNeighborsTotalPercent*100 << std::endl;
+			iter++;
+		}
+
+		//this test will repport the average dist to the closest neighbor for each neighbor
+		if (false) {
+			float countAdjacentNeighborsTotal = 0;
+			float countAdjacentNeighborsTotalPercent = 0;
+			int countConsideredParticles = data.fluid_data->numParticles;
+			int rangeTested = 4;
+			for (int j = 0; j < data.fluid_data->numParticles; j++)
+			{
+				int countAdjacentLocal = 0;
+				//the number of fluid neigours
+				int count_neighbors = data.fluid_data->getNumberOfNeighbourgs(j, 0);
+
+				if (count_neighbors > 2) {
+
+					float minDistNeighbors = 0;
+
+					ITER_NEIGHBORS_INIT(data, data.fluid_data, j);
+
+					ITER_NEIGHBORS_FLUID(data, (data.fluid_data),
+						j,
+
+						float minDist = 50000000000;
+						int* neighbors_start_ptr = data.fluid_data->getNeighboursPtr(j);
+						for (unsigned int k = 0; k < count_neighbors; ++k) {
+							READ_AND_ADVANCE_NEIGHBOR(neighborId2, neighbors_start_ptr);
+							if ((neighborIndex != neighborId2)) {
+								float curDist = ABS_MACRO(static_cast<int>(neighborIndex)- static_cast<int>(neighborId2));
+								if (minDist>curDist) {
+									minDist = curDist;
+								}
+							}
+						}
+						minDistNeighbors += minDist;
+
+
+					);
+
+					countAdjacentNeighborsTotal += minDistNeighbors/ count_neighbors;
+
+				}
+				else {
+					countConsideredParticles--;
+				}
+			}
+			countAdjacentNeighborsTotal /= countConsideredParticles;
+			static int iter = 0;
+			std::cout << iter << ", " << countAdjacentNeighborsTotal << std::endl;
+			iter++;
+		}
+
+
+		//this test repport the average distance between the index of each particle and it's neighbors
+		if (false) {
+			float countAdjacentNeighborsTotal = 0;
+			float countAdjacentNeighborsTotalPercent = 0;
+			int countConsideredParticles = data.fluid_data->numParticles;
+			
+			for (int j = 0; j < data.fluid_data->numParticles; j++)
+			{
+				float avgDistLocal = 0;
+				//the number of fluid neigours
+				int count_neighbors = data.fluid_data->getNumberOfNeighbourgs(j, 0);
+
+				if (count_neighbors > 2) {
+
+					ITER_NEIGHBORS_INIT(data, data.fluid_data, j);
+
+					ITER_NEIGHBORS_FLUID(data, (data.fluid_data),
+						j,
+
+						avgDistLocal += ABS_MACRO(static_cast<int>(neighborIndex) - j);
+					);
+
+					avgDistLocal /= count_neighbors;
+					countAdjacentNeighborsTotal += avgDistLocal;
+				}
+				else {
+					countConsideredParticles--;
+				}
+			}
+			countAdjacentNeighborsTotal /= countConsideredParticles;
+			static int iter = 0;
+			std::cout << iter << ", " << countAdjacentNeighborsTotal <<std::endl;
+			iter++;
+		}
+
 		//*/
 
 		//*/

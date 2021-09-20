@@ -125,7 +125,7 @@ void DemoBase::initShaders()
 	string vertFile;
 	string fragFile;
 	bool transparent_shader = false;
-	if(sizeof(SPH::Vector3d)==(sizeof(float)*3))
+	if(sizeof(SPH::Vector3d)==(sizeof(RealCuda)*3))
 	{
 		std::cout << "loading shaders for v3d format" << std::endl;
 
@@ -137,7 +137,7 @@ void DemoBase::initShaders()
 			fragFile = getDataPath() + "/shaders/fs_points_manual_color.glsl";
 		}
 	}
-	else if (sizeof(SPH::Vector3d) == (sizeof(float) * 4))
+	else if (sizeof(SPH::Vector3d) == (sizeof(RealCuda) * 4))
 	{
 		std::cout << "loading shaders for v4d format" << std::endl;
 
@@ -145,8 +145,7 @@ void DemoBase::initShaders()
 		fragFile = getDataPath() + "/shaders/fs_points_manual_color_v4d.glsl";
 	}
 	else {
-		std::cout << "unrecognised format of vector3D" << std::endl;
-		exit(-1259);
+		
 	}
 	//*/
 
