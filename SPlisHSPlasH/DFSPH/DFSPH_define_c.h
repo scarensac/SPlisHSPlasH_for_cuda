@@ -37,7 +37,7 @@
 
 //this define conctrol if there is an additional float in the vec3 structure
 //this additional float ensure that you a have a bettermemory allignment
-#define USE_PADDING_FOR_MEMORY_ALIGNMENT
+//#define USE_PADDING_FOR_MEMORY_ALIGNMENT
 
 
 #ifdef USE_PADDING_FOR_MEMORY_ALIGNMENT

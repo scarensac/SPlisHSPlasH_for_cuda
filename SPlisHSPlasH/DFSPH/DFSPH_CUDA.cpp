@@ -735,10 +735,20 @@ void DFSPHCUDA::step()
 	
 	//count the simulation time and end the simulation after 5s
 	if (true) {
-		std::string filename = "fluid_simulation_timmings_cuda_64bits.csv";
-#ifndef USE_DOUBLE_CUDA
-		filename = "fluid_simulation_timmings_cuda_32bits.csv";
+		std::ostringstream oss;
+		oss << "fluid_simulation_timmings_cuda";
+
+#ifdef USE_VECTOR_PADDING_FOR_STORAGE
+		oss << "_paddedVector";
 #endif
+
+#ifdef USE_DOUBLE_CUDA
+		oss << "_64bits";
+#else
+		oss << "_32bits";
+#endif
+		oss << ".csv";
+		std::string filename = oss.str();
 		if (count_steps == 0) {
 			std::remove(filename.c_str());
 		}
