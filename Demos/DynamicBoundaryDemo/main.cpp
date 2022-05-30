@@ -117,7 +117,7 @@ void timeStep ()
 	if ((base.getPauseAt() > 0.0) && (base.getPauseAt() < TimeManager::getCurrent()->getTime()))
 		base.setPause(true);
 
-	float pauseRbAfterTime = 0.72;
+	float pauseRbAfterTime = -1;
 	if (pauseRbAfterTime > 0) {
 		if (TimeManager::getCurrent()->getTime() > pauseRbAfterTime) {
 			base.setRbPause(true);
@@ -199,10 +199,10 @@ void timeStep ()
 			else {
 				updateBoundaryForces();
 		
-				bool controlBoat = false;
+				bool controlBoat = true;
 				if (controlBoat) {
-					bool manualBoatVelocityControl = false;
-					bool manualBoatOrientationControl = false;
+					bool manualBoatVelocityControl = true;
+					bool manualBoatOrientationControl = true;
 
 					FluidModel::RigidBodyParticleObject *rbpo = base.getSimulationMethod().model.getRigidBodyParticleObject(1);
 					RigidBodyObject *rbo = rbpo->m_rigidBody;

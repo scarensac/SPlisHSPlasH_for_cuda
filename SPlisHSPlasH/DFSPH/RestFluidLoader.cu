@@ -2965,14 +2965,19 @@ void RestFLuidLoader::tagDataToSurface(SPH::DFSPHCData& data, RestFLuidLoaderInt
 		//if the current avg density is too close to the target with a step toolarge we need to reduce the step so we don't
 		//actually skip the target density too much
 		if (params.useStepSizeRegulator) {
+            if (show_debug) {
+                std::cout << "current step size: " << step_density << std::endl;
+            }
 			if(step_density>params.min_step_density){
 				if (show_debug) {
 					std::cout << "avg density before step modification: " << avg_density << std::endl;
 				}
 				RealCuda delta_to_target = avg_density - density_end;
-				if (delta_to_target < (params.step_density / 2.0f)) {
+                RealCuda step_to_target_delta_change_trigger_ratio = 1;
+                if (delta_to_target * step_to_target_delta_change_trigger_ratio < step_density) {
 					RealCuda old_step_density = step_density;
-					step_density = static_cast<int>(delta_to_target)*2;
+                    //the +1 is to round above instead of having a floor
+                    step_density = static_cast<int>(delta_to_target * step_to_target_delta_change_trigger_ratio) + 1;
 					step_density = MAX_MACRO_CUDA(step_density, params.min_step_density);
 					limit_density += old_step_density - step_density;
 					if (show_debug) {

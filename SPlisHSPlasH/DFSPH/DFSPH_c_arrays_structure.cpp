@@ -917,6 +917,8 @@ DFSPHCData::DFSPHCData(FluidModel *model): DFSPHCData()
 #ifdef GROUP_DYNAMIC_BODIES_NEIGHBORS_SEARCH
 		allocate_grouped_neighbors_struct_cuda(*this);
 #endif
+        //init the neighbor search for static particles
+        //boundaries_data->initNeighborsSearchData(*this, true, false);
 	}
 
 #else

@@ -122,15 +122,15 @@ void DFSPHCUDA::step()
 		}
 
 
+        static int count_moving_steps = 0;
 #ifdef OCEAN_BOUNDARIES_PROTOTYPE
         bool moving_borders = false;
-        static int count_moving_steps = 0;
         //*
 		//test the simple open boundaries
 		
-		if (false) {
+		if (true) {
 			bool useOpenBoundaries = true;
-			bool useDynamicWindow = false;
+			bool useDynamicWindow = true;
 
 			if (useOpenBoundaries)
 			{
@@ -1959,6 +1959,8 @@ void DFSPHCUDA::handleSimulationLoad(bool load_liquid, bool load_liquid_velociti
 
 void DFSPHCUDA::handleFluidInit() {
 
+    bool destructor_activated_old = m_data.destructor_activated;
+    m_data.destructor_activated = false;
 	RestFLuidLoaderInterface::StabilizationParameters params;
 	params.method = 0;
 	params.max_iterEval = 30;
@@ -1976,7 +1978,7 @@ void DFSPHCUDA::handleFluidInit() {
 		//this can be used to load any boundary shape that has a config and no existing fluid
 
 		bool keep_existing_fluid = false;
-		int simulation_config = 15;
+		int simulation_config = 0;
 
 		Vector3d normal_gravitation = m_data.gravitation;
 		//m_data.gravitation.y *= 5;
@@ -2048,7 +2050,7 @@ void DFSPHCUDA::handleFluidInit() {
 				RestFLuidLoaderInterface::initializeFluidToSurface(m_data, true, paramsTagging, paramsLoading);
 				//*/
 				std::chrono::steady_clock::time_point tp3 = std::chrono::steady_clock::now();
-				/*
+				//*
 				params.method = 0;
 				params.timeStep = 0.003;
 				{
@@ -2152,6 +2154,9 @@ void DFSPHCUDA::handleFluidInit() {
 	}
 
 	count_steps = 0;
+
+
+    m_data.destructor_activated = destructor_activated_old;
 }
 
 
@@ -3716,7 +3721,7 @@ void DFSPHCUDA::applyOpenBoundaries() {
 	if (count_steps == 0) {
 		OpenBoundariesSimpleInterface::InitParameters initParams;
 		initParams.show_debug = true;
-		initParams.simulation_config = 1001;
+		initParams.simulation_config = 2;
 		OpenBoundariesSimpleInterface::init(m_data, initParams);
 
 
@@ -3815,7 +3820,7 @@ void DFSPHCUDA::applyDynamicWindow() {
 	if (count_steps == 0) {
 		DynamicWindowInterface::InitParameters initParams;
 		initParams.show_debug = true;
-		initParams.simulation_config = 5;
+		initParams.simulation_config = 2;
 		initParams.air_particles_restriction = 1;
 		initParams.keep_existing_fluid = false;
 		initParams.clear_data = false;
