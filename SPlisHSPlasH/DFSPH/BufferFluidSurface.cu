@@ -101,7 +101,7 @@ public:
 		offset = o->offset;
 	}
 
-	inline bool isInitialized() { return (nbVectex > 0) && (nbfaces > 0); }
+	FUNCTION inline bool isInitialized() { return (nbVectex > 0) && (nbfaces > 0); }
 
 	//no check on the size os be carefull
 	FUNCTION inline Vector3d getVertex(int i) { return v[i] + offset; }
@@ -134,8 +134,8 @@ public:
 			objl::Mesh curMesh = Loader.LoadedMeshes[0];
 
 			//set the nb of elems
-			nbVectex = curMesh.Vertices.size();
-			nbfaces = curMesh.Indices.size() / 3;
+			nbVectex = static_cast<int>(curMesh.Vertices.size());
+			nbfaces = static_cast<int>(curMesh.Indices.size() / 3);
 
 			if ((curMesh.Indices.size() % 3) != 0) {
 				std::cout << "the number of indicies in not a multiple of 3. nb indices " << curMesh.Indices.size() << std::endl;
@@ -512,7 +512,7 @@ public:
 	Vector3d getHalfLength() { return halfLengths; }
 
 	void setReversedSurface(bool v) { isReversedSurface = v; }
-	bool getReversedSurface() { return isReversedSurface ; }
+	FUNCTION bool getReversedSurface() { return isReversedSurface ; }
 
 	inline int setPlane(Vector3d o_i, Vector3d n_i) {
 		if (type < 0) {
@@ -1109,12 +1109,11 @@ public:
 	void setIsUnion(bool val) { isUnion = val; }
 
 	void setReversedSurface(bool v) { isReversedSurface = v; }
-	bool getReversedSurface() { return isReversedSurface; }
+	FUNCTION bool getReversedSurface() { return isReversedSurface; }
 
 	void addSurface(const BufferFluidSurface& s) {
 		//first make some space if needed
 		if (numSurface + 1 > numSurfaceMax) {
-			int numSurfaceMax_back = numSurfaceMax;
 			BufferFluidSurface* surfaces_back = surfaces;
 
 			numSurfaceMax = (numSurface + 1) * 2;
@@ -1138,7 +1137,7 @@ public:
 	}
 
 	inline void setSurface(unsigned int i, const BufferFluidSurface& s) {
-		if (i >= numSurface) {
+		if (static_cast<int>(i) >= numSurface) {
 			std::cout << "trying to acces a surface with ann id greate than the current number of existing surface in this aggregation" << std::endl;
 			gpuErrchk(cudaError_t::cudaErrorUnknown);
 		}

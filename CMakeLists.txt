@@ -15,14 +15,15 @@ set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 
 include(${PROJECT_PATH}/CMake/Common.cmake)
 
+set(CMAKE_CUDA_ARCHITECTURES 75)
 
-if(CMAKE_CUDA_COMPILER_VERSION VERSION_GREATER_EQUAL  "9.0.0")
-message(STATUS "using cuda sm61")
-string(APPEND CMAKE_CUDA_FLAGS "  -gencode arch=compute_61,code=sm_61")
-else()
-message(STATUS "using cuda sm30")
-string(APPEND CMAKE_CUDA_FLAGS "  -gencode arch=compute_30,code=sm_30")
-endif()
+#if(CMAKE_CUDA_COMPILER_VERSION VERSION_GREATER_EQUAL  "9.0.0")
+#message(STATUS "using cuda sm61")
+#string(APPEND CMAKE_CUDA_FLAGS "  -gencode arch=compute_61,code=sm_61")
+#else()
+#message(STATUS "using cuda sm30")
+#string(APPEND CMAKE_CUDA_FLAGS "  -gencode arch=compute_30,code=sm_30")
+#endif()
  
 message(STATUS "CUDA compiler: " ${CMAKE_CUDA_COMPILER})
 
