@@ -166,7 +166,7 @@ void OpenBoundariesSimple::init(DFSPHCData& data, OpenBoundariesSimpleInterface:
 		S_fluidSurface.setPlane(Vector3d(0, 1, 0), Vector3d(0, -1, 0));
 		inflowFileName = "inflowPositionsSet_cylinder.txt";
 	}
-	else if (params.simulation_config == 1) {
+	else if (params.simulation_config == 100) {
 		//sphere with 1.5m radius
 
 		//S_boundary.setCylinder(Vector3d(0, 0, 0), 10, 1.5);
@@ -178,7 +178,7 @@ void OpenBoundariesSimple::init(DFSPHCData& data, OpenBoundariesSimpleInterface:
 		S_fluidSurface.setPlane(Vector3d(0, 1, 0), Vector3d(0, -1, 0));
 		inflowFileName = "inflowPositionsSet_sphere_1_5m.txt";
 	}
-	else if (params.simulation_config == 2) {
+	else if (params.simulation_config == 200) {
 		//2.5m cylinder
 
 		S_boundary.setCylinder(Vector3d(0, 0, 0), 10, 2.5);
@@ -186,7 +186,15 @@ void OpenBoundariesSimple::init(DFSPHCData& data, OpenBoundariesSimpleInterface:
 		S_fluidSurface.setPlane(Vector3d(0, 1, 0), Vector3d(0, -1, 0));
 		inflowFileName = "inflowPositionsSet_cylinder_r2_5m.txt";
 	}
-	else if (params.simulation_config == 3) {
+	else if (params.simulation_config == 300) {
+		//5m cylinder
+
+		S_boundary.setCylinder(Vector3d(0, 0, 0), 10, 5);
+		S_fluidInterior.setCylinder(Vector3d(0, 0, 0), 10, S_boundary.getRadius() - data.particleRadius * 3);
+		S_fluidSurface.setPlane(Vector3d(0, 1, 0), Vector3d(0, -1, 0));
+		inflowFileName = "inflowPositionsSet_cylinder_r5m.txt";
+	}
+	else if (params.simulation_config == 400) {
 
 		//the star shaped border here
 		//the parameters for the star are 5 points, re=3.5/2, ri=2/2, direction=(0,0,1), h=5
@@ -197,7 +205,7 @@ void OpenBoundariesSimple::init(DFSPHCData& data, OpenBoundariesSimpleInterface:
 		S_fluidSurface.setPlane(Vector3d(0, 1, 0), Vector3d(0, -1, 0));
 		inflowFileName = "inflowPositionsSet_star_re1_75_ri1.txt";
 	}
-	else if (params.simulation_config == 4) {
+	else if (params.simulation_config == 500) {
 		//2.5m sphere
 
 		S_boundary.setSphere(Vector3d(0, 1, 0), 2.5);
@@ -206,7 +214,7 @@ void OpenBoundariesSimple::init(DFSPHCData& data, OpenBoundariesSimpleInterface:
 		S_fluidSurface.setPlane(Vector3d(0, 1, 0), Vector3d(0, -1, 0));
 		inflowFileName = "inflowPositionsSet_sphere_2_5m.txt";
 	}
-	else if (params.simulation_config == 5) {
+	else if (params.simulation_config == 600) {
 
 		//the star shaped border here
 		//the parameters for the star are 5 points, re=3.5, ri=2, direction=(0,0,1), h=5

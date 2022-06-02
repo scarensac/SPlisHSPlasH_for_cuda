@@ -3721,7 +3721,7 @@ void DFSPHCUDA::applyOpenBoundaries() {
 	if (count_steps == 0) {
 		OpenBoundariesSimpleInterface::InitParameters initParams;
 		initParams.show_debug = true;
-		initParams.simulation_config = 2;
+		initParams.simulation_config = 300;
 		OpenBoundariesSimpleInterface::init(m_data, initParams);
 
 
@@ -3820,7 +3820,7 @@ void DFSPHCUDA::applyDynamicWindow() {
 	if (count_steps == 0) {
 		DynamicWindowInterface::InitParameters initParams;
 		initParams.show_debug = true;
-		initParams.simulation_config = 2;
+		initParams.simulation_config = 300;
 		initParams.air_particles_restriction = 1;
 		initParams.keep_existing_fluid = false;
 		initParams.clear_data = false;

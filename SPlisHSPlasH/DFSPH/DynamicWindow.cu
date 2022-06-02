@@ -324,7 +324,7 @@ void DynamicWindow::init(DFSPHCData& data, DynamicWindowInterface::InitParameter
 		backgroundFileName = "dynamicWindow_cylinder.txt";
 
 	}
-	else if (params.simulation_config == 1) {
+	else if (params.simulation_config == 100) {
 
 		//the 1.5m sphere config
 
@@ -358,7 +358,7 @@ void DynamicWindow::init(DFSPHCData& data, DynamicWindowInterface::InitParameter
 		backgroundFileName = "dynamicWindow_sphere.txt";
 
 	}
-	else if (params.simulation_config == 2) {
+	else if (params.simulation_config == 200) {
 		//2.5m cylinder
 
 		S_simulation.setCylinder(Vector3d(0, 0, 0), 10, 2.5);
@@ -370,12 +370,12 @@ void DynamicWindow::init(DFSPHCData& data, DynamicWindowInterface::InitParameter
 		}
 
 		//those are mostly used to remove some of the existing fluid
-		S_boundaryRange.setCylinder(Vector3d(0, 0, 0), 10, S_simulation.getRadius() - (data.getKernelRadius()*1.5));
+		S_boundaryRange.setCylinder(Vector3d(0, 0, 0), 10, S_simulation.getRadius() - (data.getKernelRadius() * 1.5));
 		S_fluidInterior.setCylinder(Vector3d(0, 0, 0), 10, S_simulation.getRadius() - data.particleRadius * 3);
 
 		//those are specific the the bancground buffer particles
 		S_bufferInterior.setCylinder(Vector3d(0, 0, 0), 10,
-			S_simulation.getRadius() - (params.max_allowed_displacement + data.getKernelRadius()*1.5));
+			S_simulation.getRadius() - (params.max_allowed_displacement + data.getKernelRadius() * 1.5));
 		S_bufferInterior.setReversedSurface(true);
 
 
@@ -388,7 +388,37 @@ void DynamicWindow::init(DFSPHCData& data, DynamicWindowInterface::InitParameter
 		backgroundFileName = "dynamicWindow_cylinder_r2_5m.txt";
 
 	}
-	else if (params.simulation_config == 3) {
+	else if (params.simulation_config == 300) {
+		//5m cylinder
+
+		S_simulation.setCylinder(Vector3d(0, 0, 0), 10, 5);
+
+		if ((S_simulation.getRadius() - params.max_allowed_displacement) < data.getKernelRadius() * 4) {
+			std::cout << "the simulation area is too small relative to the required buffers size for the dynamix window area/buffer_size/reuired_min_diff" <<
+				S_simulation.getRadius() << " / " << params.max_allowed_displacement << " / " << data.getKernelRadius() * 4 << " / " << std::endl;
+			gpuErrchk(cudaError_t::cudaErrorUnknown);
+		}
+
+		//those are mostly used to remove some of the existing fluid
+		S_boundaryRange.setCylinder(Vector3d(0, 0, 0), 10, S_simulation.getRadius() - (data.getKernelRadius() * 1.5));
+		S_fluidInterior.setCylinder(Vector3d(0, 0, 0), 10, S_simulation.getRadius() - data.particleRadius * 3);
+
+		//those are specific the the bancground buffer particles
+		S_bufferInterior.setCylinder(Vector3d(0, 0, 0), 10,
+			S_simulation.getRadius() - (params.max_allowed_displacement + data.getKernelRadius() * 1.5));
+		S_bufferInterior.setReversedSurface(true);
+
+
+		S_fluid.setPlane(Vector3d(0, 1, 0), Vector3d(0, -1, 0));
+
+
+		SA_keptExistingFluidArea.addSurface(S_fluidInterior);
+		SA_keptExistingFluidArea.addSurface(S_boundaryRange);
+
+		backgroundFileName = "dynamicWindow_cylinder_r5m.txt";
+
+	}
+	else if (params.simulation_config == 400) {
 
 		//the star shaped border here
 		//the parameters for the star are 5 points, re=3.5/2, ri=2/2, direction=(0,0,1), h=5
@@ -428,7 +458,7 @@ void DynamicWindow::init(DFSPHCData& data, DynamicWindowInterface::InitParameter
 		backgroundFileName = "dynamicWindow_star_re1_75_ri1.txt";
 
 	}
-	else if (params.simulation_config == 4) {
+	else if (params.simulation_config == 500) {
 
 		//the 2.5m sphere config
 
@@ -462,7 +492,7 @@ void DynamicWindow::init(DFSPHCData& data, DynamicWindowInterface::InitParameter
 		backgroundFileName = "dynamicWindow_sphere_2_5m.txt";
 
 	}
-	else if (params.simulation_config == 5) {
+	else if (params.simulation_config == 600) {
 
 		//the star shaped border here
 		//the parameters for the star are 5 points, re=3.5, ri=2, direction=(0,0,1), h=5
