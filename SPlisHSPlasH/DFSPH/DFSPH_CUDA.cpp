@@ -128,7 +128,9 @@ void DFSPHCUDA::step()
         //*
 		//test the simple open boundaries
 		
-		if (true) {
+        m_dynamic_window_config=220;
+		if (m_dynamic_window_config >= 0) {
+
 			bool useOpenBoundaries = true;
 			bool useDynamicWindow = true;
 
@@ -493,7 +495,7 @@ void DFSPHCUDA::step()
             }
 
 
-			int end_step =  1650;
+			int end_step =  -1;
 			bool has_solid = false;
 			bool print_avg_velocity = false;
 			if (end_step > 0) {
@@ -734,7 +736,7 @@ void DFSPHCUDA::step()
 	//std::cout << "time simu step (iter , avg , cur_step): "<<<< " // " << time_simu_step << std::endl;
 	
 	//count the simulation time and end the simulation after 5s
-	if (true) {
+	if (false) {
 		std::ostringstream oss;
 		oss << "fluid_simulation_timmings_cuda";
 
@@ -3721,7 +3723,7 @@ void DFSPHCUDA::applyOpenBoundaries() {
 	if (count_steps == 0) {
 		OpenBoundariesSimpleInterface::InitParameters initParams;
 		initParams.show_debug = true;
-		initParams.simulation_config = 300;
+		initParams.simulation_config = m_dynamic_window_config;
 		OpenBoundariesSimpleInterface::init(m_data, initParams);
 
 
@@ -3820,7 +3822,7 @@ void DFSPHCUDA::applyDynamicWindow() {
 	if (count_steps == 0) {
 		DynamicWindowInterface::InitParameters initParams;
 		initParams.show_debug = true;
-		initParams.simulation_config = 300;
+		initParams.simulation_config = m_dynamic_window_config;
 		initParams.air_particles_restriction = 1;
 		initParams.keep_existing_fluid = false;
 		initParams.clear_data = false;

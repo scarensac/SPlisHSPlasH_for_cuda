@@ -388,6 +388,66 @@ void DynamicWindow::init(DFSPHCData& data, DynamicWindowInterface::InitParameter
 		backgroundFileName = "dynamicWindow_cylinder_r2_5m.txt";
 
 	}
+	else if (params.simulation_config == 210) {
+		//2.5m cylinder
+
+		S_simulation.setCylinder(Vector3d(0, 0, 0), 10, 3.5);
+
+		if ((S_simulation.getRadius() - params.max_allowed_displacement) < data.getKernelRadius() * 4) {
+			std::cout << "the simulation area is too small relative to the required buffers size for the dynamix window area/buffer_size/reuired_min_diff" <<
+				S_simulation.getRadius() << " / " << params.max_allowed_displacement << " / " << data.getKernelRadius() * 4 << " / " << std::endl;
+			gpuErrchk(cudaError_t::cudaErrorUnknown);
+		}
+
+		//those are mostly used to remove some of the existing fluid
+		S_boundaryRange.setCylinder(Vector3d(0, 0, 0), 10, S_simulation.getRadius() - (data.getKernelRadius() * 1.5));
+		S_fluidInterior.setCylinder(Vector3d(0, 0, 0), 10, S_simulation.getRadius() - data.particleRadius * 3);
+
+		//those are specific the the bancground buffer particles
+		S_bufferInterior.setCylinder(Vector3d(0, 0, 0), 10,
+			S_simulation.getRadius() - (params.max_allowed_displacement + data.getKernelRadius() * 1.5));
+		S_bufferInterior.setReversedSurface(true);
+
+
+		S_fluid.setPlane(Vector3d(0, 1, 0), Vector3d(0, -1, 0));
+
+
+		SA_keptExistingFluidArea.addSurface(S_fluidInterior);
+		SA_keptExistingFluidArea.addSurface(S_boundaryRange);
+
+		backgroundFileName = "dynamicWindow_cylinder_r3_5m.txt";
+
+	}
+	else if (params.simulation_config == 220) {
+		//2.5m cylinder
+
+		S_simulation.setCylinder(Vector3d(0, 0, 0), 10, 4.25);
+
+		if ((S_simulation.getRadius() - params.max_allowed_displacement) < data.getKernelRadius() * 4) {
+			std::cout << "the simulation area is too small relative to the required buffers size for the dynamix window area/buffer_size/reuired_min_diff" <<
+				S_simulation.getRadius() << " / " << params.max_allowed_displacement << " / " << data.getKernelRadius() * 4 << " / " << std::endl;
+			gpuErrchk(cudaError_t::cudaErrorUnknown);
+		}
+
+		//those are mostly used to remove some of the existing fluid
+		S_boundaryRange.setCylinder(Vector3d(0, 0, 0), 10, S_simulation.getRadius() - (data.getKernelRadius() * 1.5));
+		S_fluidInterior.setCylinder(Vector3d(0, 0, 0), 10, S_simulation.getRadius() - data.particleRadius * 3);
+
+		//those are specific the the bancground buffer particles
+		S_bufferInterior.setCylinder(Vector3d(0, 0, 0), 10,
+			S_simulation.getRadius() - (params.max_allowed_displacement + data.getKernelRadius() * 1.5));
+		S_bufferInterior.setReversedSurface(true);
+
+
+		S_fluid.setPlane(Vector3d(0, 1, 0), Vector3d(0, -1, 0));
+
+
+		SA_keptExistingFluidArea.addSurface(S_fluidInterior);
+		SA_keptExistingFluidArea.addSurface(S_boundaryRange);
+
+		backgroundFileName = "dynamicWindow_cylinder_r4_25m.txt";
+
+	}
 	else if (params.simulation_config == 300) {
 		//5m cylinder
 

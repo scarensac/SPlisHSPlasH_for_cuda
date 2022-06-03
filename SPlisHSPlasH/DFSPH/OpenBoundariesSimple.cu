@@ -186,6 +186,22 @@ void OpenBoundariesSimple::init(DFSPHCData& data, OpenBoundariesSimpleInterface:
 		S_fluidSurface.setPlane(Vector3d(0, 1, 0), Vector3d(0, -1, 0));
 		inflowFileName = "inflowPositionsSet_cylinder_r2_5m.txt";
 	}
+	else if (params.simulation_config == 210) {
+		//2.5m cylinder
+
+		S_boundary.setCylinder(Vector3d(0, 0, 0), 10, 3.5);
+		S_fluidInterior.setCylinder(Vector3d(0, 0, 0), 10, S_boundary.getRadius() - data.particleRadius * 3);
+		S_fluidSurface.setPlane(Vector3d(0, 1, 0), Vector3d(0, -1, 0));
+		inflowFileName = "inflowPositionsSet_cylinder_r3_5m.txt";
+	}
+	else if (params.simulation_config == 220) {
+		//2.5m cylinder
+
+		S_boundary.setCylinder(Vector3d(0, 0, 0), 10, 4.25);
+		S_fluidInterior.setCylinder(Vector3d(0, 0, 0), 10, S_boundary.getRadius() - data.particleRadius * 3);
+		S_fluidSurface.setPlane(Vector3d(0, 1, 0), Vector3d(0, -1, 0));
+		inflowFileName = "inflowPositionsSet_cylinder_r4_25m.txt";
+	}
 	else if (params.simulation_config == 300) {
 		//5m cylinder
 

@@ -16,7 +16,7 @@
 #include "SPlisHSPlasH/DFSPH/DFSPH_CUDA.h"
 
 
-//#define FFMPEG_RENDER
+#define FFMPEG_RENDER
 #ifdef FFMPEG_RENDER
 FILE* ffmpeg = NULL;
 //#define USE_MULTIPLES_SHADER
@@ -201,7 +201,7 @@ void timeStep ()
 		
 				bool controlBoat = true;
 				if (controlBoat) {
-					bool manualBoatVelocityControl = true;
+					bool manualBoatVelocityControl = false;
 					bool manualBoatOrientationControl = true;
 
 					FluidModel::RigidBodyParticleObject *rbpo = base.getSimulationMethod().model.getRigidBodyParticleObject(1);
@@ -386,7 +386,7 @@ void timeStep ()
 
 				updateBoundaryParticles(false);
 
-				bool camera_follow_boat = false;
+				bool camera_follow_boat = true;
 				if (camera_follow_boat) {
 					FluidModel::RigidBodyParticleObject *rbpo = base.getSimulationMethod().model.getRigidBodyParticleObject(1);
 					RigidBodyObject *rbo = rbpo->m_rigidBody;
@@ -394,6 +394,8 @@ void timeStep ()
 					{
 						Vector3r newBoatpos;
 						newBoatpos = rbo->getPosition();
+
+						std::cout << "boat speed: "<<rbo->getVelocity().norm()<<std::endl;
 
 						//let's use the lookat procedure from the setViewport function since it's easier for now
 						Vector3r eyePos = newBoatpos;
@@ -439,7 +441,7 @@ void timeStep ()
 #ifdef FFMPEG_RENDER
 	//the part to save to file
 	if (ffmpeg != NULL) {
-		if (TimeManager::getCurrent()->getTime()>20) {
+		if (TimeManager::getCurrent()->getTime()>40) {
 			_pclose(ffmpeg);
 			exit(0);
 		}

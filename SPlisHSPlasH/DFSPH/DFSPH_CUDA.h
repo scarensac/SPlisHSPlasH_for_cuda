@@ -90,7 +90,7 @@ protected:
 #endif //SPLISHSPLASH_FRAMEWORK
 
 
-
+    int m_dynamic_window_config{ 0 };
 public:
     DFSPHCUDA(FluidModel* model=NULL);
     virtual ~DFSPHCUDA(void);
