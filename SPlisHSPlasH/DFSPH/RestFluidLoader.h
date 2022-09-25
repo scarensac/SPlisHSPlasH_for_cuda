@@ -53,7 +53,7 @@ namespace SPH {
 				show_debug = false;
 				center_loaded_fluid = false;
 				apply_additional_offset = false;
-				additional_offset;
+				additional_offset = Vector3d(0,0,0);
 
 				keep_existing_fluid = false;
 
@@ -85,6 +85,7 @@ namespace SPH {
 
 			bool useStepSizeRegulator;
 			RealCuda min_step_density;
+            RealCuda step_to_target_delta_change_trigger_ratio;
 
 
 			//here are some output values
@@ -95,7 +96,8 @@ namespace SPH {
 			RealCuda min_density_o;
 			RealCuda max_density_o;
 			RealCuda avg_density_o;
-			RealCuda stdev_density_o;
+            RealCuda stdev_density_o;
+            RealCuda stdev_to_target_density_o;
 
 			TaggingParameters(){
 				show_debug = false;
@@ -112,6 +114,7 @@ namespace SPH {
 
 				useStepSizeRegulator = true;
 				min_step_density = 5;
+                step_to_target_delta_change_trigger_ratio = 1;
 
 				keep_existing_fluid = false;
 
@@ -123,6 +126,7 @@ namespace SPH {
 				max_density_o = 0;
 				avg_density_o = 0;
 				stdev_density_o = 0;
+                stdev_to_target_density_o = 0;
 			}
 		};
 

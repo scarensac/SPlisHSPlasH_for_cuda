@@ -1980,7 +1980,8 @@ void DFSPHCUDA::handleFluidInit() {
 		//this can be used to load any boundary shape that has a config and no existing fluid
 
 		bool keep_existing_fluid = false;
-		int simulation_config = 0;
+        int simulation_config = 4;
+        bool stabilize_fluid = false;
 
 		Vector3d normal_gravitation = m_data.gravitation;
 		//m_data.gravitation.y *= 5;
@@ -1997,158 +1998,250 @@ void DFSPHCUDA::handleFluidInit() {
 		paramsTagging.show_debug = true;
 		params.show_debug = true;
 		paramsLoading.show_debug = true;
+        bool show_recap_infos_timings = true;
+        bool show_recap_infos_density = true;
 
 		paramsLoading.load_raw_untaged_data = false;
 
+        std::vector<std::vector<RestFLuidLoaderInterface::TaggingParameters>> vect_params_taggings_for_density_recap_global;
+        std::vector<RealCuda> vect_step_coefs{ 0.25, 0.5, 1, 1.5, 2,3,4,5,7,10 };
 		int step_size = 60;
-		{
-			std::vector<RealCuda> vect_t1_internal;
-			std::vector<RealCuda> vect_t2_internal;
-			std::vector<RealCuda> vect_t3_internal;
-			std::vector<int> vect_count_stabilization_iter_internal;
-			std::vector<int> vect_count_selection_iter_internal;
+        for (int step_coefs_id = 0; step_coefs_id < vect_step_coefs.size(); ++step_coefs_id)
+        {
+            std::vector<RealCuda> vect_t1_internal;
+            std::vector<RealCuda> vect_t2_internal;
+            std::vector<RealCuda> vect_t3_internal;
+            std::vector<RestFLuidLoaderInterface::TaggingParameters> vect_params_taggings_for_density_recap;
+            std::vector<int> vect_count_stabilization_iter_internal;
+            std::vector<int> vect_count_selection_iter_internal;
+
+            RealCuda step_to_target_delta_change_trigger_ratio = vect_step_coefs[step_coefs_id];
+
+            for (int k = 0; k < 50; ++k) {
+                //if i keep the existing fluid i need to reload it from memory each loop
+                if (keep_existing_fluid) {
+                    m_data.read_fluid_from_file(false);
+                }
+
+                //this trigger an initialization of all solid particles neighbor search structures
+                m_data.computeRigidBodiesParticlesMass();
+
+                std::chrono::steady_clock::time_point tp1 = std::chrono::steady_clock::now();
+
+                //handleSimulationLoad(true,false,false,false,false,false);
+
+                //if (k == 0) 
+                {
+                    paramsInit.clear_data = false;
+                    paramsInit.air_particles_restriction = 1;
+                    paramsInit.center_loaded_fluid = true;
+                    paramsInit.keep_existing_fluid = false;
+                    paramsInit.simulation_config = simulation_config;
+                    paramsInit.apply_additional_offset = true;
+                    paramsInit.additional_offset = Vector3d(dis(e), dis(e), dis(e))*m_data.particleRadius * 2;
+
+                    RestFLuidLoaderInterface::init(m_data, paramsInit);
+                }
+
+                std::chrono::steady_clock::time_point tp2 = std::chrono::steady_clock::now();
+
+                //*
+                paramsTagging.useRule2 = false;
+                paramsTagging.useRule3 = true;
+                paramsTagging.useStepSizeRegulator = true;
+                paramsTagging.step_to_target_delta_change_trigger_ratio = step_to_target_delta_change_trigger_ratio;
+                paramsTagging.min_step_density = 5;
+                paramsTagging.step_density = step_size;
+                paramsTagging.density_end = 999;
+                paramsTagging.keep_existing_fluid = paramsInit.keep_existing_fluid;
+                paramsTagging.output_density_information = true;
+
+                paramsLoading.load_fluid = true;
+                paramsLoading.keep_existing_fluid = keep_existing_fluid;
+
+                RestFLuidLoaderInterface::initializeFluidToSurface(m_data, true, paramsTagging, paramsLoading);
+
+                if (show_recap_infos_density)
+                {
+                    vect_params_taggings_for_density_recap.push_back(paramsTagging);
+                }
+
+                //*/
+                std::chrono::steady_clock::time_point tp3 = std::chrono::steady_clock::now();
+                //*
+                params.method = 0;
+                params.timeStep = 0.003;
+                {
+                    params.stabilize_tagged_only = true;
+                    params.postUpdateVelocityDamping = false;
+                    params.postUpdateVelocityClamping = false;
+                    params.preUpdateVelocityClamping = false;
 
 
+                    params.maxErrorD = 0.05;
 
-			for (int k = 0; k <1; ++k) {
-				//if i keep the existing fluid i need to reload it from memory each loop
-				if (keep_existing_fluid) {
-					m_data.read_fluid_from_file(false);
-				}
+                    params.useDivergenceSolver = true;
+                    params.useExternalForces = true;
 
+                    params.preUpdateVelocityDamping = true;
+                    params.preUpdateVelocityDamping_val = 0.8;
 
-				std::chrono::steady_clock::time_point tp1 = std::chrono::steady_clock::now();
+                    params.stabilizationItersCount = 10;
 
-				//handleSimulationLoad(true,false,false,false,false,false);
+                    params.reduceDampingAndClamping = true;
+                    params.reduceDampingAndClamping_val = std::powf(0.2f / params.preUpdateVelocityDamping_val, 1.0f / (params.stabilizationItersCount - 1));
 
-				//if (k == 0) 
-				{
-					paramsInit.clear_data = false;
-					paramsInit.air_particles_restriction = 1;
-					paramsInit.center_loaded_fluid = true;
-					paramsInit.keep_existing_fluid = false;
-					paramsInit.simulation_config = simulation_config;
-					paramsInit.apply_additional_offset = true;
-					paramsInit.additional_offset = Vector3d(dis(e), dis(e), dis(e))*m_data.particleRadius * 2;
+                    params.clearWarmstartAfterStabilization = false;
+                }
+                params.runCheckParticlesPostion = true;
+                params.interuptOnLostParticle = false;
+                params.reloadFluid = false;
+                params.evaluateStabilization = false;
+                params.min_stabilization_iter = 2;
+                params.stable_velocity_max_target = m_data.particleRadius*0.25 / m_data.get_current_timestep();
+                params.stable_velocity_avg_target = m_data.particleRadius*0.025 / m_data.get_current_timestep();
 
-					RestFLuidLoaderInterface::init(m_data, paramsInit);
-				}
+                std::chrono::steady_clock::time_point tp5 = std::chrono::steady_clock::now();
 
-				std::chrono::steady_clock::time_point tp2 = std::chrono::steady_clock::now();
+                if (stabilize_fluid)
+                {
+                    RestFLuidLoaderInterface::stabilizeFluid(m_data, params);
+                }
 
-				//*
-				paramsTagging.useRule2 = false;
-				paramsTagging.useRule3 = true;
-				paramsTagging.useStepSizeRegulator = true;
-				paramsTagging.min_step_density = 5;
-				paramsTagging.step_density = step_size;
-				paramsTagging.density_end = 999;
-				paramsTagging.keep_existing_fluid = paramsInit.keep_existing_fluid;
-				paramsTagging.output_density_information = true;
+                //if there was a fail do not count the run in the values
+                if (!params.stabilization_sucess) {
+                    continue;
+                }
+                //*/
 
-				paramsLoading.load_fluid = true;
-				paramsLoading.keep_existing_fluid = keep_existing_fluid;
+                std::chrono::steady_clock::time_point tp4 = std::chrono::steady_clock::now();
 
-				RestFLuidLoaderInterface::initializeFluidToSurface(m_data, true, paramsTagging, paramsLoading);
-				//*/
-				std::chrono::steady_clock::time_point tp3 = std::chrono::steady_clock::now();
-				//*
-				params.method = 0;
-				params.timeStep = 0.003;
-				{
-				params.stabilize_tagged_only = true;
-				params.postUpdateVelocityDamping = false;
-				params.postUpdateVelocityClamping = false;
-				params.preUpdateVelocityClamping = false;
+                RealCuda time_p1 = std::chrono::duration_cast<std::chrono::nanoseconds> (tp2 - tp1).count() / 1000000000.0f;
+                RealCuda time_p2 = std::chrono::duration_cast<std::chrono::nanoseconds> (tp3 - tp2).count() / 1000000000.0f;
+                RealCuda time_p3 = std::chrono::duration_cast<std::chrono::nanoseconds> (tp4 - tp3).count() / 1000000000.0f;
 
+                vect_t1_internal.push_back(time_p1);
+                vect_t2_internal.push_back(time_p2);
+                vect_t3_internal.push_back(time_p3);
+                vect_count_selection_iter_internal.push_back(paramsTagging.count_iter);
 
-				params.maxErrorD = 0.05;
+                vect_count_stabilization_iter_internal.push_back(params.count_iter_o);
 
-				params.useDivergenceSolver = true;
-				params.useExternalForces = true;
+                //std::cout << "direct timmings output: " << time_p1 << "  " << time_p2 << "  " << time_p3 << "  " << std::endl;
+            }
 
-				params.preUpdateVelocityDamping = true;
-				params.preUpdateVelocityDamping_val = 0.8;
+            vect_params_taggings_for_density_recap_global.push_back(vect_params_taggings_for_density_recap);
 
-				params.stabilizationItersCount = 10;
+            if (show_recap_infos_timings)
+            {
 
-				params.reduceDampingAndClamping = true;
-				params.reduceDampingAndClamping_val = std::powf(0.2f / params.preUpdateVelocityDamping_val, 1.0f / (params.stabilizationItersCount - 1));
-
-				params.clearWarmstartAfterStabilization = false;
-				}
-				params.runCheckParticlesPostion = true;
-				params.interuptOnLostParticle = false;
-				params.reloadFluid = false;
-				params.evaluateStabilization = false;
-				params.min_stabilization_iter = 2;
-				params.stable_velocity_max_target = m_data.particleRadius*0.25 / m_data.get_current_timestep();
-				params.stable_velocity_avg_target = m_data.particleRadius*0.025 / m_data.get_current_timestep();
-
-				std::chrono::steady_clock::time_point tp5 = std::chrono::steady_clock::now();
-
-				RestFLuidLoaderInterface::stabilizeFluid(m_data, params);
-
-				//if there was a fail do not count the run in the values
-				if (!params.stabilization_sucess) {
-				continue;
-				}
-				//*/
-
-				std::chrono::steady_clock::time_point tp4 = std::chrono::steady_clock::now();
-
-				RealCuda time_p1 = std::chrono::duration_cast<std::chrono::nanoseconds> (tp2 - tp1).count() / 1000000000.0f;
-				RealCuda time_p2 = std::chrono::duration_cast<std::chrono::nanoseconds> (tp3 - tp2).count() / 1000000000.0f;
-				RealCuda time_p3 = std::chrono::duration_cast<std::chrono::nanoseconds> (tp4 - tp3).count() / 1000000000.0f;
-
-				vect_t1_internal.push_back(time_p1);
-				vect_t2_internal.push_back(time_p2);
-				vect_t3_internal.push_back(time_p3);
-				vect_count_selection_iter_internal.push_back(paramsTagging.count_iter);
-				vect_count_stabilization_iter_internal.push_back(params.count_iter_o);
-
-				//std::cout << "direct timmings output: " << time_p1 << "  " << time_p2 << "  " << time_p3 << "  " << std::endl;
-			}
-
-			if (!vect_t1_internal.empty()) {
+                if (!vect_t1_internal.empty()) {
 
 
-				std::sort(vect_t1_internal.begin(), vect_t1_internal.end());
-				std::sort(vect_t2_internal.begin(), vect_t2_internal.end());
-				std::sort(vect_t3_internal.begin(), vect_t3_internal.end());
-				std::sort(vect_count_selection_iter_internal.begin(), vect_count_selection_iter_internal.end());
-				std::sort(vect_count_stabilization_iter_internal.begin(), vect_count_stabilization_iter_internal.end());
+                    std::sort(vect_t1_internal.begin(), vect_t1_internal.end());
+                    std::sort(vect_t2_internal.begin(), vect_t2_internal.end());
+                    std::sort(vect_t3_internal.begin(), vect_t3_internal.end());
+                    std::sort(vect_count_selection_iter_internal.begin(), vect_count_selection_iter_internal.end());
+                    std::sort(vect_count_stabilization_iter_internal.begin(), vect_count_stabilization_iter_internal.end());
 
-				//*
-				for (int k = 0; k < vect_t1_internal.size(); ++k) {
-					std::cout << k << "   " << vect_t1_internal[k] << " + " << vect_t2_internal[k] <<
-						" + " << vect_t3_internal[k] << " = " <<
-						vect_t1_internal[k] + vect_t2_internal[k] + vect_t3_internal[k] <<
-						" // " << vect_count_selection_iter_internal[k] << " // " << vect_count_stabilization_iter_internal[k] << std::endl;
-				}
-				//*/
-				//some density informations
-				std::cout << "density info: " << paramsTagging.avg_density_o << "  " << paramsTagging.min_density_o << "  " <<
-					paramsTagging.max_density_o << "  " << paramsTagging.stdev_density_o / paramsTagging.avg_density_o * 100 << "  " << std::endl;
+                    //*
+                    for (int k = 0; k < vect_t1_internal.size(); ++k) {
+                        std::cout << k << "   " << vect_t1_internal[k] << " + " << vect_t2_internal[k] <<
+                            " + " << vect_t3_internal[k] << " = " <<
+                            vect_t1_internal[k] + vect_t2_internal[k] + vect_t3_internal[k] <<
+                            " // " << vect_count_selection_iter_internal[k] << " // " << vect_count_stabilization_iter_internal[k] << std::endl;
+                    }
+                    //*/
 
 
-				int idMedian = std::floor((vect_t2_internal.size() - 1) / 2.0f);
+                    int idMedian = std::floor((vect_t2_internal.size() - 1) / 2.0f);
 
 
-				std::cout << "median values" << std::endl;
-				std::cout << "count valid runs: " << vect_t1_internal.size() << std::endl;
-				std::cout << "time init" << " ; " << "time selection" <<
-					" ; " << "time stabilization" << " ; " <<
-					"total time" <<
-					" ; " << "coutn iter selection" << " ; " << "count iter stabilization" << std::endl;
-				std::cout << vect_t1_internal[idMedian] << " ; " << vect_t2_internal[idMedian] <<
-					" ; " << vect_t3_internal[idMedian] << " ; " <<
-					vect_t1_internal[idMedian] + vect_t2_internal[idMedian] + vect_t3_internal[idMedian] <<
-					" ; " << vect_count_selection_iter_internal[idMedian] << " ; " << vect_count_stabilization_iter_internal[idMedian] << std::endl;
+                    std::cout << "median values" << std::endl;
+                    std::cout << "count valid runs: " << vect_t1_internal.size() << std::endl;
+                    std::cout << "time init" << " ; " << "time selection" <<
+                        " ; " << "time stabilization" << " ; " <<
+                        "total time" <<
+                        " ; " << "coutn iter selection" << " ; " << "count iter stabilization" << std::endl;
+                    std::cout << vect_t1_internal[idMedian] << " ; " << vect_t2_internal[idMedian] <<
+                        " ; " << vect_t3_internal[idMedian] << " ; " <<
+                        vect_t1_internal[idMedian] + vect_t2_internal[idMedian] + vect_t3_internal[idMedian] <<
+                        " ; " << vect_count_selection_iter_internal[idMedian] << " ; " << vect_count_stabilization_iter_internal[idMedian] << std::endl;
 
-			}
+                }
+            }
+        }
+        
+        if (show_recap_infos_density)
+            {
+                std::cout << std::endl;
+                std::cout << std::endl;
+                std::cout << std::endl;
+                std::vector<RestFLuidLoaderInterface::TaggingParameters> vect_avg_density_infos;
 
-		}
+                std::cout << "density info " << std::endl;
+                std::cout << "step_coef, iter, avg, min, max, stdev_to_avg, stdev_to_target " << std::endl;
+                for (int l = 0; l < vect_params_taggings_for_density_recap_global.size(); ++l) 
+                {
+                    std::vector<RestFLuidLoaderInterface::TaggingParameters>& vect_params_taggings = vect_params_taggings_for_density_recap_global[l];
+                    
+                    paramsTagging.step_to_target_delta_change_trigger_ratio = vect_params_taggings[0].step_to_target_delta_change_trigger_ratio;
+                    paramsTagging.avg_density_o = 0;
+                    paramsTagging.min_density_o = 0;//1000000
+                    paramsTagging.max_density_o = 0;
+                    paramsTagging.stdev_density_o = 0;
+                    paramsTagging.stdev_to_target_density_o = 0;
+
+
+                    for (int k = 0; k < vect_params_taggings.size(); ++k) {
+                        RestFLuidLoaderInterface::TaggingParameters & paramsForPrint = vect_params_taggings[k];
+
+                        paramsForPrint.stdev_density_o = paramsForPrint.stdev_density_o / paramsForPrint.avg_density_o * 100;
+                        paramsForPrint.stdev_to_target_density_o = paramsForPrint.stdev_to_target_density_o / paramsForPrint.density_end * 100;
+                        //some density informations
+                        std::cout << k << "  " << paramsForPrint.step_to_target_delta_change_trigger_ratio << "  "
+                            << paramsForPrint.avg_density_o << "  " << paramsForPrint.min_density_o << "  "
+                            << paramsForPrint.max_density_o << "  "
+                            << paramsForPrint.stdev_density_o << "  "
+                            << paramsForPrint.stdev_to_target_density_o << "  "
+                            << std::endl;
+
+                        //paramsTagging.min_density_o = std::fminf(paramsTagging.min_density_o, paramsForPrint.min_density_o);
+                        //paramsTagging.max_density_o = std::fmaxf(paramsTagging.max_density_o, paramsForPrint.max_density_o);;
+                        paramsTagging.min_density_o += paramsForPrint.min_density_o;
+                        paramsTagging.max_density_o += paramsForPrint.max_density_o;
+                        paramsTagging.avg_density_o += paramsForPrint.avg_density_o;
+                        paramsTagging.stdev_density_o += paramsForPrint.stdev_density_o;
+                        paramsTagging.stdev_to_target_density_o += paramsForPrint.stdev_to_target_density_o;
+                    }
+
+                    paramsTagging.min_density_o /= vect_params_taggings.size();
+                    paramsTagging.max_density_o /= vect_params_taggings.size();
+                    paramsTagging.avg_density_o /= vect_params_taggings.size();
+                    paramsTagging.stdev_density_o /= vect_params_taggings.size();
+                    paramsTagging.stdev_to_target_density_o /= vect_params_taggings.size();
+
+                    vect_avg_density_infos.push_back(paramsTagging);
+                }
+
+                std::cout << std::endl;
+                std::cout << std::endl;
+                std::cout << "density info avg" << std::endl;
+                std::cout << "step_coef, avg, min, max, stdev_to_avg, stdev_to_target " << std::endl;
+
+                for (int k = 0; k < vect_avg_density_infos.size(); ++k)
+                {
+                    RestFLuidLoaderInterface::TaggingParameters & paramsForPrint = vect_avg_density_infos[k];
+                    std::cout << paramsForPrint.step_to_target_delta_change_trigger_ratio << "  "
+                        << paramsForPrint.avg_density_o << "  " << paramsForPrint.min_density_o << "  "
+                        << paramsForPrint.max_density_o << "  "
+                        << paramsForPrint.stdev_density_o << "  "
+                        << paramsForPrint.stdev_to_target_density_o << "  "
+                        << std::endl;
+                }
+
+            }
+		
 
 		m_data.gravitation = normal_gravitation;
 

@@ -16,7 +16,7 @@
 #include "SPlisHSPlasH/DFSPH/DFSPH_CUDA.h"
 
 
-#define FFMPEG_RENDER
+//#define FFMPEG_RENDER
 #ifdef FFMPEG_RENDER
 FILE* ffmpeg = NULL;
 //#define USE_MULTIPLES_SHADER
@@ -146,6 +146,20 @@ void timeStep ()
 		base.setLoadLiquid(false);
 		base.setLoadSimulation(false);
 
+        //load the fluid with the loading algorithm handling any shape ifasked
+        if (base.getLoadLiquidGeneric()) {
+            sim->handleFluidInit();
+            //I'll handle the load as token so I need to consume them
+            base.setLoadLiquidGeneric(false);
+        }
+
+
+        //ontrol the fluid height if required
+        sim->handleFLuidLevelControl(base.getFLuidLevelTarget());
+        //ok this is a problem... because when the sim is posed I only need to do it once but if it is not I need to do it countinuously
+        //I'll need to handle it with some bool in the fluid class
+        base.setFluidLevelControl(false);
+
 		if (base.getZeroVelocities()) {
 			sim->zeroFluidVelocities();
 		}
@@ -199,7 +213,7 @@ void timeStep ()
 			else {
 				updateBoundaryForces();
 		
-				bool controlBoat = true;
+				bool controlBoat = false;
 				if (controlBoat) {
 					bool manualBoatVelocityControl = false;
 					bool manualBoatOrientationControl = true;

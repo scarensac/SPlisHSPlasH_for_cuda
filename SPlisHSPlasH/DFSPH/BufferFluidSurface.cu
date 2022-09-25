@@ -1090,6 +1090,7 @@ public:
 		numSurface = 0; numSurfaceMax = 0; surfaces = NULL; 
 		setIsUnion(isUnion_i);
 		destructorActivated = false;
+        isReversedSurface = false;
 	}
 
 	~SurfaceAggregation() {
@@ -1164,7 +1165,11 @@ public:
 
 	std::string toString() {
 		std::ostringstream oss;
-		oss << "Surface aggregation, aggreg type: "<<(isUnion?"union":"intersection")<<"   nbrSurface: " << numSurface << std::endl;
+        oss << "Surface aggregation, aggreg type: " << (isUnion ? "union" : "intersection");
+        if (isReversedSurface) {
+            oss << "Reversed ";
+        }
+        oss <<"   nbrSurface: " << numSurface << std::endl;
 		for (int i = 0; i < numSurface; ++i)
 		{
 			oss<<surfaces[i].toString();
