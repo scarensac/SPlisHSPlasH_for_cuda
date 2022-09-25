@@ -1994,19 +1994,21 @@ void DFSPHCUDA::handleFluidInit() {
 		RestFLuidLoaderInterface::TaggingParameters paramsTagging;
 		RestFLuidLoaderInterface::LoadingParameters paramsLoading;
 
-		paramsInit.show_debug = true;
-		paramsTagging.show_debug = true;
-		params.show_debug = true;
-		paramsLoading.show_debug = true;
+		paramsInit.show_debug = false;
+		paramsTagging.show_debug = false;
+		params.show_debug = false;
+		paramsLoading.show_debug = false;
         bool show_recap_infos_timings = true;
-        bool show_recap_infos_density = true;
+
+        paramsTagging.output_density_information = false;
+        bool show_recap_infos_density = false;
 
 		paramsLoading.load_raw_untaged_data = false;
 
         std::vector<std::vector<RestFLuidLoaderInterface::TaggingParameters>> vect_params_taggings_for_density_recap_global;
         std::vector<RealCuda> vect_step_coefs{ 0.25, 0.5, 1, 1.5, 2,3,4,5,7,10 };
 		int step_size = 60;
-        for (int step_coefs_id = 0; step_coefs_id < vect_step_coefs.size(); ++step_coefs_id)
+        //for (int step_coefs_id = 0; step_coefs_id < vect_step_coefs.size(); ++step_coefs_id)
         {
             std::vector<RealCuda> vect_t1_internal;
             std::vector<RealCuda> vect_t2_internal;
@@ -2015,9 +2017,9 @@ void DFSPHCUDA::handleFluidInit() {
             std::vector<int> vect_count_stabilization_iter_internal;
             std::vector<int> vect_count_selection_iter_internal;
 
-            RealCuda step_to_target_delta_change_trigger_ratio = vect_step_coefs[step_coefs_id];
+            RealCuda step_to_target_delta_change_trigger_ratio = 3;// vect_step_coefs[step_coefs_id];
 
-            for (int k = 0; k < 50; ++k) {
+            for (int k = 0; k < 1; ++k) {
                 //if i keep the existing fluid i need to reload it from memory each loop
                 if (keep_existing_fluid) {
                     m_data.read_fluid_from_file(false);
@@ -2054,7 +2056,6 @@ void DFSPHCUDA::handleFluidInit() {
                 paramsTagging.step_density = step_size;
                 paramsTagging.density_end = 999;
                 paramsTagging.keep_existing_fluid = paramsInit.keep_existing_fluid;
-                paramsTagging.output_density_information = true;
 
                 paramsLoading.load_fluid = true;
                 paramsLoading.keep_existing_fluid = keep_existing_fluid;
