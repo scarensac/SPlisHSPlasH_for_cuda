@@ -128,7 +128,7 @@ void DFSPHCUDA::step()
         //*
 		//test the simple open boundaries
 		
-        m_dynamic_window_config=220;
+        m_dynamic_window_config=-1;
 		if (m_dynamic_window_config >= 0) {
 
 			bool useOpenBoundaries = true;
@@ -272,7 +272,7 @@ void DFSPHCUDA::step()
        // std::cout << "self density: " << m_data.W_zero * 0.1 << std::endl;
 
 
-        /*
+        //*
         RealCuda min_density = 10000;
         RealCuda max_density = 0;
         for (int j = 0; j < m_data.fluid_data->numParticles; ++j) {
@@ -1872,7 +1872,10 @@ void DFSPHCUDA::handleDynamicBodiesPause(bool pause) {
 
 
 void DFSPHCUDA::handleSimulationSave(bool save_liquid, bool save_solids, bool save_boundaries) {
-    if (save_liquid) {
+    bool destructor_activated_old = m_data.destructor_activated;
+    m_data.destructor_activated = false;
+	
+	if (save_liquid) {
         m_data.write_fluid_to_file();
 		
 		//save the others fluid data
@@ -1900,10 +1903,13 @@ void DFSPHCUDA::handleSimulationSave(bool save_liquid, bool save_solids, bool sa
         m_data.write_solids_to_file();
     }
 
+    m_data.destructor_activated = destructor_activated_old;
 }
 
 void DFSPHCUDA::handleSimulationLoad(bool load_liquid, bool load_liquid_velocities, bool load_solids, bool load_solids_velocities, 
                                      bool load_boundaries, bool load_boundaries_velocities) {
+    bool destructor_activated_old = m_data.destructor_activated;
+    m_data.destructor_activated = false;
 
     if (load_boundaries) {
         m_data.read_boundaries_from_file(load_boundaries_velocities);
@@ -1956,6 +1962,7 @@ void DFSPHCUDA::handleSimulationLoad(bool load_liquid, bool load_liquid_velociti
         count_steps = 0;
     }
 
+    m_data.destructor_activated = destructor_activated_old;
 }
 
 
@@ -1979,9 +1986,24 @@ void DFSPHCUDA::handleFluidInit() {
 	{
 		//this can be used to load any boundary shape that has a config and no existing fluid
 
-		bool keep_existing_fluid = false;
-        int simulation_config = 4;
-        bool stabilize_fluid = false;
+        bool load_boundaries = true;
+        int simulation_config = 17;
+        bool stabilize_fluid = true;
+
+        bool keep_existing_fluid = true;
+        bool load_fluid = true;
+        bool restrict_fluid = true;
+		int restrict_config = 0;
+
+        if (load_boundaries)
+        {
+            handleSimulationLoad(false, false, true, false, true, false);
+        }
+        else
+        {
+            //this trigger an initialization of all solid particles neighbor search structures
+            m_data.computeRigidBodiesParticlesMass();
+        }
 
 		Vector3d normal_gravitation = m_data.gravitation;
 		//m_data.gravitation.y *= 5;
@@ -1990,14 +2012,17 @@ void DFSPHCUDA::handleFluidInit() {
 		static std::uniform_real_distribution<> dis(-1, 1); // rage -1 ; 1
 
 
-		RestFLuidLoaderInterface::InitParameters paramsInit;
+        RestFLuidLoaderInterface::InitParameters paramsInit;
+        RestFLuidLoaderInterface::RestrictionParameters paramsRestrict;
 		RestFLuidLoaderInterface::TaggingParameters paramsTagging;
 		RestFLuidLoaderInterface::LoadingParameters paramsLoading;
 
-		paramsInit.show_debug = false;
-		paramsTagging.show_debug = false;
-		params.show_debug = false;
-		paramsLoading.show_debug = false;
+		bool show_debug = false;
+		paramsInit.show_debug = show_debug;
+		paramsRestrict.show_debug = show_debug;
+		paramsTagging.show_debug = show_debug;
+		params.show_debug = show_debug;
+		paramsLoading.show_debug = show_debug;
         bool show_recap_infos_timings = true;
 
         paramsTagging.output_density_information = false;
@@ -2017,27 +2042,36 @@ void DFSPHCUDA::handleFluidInit() {
             std::vector<int> vect_count_stabilization_iter_internal;
             std::vector<int> vect_count_selection_iter_internal;
 
-            RealCuda step_to_target_delta_change_trigger_ratio = 3;// vect_step_coefs[step_coefs_id];
+            RealCuda step_to_target_delta_change_trigger_ratio = 2;// vect_step_coefs[step_coefs_id];
+
+
 
             for (int k = 0; k < 1; ++k) {
-                //if i keep the existing fluid i need to reload it from memory each loop
-                if (keep_existing_fluid) {
-                    m_data.read_fluid_from_file(false);
-                }
+                
+				if (keep_existing_fluid)
+				{
+					if(load_fluid)
+					{
+						handleSimulationLoad(true, false, false, false, false, false);
+					}
 
-                //this trigger an initialization of all solid particles neighbor search structures
-                m_data.computeRigidBodiesParticlesMass();
+					//if i keep the existing fluid i need to reload it from memory each loop
+					if (restrict_fluid) {
+						paramsRestrict.config = restrict_config;
+
+						RestFLuidLoaderInterface::restrictFluid(m_data, paramsRestrict);
+					}
+					m_data.fluid_data->initNeighborsSearchData(m_data, false, false);
+				}
 
                 std::chrono::steady_clock::time_point tp1 = std::chrono::steady_clock::now();
-
-                //handleSimulationLoad(true,false,false,false,false,false);
 
                 //if (k == 0) 
                 {
                     paramsInit.clear_data = false;
                     paramsInit.air_particles_restriction = 1;
                     paramsInit.center_loaded_fluid = true;
-                    paramsInit.keep_existing_fluid = false;
+                    paramsInit.keep_existing_fluid = keep_existing_fluid;
                     paramsInit.simulation_config = simulation_config;
                     paramsInit.apply_additional_offset = true;
                     paramsInit.additional_offset = Vector3d(dis(e), dis(e), dis(e))*m_data.particleRadius * 2;
@@ -2055,7 +2089,7 @@ void DFSPHCUDA::handleFluidInit() {
                 paramsTagging.min_step_density = 5;
                 paramsTagging.step_density = step_size;
                 paramsTagging.density_end = 999;
-                paramsTagging.keep_existing_fluid = paramsInit.keep_existing_fluid;
+                paramsTagging.keep_existing_fluid = keep_existing_fluid;
 
                 paramsLoading.load_fluid = true;
                 paramsLoading.keep_existing_fluid = keep_existing_fluid;
@@ -2138,13 +2172,6 @@ void DFSPHCUDA::handleFluidInit() {
 
                 if (!vect_t1_internal.empty()) {
 
-
-                    std::sort(vect_t1_internal.begin(), vect_t1_internal.end());
-                    std::sort(vect_t2_internal.begin(), vect_t2_internal.end());
-                    std::sort(vect_t3_internal.begin(), vect_t3_internal.end());
-                    std::sort(vect_count_selection_iter_internal.begin(), vect_count_selection_iter_internal.end());
-                    std::sort(vect_count_stabilization_iter_internal.begin(), vect_count_stabilization_iter_internal.end());
-
                     //*
                     for (int k = 0; k < vect_t1_internal.size(); ++k) {
                         std::cout << k << "   " << vect_t1_internal[k] << " + " << vect_t2_internal[k] <<
@@ -2155,6 +2182,13 @@ void DFSPHCUDA::handleFluidInit() {
                     //*/
 
 
+					//*
+                    std::sort(vect_t1_internal.begin(), vect_t1_internal.end());
+                    std::sort(vect_t2_internal.begin(), vect_t2_internal.end());
+                    std::sort(vect_t3_internal.begin(), vect_t3_internal.end());
+                    std::sort(vect_count_selection_iter_internal.begin(), vect_count_selection_iter_internal.end());
+                    std::sort(vect_count_stabilization_iter_internal.begin(), vect_count_stabilization_iter_internal.end());
+					//*/
                     int idMedian = std::floor((vect_t2_internal.size() - 1) / 2.0f);
 
 

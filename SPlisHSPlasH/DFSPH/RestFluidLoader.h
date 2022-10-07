@@ -295,9 +295,18 @@ namespace SPH {
 		};
 
 		//so this is a function that will be used to move around the particles in the fluid to 
-		//improove the stability of the fluid when the first time step is ran
+		//improve the stability of the fluid when the first time step is ran
 		static void stabilizeFluid(SPH::DFSPHCData& data, StabilizationParameters& params);
 
+        //this struct is only to be more flexible in the addition of stabilization methods in the stabilizeFluid function 
+		struct RestrictionParameters {
+			int config{ 0 };
+			bool show_debug{ false };
+		};
+
+        //so this is a function that will be used to move around the particles in the fluid to 
+        //improve the stability of the fluid when the first time step is ran
+        static void restrictFluid(SPH::DFSPHCData& data, RestrictionParameters& params);
 	};
 
 }

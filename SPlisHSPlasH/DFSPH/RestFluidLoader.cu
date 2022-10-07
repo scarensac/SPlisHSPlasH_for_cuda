@@ -105,6 +105,9 @@ namespace SPH {
 		//improove the stability of the fluid when the first time step is ran
 		//Warning this function will erase the current fluid data no mather what
 		void stabilizeFluid(SPH::DFSPHCData& data, RestFLuidLoaderInterface::StabilizationParameters& params);
+
+		//this functio n is used to restrict the fluid depending on the params
+		void restrictFluid(SPH::DFSPHCData& data, RestFLuidLoaderInterface::RestrictionParameters& params);
 	};
 }
 
@@ -198,6 +201,11 @@ void RestFLuidLoaderInterface::initializeFluidToSurface(SPH::DFSPHCData& data, b
 
 void RestFLuidLoaderInterface::stabilizeFluid(SPH::DFSPHCData& data, RestFLuidLoaderInterface::StabilizationParameters& params) {
 	RestFLuidLoader::getStructure().stabilizeFluid(data, params);
+}
+
+
+void RestFLuidLoaderInterface::restrictFluid(SPH::DFSPHCData& data, RestFLuidLoaderInterface::RestrictionParameters& params) {
+	RestFLuidLoader::getStructure().restrictFluid(data, params);
 }
 
 
@@ -1508,7 +1516,6 @@ void RestFLuidLoader::init(DFSPHCData& data, RestFLuidLoaderInterface::InitParam
 	_isDataTagged = false;
 	//Essencially this function will load the background buffer and initialize it to the desired simulation domain
 
-
 	//surface descibing the simulation space and the fluid space
 	//this most likely need ot be a mesh in the end or at least a union of surfaces
 	//I'll take into consideration that S_simulation will be applied always  before S_fluid to lighten the computation
@@ -1680,12 +1687,37 @@ void RestFLuidLoader::init(DFSPHCData& data, RestFLuidLoaderInterface::InitParam
 		//the parameters for the star are 5 points, re=3.5, ri=2, direction=(0,0,1), h=5
 		//with 2m of fluid
 
-		S_simulation.setStar(Vector3d(0, 2.5, 0), 2.5, 3.5 , 2 , 5, Vector3d(0, 0, 1));
+		S_simulation.setStar(Vector3d(0, 2.5, 0), 2.5, 3.5, 2, 5, Vector3d(0, 0, 1));
 		//S_simulation.setStar(Vector3d(0, 2.5, 0),2.5, 0.8, 0.4, 5, Vector3d(0, 0, 1));
 
 		//S_fluid.setCuboid(Vector3d(0, 1.25, 0), Vector3d(2, 2, 2));
 		S_fluid.setPlane(Vector3d(0, 3.5, 0), Vector3d(0, -1, 0));
 		center_fluid_on_vertical_axis = true;
+	}
+	else if (simulation_config == 16) {
+		//cube for the comparison between fluid-fluid and fluid-boundary
+		// this one if for the fluid/fluid intiial set up
+		//6x6x6 box with   6x3x6 fluid 
+
+		S_simulation.setCuboid(Vector3d(0, 3, 0), Vector3d(3, 3, 3));
+		S_fluid.setCuboid(Vector3d(0, 1.5, 0), Vector3d(3, 1.5, 3));
+	}
+	else if (simulation_config == 17) {
+
+		//cube for the comparison between fluid-fluid and fluid-boundary
+		// this one if for the fluid/fluid actual test
+		//6x6x6 box with   5.5x2.5x5.5 fluid
+
+		S_simulation.setCuboid(Vector3d(0, 3, 0), Vector3d(3, 3, 3));
+		S_fluid.setCuboid(Vector3d(0, 1.75, 0), Vector3d(2.5, 1.25, 2.5));
+	}
+	else if (simulation_config == 18) {
+		//cube for the comparison between fluid-fluid and fluid-boundary
+		// this one if for the fluid/boundary actual test
+		//it has been sized so that it has the same number of active particles
+		S_simulation.setCuboid(Vector3d(0, 3, 0), Vector3d(2.5, 3, 2.5));
+		S_fluid.setCuboid(Vector3d(0, 1.25, 0), Vector3d(2.5, 1.25, 2.5));
+
 	}
 	else {
 		exit(5986);
@@ -1908,6 +1940,10 @@ void RestFLuidLoader::init(DFSPHCData& data, RestFLuidLoaderInterface::InitParam
 	//btw since I only need the neighbor structure of the boundaries to do that it should be fine
 	//ince the neighbor structure of the boundaries is build when loading the boundaries
 	if(true){
+		if (params.show_debug) {
+			std::cout << "geometric condition start: " << data.destructor_activated<<std::endl;
+		}
+
 		RealCuda cut_dist = 0.5 * data.particleRadius;
 		*outInt = 0;
 		int numBlocks = calculateNumBlocks(backgroundFluidBufferSet->numParticles);
@@ -1915,6 +1951,10 @@ void RestFLuidLoader::init(DFSPHCData& data, RestFLuidLoaderInterface::InitParam
 		gpuErrchk(cudaDeviceSynchronize());
 
 		count_to_rmv = *outInt;
+
+		if (params.show_debug) {
+			std::cout << "geometric condition after tag" << std::endl;
+		}
 
 		//and remove the particles	
 		remove_tagged_particles(backgroundFluidBufferSet, backgroundFluidBufferSet->neighborsDataSet->cell_id,
@@ -2427,6 +2467,10 @@ void RestFLuidLoader::tagDataToSurface(SPH::DFSPHCData& data, RestFLuidLoaderInt
 
 		//tag existing fluid neighbors
 		if (params.keep_existing_fluid) {
+			if (show_debug) {
+				std::cout << "tagging neighbors of existing fluid (coutn existing fluid): " << data.fluid_data->numParticles << std::endl;
+			}
+
 			int numBlocks = calculateNumBlocks(data.fluid_data->numParticles);
 			//here I can optimize the comutation by tagging for removal any particle that is extremely close to an existing fluid particle
 			bool remove_close_to_fluid = true;
@@ -2879,10 +2923,22 @@ void RestFLuidLoader::tagDataToSurface(SPH::DFSPHCData& data, RestFLuidLoaderInt
 			//first we need to check if there is any particle left
 			if ((*outInt) == 0) {
 				//ok i'll do a gross suposition, if there is no candidate particle left for the selection
-				//it very likely means that there is no particle remaining that would be added to the simulation
-				//if I were to continue with the process
-				_isDataTagged = false;
-				return;
+				//it very likely means that there is no particle remaining that could be removed by any further loop
+				//this case can happen if there is no particle near any solids or axisting fluids
+
+				//I have to end all the timers iteration
+				timings_loop.time_next_point();//time
+				timings_loop.time_next_point();//time
+				timings_loop.time_next_point();//time
+				timings_loop.time_next_point();//time
+				timings_loop.time_next_point();//time
+				timings_loop.time_next_point();//time
+				timings_loop.end_step();
+
+				successful = true;
+
+				//and end the iteration process
+				break;
 			}
 
 			//exit(0);
@@ -7854,5 +7910,49 @@ void RestFLuidLoader::stabilizeFluid(SPH::DFSPHCData& data, RestFLuidLoaderInter
 
 	}
 
+
+}
+
+
+
+void RestFLuidLoader::restrictFluid(SPH::DFSPHCData& data, RestFLuidLoaderInterface::RestrictionParameters& params){
+	BufferFluidSurface surface_simulation;
+	int simulation_config = params.config;
+
+	bool center_fluid_on_vertical_axis = false;
+
+	if (simulation_config == 0) {
+		surface_simulation.setCuboid(Vector3d(0, 1.75, 0), Vector3d(2.5, 1.25, 2.5));
+		surface_simulation.setReversedSurface(true);
+	}
+	else
+	{
+		std::cout << "RestFLuidLoader::restrictFluid, given param is not an existing config: " << params.config << std::endl;
+		exit(89654);
+	}
+
+	SurfaceAggregation surface_aggr;
+	surface_aggr.addSurface(surface_simulation);
+
+	if (params.show_debug) {
+		std::cout << "restriction space: " << surface_aggr.toString() << std::endl;
+	}
+
+	*outInt = 0;
+
+	int numBlocks = calculateNumBlocks(data.fluid_data->numParticles);
+	surface_restrict_particleset_kernel<0, true> << <numBlocks, BLOCKSIZE >> > (data.fluid_data->gpu_ptr, surface_aggr, outInt);
+	gpuErrchk(cudaDeviceSynchronize());
+
+	int count_to_rmv = *outInt;
+
+	//and remove the particles	
+	remove_tagged_particles(data.fluid_data, data.fluid_data->neighborsDataSet->cell_id,
+		data.fluid_data->neighborsDataSet->cell_id_sorted, count_to_rmv);
+
+	if (params.show_debug) {
+		std::cout << "Restricting to simulation area count remaining(count removed): " << data.fluid_data->numParticles <<
+			" (" << count_to_rmv << ")" << std::endl;
+	}
 
 }

@@ -69,7 +69,13 @@ public:
 	Vector3d Bmin;
 	Vector3d Bmax;
 	
-	MeshPerso() { nbfaces = -1; nbVectex = -1; }
+	MeshPerso() { 
+		nbfaces = -1; nbVectex = -1; 
+		v = NULL; f = NULL; n = NULL;
+		offset = Vector3d(0, 0, 0);
+		Bmin = Vector3d(0, 0, 0);
+		Bmax = Vector3d(0, 0, 0);
+	}
 
 	//technically it's a delete but since I'm doing some not indeapth copy some times 
 	//I want absolute control over the memory release
