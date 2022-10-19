@@ -88,7 +88,8 @@ namespace SPH {
 			RealCuda density_delta_threshold;
 
 			bool useStepSizeRegulator;
-			RealCuda min_step_density;
+            RealCuda min_step_density;
+			RealCuda step_to_target_delta_change_trigger_ratio{ 1 };
 
 
 			//here the parameters for the displacement

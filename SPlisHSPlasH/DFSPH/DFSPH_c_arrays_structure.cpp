@@ -599,7 +599,7 @@ void UnifiedParticleSet::load_from_file(std::string file_path, bool load_velocit
 			}
 			//*/
 
-			/*
+			//*
 			if (velocity_impacted_by_fluid_solver) {
 
 				if (pos.y >1) {

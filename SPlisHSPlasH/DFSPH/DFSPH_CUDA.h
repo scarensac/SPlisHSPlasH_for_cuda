@@ -147,6 +147,10 @@ public:
 
 
     void initAdvancedRendering(int width, int height);
+
+    std::vector<float> m_simulationTimes;
+    int m_stepsForAverage{ 111 };
+    float m_AvgSimuTime{ 0.0f };
 };
 }
 

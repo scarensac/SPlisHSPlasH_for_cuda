@@ -14,9 +14,10 @@
 #include "Demos/Common/DemoBase.h"
 #include "Utilities/FileSystem.h"
 #include "SPlisHSPlasH/DFSPH/DFSPH_CUDA.h"
+#include <iomanip>
 
 
-//#define FFMPEG_RENDER
+#define FFMPEG_RENDER
 #ifdef FFMPEG_RENDER
 FILE* ffmpeg = NULL;
 //#define USE_MULTIPLES_SHADER
@@ -106,13 +107,23 @@ void reset()
 void timeStep ()
 {
 	{
+		//set the camera for the wedge experiement
 		static bool firstTime = false;
 		if (firstTime) {
 			firstTime = false;
 
 			MiniGL::setViewport(40.0, 0.1f, 500.0, Vector3r(-11.0, 3.0, 0.0), Vector3r(0.0, 2.0, 0.0));
 		}
-	}
+    }
+
+
+	//if <0 the game will not end
+    float endTime = 40;
+
+    bool controlBoat = false;
+    bool camera_follow_boat = false;
+    float controlBoatOffset = 5; //time in second before the boat start to move
+
 
 	if ((base.getPauseAt() > 0.0) && (base.getPauseAt() < TimeManager::getCurrent()->getTime()))
 		base.setPause(true);
@@ -169,28 +180,10 @@ void timeStep ()
 	if (base.getPause())
 		return;
 
-
-
-	/*
-	static int k = 0;
-	k++;
-	std::cout << k << std::endl;
-	
-	if (k == 1) {
-		MiniGL::rotateY(0.001*1454);
-		MiniGL::rotateX(0.00001*4784);
-		MiniGL::move(0.001*1305, 0, 0);
+	if(controlBoat && base.getRbPause())
+	{
+		base.setRbPause(false);
 	}
-	
-	
-
-	//MiniGL::move(0.001, 0, 0);
-	//MiniGL::move(0, 0.001, 0);
-	//MiniGL::move(0, 0, 0.001);
-	//MiniGL::move();
-	//MiniGL::rotateX(0.00001);
-	//MiniGL::rotateY(-0.0001);
-	//*/
 
 	// Simulation code
 	for (unsigned int i = 0; i < base.getNumberOfStepsPerRenderUpdate(); i++)
@@ -213,10 +206,11 @@ void timeStep ()
 			else {
 				updateBoundaryForces();
 		
-				bool controlBoat = false;
-				if (controlBoat) {
+                bool controlBoatEff = controlBoat && (TimeManager::getCurrent()->getTime() > controlBoatOffset);
+
+				if (controlBoatEff) {
 					bool manualBoatVelocityControl = false;
-					bool manualBoatOrientationControl = true;
+					bool manualBoatOrientationControl = false;
 
 					FluidModel::RigidBodyParticleObject *rbpo = base.getSimulationMethod().model.getRigidBodyParticleObject(1);
 					RigidBodyObject *rbo = rbpo->m_rigidBody;
@@ -400,7 +394,6 @@ void timeStep ()
 
 				updateBoundaryParticles(false);
 
-				bool camera_follow_boat = true;
 				if (camera_follow_boat) {
 					FluidModel::RigidBodyParticleObject *rbpo = base.getSimulationMethod().model.getRigidBodyParticleObject(1);
 					RigidBodyObject *rbo = rbpo->m_rigidBody;
@@ -452,15 +445,25 @@ void timeStep ()
 		}
 	}
 
-#ifdef FFMPEG_RENDER
-	//the part to save to file
-	if (ffmpeg != NULL) {
-		if (TimeManager::getCurrent()->getTime()>40) {
-			_pclose(ffmpeg);
+	if (endTime > 0)
+	{
+		if (controlBoatOffset>0)
+		{
+			endTime += controlBoatOffset;
+		}
+
+		if (TimeManager::getCurrent()->getTime()>endTime) 
+		{
+	#ifdef FFMPEG_RENDER
+			//the part to save to file
+			if (ffmpeg != NULL) {
+					_pclose(ffmpeg);
+			}
+	#endif
 			exit(0);
 		}
 	}
-#endif
+
 }
 
 void simulationMethodChanged()
@@ -603,6 +606,20 @@ void render()
 	pbdWrapper.renderConstraints();
 	pbdWrapper.renderBVH();
 
+	bool showSimulationTimes = true;
+    if (showSimulationTimes)
+	{
+		if (base.getSimulationMethod().simulationMethod == DemoBase::SimulationMethods::DFSPH_CUDA) {
+			DFSPHCUDA* sim = dynamic_cast<DFSPHCUDA*>(base.getSimulationMethod().simulation);
+			std::ostringstream oss;
+			oss << std::fixed;
+			oss << std::setprecision(1);
+			oss << sim->m_AvgSimuTime << " ms";
+			std::string msgToPrint = oss.str();
+			float color[] = { 1.0,0.0f,0.0f,1.0f };
+			MiniGL::drawBitmapTextAlligned(0.1f, 0.75f, msgToPrint.c_str(), msgToPrint.size(), color, 1);
+		}
+    }
 
 #ifdef FFMPEG_RENDER
 	if (ffmpeg != NULL) {

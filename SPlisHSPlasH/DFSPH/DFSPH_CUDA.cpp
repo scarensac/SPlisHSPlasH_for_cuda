@@ -128,7 +128,7 @@ void DFSPHCUDA::step()
         //*
 		//test the simple open boundaries
 		
-        m_dynamic_window_config=-1;
+        m_dynamic_window_config=300;
 		if (m_dynamic_window_config >= 0) {
 
 			bool useOpenBoundaries = true;
@@ -272,7 +272,7 @@ void DFSPHCUDA::step()
        // std::cout << "self density: " << m_data.W_zero * 0.1 << std::endl;
 
 
-        //*
+        /*
         RealCuda min_density = 10000;
         RealCuda max_density = 0;
         for (int j = 0; j < m_data.fluid_data->numParticles; ++j) {
@@ -733,8 +733,21 @@ void DFSPHCUDA::step()
 
 	static RealCuda total_simu_time = 0;
 	total_simu_time += time_simu_step;
-	//std::cout << "time simu step (iter , avg , cur_step): "<<<< " // " << time_simu_step << std::endl;
+	std::cout << "time simu step (iter , avg , cur_step): "<< " // " << time_simu_step << std::endl;
 	
+    m_simulationTimes.push_back(time_simu_step);
+
+	if (m_simulationTimes.size() >= m_stepsForAverage)
+	{
+		m_AvgSimuTime = 0;
+		for (float t :m_simulationTimes)
+		{
+			m_AvgSimuTime += t;
+		}
+		m_AvgSimuTime /= m_simulationTimes.size();
+		m_simulationTimes.clear();
+	}
+
 	//count the simulation time and end the simulation after 5s
 	if (false) {
 		std::ostringstream oss;
@@ -1986,11 +1999,11 @@ void DFSPHCUDA::handleFluidInit() {
 	{
 		//this can be used to load any boundary shape that has a config and no existing fluid
 
-        bool load_boundaries = true;
-        int simulation_config = 17;
+        bool load_boundaries = false;
+        int simulation_config = 4;
         bool stabilize_fluid = true;
 
-        bool keep_existing_fluid = true;
+        bool keep_existing_fluid = false;
         bool load_fluid = true;
         bool restrict_fluid = true;
 		int restrict_config = 0;
@@ -2042,7 +2055,8 @@ void DFSPHCUDA::handleFluidInit() {
             std::vector<int> vect_count_stabilization_iter_internal;
             std::vector<int> vect_count_selection_iter_internal;
 
-            RealCuda step_to_target_delta_change_trigger_ratio = 2;// vect_step_coefs[step_coefs_id];
+			int step_coefs_id = 5;
+            RealCuda step_to_target_delta_change_trigger_ratio = vect_step_coefs[step_coefs_id];
 
 
 
@@ -3871,7 +3885,7 @@ void DFSPHCUDA::applyOpenBoundaries() {
 		std::chrono::steady_clock::time_point tp2 = std::chrono::steady_clock::now();
 		RealCuda time_p1 = std::chrono::duration_cast<std::chrono::nanoseconds> (tp2 - tp1).count() / 1000000.0f;
 
-		//std::cout << "time handling open boundaries: " << time_p1 << std::endl;
+		std::cout << "time handling open boundaries: " << time_p1 << std::endl;
 	}
 
 
@@ -4014,6 +4028,7 @@ void DFSPHCUDA::applyDynamicWindow() {
 				paramsTagging.keep_existing_fluid = true;
 				paramsTagging.output_density_information = false;
 				paramsTagging.output_timming_information = false;
+				paramsTagging.step_to_target_delta_change_trigger_ratio = 2;
 
 
 

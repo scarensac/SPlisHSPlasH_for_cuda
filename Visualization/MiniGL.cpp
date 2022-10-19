@@ -326,6 +326,23 @@ void MiniGL::drawBitmapText(float x, float y, const char *str, int strLength, fl
 	glPopMatrix ();
 }
 
+void MiniGL::drawBitmapTextAlligned(float x, float y, const char* str, int strLength, float* color, int mode)
+{
+	int textWitdth = glutBitmapLength(GLUT_BITMAP_TIMES_ROMAN_24, (const unsigned char*)str);
+
+	if (mode == 0)
+	{
+		x -= static_cast<float>(textWitdth) / width;
+	}
+	else if (mode == 1)
+	{
+		x -= static_cast<float>(textWitdth) * 2.0f / width;
+	}
+
+	MiniGL::drawBitmapText(x,y,str,strLength,color);
+}
+
+
 void MiniGL::drawStrokeText(const Real x, const Real y, const Real z, float scale, const char *str, int strLength, float *color)
 {
 	float speccolor[4] = { 1.0, 1.0, 1.0, 1.0 };

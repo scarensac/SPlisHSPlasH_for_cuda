@@ -1321,6 +1321,7 @@ void DynamicWindow::tagDataToSurface(SPH::DFSPHCData& data, DynamicWindowInterfa
 	RealCuda density_start = params.density_start;
 	RealCuda density_end = params.density_end;
 	RealCuda step_density = params.step_density;
+	RealCuda step_to_target_delta_change_trigger_ratio = params.step_to_target_delta_change_trigger_ratio;
 	limit_density = density_start;
 	int i = 0;//a simple counter
 	bool use_cub_for_avg = false;//ok for some reason using cub has consequences that augent the computation time... don't ask me
@@ -1706,14 +1707,17 @@ void DynamicWindow::tagDataToSurface(SPH::DFSPHCData& data, DynamicWindowInterfa
 					std::cout << "avg density before step modification: " << avg_density << std::endl;
 				}
 				RealCuda delta_to_target = avg_density - density_end;
-				if (delta_to_target < (params.step_density / 2.0f)) {
+				//commented to have the step fully dynamic
+				//if (delta_to_target * step_to_target_delta_change_trigger_ratio < step_density) 
+				{
 					RealCuda old_step_density = step_density;
-					step_density = static_cast<int>(delta_to_target)*2;
+					//the +1 is to round above instead of having a floor
+					step_density = static_cast<int>(delta_to_target * step_to_target_delta_change_trigger_ratio) + 1;
 					step_density = MAX_MACRO_CUDA(step_density, params.min_step_density);
 					limit_density += old_step_density - step_density;
 					if (show_debug) {
 						std::cout << "changing step size from         " << old_step_density << " to " << step_density << std::endl;
-						std::cout << "resulting in limit density from " << limit_density+step_density-old_step_density << " to " << 
+						std::cout << "resulting in limit density from " << limit_density + step_density - old_step_density << " to " <<
 							limit_density << std::endl;
 					}
 

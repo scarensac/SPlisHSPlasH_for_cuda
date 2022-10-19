@@ -4315,7 +4315,10 @@ int RestFLuidLoader::loadDataToSimulation(SPH::DFSPHCData& data, RestFLuidLoader
 				count_particle_with_tag_kernel << <numBlocks, BLOCKSIZE >> > (data.fluid_data->gpu_ptr, tag, SVS_CU::get()->tagged_particles_count);
 				gpuErrchk(cudaDeviceSynchronize());
 
-				std::cout << "tag: " << tag << "   count tagged: " << *(SVS_CU::get()->tagged_particles_count) << std::endl;
+				if (params.show_debug)
+				{
+					std::cout << "tag: " << tag << "   count tagged: " << *(SVS_CU::get()->tagged_particles_count) << std::endl;
+				}
 				data.count_active = *(SVS_CU::get()->tagged_particles_count);
 			}
 
