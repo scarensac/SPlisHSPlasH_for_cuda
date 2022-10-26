@@ -2046,7 +2046,7 @@ void DFSPHCUDA::handleFluidInit() {
 		paramsLoading.load_raw_untaged_data = false;
 
         std::vector<std::vector<RestFLuidLoaderInterface::TaggingParameters>> vect_params_taggings_for_density_recap_global;
-		std::vector<RealCuda> vect_step_coefs{ 0.25, 0.5, 1, 1.5, 2,3,4,5,7,10 }; 
+		std::vector<RealCuda> vect_step_coefs{ 0.25, 0.5, 1, 1.5, 2,2.5,3,4,5,7,10 }; 
         //for (int param_variation_id = 0; param_variation_id < vect_step_coefs.size(); ++param_variation_id)
 		//for (int param_variation_id = 2; param_variation_id < 5; ++param_variation_id)
         std::vector<RealCuda> vect_step_sizes{ 5, 10, 15, 20,25,30,40,50,60,70,80,100 };
@@ -2100,7 +2100,7 @@ void DFSPHCUDA::handleFluidInit() {
                 //*
                 paramsTagging.useRule2 = false;
                 paramsTagging.useRule3 = false;
-                paramsTagging.useStepSizeRegulator = false;
+                paramsTagging.useStepSizeRegulator = true;
                 paramsTagging.step_to_target_delta_change_trigger_ratio = step_to_target_delta_change_trigger_ratio;
                 paramsTagging.min_step_density = 5;
                 paramsTagging.step_density = step_size;
@@ -2229,8 +2229,8 @@ void DFSPHCUDA::handleFluidInit() {
 						{
 							oss << std::endl;
 
-                            myfile << "dtep_size: " << step_size << std::endl;
-                            //myfile << "step regulator coef: " << step_to_target_delta_change_trigger_ratio << std::endl;
+                            //myfile << "dtep_size: " << step_size << std::endl;
+                            myfile << "step regulator coef: " << step_to_target_delta_change_trigger_ratio << std::endl;
 							
 							myfile << oss.str();
 							myfile << std::endl;
