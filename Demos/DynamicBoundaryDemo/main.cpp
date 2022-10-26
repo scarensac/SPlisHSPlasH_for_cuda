@@ -112,13 +112,13 @@ void timeStep ()
 		if (firstTime) {
 			firstTime = false;
 
-			MiniGL::setViewport(40.0, 0.1f, 500.0, Vector3r(-11.0, 3.0, 0.0), Vector3r(0.0, 2.0, 0.0));
+			MiniGL::setViewport(40.0, 0.1f, 500.0, Vector3r(-8.0, 4.0, 0.0), Vector3r(0.0, 1.8, 0.0));
 		}
     }
 
 
 	//if <0 the game will not end
-    float endTime = 40;
+    float endTime = 20;
 
     bool controlBoat = false;
     bool camera_follow_boat = false;
@@ -447,7 +447,7 @@ void timeStep ()
 
 	if (endTime > 0)
 	{
-		if (controlBoatOffset>0)
+		if (controlBoat && controlBoatOffset>0)
 		{
 			endTime += controlBoatOffset;
 		}
@@ -540,10 +540,22 @@ void render()
 
 
 #ifdef FFMPEG_RENDER
-	static int* buffer = new int[width*height];
+	static int* buffer = NULL;
 
 	if (!base.getPause()) {
 		if (ffmpeg == NULL) {
+            if (width & 1)
+            {
+                width -= 1;
+            }
+
+            if (height & 1)
+            {
+				height -= 1;
+            }
+
+			buffer = new int[width * height];
+
 			int framerate = (1 / TimeManager::getCurrent()->getTimeStepSize());
 			std::cout << "video framerate: " << framerate << std::endl;
 			std::ostringstream oss;
@@ -552,6 +564,7 @@ void render()
 			oss << "D:\\ffmpeg-4.1.3-win64-static\\bin\\ffmpeg " <<
 				" -r " << framerate << " -f rawvideo -pix_fmt rgba -s " << width << "x" << height << " -i - " <<
 				"-threads 0 -preset fast -y -pix_fmt yuv420p -crf 21 -vf vflip output.mp4";
+			std::cout << oss.str() << std::endl;
 
 
 
@@ -606,7 +619,7 @@ void render()
 	pbdWrapper.renderConstraints();
 	pbdWrapper.renderBVH();
 
-	bool showSimulationTimes = true;
+	bool showSimulationTimes = false;
     if (showSimulationTimes)
 	{
 		if (base.getSimulationMethod().simulationMethod == DemoBase::SimulationMethods::DFSPH_CUDA) {

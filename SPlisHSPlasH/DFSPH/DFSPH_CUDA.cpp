@@ -128,11 +128,11 @@ void DFSPHCUDA::step()
         //*
 		//test the simple open boundaries
 		
-        m_dynamic_window_config=300;
+        m_dynamic_window_config= -1;
 		if (m_dynamic_window_config >= 0) {
 
 			bool useOpenBoundaries = true;
-			bool useDynamicWindow = true;
+			bool useDynamicWindow = false;
 
 			if (useOpenBoundaries)
 			{
@@ -2037,16 +2037,20 @@ void DFSPHCUDA::handleFluidInit() {
 		params.show_debug = show_debug;
 		paramsLoading.show_debug = show_debug;
         bool show_recap_infos_timings = true;
+		bool timings_to_file = true;
 
-        paramsTagging.output_density_information = false;
-        bool show_recap_infos_density = false;
+        paramsTagging.output_density_information = true;
+        bool show_recap_infos_density = true;
+
 
 		paramsLoading.load_raw_untaged_data = false;
 
         std::vector<std::vector<RestFLuidLoaderInterface::TaggingParameters>> vect_params_taggings_for_density_recap_global;
-        std::vector<RealCuda> vect_step_coefs{ 0.25, 0.5, 1, 1.5, 2,3,4,5,7,10 };
-		int step_size = 60;
-        //for (int step_coefs_id = 0; step_coefs_id < vect_step_coefs.size(); ++step_coefs_id)
+		std::vector<RealCuda> vect_step_coefs{ 0.25, 0.5, 1, 1.5, 2,3,4,5,7,10 }; 
+        //for (int param_variation_id = 0; param_variation_id < vect_step_coefs.size(); ++param_variation_id)
+		//for (int param_variation_id = 2; param_variation_id < 5; ++param_variation_id)
+        std::vector<RealCuda> vect_step_sizes{ 5, 10, 15, 20,25,30,40,50,60,70,80,100 };
+        //for (int param_variation_id = 0; param_variation_id < vect_step_sizes.size(); ++param_variation_id)
         {
             std::vector<RealCuda> vect_t1_internal;
             std::vector<RealCuda> vect_t2_internal;
@@ -2055,12 +2059,10 @@ void DFSPHCUDA::handleFluidInit() {
             std::vector<int> vect_count_stabilization_iter_internal;
             std::vector<int> vect_count_selection_iter_internal;
 
-			int step_coefs_id = 5;
-            RealCuda step_to_target_delta_change_trigger_ratio = vect_step_coefs[step_coefs_id];
+			RealCuda step_to_target_delta_change_trigger_ratio =  vect_step_coefs[5];
+			int step_size = vect_step_sizes[11];
 
-
-
-            for (int k = 0; k < 1; ++k) {
+            for (int k = 0; k < 51; ++k) {
                 
 				if (keep_existing_fluid)
 				{
@@ -2097,8 +2099,8 @@ void DFSPHCUDA::handleFluidInit() {
 
                 //*
                 paramsTagging.useRule2 = false;
-                paramsTagging.useRule3 = true;
-                paramsTagging.useStepSizeRegulator = true;
+                paramsTagging.useRule3 = false;
+                paramsTagging.useStepSizeRegulator = false;
                 paramsTagging.step_to_target_delta_change_trigger_ratio = step_to_target_delta_change_trigger_ratio;
                 paramsTagging.min_step_density = 5;
                 paramsTagging.step_density = step_size;
@@ -2205,18 +2207,41 @@ void DFSPHCUDA::handleFluidInit() {
 					//*/
                     int idMedian = std::floor((vect_t2_internal.size() - 1) / 2.0f);
 
-
-                    std::cout << "median values" << std::endl;
-                    std::cout << "count valid runs: " << vect_t1_internal.size() << std::endl;
-                    std::cout << "time init" << " ; " << "time selection" <<
+					std::ostringstream oss;
+                    oss << "median values" << std::endl;
+					oss << "count valid runs: " << vect_t1_internal.size() << std::endl;
+					oss << "time init" << " ; " << "time selection" <<
                         " ; " << "time stabilization" << " ; " <<
                         "total time" <<
                         " ; " << "coutn iter selection" << " ; " << "count iter stabilization" << std::endl;
-                    std::cout << vect_t1_internal[idMedian] << " ; " << vect_t2_internal[idMedian] <<
+					oss << vect_t1_internal[idMedian] << " ; " << vect_t2_internal[idMedian] <<
                         " ; " << vect_t3_internal[idMedian] << " ; " <<
                         vect_t1_internal[idMedian] + vect_t2_internal[idMedian] + vect_t3_internal[idMedian] <<
                         " ; " << vect_count_selection_iter_internal[idMedian] << " ; " << vect_count_stabilization_iter_internal[idMedian] << std::endl;
 
+					std::cout << oss.str() << std::endl;
+
+					if (timings_to_file)
+					{
+						std::string file_name{ "density_step_experiment_step_regulator_only.txt" };
+                        std::ofstream myfile(file_name, std::ofstream::app);
+						if (myfile.is_open())
+						{
+							oss << std::endl;
+
+                            myfile << "dtep_size: " << step_size << std::endl;
+                            //myfile << "step regulator coef: " << step_to_target_delta_change_trigger_ratio << std::endl;
+							
+							myfile << oss.str();
+							myfile << std::endl;
+							myfile.close();
+						}
+						else
+						{
+							std::cout << "failed opening the file to outpout timings" << std::endl;
+							exit(-1);
+						}
+					}
                 }
             }
         }
